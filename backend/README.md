@@ -14,9 +14,9 @@ A sophisticated identity and profile management system designed to handle comple
 
 - **Language:** Python 3.12
 - **Framework:** FastAPI
-- **Database:** PostgreSQL 15+ (Supabase-compatible)
+- **Database:** PostgreSQL 15+ (Supabase)
 - **ORM:** SQLAlchemy
-- **Migrations:** Alembic
+- **Migrations:** Supabase CLI
 - **Development:** Docker & Docker Compose
 
 ## Prerequisites
@@ -146,12 +146,6 @@ docker-compose logs -f db
 # Access API container shell
 docker-compose exec api bash
 
-# Run Alembic migrations
-docker-compose exec api alembic upgrade head
-
-# Create new migration
-docker-compose exec api alembic revision --autogenerate -m "description"
-
 # Run tests
 docker-compose exec api pytest
 
@@ -162,14 +156,20 @@ docker-compose exec api pytest --cov=src --cov-report=term-missing
 ### Database Management
 
 ```bash
-# Access PostgreSQL shell
-docker-compose exec db psql -U postgres -d identity_api
+# Generate migration from schema changes
+supabase db diff -f migration_name
 
-# Create database backup
-docker-compose exec db pg_dump -U postgres identity_api > backup.sql
+# Apply migrations locally (resets database)
+supabase db reset
 
-# Restore database from backup
-docker-compose exec -T db psql -U postgres identity_api < backup.sql
+# Deploy migrations to remote Supabase
+supabase db push
+
+# Access PostgreSQL shell (local Supabase)
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# Create database backup (local Supabase)
+pg_dump postgresql://postgres:postgres@127.0.0.1:54322/postgres > backup.sql
 ```
 
 ### Code Quality
@@ -201,7 +201,9 @@ backend/
 │       └── v1/
 │           └── router.py    # API v1 router
 ├── tests/                   # Test files (to be added)
-├── alembic/                 # Database migrations (to be initialized)
+├── supabase/                # Supabase configuration
+│   ├── migrations/          # Database migrations (SQL)
+│   └── config.toml          # Supabase settings
 ├── docs/                    # Architecture documentation
 ├── Dockerfile               # Docker image definition
 ├── docker-compose.yml       # Docker services configuration
@@ -212,19 +214,20 @@ backend/
 
 ## Next Steps
 
-1. **Initialize Alembic:**
+1. **Create your first model** in `src/models/`
+
+2. **Create your first endpoint** in `src/api/v1/endpoints/`
+
+3. **Create and apply database migrations:**
    ```bash
-   docker-compose exec api alembic init alembic
-   ```
-
-2. **Create your first model** in `src/models/`
-
-3. **Create your first endpoint** in `src/api/v1/endpoints/`
-
-4. **Run database migrations:**
-   ```bash
-   docker-compose exec api alembic revision --autogenerate -m "initial migration"
-   docker-compose exec api alembic upgrade head
+   # Generate migration from schema changes
+   supabase db diff -f initial_schema
+   
+   # Apply migrations locally
+   supabase db reset
+   
+   # Deploy to remote when ready
+   supabase db push
    ```
 
 ## Documentation

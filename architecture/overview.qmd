@@ -201,7 +201,7 @@ Privacy & Compliance
 - **Type Checking**: mypy
 - **Linting**: ruff, black
 - **API Docs**: OpenAPI/Swagger (auto-generated)
-- **Database Migrations**: Alembic
+- **Database Migrations**: Supabase CLI
 
 ---
 

@@ -314,7 +314,7 @@ graph TB
 | **Supabase-py** | Supabase client | Latest | MIT |
 | **Pydantic** | Data validation | 2.0+ | MIT |
 | **SQLAlchemy** | ORM (optional) | 2.0+ | MIT |
-| **Alembic** | Database migrations | Latest | MIT |
+| **Supabase CLI** | Database migrations | Latest | MIT |
 | **pytest** | Testing framework | Latest | MIT |
 | **python-jose** | JWT handling | Latest | MIT |
 

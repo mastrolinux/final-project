@@ -388,7 +388,9 @@ backend/
 |   |-- unit/
 |   |-- integration/
 |   +-- conftest.py
-|-- alembic/                       # Database migrations
+|-- supabase/                      # Supabase configuration
+|   |-- migrations/                # Database migrations (SQL)
+|   +-- config.toml
 |-- docs/                          # Documentation
 |-- requirements.txt
 +-- render.yaml                    # Deployment config

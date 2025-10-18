@@ -381,18 +381,18 @@ CREATE INDEX idx_audit_log_resource
 
 ## 4.8 Data Migration Strategy
 
-### Database Schema Migrations (Alembic)
+### Database Schema Migrations (Supabase CLI)
 
-```python
-# Example migration structure
-alembic/
-|-- versions/
-|   |-- 001_initial_schema.py
-|   |-- 002_add_context_profiles.py
-|   |-- 003_add_guardian_relationships.py
-|   +-- 004_add_oauth_tables.py
-|-- env.py
-+-- alembic.ini
+```sql
+# Migration file structure
+supabase/
+|-- migrations/
+|   |-- 20240101120000_initial_schema.sql
+|   |-- 20240115140000_add_context_profiles.sql
+|   |-- 20240201093000_add_guardian_relationships.sql
+|   +-- 20240220161500_add_oauth_tables.sql
+|-- seed.sql
++-- config.toml
 ```
 
 **Migration Principles:**

@@ -51,7 +51,7 @@ Different audiences may find different sections most relevant:
 
 ## Academic Context
 
-This work is submitted as a final project for CM3070 Computer Science Final Project. The project demonstrates:
+This work is submitted as a final project for graduation. The project demonstrates:
 
 - Strong requirements based on research and imagination
 - Solid security and privacy design with GDPR reference
