@@ -1,0 +1,395 @@
+---
+title: "Component Architecture"
+---
+
+## 3.1 System Architecture Overview
+
+### Layered Architecture
+
+The system adopts a **Layered Architecture** with **RESTful API** principles:
+
+```mermaid
+graph TD
+    subgraph PL["Presentation Layer (REST API Endpoints)"]
+        IE[Identity Endpoints]
+        OE[OAuth Endpoints]
+        GE[Guardian Endpoints]
+    end
+    
+    subgraph AL["Application Layer (Business Logic / Use Cases)"]
+        PS[Profile Service]
+        OS[OAuth Service]
+        GS[Guardian Service]
+        CS[Context Service]
+        GDPRS[GDPR Service]
+        AS[Audit Service]
+    end
+    
+    subgraph DL["Domain Layer (Domain Models)"]
+        IA[Identity Aggregate]
+        CA[Context Aggregate]
+        GR[Guardian Relationship]
+    end
+    
+    subgraph DAL["Data Access Layer (Repositories)"]
+        PR[Profile Repository]
+        OR[OAuth Repository]
+        AR[Audit Repository]
+    end
+    
+    subgraph IL["Infrastructure Layer"]
+        DB[(Supabase PostgreSQL)]
+        CACHE[(Redis Cache)]
+        LOG[Logging Service]
+    end
+    
+    PL --> AL
+    AL --> DL
+    DL --> DAL
+    DAL --> IL
+    
+    style PL fill:#e3f2fd
+    style AL fill:#fff3e0
+    style DL fill:#f3e5f5
+    style DAL fill:#e8f5e9
+    style IL fill:#fce4ec
+```
+
+---
+
+## 3.2 Core Components
+
+### 3.2.1 Identity Management Component
+
+**Responsibilities:**
+- Manage base user profiles
+- Handle context-specific profiles with inheritance
+- Resolve profiles based on context and requester
+- Support multilingual identity data
+- Maintain temporal versioning
+
+**Key Interfaces:**
+```
+createProfile(userId, profileData) -> Profile
+getProfile(userId, context?, language?) -> ResolvedProfile
+updateProfile(userId, updates) -> Profile
+deleteProfile(userId) -> void
+createContextProfile(userId, context, overrides) -> ContextProfile
+resolveProfile(userId, context, scopes) -> FilteredProfile
+```
+
+**Internal Modules:**
+- **Profile Repository**: Data access for profiles
+- **Context Resolution Engine**: Applies inheritance and filtering
+- **Name Validator**: Validates names across cultures
+- **Localization Manager**: Handles multilingual content
+- **Version Manager**: Tracks profile history
+
+---
+
+### 3.2.2 OAuth Authorization Component
+
+**Responsibilities:**
+- Implement OAuth 2.0 authorization server
+- Manage client applications and permissions
+- Handle authorization code and token flows
+- Enforce scope-based access control
+- Maintain consent records
+
+**Key Interfaces:**
+```
+authorizeClient(clientId, redirectUri, scopes, state) -> AuthorizationCode
+exchangeCodeForToken(code, clientId, clientSecret) -> AccessToken
+validateToken(token) -> TokenPayload
+revokeToken(token) -> void
+getClientInfo(clientId) -> Client
+recordConsent(userId, clientId, scopes) -> ConsentRecord
+```
+
+**Internal Modules:**
+- **Client Registry**: Manages OAuth clients
+- **Token Manager**: Issues and validates tokens
+- **Scope Engine**: Defines and enforces scopes
+- **Consent Manager**: Tracks user authorizations
+- **Authorization Flow Handler**: Implements OAuth flows
+
+---
+
+### 3.2.3 Guardian Management Component
+
+**Responsibilities:**
+- Manage guardian-minor relationships
+- Enforce parental control permissions
+- Verify age and guardian status
+- Handle guardian actions on behalf of minors
+- Support guardian permission hierarchies
+
+**Key Interfaces:**
+```
+createRelationship(guardianId, minorId, type) -> Relationship
+verifyRelationship(relationshipId, method) -> void
+updatePermissions(relationshipId, permissions) -> Relationship
+getGuardedMinors(guardianId) -> List<User>
+getGuardians(minorId) -> List<Guardian>
+checkPermission(guardianId, minorId, action) -> boolean
+```
+
+**Internal Modules:**
+- **Relationship Repository**: Data access for relationships
+- **Age Verification Service**: Determines minor status
+- **Permission Evaluator**: Checks guardian permissions
+- **Notification Service**: Alerts for guardian actions
+
+---
+
+### 3.2.4 Shared Services
+
+**Authorization Service:**
+- RBAC (Role-Based Access Control)
+- ABAC (Attribute-Based Access Control)
+- RLS integration (Row-Level Security)
+- Unified authorization interface
+
+**Audit Logging Service:**
+- Records all identity operations
+- Immutable audit trail
+- GDPR Article 30 compliance
+- Forensic analysis support
+
+**GDPR Compliance Service:**
+- Data subject rights (Articles 15-22)
+- Data export requests
+- Data erasure workflows
+- Consent management
+- Compliance reporting
+
+---
+
+## 3.3 Architectural Patterns
+
+| Pattern | Usage | Rationale |
+|---------|-------|-----------|
+| **Repository Pattern** | Data access abstraction | Decouples business logic from storage |
+| **Service Layer** | Business logic encapsulation | Centralizes use cases |
+| **Aggregate Pattern** | Domain modeling | Enforces consistency boundaries |
+| **Strategy Pattern** | Profile resolution | Different strategies per context |
+| **Template Method** | Authorization checks | Standardizes auth flow |
+| **Observer Pattern** | Audit logging | Decouples logging from operations |
+| **Decorator Pattern** | Security layers | Adds security checks transparently |
+
+---
+
+## 3.4 Component Interaction Flows
+
+### Flow 1: User Creates Professional Profile
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant API as API Gateway
+    participant PS as Profile Service
+    participant Auth as Authorization
+    participant PR as Profile Repository
+    participant DB as Supabase PostgreSQL
+    participant Audit as Audit Log Service
+    
+    User->>API: POST /profiles (context=professional)
+    API->>Auth: Validate JWT Token
+    Auth-->>API: Token Valid
+    API->>PS: createContextProfile(userId, context, data)
+    PS->>Auth: Check Permissions (can_create_profile)
+    Auth-->>PS: Permission Granted
+    PS->>PR: save(contextProfile)
+    PR->>DB: INSERT INTO context_profiles
+    DB-->>PR: Profile Created
+    PR-->>PS: contextProfile
+    PS->>Audit: log(event: context_profile.created)
+    Audit-->>PS: Logged
+    PS-->>API: Profile Response
+    API-->>User: 201 Created (Profile Data)
+```
+
+### Flow 2: Third-Party OAuth Access
+
+```mermaid
+sequenceDiagram
+    actor ThirdParty as Third-Party App
+    actor User
+    participant OAuth as OAuth Server
+    participant Consent as Consent Screen
+    participant Token as Token Service
+    participant API as API Gateway
+    participant Profile as Profile Service
+    participant Filter as Scope Filter
+    
+    ThirdParty->>OAuth: GET /oauth/authorize (client_id, scopes)
+    OAuth->>User: Show Consent Screen
+    Note over Consent: Requested: profile:read:basic<br/>Context: professional
+    User->>OAuth: Approve Access
+    OAuth->>OAuth: Generate Auth Code
+    OAuth-->>ThirdParty: Redirect with code=auth_xyz
+    
+    ThirdParty->>Token: POST /oauth/token (code, client_secret)
+    Token->>Token: Validate Client Credentials
+    Token->>Token: Verify Auth Code
+    Token->>Token: Issue Access Token
+    Token-->>ThirdParty: access_token + scopes
+    
+    ThirdParty->>API: GET /oauth/profile (Bearer token)
+    API->>Token: Validate Token
+    Token-->>API: Token Valid (scopes, context)
+    API->>Profile: getProfile(userId, context=professional)
+    Profile-->>API: Full Profile Data
+    API->>Filter: Apply Scope Filter (profile:read:basic)
+    Filter-->>API: Filtered Profile
+    API-->>ThirdParty: 200 OK (name, photo only)
+```
+
+### Flow 3: Guardian Updates Minor Profile
+
+```mermaid
+sequenceDiagram
+    actor Guardian
+    participant API as API Gateway
+    participant Auth as Authorization
+    participant GS as Guardian Service
+    participant PS as Profile Service
+    participant PR as Profile Repository
+    participant DB as Supabase PostgreSQL
+    participant History as Version History
+    participant Audit as Audit Log Service
+    participant Notify as Notification Service
+    
+    Guardian->>API: PATCH /users/minor_123/profile
+    API->>Auth: Validate Guardian Token
+    Auth-->>API: Token Valid (guardian_id)
+    API->>GS: checkRelationship(guardian_id, minor_id)
+    GS->>DB: Query guardian_relationships
+    DB-->>GS: Relationship Found
+    GS->>GS: Verify Permission (can_edit_profile=true)
+    GS-->>API: Permission Granted
+    API->>PS: updateProfile(minor_id, updates, actor=guardian_id)
+    PS->>PR: getProfile(minor_id)
+    PR-->>PS: Current Profile (for history)
+    PS->>History: saveVersion(old_profile, actor=guardian)
+    History-->>PS: Version Saved
+    PS->>PR: update(minor_id, new_data)
+    PR->>DB: UPDATE profiles
+    DB-->>PR: Updated
+    PR-->>PS: Updated Profile
+    PS->>Audit: log(guardian_action, actor=guardian_id)
+    Audit-->>PS: Logged
+    PS->>Notify: notifyMinor(profile_updated_by_guardian)
+    Notify-->>PS: Notification Queued
+    PS-->>API: Success Response
+    API-->>Guardian: 200 OK (Updated Profile)
+```
+
+---
+
+## 3.5 Cross-Cutting Concerns
+
+These concerns span all layers:
+
+### Authentication & Authorization
+- JWT token validation
+- OAuth 2.0 flows
+- Role-based checks
+- Scope enforcement
+
+### Audit Logging
+- All operations logged
+- Immutable storage
+- Compliance tracking
+- Security monitoring
+
+### Error Handling
+- Standardized error responses
+- No sensitive data leakage
+- Appropriate status codes
+- Request tracing
+
+### Input Validation
+- Schema validation
+- Type checking
+- Length limits
+- Sanitization
+
+### Rate Limiting
+- Per-endpoint limits
+- Per-user quotas
+- DDoS protection
+- Abuse prevention
+
+### Caching
+- Profile data (5 min TTL)
+- Context resolution (5 min TTL)
+- OAuth clients (1 hour TTL)
+- User roles (10 min TTL)
+
+### Monitoring
+- Request metrics
+- Error rates
+- Performance traces
+- Resource utilization
+
+### API Versioning
+- URI-based (`/api/v1/`)
+- Backward compatibility
+- Deprecation warnings
+- Migration guides
+
+---
+
+## 3.6 Project Structure
+
+```
+backend/
+|-- src/
+|   |-- main.py                    # FastAPI app initialization
+|   |-- core/
+|   |   |-- config.py             # Pydantic settings
+|   |   |-- security.py           # Auth dependencies
+|   |   +-- database.py           # DB connection
+|   |-- api/
+|   |   +-- v1/
+|   |       |-- endpoints/
+|   |       |   |-- auth.py       # Authentication
+|   |       |   |-- profiles.py   # Profile management
+|   |       |   |-- contexts.py   # Context profiles
+|   |       |   |-- oauth.py      # OAuth endpoints
+|   |       |   |-- guardians.py  # Guardian management
+|   |       |   +-- gdpr.py       # GDPR compliance
+|   |       +-- deps.py           # Shared dependencies
+|   |-- models/
+|   |   |-- profile.py            # Domain models
+|   |   |-- context.py
+|   |   |-- oauth.py
+|   |   +-- guardian.py
+|   |-- schemas/
+|   |   |-- profile.py            # Pydantic schemas
+|   |   |-- context.py
+|   |   |-- oauth.py
+|   |   +-- guardian.py
+|   |-- services/
+|   |   |-- profile_service.py    # Business logic
+|   |   |-- context_service.py
+|   |   |-- oauth_service.py
+|   |   |-- guardian_service.py
+|   |   |-- auth_service.py
+|   |   |-- audit_service.py
+|   |   +-- gdpr_service.py
+|   +-- repositories/
+|       |-- profile_repository.py  # Data access
+|       |-- oauth_repository.py
+|       |-- guardian_repository.py
+|       +-- audit_repository.py
+|-- tests/
+|   |-- unit/
+|   |-- integration/
+|   +-- conftest.py
+|-- alembic/                       # Database migrations
+|-- docs/                          # Documentation
+|-- requirements.txt
++-- render.yaml                    # Deployment config
+```

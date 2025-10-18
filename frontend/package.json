@@ -1,0 +1,12 @@
+{
+  "name": "identity-frontend",
+  "version": "0.1.0",
+  "description": "Frontend for Identity Management API",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Frontend not yet implemented'",
+    "build": "echo 'Frontend not yet implemented'",
+    "preview": "echo 'Frontend not yet implemented'"
+  }
+}
+

@@ -1,0 +1,686 @@
+---
+title: "Integration Architecture"
+---
+
+## 6.1 Integration Patterns
+
+```
+External Systems                    Identity API
+-----------------                   ------------
+
+Frontend Apps  ------------------> REST API (JSON)
+(Vue.js)                            |
+                                    |-> OpenAPI documented
+                                    |-> Versioned endpoints
+                                    +-> JSON responses
+
+Third-Party Apps ----------------> OAuth 2.0 Server
+(LinkedIn, etc.)                    |
+                                    |-> Authorization Code flow
+                                    |-> Scope-based access
+                                    +-> Token introspection
+
+Supabase Auth  <-----------------> JWT Validation
+                                    |
+                                    |-> Token verification
+                                    +-> User context extraction
+
+Email Service  <-----------------> Event-Driven (async)
+(SendGrid)                          |
+                                    |-> Verification emails
+                                    |-> Consent notifications
+                                    +-> Guardian alerts
+
+Logging Service <----------------> Streaming (async)
+(CloudWatch)                        |
+                                    |-> Audit logs
+                                    |-> Error logs
+                                    +-> Metrics
+```
+
+---
+
+## 6.2 API Contract Design
+
+### REST API Principles
+
+**1. Resource-Oriented URLs**
+```
+/api/v1/users/{userId}/profile
+/api/v1/users/{userId}/profiles/{contextType}
+/api/v1/oauth/authorize
+/api/v1/guardians/{guardianId}/minors
+```
+
+**2. HTTP Verbs Semantics**
+- `GET`: Read (idempotent)
+- `POST`: Create
+- `PUT`: Full update (idempotent)
+- `PATCH`: Partial update
+- `DELETE`: Soft delete (idempotent)
+
+**3. Status Codes**
+```
+200 OK              - Successful GET/PATCH/PUT
+201 Created         - Successful POST
+204 No Content      - Successful DELETE
+400 Bad Request     - Invalid input
+401 Unauthorized    - Authentication required
+403 Forbidden       - Authorization failed
+404 Not Found       - Resource not found
+429 Too Many        - Rate limit exceeded
+500 Internal Error  - Server failure
+```
+
+**4. Error Response Format**
+```json
+{
+  "error": {
+    "code": "INVALID_PROFILE_DATA",
+    "message": "Display name exceeds maximum length",
+    "details": {
+      "field": "display_name",
+      "constraint": "max_length",
+      "max": 100,
+      "provided": 150
+    },
+    "request_id": "req_abc123"
+  }
+}
+```
+
+**5. Content Negotiation**
+```
+Request:  Accept: application/json
+Request:  Accept-Language: en-US,en;q=0.9,es;q=0.8
+Response: Content-Type: application/json; charset=utf-8
+Response: Content-Language: en
+```
+
+---
+
+## 6.3 API Versioning Strategy
+
+### URI-Based Versioning
+
+```
+/api/v1/*  -----> Current stable version
+/api/v2/*  -----> Next version (if breaking changes)
+```
+
+### Version Support Policy
+- Each major version supported 12+ months after next release
+- Deprecation warnings 6 months before sunset
+- Migration guides for version transitions
+
+### Breaking vs Non-Breaking Changes
+
+**Non-Breaking (same version):**
+- [YES] Adding new endpoints
+- [YES] Adding optional parameters
+- [YES] Adding fields to responses
+- [YES] Adding new HTTP methods
+
+**Breaking (new version):**
+- [NO] Removing fields from responses
+- [NO] Changing field types
+- [NO] Changing authentication methods
+- [NO] Removing endpoints
+
+---
+
+## 6.4 OAuth 2.0 Integration
+
+### Authorization Code Flow
+
+```
+Third-Party App                    Identity API
+---------------                    ------------
+
+1. Redirect user to:
+   /oauth/authorize
+   ?client_id=...
+   &redirect_uri=...
+   &scope=profile:read
+   &state=random123
+
+                                2. User sees consent screen
+                                   Shows: requested scopes,
+                                   client name, data access
+
+3. User approves
+
+                                4. Redirect to third-party:
+                                   redirect_uri
+                                   ?code=auth_code_xyz
+                                   &state=random123
+
+5. Exchange code for token:
+   POST /oauth/token
+   client_id=...
+   client_secret=...
+   code=auth_code_xyz
+
+                                6. Validate client + code
+                                   Issue access token
+
+7. Receive tokens:
+   {
+     "access_token": "...",
+     "token_type": "Bearer",
+     "expires_in": 3600,
+     "scope": "profile:read"
+   }
+
+8. Call API with token:
+   GET /api/v1/oauth/profile
+   Authorization: Bearer ...
+
+                                9. Validate token + scopes
+                                   Filter response by scopes
+
+10. Receive filtered data
+```
+
+### Scope Definitions
+
+| Scope | Access Level | Fields |
+|-------|-------------|--------|
+| `profile:read:basic` | Read | preferred_name, display_name, photo_url |
+| `profile:read:email` | Read | email |
+| `profile:read:phone` | Read | phone |
+| `profile:read:full` | Read | All fields except legal_name |
+| `profile:write` | Write | Update profile fields |
+
+---
+
+## 6.5 Third-Party Integration Points
+
+### OAuth Client Registration
+
+```
+Developer Portal
+   |
+   |-> Register Application
+   |   |-> App name
+   |   |-> Redirect URIs
+   |   |-> Website URL
+   |   +-> Privacy policy URL
+   |
+   |-> Receive Credentials
+   |   |-> client_id
+   |   +-> client_secret
+   |
+   |-> Request Scopes
+   |   +-> System validates permissions
+   |
+   +-> Testing Environment
+       +-> Sandbox with test users
+```
+
+### Webhook Support (Future)
+
+```
+Identity System -----> Third-Party Application
+                       (async notifications)
+
+Events:
+  - profile.updated
+  - profile.deleted
+  - consent.granted
+  - consent.withdrawn
+  - relationship.created
+
+Delivery:
+  - Signed webhooks (HMAC)
+  - Retry with exponential backoff
+  - Delivery status tracking
+```
+
+---
+
+## 6.6 API Documentation
+
+### OpenAPI Specification
+
+```yaml
+openapi: 3.0.0
+info:
+  title: Identity & Profile Management API
+  version: 1.0.0
+  description: Culturally-sensitive identity management system
+
+paths:
+  /api/v1/users/{userId}/profile:
+    get:
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Accept-Language
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+```
+
+### Interactive Documentation
+- Swagger UI at `/docs`
+- ReDoc at `/redoc`
+- Postman collection export
+- Code examples in Python, JavaScript, cURL
+
+---
+
+## 6.7 External Service Integration
+
+### Email Service (SendGrid/Mailgun)
+
+**Use Cases:**
+- Email verification
+- Password reset
+- Guardian verification
+- Consent notifications
+- Data export ready
+
+**Integration Pattern:**
+- Async queue-based
+- Retry with exponential backoff
+- Template management
+- Delivery tracking
+
+### Monitoring Service (CloudWatch/Datadog)
+
+**Metrics Sent:**
+- Request counts
+- Response times
+- Error rates
+- Database query performance
+- Cache hit/miss rates
+
+**Logs Sent:**
+- Application logs
+- Audit logs
+- Error logs
+- Security events
+
+---
+
+## 6.8 API Rate Limiting
+
+```
+Rate Limit Strategy:
+   |
+   |-> Per User (authenticated)
+   |   |-> Token bucket algorithm
+   |   |-> 100 requests/minute (standard)
+   |   +-> 1000 requests/minute (premium)
+   |
+   |-> Per IP (unauthenticated)
+   |   |-> 20 requests/minute
+   |   +-> DDoS protection
+   |
+   +-> Per Endpoint
+       |-> Auth endpoints: 5/min
+       |-> OAuth token: 10/min
+       +-> Admin: 60/min
+
+Response Headers:
+   X-RateLimit-Limit: 100
+   X-RateLimit-Remaining: 75
+   X-RateLimit-Reset: 1634567890
+```
+
+---
+
+## 6.9 Content Negotiation
+
+### Accept-Language Header
+
+```
+Request: Accept-Language: es-ES,es;q=0.9,en;q=0.8
+
+Processing:
+   1. Parse quality values
+   2. Determine preferred language: es
+   3. Resolve profile with Spanish content
+   4. Fallback to English if Spanish unavailable
+
+Response:
+   Content-Language: es
+   {
+     "preferred_name": "Maria Garcia",
+     "bio": "Software Engineer..."
+   }
+```
+
+---
+
+## 6.10 Context-Based API Examples
+
+### Example 1: Retrieve Professional Profile
+
+**Request**:
+```http
+GET /api/v1/users/usr_123456/profiles/professional HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Accept: application/json
+Accept-Language: en-US,en;q=0.9
+User-Agent: MyApp/1.0
+```
+
+**Response** (200 OK):
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Language: en
+Cache-Control: private, max-age=300
+X-Request-ID: req_abc123xyz
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1697472000
+
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "email": "r.johnson@hospital.org",
+  "phone": "+1-555-0123",
+  "bio": "Board-certified cardiovascular surgeon with 15 years experience",
+  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "credentials": ["MD", "FACS"],
+  "website": "https://drjohnson.medical",
+  "context": "professional",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-10-01T14:22:00Z"
+}
+```
+
+---
+
+### Example 2: Retrieve Social Profile
+
+**Request**:
+```http
+GET /api/v1/users/usr_123456/profiles/social HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Accept: application/json
+```
+
+**Response** (200 OK):
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Language: en
+
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Bob",
+  "display_name": "Bob J.",
+  "email": "bob.johnson@email.com",
+  "phone": "+1-555-0123",
+  "bio": "Love hiking, photography, and craft beer 📷🏔️🍺",
+  "photo_url": "https://storage.example.com/users/usr_123456/casual-photo.jpg",
+  "interests": ["hiking", "photography", "craft-beer"],
+  "context": "social",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-09-15T09:10:00Z"
+}
+```
+
+---
+
+### Example 3: Retrieve Profile with Query Parameter
+
+**Request**:
+```http
+GET /api/v1/users/usr_123456/profile?context=family HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Accept: application/json
+```
+
+**Response** (200 OK):
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Rob",
+  "display_name": "Rob",
+  "email": "bob.johnson@email.com",
+  "phone": "+1-555-0199",
+  "bio": "Dad, husband, weekend warrior",
+  "photo_url": "https://storage.example.com/users/usr_123456/family-photo.jpg",
+  "context": "family",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-08-20T16:45:00Z"
+}
+```
+
+---
+
+### Example 4: OAuth Client Requests Profile with Limited Scope
+
+**Third-Party App** (LinkedIn) makes request with OAuth token that has `profile:read:basic` scope:
+
+**Request**:
+```http
+GET /api/v1/oauth/profile HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer oauth_token_xyz789_with_basic_scope
+Accept: application/json
+X-Client-ID: linkedin_client_123
+```
+
+**Response** (200 OK - Filtered by Scope):
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "bio": "Board-certified cardiovascular surgeon with 15 years experience",
+  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "context": "professional",
+  "scope": "profile:read:basic"
+}
+```
+
+**Note**: Email and phone are NOT included because `profile:read:basic` scope doesn't grant access to contact information.
+
+---
+
+### Example 5: OAuth Client with Full Scope Access
+
+**Third-Party App** (Healthcare Platform) with `profile:read:full` scope:
+
+**Request**:
+```http
+GET /api/v1/oauth/profile HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer oauth_token_abc123_with_full_scope
+Accept: application/json
+X-Client-ID: healthplatform_client_456
+```
+
+**Response** (200 OK - More Fields):
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "email": "r.johnson@hospital.org",
+  "email_verified": true,
+  "phone": "+1-555-0123",
+  "phone_verified": true,
+  "bio": "Board-certified cardiovascular surgeon with 15 years experience",
+  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "credentials": ["MD", "FACS"],
+  "website": "https://drjohnson.medical",
+  "professional_title": "Cardiovascular Surgeon",
+  "context": "professional",
+  "scope": "profile:read:full"
+}
+```
+
+**Still Excluded**: `legal_name`, `date_of_birth` (never exposed via OAuth for privacy)
+
+---
+
+### Example 6: Multilingual Profile Request
+
+**Request with Spanish Language Preference**:
+```http
+GET /api/v1/users/usr_789012/profile HTTP/1.1
+Host: api.identity.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Accept: application/json
+Accept-Language: es-ES,es;q=0.9,en;q=0.8
+```
+
+**Response** (200 OK - Spanish Content):
+```json
+{
+  "user_id": "usr_789012",
+  "preferred_name": "María García Rodríguez",
+  "display_name": "María García",
+  "email": "maria@email.com",
+  "bio": "Ingeniera de software especializada en sistemas distribuidos",
+  "photo_url": "https://storage.example.com/users/usr_789012/photo.jpg",
+  "context": "base",
+  "language": "es",
+  "created_at": "2024-03-10T08:15:00Z",
+  "updated_at": "2025-10-05T11:30:00Z"
+}
+```
+
+**Same Request with English Language Preference**:
+```http
+Accept-Language: en-US,en;q=0.9
+```
+
+**Response** (200 OK - English Content):
+```json
+{
+  "user_id": "usr_789012",
+  "preferred_name": "Maria Garcia",
+  "display_name": "Maria Garcia",
+  "email": "maria@email.com",
+  "bio": "Software engineer specializing in distributed systems",
+  "photo_url": "https://storage.example.com/users/usr_789012/photo.jpg",
+  "context": "base",
+  "language": "en",
+  "created_at": "2024-03-10T08:15:00Z",
+  "updated_at": "2025-10-05T11:30:00Z"
+}
+```
+
+---
+
+### Example 7: Error Cases
+
+#### Profile Not Found
+**Request**:
+```http
+GET /api/v1/users/usr_999999/profile HTTP/1.1
+Authorization: Bearer valid_token
+```
+
+**Response** (404 Not Found):
+```json
+{
+  "error": {
+    "code": "PROFILE_NOT_FOUND",
+    "message": "The requested profile does not exist",
+    "details": {
+      "user_id": "usr_999999"
+    },
+    "request_id": "req_xyz789"
+  }
+}
+```
+
+#### Context Not Found (Fallback to Base)
+**Request**:
+```http
+GET /api/v1/users/usr_123456/profiles/nonexistent HTTP/1.1
+Authorization: Bearer valid_token
+```
+
+**Response** (200 OK - Returns Base Profile):
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Bob Johnson",
+  "display_name": "Bob Johnson",
+  "bio": "Surgeon and outdoor enthusiast",
+  "context": "base",
+  "warning": "Requested context 'nonexistent' not found, returning base profile"
+}
+```
+
+#### Insufficient OAuth Scope
+**Request**:
+```http
+GET /api/v1/oauth/profile HTTP/1.1
+Authorization: Bearer token_with_insufficient_scope
+X-Required-Fields: email,phone
+```
+
+**Response** (403 Forbidden):
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_SCOPE",
+    "message": "Token does not have required scopes to access requested fields",
+    "details": {
+      "required_scopes": ["profile:read:email", "profile:read:phone"],
+      "granted_scopes": ["profile:read:basic"],
+      "missing_scopes": ["profile:read:email", "profile:read:phone"]
+    },
+    "request_id": "req_error123"
+  }
+}
+```
+
+#### Rate Limit Exceeded
+**Request**:
+```http
+GET /api/v1/users/usr_123456/profile HTTP/1.1
+Authorization: Bearer valid_token
+```
+
+**Response** (429 Too Many Requests):
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 60
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1697472060
+
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Please retry after 60 seconds",
+    "details": {
+      "limit": 100,
+      "window": "1 minute",
+      "retry_after": 60
+    },
+    "request_id": "req_ratelimit456"
+  }
+}
+```

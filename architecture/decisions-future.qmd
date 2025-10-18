@@ -1,0 +1,585 @@
+---
+title: "Decisions & Future Considerations"
+---
+
+## 8.1 Architectural Decision Records (ADRs)
+
+### ADR-001: FastAPI over Django
+
+**Status**: [ACCEPTED]
+
+**Context**: Need to choose Python web framework for API-first application.
+
+**Decision**: Use FastAPI as the web framework.
+
+**Rationale**:
+- Better async support for I/O-bound operations
+- Automatic OpenAPI documentation generation
+- Type hints for better IDE support and validation
+- Faster performance for API-only applications
+- Modern Python 3.11+ features
+
+**Consequences**:
+- [+] Better performance for API operations
+- [+] Automatic API documentation
+- [+] Strong typing support
+- [-] Less built-in admin interface compared to Django
+- [-] Smaller ecosystem than Django
+
+**Alternatives Considered**:
+- Django REST Framework: More batteries-included but heavier
+- Flask: Lightweight but lacks async and auto-docs
+
+---
+
+### ADR-002: Supabase over Self-Hosted PostgreSQL
+
+**Status**: [ACCEPTED]
+
+**Context**: Need managed database with authentication capabilities.
+
+**Decision**: Use Supabase for database and authentication services.
+
+**Rationale**:
+- Built-in Row-Level Security (critical for this project)
+- Managed authentication reduces development time
+- Automatic backups and replication
+- Simplified operations for academic project timeline
+- Good free tier for initial development
+
+**Consequences**:
+- [+] Faster development (auth built-in)
+- [+] RLS support crucial for security model
+- [+] Reduced operational burden
+- [-] Vendor lock-in
+- [-] Less control over infrastructure
+- [-] Potential migration complexity if needed
+
+**Alternatives Considered**:
+- Self-hosted PostgreSQL: More control but more ops
+- AWS RDS: Good but more complex setup
+- MongoDB: Document model doesn't fit relational needs
+
+---
+
+### ADR-003: Profile Inheritance over Duplication
+
+**Status**: [ACCEPTED]
+
+**Context**: Users need multiple context-specific profiles.
+
+**Decision**: Context profiles inherit from base profile with field overrides.
+
+**Rationale**:
+- Reduces data duplication (DRY principle)
+- Ensures consistency across contexts
+- User updates base profile once, applies everywhere
+- Cleaner data model
+- Easier to maintain data integrity
+
+**Consequences**:
+- [+] Less data duplication
+- [+] Consistent user experience
+- [+] Simpler updates
+- [-] Slightly more complex query logic
+- [-] Need profile resolution layer
+
+**Alternatives Considered**:
+- Full duplication: Simpler queries but data inconsistency
+- Single profile with visibility flags: Doesn't support different names per context
+
+---
+
+### ADR-004: JSONB for Multilingual Content
+
+**Status**: [ACCEPTED]
+
+**Context**: Need to support multiple languages for user-generated content.
+
+**Decision**: Store translations in JSONB columns: `{"en": "John", "es": "Juan"}`.
+
+**Rationale**:
+- Flexible schema for variable number of languages
+- Simpler than separate translation tables
+- PostgreSQL has excellent JSONB support
+- Better query performance than JOINs
+- Easy to add new languages without schema changes
+
+**Consequences**:
+- [+] Flexible language support
+- [+] Simple queries
+- [+] Easy to extend
+- [-] Less type safety than relational
+- [-] Requires application-level validation
+
+**Alternatives Considered**:
+- Separate translation tables: More normalized but complex queries
+- Single language only: Doesn't meet requirements
+- External translation service: Adds complexity and latency
+
+---
+
+### ADR-005: OAuth 2.0 over Custom Authorization
+
+**Status**: [ACCEPTED]
+
+**Context**: Third-party applications need controlled access to user data.
+
+**Decision**: Implement full OAuth 2.0 authorization server.
+
+**Rationale**:
+- Industry standard for third-party access
+- Scope-based access control aligns with requirements
+- Demonstrates understanding of modern auth patterns
+- Better security than custom solutions
+- Ecosystem support (libraries, tools)
+
+**Consequences**:
+- [+] Industry-standard approach
+- [+] Well-understood security model
+- [+] Good for academic evaluation
+- [-] More complex than simple API keys
+- [-] Requires consent management UI
+
+**Alternatives Considered**:
+- API keys: Simpler but less granular control
+- JWT only: Doesn't handle third-party consent
+- Custom protocol: Reinventing the wheel
+
+---
+
+### ADR-006: Soft Deletes over Hard Deletes
+
+**Status**: [ACCEPTED]
+
+**Context**: Need to handle GDPR right to erasure with grace period.
+
+**Decision**: Mark records as deleted (`deleted_at` timestamp) rather than physical removal.
+
+**Rationale**:
+- GDPR right to erasure allows grace period
+- Enables accidental deletion recovery
+- Maintains audit trail integrity
+- Supports data retention policies
+- Common industry practice
+
+**Consequences**:
+- [+] Recovery from accidental deletion
+- [+] Audit trail preserved
+- [+] Grace period for GDPR
+- [-] Requires filtering `deleted_at IS NULL` in queries
+- [-] Eventual hard delete still needed
+
+**Alternatives Considered**:
+- Hard deletes: Simpler but no recovery
+- Archive tables: More complex, duplicate schema
+
+---
+
+### ADR-007: Render.com over AWS
+
+**Status**: [ACCEPTED]
+
+**Context**: Need hosting platform for academic project.
+
+**Decision**: Deploy on Render.com rather than AWS.
+
+**Rationale**:
+- Simpler deployment for academic project
+- Lower cognitive overhead (focus on architecture)
+- Adequate for scale requirements (100K-1M users)
+- Cost-effective for initial deployment
+- Good free tier for development
+- Auto-deploy from Git
+
+**Consequences**:
+- [+] Faster development (less DevOps)
+- [+] Simpler architecture
+- [+] Cost-effective
+- [-] Less flexibility than AWS
+- [-] Potential migration needed at scale
+- [-] Fewer managed services
+
+**Alternatives Considered**:
+- AWS: More powerful but steeper learning curve
+- Heroku: Similar to Render but more expensive
+- DigitalOcean: More control but more ops work
+
+---
+
+### ADR-008: Monolithic API over Microservices
+
+**Status**: [ACCEPTED]
+
+**Context**: Choose between monolithic and microservices architecture.
+
+**Decision**: Single API service, not microservices.
+
+**Rationale**:
+- Appropriate scale for project scope
+- Simpler development and debugging
+- Lower operational complexity
+- Modular code structure allows future extraction
+- Academic project timeline (5 months)
+- Single developer project
+
+**Consequences**:
+- [+] Simpler to develop and deploy
+- [+] Easier debugging
+- [+] Better for solo developer
+- [-] All components share deployment lifecycle
+- [-] Harder to scale specific components independently
+
+**Alternatives Considered**:
+- Microservices: Overkill for this scale and timeline
+- Serverless: Good for scale but complex local development
+
+---
+
+## 8.2 Trade-offs Analysis
+
+### Flexibility vs Complexity
+
+**Decision**: Use JSONB for extensibility
+- **Gained**: Easy to add new fields and languages
+- **Lost**: Some type safety and query optimization
+- **Worth it**: Yes, flexibility more valuable than type safety here
+
+### Security vs Performance
+
+**Decision**: Multiple authorization layers (RBAC + ABAC + RLS + Scopes)
+- **Gained**: Defense in depth, robust security
+- **Lost**: Some query performance (authorization checks)
+- **Worth it**: Yes, security critical for identity system
+
+### Development Speed vs Control
+
+**Decision**: Use Supabase instead of self-hosted
+- **Gained**: Faster development, managed services
+- **Lost**: Some infrastructure control, vendor lock-in
+- **Worth it**: Yes for academic timeline, can migrate later
+
+### Normalization vs Query Performance
+
+**Decision**: Hybrid normalized + JSONB approach
+- **Gained**: Best of both worlds
+- **Lost**: Some simplicity (need to manage both)
+- **Worth it**: Yes, appropriate for use case
+
+---
+
+## 8.3 Future Enhancements (Post-Delivery)
+
+### Phase 2: Enhanced Identity Features
+
+**Biometric Integration**
+- Facial recognition for verification
+- Fingerprint authentication
+- Liveness detection
+
+**Verifiable Credentials (W3C)**
+- Digital diplomas
+- Professional certifications
+- Government-issued credentials
+
+**Blockchain Anchoring**
+- Immutable identity claims
+- Proof of existence
+- Tamper-evident history
+
+**Decentralized Identifiers (DIDs)**
+- Self-sovereign identity
+- User-controlled identifiers
+- Blockchain-based
+
+---
+
+### Phase 3: Advanced Access Control
+
+**Hierarchical Guardians**
+- Guardian of guardian relationships
+- Multi-level approval chains
+- Complex family structures
+
+**Temporary Access Delegation**
+- Time-limited access grants
+- Emergency access (medical)
+- Vacation delegation
+
+**Location-Based Access**
+- Geofencing policies
+- IP-based restrictions
+- Regional compliance rules
+
+**Attribute-Based Policies (ABAC)**
+- Complex boolean logic
+- Dynamic policy evaluation
+- Context-aware permissions
+
+---
+
+### Phase 4: Federation & Enterprise
+
+**SAML 2.0 Support**
+- Enterprise single sign-on
+- Identity provider role
+- Service provider integration
+
+**OpenID Connect Provider**
+- Standard identity federation
+- Third-party authentication
+- Claims mapping
+
+**Cross-Domain Federation**
+- Multiple organization support
+- Identity brokering
+- Trust relationships
+
+---
+
+### Phase 5: Analytics & Insights
+
+**Privacy-Preserving Analytics**
+- Differential privacy
+- Aggregate statistics only
+- No individual tracking
+
+**Identity Usage Dashboard**
+- Context usage patterns
+- OAuth integration health
+- Consent trends
+
+**Compliance Reporting**
+- GDPR compliance metrics
+- Audit trail analysis
+- Risk assessment
+
+---
+
+## 8.4 Scalability Evolution
+
+### Current -> 100K Users
+
+**Changes Needed**: Minimal
+- 2-3 API instances
+- Current database sufficient
+- Basic caching adequate
+
+**Estimated Timeline**: Month 6-7
+
+---
+
+### 100K -> 1M Users
+
+**Changes Needed**: Moderate
+- 5-10 API instances
+- Database read replicas
+- Aggressive caching (CDN)
+- Queue-based processing
+
+**Architecture Updates**:
+```
+Add Read Replicas:
+   Master (write) --+---> Replica 1 (read)
+                    |---> Replica 2 (read)
+                    +---> Replica 3 (read)
+
+Add Queue System:
+   API ---> Queue ---> Workers
+           (RabbitMQ)  (async tasks)
+```
+
+**Estimated Timeline**: Month 12-18
+
+---
+
+### 1M+ Users
+
+**Changes Needed**: Significant
+- Microservices extraction
+- Database sharding
+- Multi-region deployment
+- Event-driven architecture
+
+**Architecture Evolution**:
+```
+Monolith -> Microservices:
+   |-> Identity Service
+   |-> OAuth Service
+   |-> Guardian Service
+   |-> Audit Service
+   +-> API Gateway
+
+Database Sharding:
+   +-> Shard by user_id hash
+       |-> Shard 1 (users 0-999999)
+       |-> Shard 2 (users 1M-1.999M)
+       +-> Shard 3 (users 2M-2.999M)
+```
+
+**Estimated Timeline**: Year 2-3
+
+---
+
+## 8.5 Technical Debt Prevention
+
+### Architectural Hygiene
+
+**Quarterly Reviews**:
+- Architecture review meetings
+- Dependency audit
+- Security vulnerability scan
+- Performance profiling
+
+**Continuous Practices**:
+- Code reviews (100% coverage)
+- Automated testing (>80% coverage)
+- Documentation updates
+- Refactoring sprints
+
+---
+
+### Documentation Maintenance
+
+**Keep Current**:
+- API documentation (auto-generated)
+- Architecture diagrams (with each ADR)
+- Runbooks (operational procedures)
+- Onboarding guide (for new developers)
+
+---
+
+### Testing Evolution
+
+**Test Pyramid**:
+```
+        E2E Tests (10%)
+            |
+       Integration Tests (30%)
+            |
+        Unit Tests (60%)
+```
+
+**Testing Practices**:
+- Maintain >80% code coverage
+- Contract tests for external integrations
+- Property-based testing for complex logic
+- Performance regression tests in CI/CD
+- Security testing (OWASP ZAP)
+
+---
+
+## 8.6 Open Questions
+
+### Questions for Future Resolution
+
+1. **Identity Verification**: Which KYC provider to integrate?
+2. **Regional Compliance**: How to handle country-specific regulations?
+3. **Data Residency**: Multi-region deployment strategy?
+4. **Blockchain Integration**: Worth the complexity?
+5. **Mobile SDK**: Provide SDKs for mobile apps?
+6. **Biometric Storage**: How to securely store biometric templates?
+
+---
+
+## 8.7 Success Metrics
+
+### Short-Term (6 months)
+
+- [GOAL] System deployed and operational
+- [GOAL] >80% test coverage achieved
+- [GOAL] Academic project submitted
+- [GOAL] 100 test users onboarded
+- [GOAL] Zero security incidents
+
+### Medium-Term (12 months)
+
+- [GOAL] 10K active users
+- [GOAL] 5 OAuth integrations
+- [GOAL] 99.9% uptime achieved
+- [GOAL] <200ms p95 response time
+- [GOAL] GDPR audit passed
+
+### Long-Term (24 months)
+
+- [GOAL] 100K active users
+- [GOAL] 50+ OAuth integrations
+- [GOAL] Multi-region deployment
+- [GOAL] Revenue-generating (premium features)
+- [GOAL] Industry recognition
+
+---
+
+## 8.8 Risk Register
+
+| Risk | Probability | Impact | Mitigation |
+|------|------------|--------|------------|
+| Security breach | Low | Critical | Multi-layer security, audits |
+| GDPR non-compliance | Low | High | Legal review, audit logs |
+| Supabase outage | Medium | High | Backups, monitoring, failover plan |
+| Performance issues | Medium | Medium | Load testing, profiling |
+| Scope creep | High | Medium | Strict prioritization, MVP focus |
+| Single developer | High | High | Documentation, modular design |
+
+---
+
+## 8.9 Lessons Learned (To Be Updated)
+
+*This section will be populated during and after implementation.*
+
+### What Went Well
+- TBD
+
+### What Could Be Improved
+- TBD
+
+### Action Items
+- TBD
+
+---
+
+## Appendices
+
+### A. Glossary
+
+| Term | Definition |
+|------|------------|
+| **Aggregate** | Domain objects treated as single unit |
+| **ABAC** | Attribute-Based Access Control |
+| **Deadname** | Former name no longer used (transgender context) |
+| **GDPR** | General Data Protection Regulation (EU) |
+| **JWT** | JSON Web Token |
+| **OAuth 2.0** | Authorization protocol |
+| **RBAC** | Role-Based Access Control |
+| **RLS** | Row-Level Security (PostgreSQL) |
+| **Scope** | OAuth permission defining data access |
+| **Soft Delete** | Mark deleted without physical removal |
+
+---
+
+### B. References
+
+**Standards & Specifications**:
+- W3C Personal Names Around the World
+- Unicode LDML Part 8: Person Names
+- OWASP API Security Top 10 (2023)
+- GDPR Official Text (Regulation EU 2016/679)
+- OAuth 2.0 RFC 6749
+
+**Technical Resources**:
+- PostgreSQL Documentation (Row-Level Security)
+- FastAPI Documentation
+- Supabase Documentation
+- Pydantic Documentation
+
+**Best Practices**:
+- Martin Fowler - Bitemporal History Pattern
+- NIST Privacy Framework
+- ISO/IEC 27001 (Information Security)
+
+
+---
+
+**Document Status**: Living Document  
+**Last Updated**: October 13, 2025  
+**Next Review**: Monthly during development

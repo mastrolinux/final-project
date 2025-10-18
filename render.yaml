@@ -1,0 +1,38 @@
+services:
+  # Backend API Service
+  - type: web
+    name: identity-api-backend
+    env: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://identity-frontend.onrender.com
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Frontend Service (placeholder - uncomment when ready)
+  # - type: web
+  #   name: identity-frontend
+  #   env: node
+  #   plan: free
+  #   region: oregon
+  #   rootDir: frontend
+  #   buildCommand: npm install && npm run build
+  #   startCommand: npm run preview
+  #   envVars:
+  #     - key: VITE_API_URL
+  #       value: https://identity-api-backend.onrender.com
+  #   autoDeploy: true
+

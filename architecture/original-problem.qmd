@@ -1,0 +1,59 @@
+---
+title: "Project Idea: Identity and Profile Management API"
+---
+
+## What problem is this project solving, or what is the project idea?
+
+We have different names, usernames and ways of presenting ourselves in different contexts. Devise a Web API to manage them securely and flexibly.
+
+## What is the background and context to the question or project idea above?
+
+Many people present themselves differently in different contexts. Some have legal names that differ from the names they use in their daily lives, or use middle names or numbers to distinguish similarly-named individuals. In some cultures, their given names may be only used administratively, and in other cases, they may have special names for religious use.
+
+On marriage, people may change their legal names, but not use the new name professionally. Meanwhile, online, we manage many identities, usernames and profiles of ourselves. Which identity we use depends on context, but also on who is asking for the information and why.
+
+You will devise a REST API for reading and writing identities to a server securely and sensitively, so that users requesting information about an individual get the correct preferred name for the context about which they are enquiring. Confidential information should be concealed as necessary, and users should only be able to write data where this is appropriate.
+
+### Recommended Sources
+
+- For context about naming, a reasonable start is the [Wikipedia article on Personal Names](https://en.wikipedia.org/wiki/Personal_name), but better references should be found.
+- For secure account management and REST API creation, course materials should provide a good start.
+- A good understanding of the HTTP protocol will be helpful - e.g. students might use `Accept-language` in content negotiation in this context. An overview is at [MDN Web Docs on Content Negotiation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation).
+
+## What would the final product or final outcome look like?
+
+A requirement specification (based on literature survey and, optionally user consultation) for an identity management system. An implementation that at least covers names and, optionally, adds gender identities, online profile data and other relevant information.
+
+## What would a prototype look like?
+
+A completed API, a backend datastore and a UI. Some form of authentication and user management will be necessary.
+
+## What kinds of techniques/processes/CS fundamentals are relevant to this project?
+
+Web API, Data/web security, data modelling, social computing
+
+## What would the output of these techniques/processes/CS fundamentals look like?
+
+A study of the requirements for such a system and a secure implementation.
+
+## How will this project be evaluated and assessed by the student?
+
+What criteria are important during iteration of the project:
+
+- A good understanding of the user needs
+- A well-thought-through API
+
+## Project Evaluation Criteria
+
+### Minimum Pass (e.g. 3rd) Student Project
+
+To pass, an implementation must be secure and have appropriate user management. It must at least cover names used in different contexts. Several different types of use must be implemented, and the API must have clear logic.
+
+### Good (e.g. 2:2 - 2:1) Student Project
+
+A requirements document with evidence of reading and thinking about the contexts. Strong security and privacy decisions. An API that supports a good variety of use contexts. An example web front end works and is user-friendly and accessible.
+
+### Outstanding (e.g. 1st) Student Project
+
+A strong requirements document that shows research and imagination. Solid security and privacy, possibly with reference to GDPR and optionally using external authentication. The data model goes beyond the simplest use cases. The API is robust and would be widely applicable. A web front end clearly demonstrates multiple use cases for the API.
+

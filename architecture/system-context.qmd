@@ -1,0 +1,320 @@
+---
+title: "System Context & Scope"
+---
+
+## System Context Diagram
+
+```mermaid
+graph TB
+    subgraph External["External Actors"]
+        EndUsers[End Users<br/>Web/Mobile Apps]
+        ThirdParty[Third-Party Apps<br/>LinkedIn, Healthcare]
+        Guardians[Guardian Users<br/>Parents/Legal Guardians]
+    end
+    
+    subgraph System["Identity & Profile Management API (This System)"]
+        APIGateway[API Gateway<br/>REST Endpoints]
+        OAuth[OAuth 2.0 Server<br/>Authorization]
+        Guardian[Guardian Management<br/>Relationships & Permissions]
+    end
+    
+    subgraph Infrastructure["Infrastructure Services"]
+        Supabase[(Supabase<br/>PostgreSQL + Auth)]
+        Email[Email Service<br/>Transactional Emails]
+        Logging[Logging Service<br/>Monitoring & Audit]
+    end
+    
+    EndUsers -->|Manage Profiles| APIGateway
+    ThirdParty -->|OAuth Flow| OAuth
+    Guardians -->|Manage Minors| Guardian
+    
+    APIGateway --> Supabase
+    OAuth --> Supabase
+    Guardian --> Supabase
+    
+    APIGateway --> Email
+    APIGateway --> Logging
+    OAuth --> Logging
+    Guardian --> Logging
+    
+    style External fill:#e3f2fd
+    style System fill:#fff3e0
+    style Infrastructure fill:#f3e5f5
+```
+
+---
+
+## System Boundaries
+
+### In Scope [YES]
+
+**Identity Profile Management:**
+- Base user profiles (CRUD operations)
+- Context-specific profile variants
+- Profile inheritance and resolution
+- Temporal versioning of profile changes
+- Multilingual content support
+
+**Access Control:**
+- Role-based access control (RBAC)
+- Attribute-based access control (ABAC)
+- Row-level security (RLS)
+- Guardian-minor relationships
+- Permission management
+
+**OAuth 2.0 Authorization:**
+- Authorization code flow
+- Token issuance and validation
+- Scope-based access control
+- Client application management
+- Consent management
+
+**GDPR Compliance:**
+- Data export (Right of Access)
+- Data deletion (Right to Erasure)
+- Consent tracking and withdrawal
+- Audit logging
+- Data retention policies
+
+**Guardian Features:**
+- Guardian-minor relationship management
+- Age verification
+- Permission hierarchies
+- Guardian action auditing
+
+### Out of Scope [NO]
+
+**Delegated to External Services:**
+- User authentication credentials storage -> Supabase Auth
+- Password hashing and management -> Supabase Auth
+- Email delivery infrastructure -> Transactional email service
+- SMS delivery -> SMS gateway
+- File storage for photos -> Supabase Storage
+- CDN for static assets -> Hosting provider
+
+**Explicitly Not Included:**
+- Identity verification/KYC services
+- Biometric authentication
+- Federated identity (SAML, cross-org)
+- Social media profile syncing
+- Payment processing
+- Content moderation
+
+---
+
+## Stakeholders
+
+| Stakeholder | Interest | Concerns | Priority |
+|------------|----------|----------|----------|
+| **End Users** | Manage identity securely | Privacy, ease of use, control | High |
+| **Third-Party Apps** | Access user data with consent | API reliability, clear scopes | High |
+| **Guardians** | Manage minor profiles safely | Safety, appropriate controls | High |
+| **System Admins** | Monitor and maintain system | Observability, security | Medium |
+| **Compliance Officers** | Regulatory compliance | GDPR adherence, audit trails | High |
+| **Academic Evaluators** | Assess project quality | Technical depth, best practices | High |
+| **Developers** | Build and maintain system | Code quality, documentation | Medium |
+
+---
+
+## Architectural Principles
+
+### 1. Privacy by Design
+
+**Definition**: Privacy considerations embedded in every design decision from the start, not added as an afterthought.
+
+**Application**:
+- Minimize data collection (only essential fields)
+- Encrypt sensitive data at rest and in transit
+- Implement granular consent mechanisms
+- Provide transparent data usage information
+- Default to most private settings
+
+**Example**: Legal names are encrypted and access-logged, while preferred names are user-controlled visibility.
+
+---
+
+### 2. Security by Default
+
+**Definition**: System denies all access by default; access must be explicitly granted.
+
+**Application**:
+- Zero-trust architecture
+- Multi-layered security (defense in depth)
+- Principle of least privilege
+- Fail securely (deny on error)
+- Comprehensive audit logging
+
+**Example**: Row-Level Security in database prevents unauthorized access even if application code has bugs.
+
+---
+
+### 3. Separation of Concerns
+
+**Definition**: Each component has a single, well-defined responsibility.
+
+**Application**:
+- Authentication != Authorization
+- Business logic != Data access
+- Identity storage != Identity presentation
+- Profile management != OAuth management
+
+**Example**: Profile Service handles business logic; Profile Repository handles database access.
+
+---
+
+### 4. Fail Securely
+
+**Definition**: System failures must not compromise security or expose sensitive data.
+
+**Application**:
+- Authorization failures -> deny access (not grant)
+- Invalid tokens -> reject request (not bypass)
+- Error messages -> generic (no leak)
+- Exceptions -> logged securely (sanitized)
+
+**Example**: Database connection failure during authorization check results in access denial, not grant.
+
+---
+
+### 5. Explicit Over Implicit
+
+**Definition**: Make security and privacy decisions explicit and visible.
+
+**Application**:
+- Require explicit user consent (no pre-checked boxes)
+- Make security boundaries clear in architecture
+- Document all assumptions
+- Explicit permission checks in code
+
+**Example**: OAuth consent screen explicitly lists requested scopes and data fields.
+
+---
+
+### 6. Cultural Neutrality
+
+**Definition**: No assumptions about name structure, gender, or identity presentation.
+
+**Application**:
+- Avoid "first name/last name" fields
+- Support mononyms (single names)
+- Handle patronymics and matronymics
+- Respect chosen names over legal names
+- Support multiple writing systems
+
+**Example**: Base profile stores identity components flexibly; context profiles allow cultural-specific presentations.
+
+---
+
+### 7. Immutable Audit Trail
+
+**Definition**: All identity-related operations are logged permanently and cannot be altered.
+
+**Application**:
+- Write-once audit log storage
+- Tamper-evident logs
+- Complete who/what/when/where/why tracking
+- Separate audit database
+- Long-term retention (7 years)
+
+**Example**: Profile name change logs old value, new value, who changed it, when, and from what IP address.
+
+---
+
+### 8. API-First Design
+
+**Definition**: All functionality exposed through well-defined, documented APIs.
+
+**Application**:
+- OpenAPI specifications for all endpoints
+- Versioned APIs for backward compatibility
+- Consumer-driven contract testing
+- API documentation as code
+- REST principles consistently applied
+
+**Example**: Every feature implemented as API endpoint before UI; UI is just another API consumer.
+
+---
+
+## Constraints
+
+### Technical Constraints
+
+| Constraint | Description | Impact |
+|-----------|-------------|--------|
+| **PostgreSQL as primary database** | Architecture decision for ACID + RLS | All data modeling must fit relational model |
+| **Python 3.11+ required** | For modern type hints and async support | Cannot use older Python versions |
+| **Supabase platform** | Managed PostgreSQL + Auth | Limited to Supabase capabilities and regions |
+| **Render.com hosting** | Academic project simplicity | Limited infrastructure customization |
+| **5-month timeline** | Academic project deadline | Must prioritize features for MVP |
+
+### Business Constraints
+
+| Constraint | Description | Impact |
+|-----------|-------------|--------|
+| **GDPR compliance mandatory** | European privacy law | Data handling must meet GDPR requirements |
+| **Academic evaluation criteria** | Grading rubric | Must demonstrate specific technical competencies |
+| **Zero budget** | Student project | Free-tier services only initially |
+| **Solo developer** | Single person project | Architecture must be manageable alone |
+
+### Regulatory Constraints
+
+| Constraint | Description | Impact |
+|-----------|-------------|--------|
+| **GDPR (EU)** | Data protection regulation | Data subject rights implementation required |
+| **Minor protection laws** | Guardian consent for under-18 | Age verification and parental controls needed |
+| **Data residency requirements** | GDPR requires EU data storage | Database region selection critical |
+
+---
+
+## Assumptions
+
+### Technical Assumptions
+
+1. **Supabase provides stable platform**: Assuming 99.9% uptime from managed service
+2. **PostgreSQL can scale to target load**: 1M users is within PostgreSQL capabilities
+3. **Third-party services remain available**: Email, monitoring services stay operational
+4. **TLS is sufficient for transport security**: No additional encryption layer needed
+5. **JSON is acceptable for API responses**: No binary protocols required
+
+### Business Assumptions
+
+1. **Users have internet access**: System requires connectivity
+2. **Users understand English or Spanish**: Initial language support
+3. **Users have email addresses**: Required for account creation
+4. **Minor users have guardian oversight**: Legal requirement assumption
+5. **Third-party apps will integrate via OAuth**: No proprietary protocols
+
+### User Assumptions
+
+1. **Users want privacy control**: Privacy features will be used
+2. **Users manage multiple contexts**: Context profiles will be valuable
+3. **Users trust the platform**: Will provide accurate information
+4. **Guardians act in minor's interest**: No abuse of guardian permissions
+5. **Users can navigate web interfaces**: Basic digital literacy
+
+---
+
+## Dependencies
+
+### External Service Dependencies
+
+| Service | Purpose | Criticality | Fallback |
+|---------|---------|------------|----------|
+| **Supabase Auth** | User authentication | Critical | None (system unavailable) |
+| **Supabase Database** | Data persistence | Critical | None (system unavailable) |
+| **Email Service** | Transactional emails | High | Queue for retry |
+| **Supabase Storage** | File storage | Medium | Graceful degradation |
+| **Logging Service** | Monitoring | Medium | Local logs |
+
+### Library Dependencies
+
+| Library | Purpose | Version | License |
+|---------|---------|---------|---------|
+| **FastAPI** | Web framework | 0.104+ | MIT |
+| **Supabase-py** | Supabase client | Latest | MIT |
+| **Pydantic** | Data validation | 2.0+ | MIT |
+| **SQLAlchemy** | ORM (optional) | 2.0+ | MIT |
+| **Alembic** | Database migrations | Latest | MIT |
+| **pytest** | Testing framework | Latest | MIT |
+| **python-jose** | JWT handling | Latest | MIT |
+

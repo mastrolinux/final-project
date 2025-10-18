@@ -1,0 +1,78 @@
+---
+title: "Preface"
+---
+
+# About This Thesis
+
+This thesis presents the design and implementation of an Identity and Profile Management API system - a comprehensive solution designed to handle the complexity of modern digital identity across cultural, contextual, and regulatory boundaries.
+
+## Thesis Overview
+
+**Version:** 1.0  
+**Date:** October 2025  
+**Status:** Design Phase
+
+The system addresses a fundamental challenge in digital identity management: people present themselves differently in different contexts. From legal names that differ from daily-use names, to professional versus social identities, to multilingual name representations, this work explores how to build a secure, flexible, and culturally-sensitive identity management platform.
+
+## Document Organization
+
+This thesis is organized into focused sections for clarity and ease of navigation:
+
+### System Architecture
+
+The core of this work presents a comprehensive architectural design for an identity management system that:
+
+- **Respects Cultural Diversity**: No assumptions about Western naming conventions or single-identity models
+- **Prioritizes Privacy**: GDPR-compliant privacy-by-design architecture with comprehensive audit trails
+- **Enables Context-Awareness**: Different identity presentations for professional, social, family, and other contexts
+- **Supports Guardianship**: Complete framework for parents managing minor profiles with graduated autonomy
+- **Integrates via Standards**: OAuth 2.0 authorization server for controlled third-party access
+
+## Key Contributions
+
+This work makes several significant contributions to the field of digital identity management:
+
+1. **Context-Dependent Identity Model**: A novel approach to managing multiple identity presentations with inheritance and override mechanisms
+2. **Culturally-Neutral Design**: A data model that respects diverse naming conventions and identity expressions globally
+3. **Privacy-First Architecture**: Multi-layer security with defense-in-depth principles and GDPR Article 15-22 compliance
+4. **Guardian Management Framework**: Comprehensive system for managing minor identities with age-appropriate graduated autonomy
+
+## Quick Navigation
+
+Different audiences may find different sections most relevant:
+
+**For Evaluators**: Start with the original problem statement, then review the overview and architectural decisions.
+
+**For Developers**: Focus on the component architecture, data architecture, and integration patterns.
+
+**For Security Reviewers**: Review the security architecture section for comprehensive security design and controls.
+
+**For Operations Teams**: See the deployment and operations section for infrastructure and operational procedures.
+
+## Academic Context
+
+This work is submitted as a final project for CM3070 Computer Science Final Project. The project demonstrates:
+
+- Strong requirements based on research and imagination
+- Solid security and privacy design with GDPR reference
+- Data model that goes beyond simplest use cases
+- Robust, widely applicable API design
+- Comprehensive architectural documentation
+
+## Related Materials
+
+Additional documentation and resources:
+
+- **Source Code**: Available in the project repository
+- **API Documentation**: OpenAPI/Swagger specifications (auto-generated)
+- **Development Guide**: Setup and contribution guidelines
+- **Deployment Configuration**: Infrastructure as code
+
+## Acknowledgments
+
+*To be completed*
+
+---
+
+**Last Updated:** October 18, 2025
+

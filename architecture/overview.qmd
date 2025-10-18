@@ -1,0 +1,530 @@
+---
+title: "Overview & Vision"
+---
+
+## Executive Summary
+
+### Purpose
+
+This document describes the backend architecture for an Identity and Profile Management API system designed to handle the complexity of modern digital identity across cultural, contextual, and regulatory boundaries.
+
+### Key Architectural Characteristics
+
+The system prioritizes:
+- **Flexibility**: Support diverse naming conventions and identity expressions globally
+- **Security**: Multi-layered security with defense-in-depth principles
+- **Privacy**: GDPR-compliant privacy-by-design architecture
+- **Context-awareness**: Different identity presentations for different contexts
+- **Extensibility**: Ability to add new identity attributes and contexts
+- **Auditability**: Complete tracking of all identity-related operations
+
+### Core Differentiators
+
+Unlike traditional identity systems that assume Western naming conventions and single-identity models, this architecture:
+- Treats identity as **multifaceted and context-dependent**
+- Separates **legal identity from preferred identity**
+- Supports **guardian-managed identities** for minors
+- Enables **third-party selective disclosure** through OAuth scopes
+- Implements **temporal versioning** for identity evolution
+- Provides **multilingual identity representation**
+
+---
+
+## Architectural Vision
+
+### Vision Statement
+
+Create a culturally-sensitive, privacy-respecting identity management platform that recognizes the complexity of human identity while providing secure, controlled access to third-party applications through standardized protocols.
+
+### Guiding Principles
+
+1. **Privacy by Design**: User privacy is not negotiable
+2. **Cultural Neutrality**: No assumptions about naming or identity structure
+3. **Security by Default**: Deny-all approach with explicit grants
+4. **Transparency**: Users understand and control their data
+5. **Standards-Based**: Use proven protocols (OAuth 2.0, GDPR)
+
+---
+
+## Business Goals
+
+1. Enable users to manage multiple identity presentations across different life contexts
+2. Provide third-party applications controlled access to identity information
+3. Support global users with diverse cultural naming practices
+4. Comply with international privacy regulations (GDPR, CCPA, etc.)
+5. Demonstrate academic excellence in system design and implementation
+
+---
+
+## Technical Goals
+
+| Goal | Target | Measurement |
+|------|--------|-------------|
+| **Availability** | 99.9% uptime | Uptime monitoring |
+| **Performance** | <200ms p95 response time | APM tools |
+| **Security** | Zero breaches | Security audits |
+| **Scalability** | 100K -> 1M users | Load testing |
+| **Maintainability** | Modular architecture | Code metrics |
+| **Testability** | >80% code coverage | Test reports |
+
+---
+
+## Non-Goals
+
+This system explicitly does NOT aim to:
+- [NO] Provide identity verification services (rely on external KYC providers)
+- [NO] Implement federated identity across organizations (use OAuth for delegation)
+- [NO] Support blockchain-based decentralized identity (out of scope)
+- [NO] Manage authentication credentials for third-party services
+- [NO] Build a consumer-facing frontend (API-first design)
+
+---
+
+## Success Criteria
+
+### Academic Excellence (Project Evaluation)
+
+**Outstanding Grade Requirements:**
+1. [YES] Strong requirements document with research and imagination
+2. [YES] Solid security and privacy with GDPR reference
+3. [YES] Data model beyond simplest use cases
+4. [YES] Robust, widely applicable API
+5. [YES] Frontend demonstrating multiple use cases
+
+### Technical Excellence
+
+**System must demonstrate:**
+- Clean architecture with clear separation of concerns
+- Comprehensive security controls at multiple layers
+- Thoughtful handling of cultural diversity in identity
+- Well-documented API with OpenAPI specification
+- Extensive test coverage with integration tests
+- Production-ready deployment configuration
+
+### User Experience Excellence
+
+**System must provide:**
+- Intuitive profile management
+- Clear consent mechanisms
+- Transparent data usage
+- Easy guardian-minor management
+- Accessible interface (WCAG 2.1 AA)
+
+---
+
+## System Capabilities
+
+### Core Capabilities
+
+```
+User Management
+|-- Create and manage base profile
+|-- Update profile information
+|-- Delete account (with GDPR compliance)
++-- Export personal data
+
+Multi-Context Identity
+|-- Create context-specific profiles
+|-- Override fields per context
+|-- Inherit from base profile
++-- Control visibility per context
+
+Multilingual Support
+|-- Store names in multiple languages
+|-- Resolve based on Accept-Language header
+|-- Fallback to preferred language
++-- Support multiple writing systems
+
+Guardian Management
+|-- Establish guardian-minor relationships
+|-- Verify relationships
+|-- Manage permissions (view, edit, delete)
++-- Audit guardian actions
+
+Third-Party Integration
+|-- OAuth 2.0 authorization server
+|-- Scope-based access control
+|-- Consent management
++-- Token lifecycle management
+
+Privacy & Compliance
+|-- GDPR data subject rights
+|-- Consent tracking
+|-- Audit logging
++-- Data retention policies
+```
+
+---
+
+## Key Metrics
+
+### System Health Metrics
+
+| Metric | Target | Critical Threshold |
+|--------|--------|-------------------|
+| API Availability | 99.9% | <99.0% |
+| Response Time (p95) | <200ms | >500ms |
+| Error Rate | <0.1% | >1.0% |
+| Database Query Time (p95) | <50ms | >200ms |
+
+### Business Metrics
+
+| Metric | Purpose |
+|--------|---------|
+| Active Users | Growth tracking |
+| OAuth Integrations | Ecosystem health |
+| Profile Completeness | User engagement |
+| Guardian Relationships | Minor safety |
+| Data Export Requests | GDPR compliance |
+| Consent Withdrawals | User trust |
+
+---
+
+## Technology Stack
+
+### Backend Core
+- **Language**: Python 3.11+
+- **Framework**: FastAPI
+- **Database**: PostgreSQL 15+ (via Supabase)
+- **Cache**: Redis
+- **Authentication**: Supabase Auth + JWT
+
+### Infrastructure
+- **Hosting**: Render.com
+- **Database**: Supabase (managed PostgreSQL)
+- **Storage**: Supabase Storage (S3-compatible)
+- **Monitoring**: Application-level logging + metrics
+- **CI/CD**: GitHub Actions
+
+### Development Tools
+- **Testing**: pytest, pytest-cov
+- **Type Checking**: mypy
+- **Linting**: ruff, black
+- **API Docs**: OpenAPI/Swagger (auto-generated)
+- **Database Migrations**: Alembic
+
+---
+
+## Real-World Use Cases
+
+### Use Case 1: Professional vs Social Identity Presentation
+
+**Scenario**: Dr. Sarah Chen is a psychiatrist who maintains strict boundaries between her professional and personal life for patient privacy and safety reasons.
+
+**Professional Context**:
+- Display Name: "Dr. Sarah Chen, MD, PhD"
+- Email: s.chen@mentalhealth.org
+- Bio: Board-certified psychiatrist specializing in anxiety disorders
+- Photo: Professional headshot in business attire
+- Credentials: ["MD", "PhD", "Board Certified Psychiatry"]
+
+**Social Context**:
+- Display Name: "Sarah C."
+- Email: sarah.personal@email.com
+- Bio: Book lover, yoga enthusiast, amateur photographer
+- Photo: Casual photo from vacation
+- No professional credentials shown
+
+**API Behavior**:
+- LinkedIn (using professional context): Shows full credentials and professional bio
+- Fitness app (using social context): Shows casual name and personal interests only
+- Healthcare platform: Can access professional context with explicit consent
+- Social media: Only sees social context with limited information
+
+**Security Benefit**: Even if one context is compromised, the other remains protected. Third parties cannot cross-reference contexts without explicit user permission.
+
+---
+
+### Use Case 2: Multilingual Name Handling
+
+**Scenario**: 李明 (Lǐ Míng) is a Chinese software engineer working internationally, with different name presentations depending on cultural context.
+
+**Base Profile - Multiple Languages**:
+```json
+{
+  "names": {
+    "family": {
+      "zh": "李",
+      "zh-pinyin": "Lǐ",
+      "en": "Li"
+    },
+    "given": {
+      "zh": "明",
+      "zh-pinyin": "Míng",
+      "en": "Ming"
+    },
+    "western_order": {
+      "en": "Ming Li"
+    }
+  },
+  "preferred_language": "zh"
+}
+```
+
+**API Behavior by Language**:
+
+When **Chinese colleagues** access profile:
+```http
+Accept-Language: zh-CN
+```
+**Returns**: 李明 (Chinese characters in family-given order)
+
+When **Western colleagues** access profile:
+```http
+Accept-Language: en-US
+```
+**Returns**: Ming Li (romanized in given-family order)
+
+When **international platform** accesses:
+```http
+Accept-Language: en-US,zh;q=0.9
+```
+**Returns**: Ming Li (李明) - Both representations with English primary
+
+**Cultural Sensitivity**: System respects:
+- Character vs. romanization preferences
+- Name order conventions (family-given vs. given-family)
+- Context-appropriate presentations
+- User's preferred default language
+
+---
+
+### Use Case 3: Guardian Managing Minor Profile
+
+**Scenario**: Jessica Williams is the mother of 13-year-old Emma. Jessica manages Emma's digital identity while teaching her about online safety.
+
+**Guardian Permissions**:
+```json
+{
+  "relationship_type": "parent",
+  "permissions": {
+    "can_view_profile": true,
+    "can_edit_profile": true,
+    "can_create_contexts": true,
+    "can_manage_oauth": true,
+    "can_view_audit_log": true,
+    "can_delete_profile": false
+  },
+  "verified": true,
+  "verification_method": "document_verification"
+}
+```
+
+**Use Case Flow**:
+
+1. **School Registration**: Jessica creates a "school" context for Emma
+   - Display Name: "Emma Williams"
+   - Emergency Contact: Jessica's phone
+   - Visibility: Restricted to school platform only
+   - Limited information shared
+
+2. **Social Media Request**: Teen social app requests OAuth access
+   - Jessica receives notification
+   - Reviews requested scopes: profile:read:basic, profile:read:email
+   - Sees exactly what data will be shared
+   - Can approve or deny on Emma's behalf
+   - Action logged in audit trail
+
+3. **Audit Trail**: Emma (and Jessica) can view:
+   ```json
+   {
+     "event": "context_profile.created",
+     "actor": "guardian:jessica_williams",
+     "target": "minor:emma_williams",
+     "timestamp": "2025-10-16T14:30:00Z",
+     "context": "school",
+     "changes": {"display_name": "Emma Williams"}
+   }
+   ```
+
+4. **Graduated Autonomy**: When Emma turns 16:
+   - Notification sent to both guardian and minor
+   - Permissions automatically adjusted
+   - Emma gains view access to all contexts
+   - Emma can request permission to manage own contexts
+   - Full transition at age 18 (automatic)
+
+**Safety Features**:
+- All guardian actions are logged and visible
+- Minor receives age-appropriate notifications
+- Graduated permissions as minor matures
+- Cannot delete profile (prevents abuse)
+- Two-factor verification for sensitive changes
+
+---
+
+### Use Case 4: Third-Party OAuth App Requesting Profile with Scopes
+
+**Scenario**: HealthTrack, a healthcare coordination platform, wants to integrate with the identity system to streamline patient onboarding.
+
+**OAuth Client Registration**:
+```json
+{
+  "client_name": "HealthTrack Platform",
+  "client_id": "healthtrack_prod_001",
+  "redirect_uris": ["https://healthtrack.com/oauth/callback"],
+  "allowed_scopes": [
+    "profile:read:basic",
+    "profile:read:email",
+    "profile:read:phone",
+    "profile:read:full"
+  ],
+  "default_context_type": "healthcare",
+  "privacy_policy": "https://healthtrack.com/privacy"
+}
+```
+
+**User Flow**:
+
+1. **User Visits HealthTrack**: Robert clicks "Sign in with Identity API"
+
+2. **OAuth Authorization**:
+   ```http
+   GET /oauth/authorize?
+     client_id=healthtrack_prod_001&
+     scope=profile:read:full profile:read:email profile:read:phone&
+     redirect_uri=https://healthtrack.com/oauth/callback&
+     state=secure_random_string
+   ```
+
+3. **Consent Screen Shows**:
+   ```
+   HealthTrack wants to access your profile
+   
+   Requested Information:
+   ✓ Your name and photo
+   ✓ Your email address (r.johnson@hospital.org)
+   ✓ Your phone number
+   ✓ Your professional credentials
+   
+   Will NOT receive:
+   ✗ Your legal name
+   ✗ Your date of birth
+   ✗ Your home address
+   
+   Context: Professional profile will be shared
+   
+   [Approve]  [Deny]  [Customize]
+   ```
+
+4. **User Approves**: System generates authorization code
+
+5. **Token Exchange**:
+   ```json
+   {
+     "access_token": "eyJhbGc...",
+     "token_type": "Bearer",
+     "expires_in": 3600,
+     "scope": "profile:read:full profile:read:email profile:read:phone",
+     "context": "professional"
+   }
+   ```
+
+6. **HealthTrack Requests Profile**:
+   ```http
+   GET /api/v1/oauth/profile
+   Authorization: Bearer eyJhbGc...
+   ```
+
+7. **Filtered Response** (based on scopes):
+   ```json
+   {
+     "user_id": "usr_123456",
+     "display_name": "Dr. Robert J. Johnson, MD",
+     "preferred_name": "Dr. Johnson",
+     "email": "r.johnson@hospital.org",
+     "email_verified": true,
+     "phone": "+1-555-0123",
+     "phone_verified": true,
+     "bio": "Board-certified cardiovascular surgeon",
+     "credentials": ["MD", "FACS"],
+     "photo_url": "https://storage/professional.jpg",
+     "context": "professional"
+   }
+   ```
+
+**Privacy Features**:
+- Explicit scope-based permissions
+- Visual consent screen with clear data list
+- Context-specific data sharing
+- Sensitive fields (legal_name, DOB) never shared via OAuth
+- User can revoke access anytime
+- Audit log of all third-party access
+
+**User Can Later**:
+- View all apps with access: `/settings/connected-apps`
+- Revoke individual app access
+- See last access timestamp
+- Review what data was shared
+- Download audit log of third-party access
+
+---
+
+### Use Case 5: Career Transition - Name and Context Evolution
+
+**Scenario**: Alex Taylor transitions from academia to industry, requiring a new professional context while preserving academic history.
+
+**Academic Context** (legacy, maintained):
+- Display Name: "Alex Taylor, PhD"
+- Email: a.taylor@university.edu
+- Affiliation: "Associate Professor of Computer Science"
+- Publications: [list of academic papers]
+- Context: "academic"
+
+**Industry Context** (new, active):
+- Display Name: "Alex Taylor"
+- Email: alex@techstartup.com
+- Title: "Chief Technology Officer"
+- Company: "InnovateTech Inc"
+- Context: "professional"
+
+**Timeline with Versioning**:
+```json
+{
+  "2018-2024": {
+    "primary_context": "academic",
+    "title": "Associate Professor"
+  },
+  "2024-present": {
+    "primary_context": "professional",
+    "title": "Chief Technology Officer",
+    "legacy_contexts": ["academic"]
+  }
+}
+```
+
+**Behavior**:
+- Google Scholar (academic OAuth): Still shows academic context with publications
+- LinkedIn (professional OAuth): Shows current CTO role
+- Conference invitations: Can choose to present academic credentials
+- Professional network: Shows industry role
+- Historical records: Academic context remains queryable with timestamps
+
+**Version History Example**:
+```json
+{
+  "version": 5,
+  "timestamp": "2024-09-01T00:00:00Z",
+  "changes": {
+    "primary_context": {
+      "from": "academic",
+      "to": "professional"
+    },
+    "professional_context": {
+      "added": {
+        "title": "Chief Technology Officer",
+        "company": "InnovateTech Inc"
+      }
+    }
+  },
+  "reason": "Career transition to industry"
+}
+```
+
+**Benefits**:
+- Maintains professional history
+- Allows context-appropriate presentations
+- Temporal queries supported
+- No data loss during transitions
+- Flexible identity evolution
+

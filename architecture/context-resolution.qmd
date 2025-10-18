@@ -1,0 +1,635 @@
+---
+title: "Context Resolution"
+---
+
+## 3a.1 Overview
+
+Context resolution is the core mechanism by which the Identity API returns different identity presentations based on the requesting context. This allows users to present themselves differently in professional, social, family, and other contexts while maintaining a single source of truth.
+
+### Key Principles
+
+1. **Inheritance**: Context profiles inherit from the base profile
+2. **Override**: Context-specific fields override base profile values
+3. **Scope Filtering**: OAuth scopes determine which fields are returned
+4. **Language Negotiation**: Accept-Language header selects appropriate translations
+5. **Default Fallback**: Missing context returns base profile
+
+---
+
+## 3a.2 Context Resolution Algorithm
+
+```mermaid
+flowchart TD
+    Start([API Request]) --> Auth{Authenticated?}
+    Auth -->|No| Reject[Return 401 Unauthorized]
+    Auth -->|Yes| ExtractContext[Extract Context Parameter]
+    
+    ExtractContext --> ContextExists{Context<br/>Specified?}
+    ContextExists -->|No| UseBase[Use Base Profile]
+    ContextExists -->|Yes| LookupContext[Lookup Context Profile]
+    
+    LookupContext --> ContextFound{Context<br/>Profile Exists?}
+    ContextFound -->|No| UseBase
+    ContextFound -->|Yes| MergeProfiles[Merge Base + Context Overrides]
+    
+    UseBase --> CheckScopes
+    MergeProfiles --> CheckScopes[Apply OAuth Scopes]
+    
+    CheckScopes --> FilterFields[Filter Allowed Fields]
+    FilterFields --> CheckLanguage[Check Accept-Language Header]
+    
+    CheckLanguage --> ResolveTranslations[Resolve Translations]
+    ResolveTranslations --> BuildResponse[Build Response]
+    
+    BuildResponse --> AuditLog[Log Access]
+    AuditLog --> Return([Return Profile])
+    
+    style Start fill:#e1f5ff
+    style Return fill:#d4f1d4
+    style Reject fill:#ffcccb
+    style MergeProfiles fill:#fff4cc
+    style CheckScopes fill:#fff4cc
+```
+
+---
+
+## 3a.3 Real-World Use Case Examples
+
+### Example 1: Professional vs Social Identity
+
+**Scenario**: Robert Johnson is a surgeon who maintains separate professional and social identities.
+
+#### Base Profile
+```json
+{
+  "user_id": "usr_123456",
+  "legal_name": "Robert Alexander Johnson",
+  "preferred_name": "Bob Johnson",
+  "email": "bob.johnson@email.com",
+  "phone": "+1-555-0123",
+  "preferred_language": "en",
+  "bio": "Surgeon and outdoor enthusiast"
+}
+```
+
+#### Professional Context Profile (Override)
+```json
+{
+  "context_type": "professional",
+  "overrides": {
+    "display_name": "Dr. Robert J. Johnson, MD",
+    "preferred_name": "Dr. Johnson",
+    "email": "r.johnson@hospital.org",
+    "bio": "Board-certified cardiovascular surgeon with 15 years experience",
+    "credentials": ["MD", "FACS"],
+    "photo_url": "https://storage/professional-headshot.jpg"
+  }
+}
+```
+
+#### Social Context Profile (Override)
+```json
+{
+  "context_type": "social",
+  "overrides": {
+    "display_name": "Bob J.",
+    "preferred_name": "Bob",
+    "bio": "Love hiking, photography, and craft beer",
+    "photo_url": "https://storage/casual-photo.jpg"
+  }
+}
+```
+
+#### Family Context Profile (Override)
+```json
+{
+  "context_type": "family",
+  "overrides": {
+    "display_name": "Rob",
+    "preferred_name": "Rob",
+    "phone": "+1-555-0199",
+    "bio": "Dad, husband, weekend warrior"
+  }
+}
+```
+
+---
+
+### Example 2: Multilingual Identity
+
+**Scenario**: Maria Garcia presents her name differently in English and Spanish contexts.
+
+#### Base Profile (with multilingual names)
+```json
+{
+  "user_id": "usr_789012",
+  "names": {
+    "given": {
+      "en": "Maria",
+      "es": "María"
+    },
+    "family": {
+      "en": "Garcia",
+      "es": "García Rodríguez"
+    }
+  },
+  "preferred_language": "es",
+  "email": "maria@email.com"
+}
+```
+
+#### Request with Accept-Language: en-US
+```http
+GET /api/v1/users/usr_789012/profile
+Accept-Language: en-US,en;q=0.9
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "user_id": "usr_789012",
+  "preferred_name": "Maria Garcia",
+  "email": "maria@email.com",
+  "language": "en"
+}
+```
+
+#### Request with Accept-Language: es-ES
+```http
+GET /api/v1/users/usr_789012/profile
+Accept-Language: es-ES,es;q=0.9,en;q=0.8
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "user_id": "usr_789012",
+  "preferred_name": "María García Rodríguez",
+  "email": "maria@email.com",
+  "language": "es"
+}
+```
+
+---
+
+### Example 3: Guardian Managing Minor Profile
+
+**Scenario**: Sarah (guardian) manages her 12-year-old son Tommy's profile.
+
+#### Minor's Base Profile
+```json
+{
+  "user_id": "usr_minor_456",
+  "preferred_name": "Tommy Williams",
+  "date_of_birth": "2012-06-15",
+  "is_minor": true,
+  "email": "tommy@email.com",
+  "guardian_managed": true
+}
+```
+
+#### Guardian Relationship
+```json
+{
+  "guardian_user_id": "usr_guardian_789",
+  "minor_user_id": "usr_minor_456",
+  "relationship_type": "parent",
+  "permissions": {
+    "can_view_profile": true,
+    "can_edit_profile": true,
+    "can_manage_contexts": true,
+    "can_view_audit_log": true,
+    "can_delete_profile": false
+  },
+  "verified": true
+}
+```
+
+#### Guardian Creates School Context
+```http
+POST /api/v1/users/usr_minor_456/profiles
+Authorization: Bearer <guardian_token>
+Content-Type: application/json
+
+{
+  "context_type": "school",
+  "overrides": {
+    "display_name": "Thomas Williams",
+    "preferred_name": "Tommy",
+    "emergency_contact": "Sarah Williams (Mother): +1-555-0188",
+    "visibility": "restricted"
+  }
+}
+```
+
+**Audit Log Entry**:
+```json
+{
+  "event_type": "context_profile.created",
+  "user_id": "usr_minor_456",
+  "actor_id": "usr_guardian_789",
+  "actor_role": "guardian",
+  "timestamp": "2025-10-16T10:30:00Z",
+  "changes": {
+    "context_type": "school",
+    "overrides": {"display_name": "Thomas Williams"}
+  }
+}
+```
+
+---
+
+### Example 4: Third-Party OAuth Integration
+
+**Scenario**: LinkedIn requests user profile data with limited scope.
+
+#### OAuth Authorization Request
+```http
+GET /oauth/authorize?
+  client_id=linkedin_client_123&
+  redirect_uri=https://linkedin.com/callback&
+  scope=profile:read:basic&
+  state=random_state_string
+```
+
+#### User Consent Screen Shows:
+- **App Name**: LinkedIn
+- **Requested Data**: Basic profile information (name, photo)
+- **Not Included**: Email, phone, legal name, date of birth
+- **Context**: Professional profile will be shared
+
+#### After User Approves - Token Exchange
+```http
+POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&
+code=auth_code_xyz&
+client_id=linkedin_client_123&
+client_secret=<secret>&
+redirect_uri=https://linkedin.com/callback
+```
+
+**Token Response**:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "profile:read:basic",
+  "context": "professional"
+}
+```
+
+#### LinkedIn Requests Profile
+```http
+GET /api/v1/oauth/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+**Response (Filtered by Scope)**:
+```json
+{
+  "user_id": "usr_123456",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "preferred_name": "Dr. Johnson",
+  "photo_url": "https://storage/professional-headshot.jpg",
+  "bio": "Board-certified cardiovascular surgeon",
+  "context": "professional"
+}
+```
+
+**NOT Included** (due to scope limitations):
+- email (requires `profile:read:email` scope)
+- phone (requires `profile:read:phone` scope)
+- legal_name (requires `profile:read:full` scope)
+- date_of_birth (never exposed via OAuth)
+
+---
+
+## 3a.4 Inheritance and Override Mechanics
+
+```mermaid
+graph TD
+    subgraph "Base Profile"
+        BP[Base Profile Fields]
+        BP --> F1[preferred_name: Bob Johnson]
+        BP --> F2[email: bob@email.com]
+        BP --> F3[phone: +1-555-0123]
+        BP --> F4[bio: Surgeon and enthusiast]
+        BP --> F5[photo_url: null]
+    end
+    
+    subgraph "Professional Context Override"
+        CP[Context Profile Overrides]
+        CP --> O1[display_name: Dr. Robert J. Johnson]
+        CP --> O2[email: r.johnson@hospital.org]
+        CP --> O3[bio: Board-certified surgeon]
+        CP --> O4[photo_url: professional.jpg]
+    end
+    
+    subgraph "Resolved Profile"
+        RP[Merged Result]
+        RP --> R1[preferred_name: Bob Johnson ✓ Base]
+        RP --> R2[display_name: Dr. Robert J. Johnson ✓ Override]
+        RP --> R3[email: r.johnson@hospital.org ✓ Override]
+        RP --> R4[phone: +1-555-0123 ✓ Base]
+        RP --> R5[bio: Board-certified surgeon ✓ Override]
+        RP --> R6[photo_url: professional.jpg ✓ Override]
+    end
+    
+    BP --> RP
+    CP --> RP
+    
+    style BP fill:#e3f2fd
+    style CP fill:#fff3e0
+    style RP fill:#e8f5e9
+```
+
+### Inheritance Rules
+
+1. **Start with Base**: All fields from base profile are included
+2. **Apply Overrides**: Context profile overrides replace base values
+3. **Null Handling**: Explicit null in override removes field
+4. **Nested Objects**: Deep merge for JSONB fields
+5. **Arrays**: Replace (not merge) for array fields
+
+### Example: Deep Merge for Names
+
+**Base Profile**:
+```json
+{
+  "names": {
+    "given": {"en": "Robert", "es": "Roberto"},
+    "family": {"en": "Johnson"},
+    "middle": {"en": "Alexander"}
+  }
+}
+```
+
+**Context Override**:
+```json
+{
+  "names": {
+    "given": {"en": "Dr. Robert"},
+    "suffix": {"en": "MD"}
+  }
+}
+```
+
+**Merged Result**:
+```json
+{
+  "names": {
+    "given": {"en": "Dr. Robert", "es": "Roberto"},
+    "family": {"en": "Johnson"},
+    "middle": {"en": "Alexander"},
+    "suffix": {"en": "MD"}
+  }
+}
+```
+
+---
+
+## 3a.5 API Request Examples
+
+### Request 1: Get Base Profile
+```http
+GET /api/v1/users/usr_123456/profile
+Authorization: Bearer <user_token>
+Accept: application/json
+Accept-Language: en-US
+```
+
+**Response**:
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Bob Johnson",
+  "display_name": "Bob Johnson",
+  "email": "bob.johnson@email.com",
+  "phone": "+1-555-0123",
+  "bio": "Surgeon and outdoor enthusiast",
+  "photo_url": null,
+  "context": "base",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-10-01T14:22:00Z"
+}
+```
+
+---
+
+### Request 2: Get Professional Context Profile
+```http
+GET /api/v1/users/usr_123456/profiles/professional
+Authorization: Bearer <user_token>
+Accept: application/json
+Accept-Language: en-US
+```
+
+**Response**:
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "email": "r.johnson@hospital.org",
+  "phone": "+1-555-0123",
+  "bio": "Board-certified cardiovascular surgeon with 15 years experience",
+  "photo_url": "https://storage.example.com/professional-headshot.jpg",
+  "credentials": ["MD", "FACS"],
+  "context": "professional",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-10-01T14:22:00Z"
+}
+```
+
+---
+
+### Request 3: Get Social Context Profile
+```http
+GET /api/v1/users/usr_123456/profiles/social
+Authorization: Bearer <user_token>
+Accept: application/json
+```
+
+**Response**:
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Bob",
+  "display_name": "Bob J.",
+  "email": "bob.johnson@email.com",
+  "phone": "+1-555-0123",
+  "bio": "Love hiking, photography, and craft beer",
+  "photo_url": "https://storage.example.com/casual-photo.jpg",
+  "context": "social",
+  "language": "en",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2025-09-15T09:10:00Z"
+}
+```
+
+---
+
+### Request 4: Create New Context Profile
+```http
+POST /api/v1/users/usr_123456/profiles
+Authorization: Bearer <user_token>
+Content-Type: application/json
+
+{
+  "context_type": "freelance",
+  "context_name": "Freelance Consulting",
+  "overrides": {
+    "display_name": "Bob Johnson, Consultant",
+    "email": "consulting@bobjohnson.com",
+    "bio": "Healthcare IT consultant and advisor",
+    "website": "https://bobjohnson.com"
+  },
+  "visibility": "public"
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "context_id": "ctx_789012",
+  "user_id": "usr_123456",
+  "context_type": "freelance",
+  "context_name": "Freelance Consulting",
+  "overrides": {
+    "display_name": "Bob Johnson, Consultant",
+    "email": "consulting@bobjohnson.com",
+    "bio": "Healthcare IT consultant and advisor",
+    "website": "https://bobjohnson.com"
+  },
+  "visibility": "public",
+  "created_at": "2025-10-16T10:45:00Z",
+  "updated_at": "2025-10-16T10:45:00Z"
+}
+```
+
+---
+
+### Request 5: Query Profile with Context Parameter
+```http
+GET /api/v1/users/usr_123456/profile?context=professional
+Authorization: Bearer <user_token>
+Accept: application/json
+```
+
+**Response**: Same as Request 2 (Professional Context)
+
+---
+
+## 3a.6 Scope-Based Field Filtering
+
+```mermaid
+flowchart LR
+    FullProfile[Full Profile Data] --> ScopeFilter{OAuth Scope}
+    
+    ScopeFilter -->|profile:read:basic| Basic[Basic Fields Only]
+    ScopeFilter -->|profile:read:email| Email[Basic + Email]
+    ScopeFilter -->|profile:read:phone| Phone[Basic + Phone]
+    ScopeFilter -->|profile:read:full| Full[All Fields Except Legal]
+    
+    Basic --> Return1[display_name, photo_url, bio]
+    Email --> Return2[Basic + email]
+    Phone --> Return3[Basic + phone]
+    Full --> Return4[All non-sensitive fields]
+    
+    style FullProfile fill:#e3f2fd
+    style Basic fill:#ffebee
+    style Email fill:#fff3e0
+    style Phone fill:#f3e5f5
+    style Full fill:#e8f5e9
+```
+
+### Scope Definitions and Allowed Fields
+
+| Scope | Allowed Fields | Use Case |
+|-------|---------------|----------|
+| `profile:read:basic` | `user_id`, `display_name`, `preferred_name`, `photo_url`, `bio` | Public sharing (social media) |
+| `profile:read:email` | Basic + `email`, `email_verified` | Email communication |
+| `profile:read:phone` | Basic + `phone`, `phone_verified` | Phone contact |
+| `profile:read:full` | All except `legal_name`, `date_of_birth` | Professional platforms |
+| `profile:write` | Can update profile fields | Profile management apps |
+
+### Example: Scope Filtering in Action
+
+**Full Profile Data** (before filtering):
+```json
+{
+  "user_id": "usr_123456",
+  "legal_name": "Robert Alexander Johnson",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "email": "r.johnson@hospital.org",
+  "phone": "+1-555-0123",
+  "date_of_birth": "1985-03-20",
+  "bio": "Board-certified cardiovascular surgeon",
+  "photo_url": "https://storage/professional.jpg",
+  "credentials": ["MD", "FACS"]
+}
+```
+
+**After `profile:read:basic` Scope Filter**:
+```json
+{
+  "user_id": "usr_123456",
+  "preferred_name": "Dr. Johnson",
+  "display_name": "Dr. Robert J. Johnson, MD",
+  "bio": "Board-certified cardiovascular surgeon",
+  "photo_url": "https://storage/professional.jpg"
+}
+```
+
+---
+
+## 3a.7 Performance Considerations
+
+### Caching Strategy
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Cache
+    participant DB
+    
+    Client->>API: GET /profile?context=professional
+    API->>Cache: Check cache key: usr_123:professional:en
+    
+    alt Cache Hit
+        Cache-->>API: Return cached profile
+        API-->>Client: Profile (5ms response)
+    else Cache Miss
+        Cache-->>API: Not found
+        API->>DB: Query base + context profiles
+        DB-->>API: Profile data
+        API->>API: Merge & resolve
+        API->>Cache: Store (TTL: 5 min)
+        API-->>Client: Profile (50ms response)
+    end
+```
+
+### Cache Key Strategy
+
+**Pattern**: `profile:{user_id}:{context}:{language}:{scope_hash}`
+
+**Examples**:
+- `profile:usr_123:base:en:public` - Base profile, English, full access
+- `profile:usr_123:professional:es:basic` - Professional, Spanish, basic scope
+- `profile:usr_123:social:en:full` - Social, English, full scope
+
+### Cache Invalidation Triggers
+
+1. **Profile Update**: Clear all cache keys for user
+2. **Context Update**: Clear context-specific cache keys
+3. **Permission Change**: Clear affected user cache
+4. **Manual**: Admin cache flush

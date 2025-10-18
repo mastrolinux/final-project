@@ -1,0 +1,21 @@
+services:
+  # FastAPI application
+  # Note: Requires Supabase to be running on host machine (supabase start)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identity-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./alembic:/app/alembic
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+

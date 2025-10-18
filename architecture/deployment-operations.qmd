@@ -1,0 +1,413 @@
+---
+title: "Deployment & Operations"
+---
+
+## 7.1 Environment Strategy
+
+```
++-------------------------------------------------------------+
+|                    Environment Topology                     |
++-------------------------------------------------------------+
+
+Development:
+   |-> Local machines
+   |-> Local PostgreSQL
+   |-> Mock external services
+   +-> Seed data
+
+Staging:
+   |-> Render.com
+   |-> Supabase staging project
+   |-> Full integration
+   |-> Production-like config
+   +-> QA testing
+
+Production:
+   |-> Render.com
+   |-> Supabase production
+   |-> Auto-scaling
+   |-> High availability
+   +-> Monitoring active
+```
+
+---
+
+## 7.2 Deployment Pipeline
+
+```
++-------------------------------------------------------------+
+|                CI/CD Pipeline (GitHub Actions)              |
++-------------------------------------------------------------+
+
+Code Push to main
+        |
+        |-> 1. Run Tests
+        |   |-> Unit tests (pytest)
+        |   |-> Integration tests
+        |   |-> Coverage (>80%)
+        |   +-> Security scan (Bandit)
+        |
+        |-> 2. Build
+        |   |-> Docker image
+        |   |-> Dependency resolution
+        |   +-> Static analysis (mypy)
+        |
+        |-> 3. Deploy to Staging
+        |   |-> Database migrations
+        |   |-> Deploy container
+        |   |-> Smoke tests
+        |   +-> Wait for approval
+        |
+        +-> 4. Deploy to Production
+            |-> Blue-green deployment
+            |-> Database migrations
+            |-> Health checks
+            |-> Gradual traffic shift
+            +-> Rollback on failure
+```
+
+### GitHub Actions Workflow
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: |
+          pip install -r requirements.txt
+          pytest --cov=src --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Render
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy to Render
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+```
+
+---
+
+## 7.3 Infrastructure Components
+
+### Hosting: Render.com
+
+```yaml
+# render.yaml
+services:
+  - type: web
+    name: identity-api
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 4
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+```
+
+### Database: Supabase
+
+- Managed PostgreSQL 15+
+- Built-in authentication
+- Row-Level Security
+- Automatic backups
+- Connection pooling
+
+### Caching: Redis (Render)
+
+- Managed Redis instance
+- Used for sessions, rate limiting
+- Persistence disabled (cache only)
+- Eviction policy: LRU
+
+---
+
+## 7.4 High Availability Design
+
+```
++-------------------------------------------------------------+
+|              High Availability Architecture                 |
++-------------------------------------------------------------+
+
+                Load Balancer (Render)
+                        |
+        +---------------+---------------+
+        |               |               |
+   Instance #1     Instance #2     Instance #3
+   (Active)        (Active)        (Active)
+        |               |               |
+        +---------------+---------------+
+                        |
+                  PostgreSQL
+                  (Supabase)
+                        |
+                  +-----+-----+
+              Primary    Read Replicas
+              (RW)          (RO)
+
+Failover:
+   |-> API: Load balancer redirects
+   |-> Database: Automatic promotion
+   +-> RTO: < 5 minutes
+```
+
+---
+
+## 7.5 Monitoring Strategy
+
+### Observability Stack
+
+```
+Metrics:
+   |-> API response times (p50, p95, p99)
+   |-> Request throughput
+   |-> Error rates
+   |-> Database performance
+   +-> Resource utilization
+
+Logs:
+   |-> Application logs (JSON)
+   |-> Audit logs (immutable)
+   |-> Security logs
+   +-> Error logs
+
+Traces:
+   |-> Request tracing
+   |-> Database queries
+   +-> External service calls
+
+Alerts:
+   |-> Error rate > 1% -> Page
+   |-> Response time p95 > 500ms -> Warn
+   |-> Database connections > 80% -> Warn
+   +-> Security events -> Immediate
+```
+
+### Health Check Endpoint
+
+```python
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": {
+            "database": await check_database(),
+            "cache": await check_cache(),
+            "auth": await check_auth_service()
+        }
+    }
+```
+
+---
+
+## 7.6 Logging Architecture
+
+### Structured Logging
+
+```json
+{
+  "timestamp": "2025-10-13T14:23:45.123Z",
+  "level": "INFO",
+  "service": "identity-api",
+  "request_id": "req_abc123",
+  "user_id": "user_xyz789",
+  "endpoint": "/api/v1/users/xyz789/profile",
+  "method": "GET",
+  "status": 200,
+  "duration_ms": 45,
+  "ip_address": "192.168.1.1"
+}
+```
+
+### Log Levels
+- `DEBUG`: Development only
+- `INFO`: Normal operations
+- `WARNING`: Unusual conditions
+- `ERROR`: Application errors
+- `CRITICAL`: System failures
+
+### Log Retention
+- Application logs: 30 days
+- Audit logs: 7 years
+- Security logs: 2 years
+- Debug logs: 7 days
+
+---
+
+## 7.7 Backup and Recovery
+
+### Backup Strategy
+
+```
+Database Backups:
+   |-> Continuous PITR (Supabase)
+   |-> Daily full backups
+   |-> 30-day retention
+   +-> Encrypted at rest
+
+Configuration:
+   |-> Infrastructure as Code (Git)
+   |-> Environment variables (secrets)
+   +-> Database schemas (migrations)
+
+Disaster Recovery:
+   |-> RPO: 1 hour
+   |-> RTO: 4 hours
+   +-> DR drills: Quarterly
+```
+
+### Recovery Procedures
+
+```
+1. Identify Failure
+   +-> Monitoring alerts
+   +-> Incident declared
+
+2. Assess Impact
+   +-> Affected services
+   +-> Data loss estimate
+
+3. Execute Recovery
+   +-> Restore from backup
+   +-> Replay transactions
+   +-> Verify integrity
+
+4. Post-Mortem
+   +-> Root cause analysis
+   +-> Prevention measures
+```
+
+---
+
+## 7.8 Maintenance Windows
+
+### Scheduled Maintenance
+- **Frequency**: Monthly (3rd Sunday)
+- **Duration**: 2-hour window
+- **Time**: 02:00-04:00 UTC
+- **Activities**: Security patches, upgrades
+
+### Emergency Maintenance
+- Security vulnerabilities: Immediate
+- Critical bugs: Within 24 hours
+- Performance issues: Within 72 hours
+
+---
+
+## 7.9 Scaling Strategy
+
+### Horizontal Scaling (Scale Out)
+
+```
+100K Users:
+   +-> 2-3 API instances
+   +-> Current configuration sufficient
+
+1M Users:
+   |-> 5-10 API instances
+   |-> Database read replicas
+   |-> Aggressive caching
+   +-> Queue-based processing
+```
+
+### Vertical Scaling (Scale Up)
+
+```
+When needed:
+   |-> Increase instance size
+   |-> More database compute
+   +-> Before horizontal scaling
+```
+
+### Auto-Scaling Rules
+
+```yaml
+triggers:
+  - metric: cpu_utilization
+    threshold: 70%
+    action: scale_up
+  - metric: request_queue_depth
+    threshold: 100
+    action: scale_up
+  - metric: cpu_utilization
+    threshold: 30%
+    action: scale_down
+```
+
+---
+
+## 7.10 Security Operations
+
+### Security Monitoring
+- Failed authentication attempts
+- Authorization failures
+- Unusual access patterns
+- Data export requests
+- Admin operations
+
+### Incident Response Plan
+
+```
+1. Detection
+   +-> Automated alerts
+   +-> Manual reports
+
+2. Triage
+   +-> Assess severity
+   +-> Identify scope
+
+3. Containment
+   +-> Isolate affected systems
+   +-> Revoke compromised tokens
+
+4. Eradication
+   +-> Remove threat
+   +-> Patch vulnerabilities
+
+5. Recovery
+   +-> Restore services
+   +-> Verify integrity
+
+6. Lessons Learned
+   +-> Post-incident review
+   +-> Update procedures
+```
+
+---
+
+## 7.11 Performance Targets
+
+| Metric | Target | Critical |
+|--------|--------|----------|
+| API Response (p95) | <200ms | >500ms |
+| API Response (p99) | <500ms | >1000ms |
+| Database Query (p95) | <50ms | >200ms |
+| Throughput | 1000 req/s | <100 req/s |
+| Uptime | 99.9% | <99.0% |
+| Error Rate | <0.1% | >1.0% |
