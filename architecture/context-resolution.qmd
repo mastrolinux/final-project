@@ -332,12 +332,12 @@ graph TD
     
     subgraph "Resolved Profile"
         RP[Merged Result]
-        RP --> R1[preferred_name: Bob Johnson ✓ Base]
-        RP --> R2[display_name: Dr. Robert J. Johnson ✓ Override]
-        RP --> R3[email: r.johnson@hospital.org ✓ Override]
-        RP --> R4[phone: +1-555-0123 ✓ Base]
-        RP --> R5[bio: Board-certified surgeon ✓ Override]
-        RP --> R6[photo_url: professional.jpg ✓ Override]
+        RP --> R1[preferred_name: Bob Johnson - Base]
+        RP --> R2[display_name: Dr. Robert J. Johnson - Override]
+        RP --> R3[email: r.johnson@hospital.org - Override]
+        RP --> R4[phone: +1-555-0123 - Base]
+        RP --> R5[bio: Board-certified surgeon - Override]
+        RP --> R6[photo_url: professional.jpg - Override]
     end
     
     BP --> RP

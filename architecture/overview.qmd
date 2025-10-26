@@ -27,6 +27,7 @@ Unlike traditional identity systems that assume Western naming conventions and s
 - Enables **third-party selective disclosure** through OAuth scopes
 - Implements **temporal versioning** for identity evolution
 - Provides **multilingual identity representation**
+- **Does NOT enforce real-name policies** - legal names optional, preferred names used for identification
 
 ---
 
@@ -43,6 +44,32 @@ Create a culturally-sensitive, privacy-respecting identity management platform t
 3. **Security by Default**: Deny-all approach with explicit grants
 4. **Transparency**: Users understand and control their data
 5. **Standards-Based**: Use proven protocols (OAuth 2.0, GDPR)
+6. **No Real-Name Enforcement**: Pseudonymity supported for vulnerable populations
+
+### Real-Name Policy Position
+
+This system explicitly rejects "real-name policies" that require users to provide government-issued legal names for identification purposes. Research demonstrates that such policies cause documented harm to marginalized populations (see background document).
+
+**This system's approach:**
+- **Legal name is OPTIONAL**: Only required for verified accounts accessing legal/healthcare contexts
+- **Preferred names are primary**: User-chosen names used for identification and third-party sharing
+- **Never exposed via OAuth**: Legal names NEVER shared with third-party applications
+- **Pseudonymous accounts supported**: Full functionality for social contexts without legal identity
+- **Distinction is clear**: Legal name for legal compliance contexts only, NOT for identification
+
+**Example use cases:**
+- Transgender individual: Uses preferred name "Alex" everywhere; legal name encrypted, never shared
+- Political dissident: Pseudonymous account with no legal name required
+- Domestic violence survivor: Creates profile without revealing legal identity
+- Professional with stage name: Legal name for contracts, stage name for public interactions
+
+**Contrast with "real-name policies":**
+- Facebook policy (2014): Required government ID matching profile name
+- Our policy: Legal name optional, preferred name sufficient for most contexts
+- Their harm: Outing, harassment, exclusion of vulnerable populations
+- Our benefit: Safety, inclusion, cultural sensitivity
+
+This approach aligns with GDPR data minimization principles: collect only what is necessary for the specific purpose.
 
 ---
 
@@ -77,6 +104,48 @@ This system explicitly does NOT aim to:
 - [NO] Support blockchain-based decentralized identity (out of scope)
 - [NO] Manage authentication credentials for third-party services
 - [NO] Build a consumer-facing frontend (API-first design)
+- [NO] **Manage non-human identities (NHI)** - service accounts, bots, machine-to-machine identities (see below)
+
+### Non-Human Identity (NHI) - Explicit Scope Exclusion
+
+**Background context:**
+The research background document extensively discusses the 2024 NHI security crisis:
+- Non-human identities outnumber human identities 10x-50x in enterprise environments
+- Major 2024 breaches: BeyondTrust (API key compromise), Schneider Electric (service account exploit)
+- "Traditional IAM is broken because it was built for humans" - emerging consensus in industry
+
+**Why NHI is out of scope for this project:**
+
+1. **Academic Project Boundaries**: This thesis focuses on human identity complexity (cultural naming, context-based presentation, guardian relationships). Adding NHI would dilute the focus.
+
+2. **Different Problem Domain**: NHI management requires:
+   - Certificate lifecycle management
+   - Service account rotation
+   - Machine-to-machine authentication
+   - Privileged access management
+   - Secret rotation and vaulting
+   - These are fundamentally different from human identity concerns
+
+3. **Different Solutions**: NHI requires specialized tools (HashiCorp Vault, CyberArk, AWS Secrets Manager) rather than profile management APIs.
+
+4. **Implementation Complexity**: Properly addressing NHI would double system complexity and require entirely separate security models.
+
+**Acknowledged limitation:**
+In production enterprise environments, this system would need to integrate with NHI management solutions for complete identity coverage. This is explicitly left as future work.
+
+**What IS in scope:**
+- Human users (adults and minors)
+- Guardian-managed minor accounts
+- Verified, unverified, and pseudonymous human accounts
+- Human-to-service OAuth integrations (humans authorizing apps)
+
+**What IS NOT in scope:**
+- Service accounts
+- API keys for automation
+- Bot identities
+- Machine-to-machine authentication tokens
+- Workload identities
+- IoT device identities
 
 ---
 
@@ -392,15 +461,15 @@ Accept-Language: en-US,zh;q=0.9
    HealthTrack wants to access your profile
    
    Requested Information:
-   ✓ Your name and photo
-   ✓ Your email address (r.johnson@hospital.org)
-   ✓ Your phone number
-   ✓ Your professional credentials
+   [YES] Your name and photo
+   [YES] Your email address (r.johnson@hospital.org)
+   [YES] Your phone number
+   [YES] Your professional credentials
    
    Will NOT receive:
-   ✗ Your legal name
-   ✗ Your date of birth
-   ✗ Your home address
+   [NO] Your legal name
+   [NO] Your date of birth
+   [NO] Your home address
    
    Context: Professional profile will be shared
    

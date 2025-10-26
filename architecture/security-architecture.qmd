@@ -186,6 +186,248 @@ Password Hashing:
 | Email | Sensitive | TLS only + masked in logs |
 | Preferred Name | Public | User-controlled visibility |
 | Pronouns | Public | No special protection |
+| Deprecated Names | Highly Sensitive | Suppressed + encrypted + never in public APIs |
+
+---
+
+## 5.4a Deadname Protection
+
+### Overview and Rationale
+
+Deadnaming (using a person's former name, especially for transgender individuals) causes documented psychological harm and correlates with increased suicide risk. Research by the Trevor Project (2021) demonstrates that proper name usage directly correlates with reduced suicide attempt rates among transgender youth.
+
+The system implements comprehensive deadname protection mechanisms to prevent inadvertent or malicious exposure of deprecated names.
+
+### Protection Mechanisms
+
+#### 1. Name Deprecation Flag
+
+All name records include an `is_deprecated` boolean flag:
+
+```sql
+-- IdentityNames table
+CREATE TABLE identity_names (
+  id UUID PRIMARY KEY,
+  identity_id UUID REFERENCES base_profiles(user_id),
+  name_type VARCHAR(50),
+  name_value JSONB,
+  is_primary BOOLEAN DEFAULT FALSE,
+  is_deprecated BOOLEAN DEFAULT FALSE,  -- Marks names as sensitive/deprecated
+  visibility_level VARCHAR(20) DEFAULT 'public',  -- public, private, historical_suppressed
+  valid_from TIMESTAMPTZ DEFAULT NOW(),
+  valid_to TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 2. Visibility Levels
+
+Three visibility levels control name exposure:
+
+| Visibility Level | Meaning | API Exposure | Audit Log Display |
+|------------------|---------|--------------|-------------------|
+| `public` | Current active name | Yes (based on scopes) | Yes |
+| `private` | User-restricted name | Owner only | Yes (owner only) |
+| `historical_suppressed` | Deprecated/deadname | Never via API | Suppressed |
+
+#### 3. Automatic Suppression Rules
+
+**User-Facing Audit Logs:**
+- Names marked `is_deprecated: true` are automatically redacted
+- Historical entries show: `[Previous name - suppressed for privacy]`
+- User can see "a name was changed" but not the old value
+
+**Admin Audit Logs:**
+- Full history retained for legal compliance
+- Access requires elevated permissions
+- All access to deprecated names is logged
+
+**Public APIs:**
+- Deprecated names NEVER returned via OAuth endpoints
+- Profile history endpoints filter deprecated names
+- Temporal queries (point-in-time) respect deprecation
+
+#### 4. Name Change Workflow with Protection
+
+**User-initiated name change:**
+```python
+# API Request
+PATCH /api/v1/users/usr_123/profile
+{
+  "names": {
+    "given": {"en": "Alex"},
+    "family": {"en": "Johnson"}
+  },
+  "deprecate_previous_names": true  # Mark old names as deprecated
+}
+
+# System actions:
+# 1. Mark previous name record: is_deprecated = true, visibility_level = 'historical_suppressed'
+# 2. Create new name record: is_deprecated = false, visibility_level = 'public'
+# 3. Create audit log entry (old name encrypted in admin-only logs)
+# 4. Clear all caches containing old name
+```
+
+**Audit log entry (user-visible):**
+```json
+{
+  "event_type": "profile.name_changed",
+  "timestamp": "2025-10-20T10:30:00Z",
+  "user_id": "usr_123",
+  "changes": {
+    "name": {
+      "from": "[Previous name - suppressed for privacy]",
+      "to": "Alex Johnson"
+    }
+  }
+}
+```
+
+**Audit log entry (admin-only):**
+```json
+{
+  "event_type": "profile.name_changed",
+  "timestamp": "2025-10-20T10:30:00Z",
+  "user_id": "usr_123",
+  "changes": {
+    "name": {
+      "from": "Alice Johnson",  // Encrypted at rest
+      "to": "Alex Johnson"
+    }
+  },
+  "sensitivity": "deadname_change",
+  "access_restricted": true
+}
+```
+
+#### 5. Guardian Name Change Permissions
+
+Guardian relationships include specific permission for name changes on minor accounts:
+
+```json
+{
+  "guardian_permissions": {
+    "can_view_profile": true,
+    "can_edit_profile": true,
+    "can_change_name": false,  // Separate permission for name changes
+    "can_change_legal_name": false,  // Even more restricted
+    "can_view_name_history": false  // Cannot see deprecated names
+  }
+}
+```
+
+**Rationale**: Name changes for minors require additional scrutiny to prevent abuse. Minor must consent to name changes (if above consent age), or require two guardians to approve.
+
+#### 6. Legal Name Field Protection
+
+The `legal_name` field has additional protections:
+
+**Storage:**
+- Encrypted at rest using AES-256-GCM
+- Separate encryption key from general database encryption
+- Key rotation every 90 days
+
+**Access:**
+- NEVER exposed via OAuth (even with full scopes)
+- Only accessible directly to user via authenticated endpoint
+- Accessible in legal/healthcare contexts with explicit consent
+- All access logged with legal basis (GDPR Article reference)
+
+**Example - Legal name NOT included in OAuth response:**
+```python
+# Third-party requests profile with full scope
+GET /api/v1/oauth/profile
+Authorization: Bearer <token_with_profile:read:full>
+
+# Response (legal_name excluded)
+{
+  "user_id": "usr_123",
+  "preferred_name": "Alex Johnson",
+  "display_name": "Alex Johnson",
+  "email": "alex@example.com",
+  "bio": "Software engineer",
+  "photo_url": "https://storage/photo.jpg"
+  // legal_name: NEVER INCLUDED via OAuth
+}
+
+# User can access their own legal_name directly
+GET /api/v1/users/usr_123/profile?include_legal=true
+Authorization: Bearer <user_own_token>
+
+# Response includes legal_name (user accessing own data)
+{
+  "legal_name": "Alexander James Johnson",  // Decrypted for owner only
+  ...other fields
+}
+```
+
+#### 7. GDPR Right to Erasure for Deprecated Names
+
+Users can invoke GDPR Article 17 (Right to Erasure) specifically for deprecated names:
+
+```python
+# Request permanent deletion of deprecated name
+DELETE /api/v1/users/usr_123/names/deprecated
+Authorization: Bearer <user_token>
+
+# System actions:
+# 1. Pseudonymize deprecated name in audit logs (hash + salt)
+# 2. Physically delete name_value from identity_names table
+# 3. Retain metadata (timestamp, that a name existed) for audit integrity
+# 4. Create compliance log entry
+```
+
+**Result:**
+- Historical audit trail shows "Name changed on [date]" but not the actual name
+- Legal compliance maintained (proof that name was changed)
+- No way to recover deprecated name (irreversible)
+
+#### 8. Implementation Checklist
+
+**Database Layer:**
+- [x] Add `is_deprecated` boolean to `identity_names` table
+- [x] Add `visibility_level` enum to `identity_names` table
+- [x] Create index on `is_deprecated` for query performance
+- [x] Implement triggers to prevent accidental is_deprecated=false updates
+
+**Application Layer:**
+- [x] Filter deprecated names in all profile resolution logic
+- [x] Redact deprecated names in user-visible audit logs
+- [x] Implement separate guardian permission for name changes
+- [x] Add legal_name encryption/decryption in repository layer
+
+**API Layer:**
+- [x] Never expose deprecated names via OAuth endpoints
+- [x] Provide user option to deprecate names on update
+- [x] Implement GDPR erasure endpoint for deprecated names
+- [x] Add deprecation flag to name change endpoints
+
+**Testing:**
+- [x] Test deprecated name filtering across all contexts
+- [x] Test audit log redaction for deprecated names
+- [x] Test legal_name never appears in OAuth responses
+- [x] Test GDPR erasure for deprecated names
+
+### Policy Summary
+
+| Scenario | Behavior |
+|----------|----------|
+| User changes name | Previous name automatically marked `is_deprecated: true` |
+| User views own audit log | Deprecated names shown as "[suppressed]" |
+| Admin views audit log | Deprecated names visible (with access logging) |
+| OAuth app requests profile | Deprecated names NEVER included |
+| Guardian views minor profile | Cannot see deprecated names |
+| Point-in-time historical query | Deprecated names excluded |
+| GDPR erasure request | Deprecated names physically deleted |
+| Legal/compliance query | Metadata retained, name pseudonymized |
+
+### Research Citations
+
+This design is informed by:
+
+- **Trevor Project (2021)**: Correlation between proper name usage and reduced suicide attempts
+- **Haimson (2016)**: Harm caused by real-name policies and deadnaming on social platforms
+- **van der Nagel (2015)**: Importance of identity control for marginalized populations
 
 ---
 

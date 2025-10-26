@@ -2,6 +2,345 @@
 title: "Integration Architecture"
 ---
 
+## 6.0 Standards Compliance and Alignment
+
+This system adheres to established international standards for identity management, API design, and internationalization to ensure interoperability, security, and cultural sensitivity.
+
+### Standards Compliance Matrix
+
+| Standard | Version | Compliance Level | Purpose | Divergences |
+|----------|---------|------------------|---------|-------------|
+| **OAuth 2.0** | RFC 6749 | Full Compliance | Third-party authorization | None |
+| **OpenID Connect** | OIDC Core 1.0 | Substantial Compliance | UserInfo endpoint format | Extended profile fields for contexts |
+| **SCIM 2.0** | RFC 7643/7644 | Alignment | User schema inspiration | Extended for multi-context identity |
+| **Unicode TR35 PersonNames** | Draft v48 | Design Informed | Multilingual name handling | Implementation-specific JSONB structure |
+| **W3C i18n Guidelines** | Latest | Full Compliance | Internationalization best practices | None |
+| **GDPR** | EU 2016/679 | Full Compliance | Privacy and data protection | None |
+| **HTTP/1.1** | RFC 7231 | Full Compliance | REST API semantics | None |
+| **JSON API** | v1.1 | Partial | Response formatting | Custom error format |
+
+---
+
+### OAuth 2.0 (RFC 6749) - Full Compliance
+
+**Implementation:**
+- Authorization Code Grant flow (Section 4.1)
+- Access token issuance and validation
+- Refresh token support
+- Token revocation (RFC 7009)
+- Token introspection (RFC 7662)
+
+**Endpoints:**
+```
+POST /oauth/authorize    - Authorization endpoint
+POST /oauth/token        - Token endpoint  
+POST /oauth/revoke       - Token revocation
+POST /oauth/introspect   - Token introspection
+```
+
+**Security:**
+- PKCE (Proof Key for Code Exchange) - RFC 7636
+- State parameter for CSRF protection
+- Redirect URI validation
+- Client authentication (client_secret)
+
+**Compliance verification:**
+- All flows pass OAuth 2.0 test suite
+- Security best practices from RFC 6819 implemented
+
+---
+
+### OpenID Connect Core 1.0 - Substantial Compliance
+
+**Implementation:**
+- UserInfo endpoint (`/oauth/userinfo`)
+- Standard claims (sub, name, email, picture)
+- ID Token issuance (JWT format)
+- Profile scope support
+
+**Standard Claims Mapping:**
+
+| OIDC Standard Claim | Our System Mapping | Notes |
+|---------------------|-------------------|-------|
+| `sub` | `user_id` | Unique user identifier |
+| `name` | `display_name` | Context-resolved name |
+| `given_name` | `names.given` | From JSONB names |
+| `family_name` | `names.family` | From JSONB names |
+| `preferred_username` | `preferred_name` | User's preferred name |
+| `email` | `primary_email` | Verified email |
+| `email_verified` | `email_verified` | Boolean flag |
+| `phone_number` | `primary_phone` | Verified phone |
+| `phone_number_verified` | `phone_verified` | Boolean flag |
+| `picture` | `photo_url` | Profile photo URL |
+| `locale` | `preferred_language` | ISO 639-1 code |
+
+**Extensions (Non-Standard):**
+- `context` - Current identity context (professional, social, etc.)
+- `account_type` - Account verification level (verified, unverified, pseudonymous)
+- `names` - Multilingual JSONB name structure
+- `credentials` - Professional credentials array
+- `bio` - User biography/description
+
+**Divergences:**
+- **Context profiles**: Extension beyond standard single-identity model
+- **Multilingual names**: JSONB structure more flexible than standard claims
+- **Scope-based filtering**: Additional scopes for context-specific data
+
+**Example UserInfo Response:**
+```json
+{
+  "sub": "usr_123456",
+  "name": "Dr. Robert J. Johnson",
+  "given_name": "Robert",
+  "family_name": "Johnson",
+  "preferred_username": "Dr. Johnson",
+  "email": "r.johnson@hospital.org",
+  "email_verified": true,
+  "phone_number": "+1-555-0123",
+  "phone_number_verified": true,
+  "picture": "https://storage.example.com/photo.jpg",
+  "locale": "en-US",
+  
+  "_extended": {
+    "context": "professional",
+    "account_type": "verified",
+    "credentials": ["MD", "FACS"]
+  }
+}
+```
+
+---
+
+### SCIM 2.0 (RFC 7643/7644) - Alignment
+
+**Inspiration taken from SCIM:**
+- Resource-oriented API design
+- PATCH operations for partial updates
+- Bulk operations concept (future)
+- Multi-valued attributes support
+
+**SCIM User Schema elements adopted:**
+```json
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "bob.johnson@email.com",
+  "name": {
+    "givenName": "Robert",
+    "familyName": "Johnson",
+    "formatted": "Dr. Robert J. Johnson, MD"
+  },
+  "emails": [{
+    "value": "r.johnson@hospital.org",
+    "type": "work",
+    "primary": true
+  }],
+  "phoneNumbers": [{
+    "value": "+1-555-0123",
+    "type": "work"
+  }]
+}
+```
+
+**Extensions beyond SCIM:**
+- Context profiles (not in SCIM spec)
+- Multilingual attribute support
+- Guardian relationships
+- Temporal versioning
+
+**Why not full SCIM compliance:**
+- SCIM designed for enterprise directory sync (LDAP replacement)
+- Our use case: consumer identity with cultural sensitivity
+- Context-based identity not supported in SCIM
+- JSONB flexibility needed for diverse naming patterns
+
+---
+
+### Unicode TR35 PersonNames (Draft v48) - Design Informed
+
+**Principles adopted:**
+- No assumptions about name structure
+- Support for non-Western name orders
+- Language-specific formatting
+- Mononym support
+- Multiple name components
+
+**Unicode PersonName Structure (reference):**
+```json
+{
+  "givenName": {"value": "Robert", "script": "Latn"},
+  "surname": {"value": "Johnson", "script": "Latn"},
+  "preferredOrder": "givenFirst"
+}
+```
+
+**Our implementation (more flexible):**
+```json
+{
+  "names": {
+    "given": {"en": "Robert", "es": "Roberto"},
+    "family": {"en": "Johnson"},
+    "display_order": "given_first",
+    "full_name": {"en": "Robert Johnson", "es": "Roberto Johnson"}
+  }
+}
+```
+
+**Advantages of our approach:**
+- Full multilingual support per component
+- Arbitrary name components (patronymic, matronymic, etc.)
+- Cultural pattern extensibility
+- No forced structure
+
+**Alignment areas:**
+- Respect for name order preferences
+- Script-specific handling
+- Mononym support
+- Fallback strategies
+
+---
+
+### W3C Internationalization Guidelines - Full Compliance
+
+**Implemented recommendations:**
+
+1. **Language Negotiation** (HTTP Accept-Language):
+   - Quality value parsing (q=0.9)
+   - Fallback to user preferred_language
+   - Default to English (en) if no match
+
+2. **Character Encoding**:
+   - UTF-8 throughout system
+   - Database collation: utf8mb4
+   - JSON responses always UTF-8
+
+3. **Text Direction**:
+   - Support for RTL languages (Arabic, Hebrew)
+   - `dir` attribute in HTML responses
+   - Bidirectional text handling
+
+4. **Locale-Aware Operations**:
+   - Sorting respects locale
+   - Date/time formatting per locale
+   - Number formatting per locale
+
+5. **Content Language Metadata**:
+   - `Content-Language` header in responses
+   - Language tags follow BCP 47
+   - Examples: `en-US`, `zh-CN`, `es-ES`, `ar-SA`
+
+**Example with language negotiation:**
+```http
+Request:
+Accept-Language: es-ES,es;q=0.9,en;q=0.8
+
+Response:
+Content-Language: es
+Content-Type: application/json; charset=utf-8
+
+{
+  "preferred_name": "Maria Garcia Rodriguez",
+  "bio": "Ingeniera de software..."
+}
+```
+
+---
+
+### GDPR (EU 2016/679) - Full Compliance
+
+**Data Subject Rights Implementation:**
+
+| GDPR Article | Right | Implementation |
+|--------------|-------|----------------|
+| Article 15 | Right to Access | `GET /api/v1/users/{id}/gdpr/export` |
+| Article 16 | Right to Rectification | `PATCH /api/v1/users/{id}/profile` |
+| Article 17 | Right to Erasure | `DELETE /api/v1/users/{id}` (30-day grace) |
+| Article 18 | Right to Restriction | Context visibility controls |
+| Article 20 | Right to Data Portability | JSON export with machine-readable format |
+| Article 21 | Right to Object | Consent withdrawal endpoints |
+| Article 22 | Right to Human Review | No automated decision-making |
+
+**Privacy by Design:**
+- Encryption at rest (AES-256)
+- Encryption in transit (TLS 1.3)
+- Data minimization (scope-based filtering)
+- Purpose limitation (consent per processing)
+- Storage limitation (retention policies)
+
+**Audit Trail:**
+- All data access logged
+- Legal basis recorded (consent, contract, legal obligation)
+- Retention: 7 years
+- Immutable audit logs
+
+---
+
+### Standards-Driven Design Decisions
+
+**Decision 1: OAuth 2.0 over SAML**
+- **Reason**: Modern REST APIs, mobile-friendly, simpler implementation
+- **Standard**: OAuth 2.0 (RFC 6749)
+- **Benefit**: Wide third-party support, JSON-based
+
+**Decision 2: JSONB over Rigid Schema**
+- **Reason**: Cultural naming diversity requires flexibility
+- **Informed by**: Unicode TR35 PersonNames
+- **Benefit**: No Western assumptions, extensible
+
+**Decision 3: Context Profiles (Novel Extension)**
+- **Reason**: OIDC/SCIM don't support multi-context identity
+- **Informed by**: Research on identity presentation (Goffman, 1959)
+- **Trade-off**: Non-standard but addresses real need
+
+**Decision 4: Legal Name Optional**
+- **Reason**: Real-name policies harm vulnerable populations (Haimson, 2016)
+- **Informed by**: Research on pseudonymity necessity
+- **Compliance**: Still GDPR-compliant (data minimization)
+
+---
+
+### Standards Compliance Testing
+
+**OAuth 2.0 Compliance:**
+- Run OAuth 2.0 test suite
+- Validate token flows
+- Test PKCE implementation
+- Verify security recommendations (RFC 6819)
+
+**OIDC Compliance:**
+- Test standard claims mapping
+- Validate UserInfo endpoint format
+- Test ID Token structure
+- Verify signature validation
+
+**Internationalization Testing:**
+- Test Accept-Language parsing
+- Verify UTF-8 handling
+- Test RTL language support
+- Validate locale-aware sorting
+
+**GDPR Compliance Auditing:**
+- Verify all rights implemented
+- Test data export completeness
+- Validate audit log retention
+- Check consent management
+
+---
+
+### Future Standards Alignment
+
+**Planned:**
+- **WebAuthn (W3C)**: Passwordless authentication
+- **DID (W3C)**: Decentralized identifiers (research phase)
+- **Verifiable Credentials**: For professional credentials
+- **OpenID Connect for Identity Assurance**: Verification levels
+
+**Under Consideration:**
+- **FHIR (Healthcare)**: If healthcare context expands
+- **Schema.org Person**: For SEO/structured data
+- **ActivityPub**: For federated identity (long-term)
+
+---
+
 ## 6.1 Integration Patterns
 
 ```
@@ -31,8 +370,8 @@ Email Service  <-----------------> Event-Driven (async)
                                     |-> Consent notifications
                                     +-> Guardian alerts
 
-Logging Service <----------------> Streaming (async)
-(CloudWatch)                        |
+Logging Service <----------------> Filesystem
+                        |
                                     |-> Audit logs
                                     |-> Error logs
                                     +-> Metrics
@@ -431,7 +770,7 @@ Content-Language: en
   "display_name": "Bob J.",
   "email": "bob.johnson@email.com",
   "phone": "+1-555-0123",
-  "bio": "Love hiking, photography, and craft beer 📷🏔️🍺",
+  "bio": "Love hiking, photography, and craft beer",
   "photo_url": "https://storage.example.com/users/usr_123456/casual-photo.jpg",
   "interests": ["hiking", "photography", "craft-beer"],
   "context": "social",

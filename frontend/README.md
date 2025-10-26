@@ -39,3 +39,19 @@ The frontend will demonstrate:
 - OAuth integration flows
 - GDPR compliance features
 
+## Documentation
+
+Detailed design documentation is available in the `docs/` directory:
+
+- **[Name Input UX Design](./docs/name-input-ux-design.md)** - Comprehensive guide to culturally-sensitive name input flows, pattern detection, and metadata field management
+
+### Key UX Principles
+
+1. **Never force complexity** - Simple names stay simple
+2. **Detect, don't assume** - Smart suggestions, not requirements
+3. **Progressive enhancement** - Start basic, add details if needed
+4. **Cultural humility** - Don't require users to know formal naming terminology
+5. **Easy escape hatches** - "Use as-is" button always visible
+6. **Visual examples** - Show, don't tell
+7. **Locale awareness** - Use user's system locale as detection hint
+

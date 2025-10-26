@@ -26,6 +26,8 @@ erDiagram
     
     BaseProfile {
         uuid user_id PK
+        enum account_type
+        string legal_name
         string primary_email
         string primary_phone
         string preferred_language
@@ -40,6 +42,8 @@ erDiagram
         enum name_type
         jsonb name_value
         boolean is_primary
+        boolean is_deprecated
+        enum visibility_level
         timestamp valid_from
         timestamp valid_to
         uuid context_id FK
@@ -58,6 +62,13 @@ erDiagram
         timestamp valid_to
     }
 ```
+
+**Key Field Notes:**
+
+- **account_type**: Enum (`verified`, `unverified`, `pseudonymous`) - Determines verification level and available features
+- **legal_name**: OPTIONAL string - Only required for verified accounts needing legal/healthcare contexts; supports vulnerable populations who cannot safely provide legal identity
+- **is_deprecated**: Boolean - Marks names as deprecated (e.g., deadnames) to prevent display in public contexts
+- **visibility_level**: Enum (`public`, `private`, `historical_suppressed`) - Controls whether historical names appear in audit logs and API responses
 
 ### Authorization Aggregate
 
@@ -171,6 +182,375 @@ erDiagram
         uuid changed_by FK
         string change_reason
     }
+```
+
+---
+
+## 4.2a Pseudonymity and Unverified Accounts
+
+### Account Type Categories
+
+The system supports three account types to accommodate diverse user needs and safety requirements:
+
+| Account Type | Legal Name Required | Use Cases | Available Contexts |
+|--------------|---------------------|-----------|-------------------|
+| **Verified** | Yes (encrypted) | Healthcare, legal services, financial | All contexts including legal, healthcare |
+| **Unverified** | No | General social, professional networking | Social, professional, custom (no legal/healthcare) |
+| **Pseudonymous** | No | Vulnerable populations requiring anonymity | Social, custom only (highly restricted) |
+
+### Rationale for Pseudonymous Support
+
+Research demonstrates that pseudonymity is essential for vulnerable populations:
+
+- **Transgender youth**: 84% rely on online communities for support (Trevor Project, 2021)
+- **Political dissidents**: Protection from authoritarian regimes
+- **Domestic violence survivors**: Safety from abusers
+- **Marginalized communities**: Safe spaces for identity exploration
+
+### Pseudonymous Account Example
+
+```json
+{
+  "user_id": "usr_pseudo_789",
+  "account_type": "pseudonymous",
+  "legal_name": null,
+  "preferred_name": "Alex",
+  "primary_email": "verified-but-private@protonmail.com",
+  "email_visible": false,
+  "primary_phone": null,
+  "preferred_language": "en",
+  "available_contexts": ["social"],
+  "restricted_scopes": [
+    "profile:read:basic",
+    "profile:read:social"
+  ]
+}
+```
+
+### Context Restrictions by Account Type
+
+**Verified Accounts** - Full access:
+- Base profile
+- Professional contexts
+- Social contexts
+- Legal contexts (requires legal_name)
+- Healthcare contexts (requires legal_name + date_of_birth)
+
+**Unverified Accounts** - Limited access:
+- Base profile
+- Professional contexts (without credentials verification)
+- Social contexts
+- Custom contexts
+- Cannot access: Legal, Healthcare
+
+**Pseudonymous Accounts** - Minimal access:
+- Base profile (minimal fields)
+- Social contexts only
+- No OAuth integration with verified services
+- Cannot access: Professional with credentials, Legal, Healthcare
+
+### Security Implications
+
+**Pseudonymous accounts have:**
+- Limited OAuth scopes (basic profile only)
+- No cross-context linking
+- Enhanced privacy protections
+- Restricted third-party integrations
+- Cannot be used for age-gated services
+- No guardian relationships (requires verification)
+
+**Verification upgrade path:**
+- Pseudonymous users can upgrade to unverified by adding contact info
+- Unverified users can upgrade to verified through KYC process
+- Upgrade preserves existing contexts and data
+- Downgrade not permitted (prevents abuse)
+
+### Implementation Notes
+
+**Profile creation flow:**
+```python
+# Pseudonymous account creation
+POST /api/v1/users
+{
+  "account_type": "pseudonymous",
+  "preferred_name": "Alex",
+  "primary_email": "alex@protonmail.com",  # Verified but not exposed
+  "email_visible": false
+}
+```
+
+**Context validation:**
+```python
+# System prevents pseudonymous users from creating restricted contexts
+POST /api/v1/users/usr_pseudo_789/contexts
+{
+  "context_type": "healthcare"  # REJECTED: 403 Forbidden
+}
+
+# Error response:
+{
+  "error": "context_not_allowed",
+  "message": "Pseudonymous accounts cannot create healthcare contexts",
+  "upgrade_path": "Verify identity to access healthcare contexts"
+}
+```
+
+---
+
+## 4.2b Cultural Naming Pattern Examples
+
+The system's JSONB-based name storage supports diverse cultural naming conventions without enforcing Western assumptions.
+
+### 1. Mononyms (Indonesian, Icelandic)
+
+**Pattern**: Single name, no family name
+
+**JSONB Structure:**
+```json
+{
+  "names": {
+    "full_name": {
+      "id": "Sukarno",
+      "en": "Sukarno"
+    },
+    "explanation": "Mononym (single name)"
+  }
+}
+```
+
+**Display Resolution:**
+- Display name: "Sukarno"
+- Sorting: Alphabetize by full_name
+- Formal address: "Sukarno" (no Mr./Ms. prefix unless specified)
+
+**Validation Rules:**
+- Do NOT require separate given/family fields
+- Accept null for family_name or given_name
+- full_name field is sufficient
+
+---
+
+### 2. Chinese Family-First Ordering
+
+**Pattern**: Family name precedes given name
+
+**JSONB Structure:**
+```json
+{
+  "names": {
+    "family": {
+      "zh": "习",
+      "zh-Latn": "Xi",
+      "en": "Xi"
+    },
+    "given": {
+      "zh": "近平",
+      "zh-Latn": "Jinping", 
+      "en": "Jinping"
+    },
+    "display_order": "family_first",
+    "full_name": {
+      "zh": "习近平",
+      "en": "Xi Jinping"
+    }
+  }
+}
+```
+
+**Display Resolution by Language:**
+- Chinese (zh-CN): "习近平" (family-first, characters)
+- English (en-US): "Xi Jinping" (family-first, romanized)
+- Context-aware: May use "Jinping Xi" in Western contexts if user specifies
+
+**Sorting:**
+- Chinese locale: Sort by family name (习)
+- English locale: Sort by family name (Xi)
+- Never assume given name is primary sort key
+
+**Validation Rules:**
+- Support both character and romanization forms
+- Respect display_order preference
+- Allow language-specific ordering overrides
+
+---
+
+### 3. Arabic Multi-Component Names
+
+**Pattern**: Five traditional components (ism, kunya, nasab, laqab, nisba)
+
+**JSONB Structure:**
+```json
+{
+  "names": {
+    "ism": {
+      "ar": "محمد",
+      "ar-Latn": "Muhammad",
+      "en": "Muhammad"
+    },
+    "kunya": {
+      "ar": "أبو عبد الله",
+      "ar-Latn": "Abu Abdullah",
+      "en": "Abu Abdullah"
+    },
+    "nasab": {
+      "ar": "بن عبد الله",
+      "ar-Latn": "ibn Abdullah",
+      "en": "son of Abdullah"
+    },
+    "nisba": {
+      "ar": "الهاشمي",
+      "ar-Latn": "al-Hashimi",
+      "en": "al-Hashimi"
+    },
+    "display_preference": "formal_full"
+  }
+}
+```
+
+**Display Resolution by Context:**
+- Formal: "Muhammad ibn Abdullah al-Hashimi"
+- Informal: "Muhammad al-Hashimi"
+- Very informal: "Abu Abdullah" (kunya)
+
+**Sorting:**
+- Primary: ism (given name)
+- Secondary: nisba (family/tribal affiliation)
+
+**Validation Rules:**
+- All components optional
+- No minimum component requirement
+- Support Arabic script + romanization
+- Respect culturally appropriate abbreviation
+
+---
+
+### 4. Spanish Double Surnames
+
+**Pattern**: Paternal surname + maternal surname
+
+**JSONB Structure:**
+```json
+{
+  "names": {
+    "given": {
+      "es": "Maria",
+      "en": "Maria"
+    },
+    "paternal_surname": {
+      "es": "Garcia",
+      "en": "Garcia"
+    },
+    "maternal_surname": {
+      "es": "Rodriguez",
+      "en": "Rodriguez"
+    },
+    "full_name": {
+      "es": "Maria Garcia Rodriguez",
+      "en": "Maria Garcia Rodriguez"
+    },
+    "legal_surname_order": ["paternal", "maternal"]
+  }
+}
+```
+
+**Display Resolution:**
+- Full formal: "Maria Garcia Rodriguez"
+- Common informal: "Maria Garcia"
+- Professional: May use both surnames or paternal only per user preference
+
+**Inheritance Rules:**
+- Children inherit paternal_surname from father
+- Children inherit maternal_surname from mother (her paternal_surname)
+
+**Sorting:**
+- Primary: paternal_surname (Garcia)
+- Secondary: maternal_surname (Rodriguez)
+
+**Validation Rules:**
+- Support separate paternal/maternal fields
+- Allow single-surname simplification for international contexts
+- Preserve both surnames in legal contexts
+
+---
+
+### 5. Tamil Patronymic Initials
+
+**Pattern**: Father's name initial + given name
+
+**JSONB Structure:**
+```json
+{
+  "names": {
+    "patronymic_initial": "S",
+    "given": {
+      "ta": "ராஜீவ்",
+      "ta-Latn": "Rajeev",
+      "en": "Rajeev"
+    },
+    "father_name": {
+      "ta": "சுரேஷ்",
+      "ta-Latn": "Suresh",
+      "en": "Suresh"
+    },
+    "full_name": {
+      "ta": "ச. ராஜீவ்",
+      "en": "S. Rajeev"
+    },
+    "expanded_format": {
+      "en": "Suresh's son Rajeev"
+    }
+  }
+}
+```
+
+**Display Resolution:**
+- Formal: "S. Rajeev"
+- International: "Rajeev S." or "Rajeev Suresh"
+- Tamil context: "ச. ராஜீவ்" (Tamil script with initial)
+
+**Sorting:**
+- Primary: given name (Rajeev)
+- Secondary: patronymic initial (S)
+- Note: NOT a family surname (changes each generation)
+
+**Validation Rules:**
+- Accept single-letter initials
+- Support Tamil script + romanization
+- Allow expansion of initial to full father's name
+- Do not treat initial as "last name"
+
+---
+
+### Cross-Cultural Validation Principles
+
+**What the system DOES:**
+- Accept flexible name structures via JSONB
+- Support language-specific representations
+- Respect cultural ordering preferences
+- Allow null for any component
+
+**What the system DOES NOT do:**
+- Require "first name" and "last name"
+- Assume name ordering
+- Force Western name structure
+- Mandate minimum name components
+
+**API Design:**
+```python
+# Good: Flexible structure
+POST /api/v1/users/profile
+{
+  "names": {
+    "full_name": {"id": "Sukarno"}  # Valid mononym
+  }
+}
+
+# Bad: Enforcing structure (NOT USED)
+POST /api/v1/users/profile
+{
+  "first_name": "Sukarno",
+  "last_name": "REQUIRED"  # [ERROR] Would reject valid names
+}
 ```
 
 ---

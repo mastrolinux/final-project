@@ -2,21 +2,26 @@
 title: "Preface"
 ---
 
-# About This Thesis
+# About This Project
 
 This thesis presents the design and implementation of an Identity and Profile Management API system - a comprehensive solution designed to handle the complexity of modern digital identity across cultural, contextual, and regulatory boundaries.
 
-## Thesis Overview
 
 **Version:** 1.0  
 **Date:** October 2025  
-**Status:** Design Phase
+
+## Template used
+
+7 CM3035 Advanced Web Design
+7.1 Project Idea 1: Identity and profile management API
+
+## Project Overview
 
 The system addresses a fundamental challenge in digital identity management: people present themselves differently in different contexts. From legal names that differ from daily-use names, to professional versus social identities, to multilingual name representations, this work explores how to build a secure, flexible, and culturally-sensitive identity management platform.
 
 ## Document Organization
 
-This thesis is organized into focused sections for clarity and ease of navigation:
+This project is organized into focused sections for clarity and ease of navigation:
 
 ### System Architecture
 
