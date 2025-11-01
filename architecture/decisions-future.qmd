@@ -2,7 +2,7 @@
 title: "Decisions & Future Considerations"
 ---
 
-## 8.1 Architectural Decision Records (ADRs)
+## Architectural Decision Records (ADRs)
 
 ### ADR-001: FastAPI over Django
 
@@ -13,13 +13,15 @@ title: "Decisions & Future Considerations"
 **Decision**: Use FastAPI as the web framework.
 
 **Rationale**:
+
 - Better async support for I/O-bound operations
 - Automatic OpenAPI documentation generation
 - Type hints for better IDE support and validation
 - Faster performance for API-only applications
-- Modern Python 3.11+ features
+- Modern Python 3.12+ features
 
 **Consequences**:
+
 - [+] Better performance for API operations
 - [+] Automatic API documentation
 - [+] Strong typing support
@@ -27,6 +29,7 @@ title: "Decisions & Future Considerations"
 - [-] Smaller ecosystem than Django
 
 **Alternatives Considered**:
+
 - Django REST Framework: More batteries-included but heavier
 - Flask: Lightweight but lacks async and auto-docs
 
@@ -41,6 +44,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Use Supabase for database and authentication services.
 
 **Rationale**:
+
 - Built-in Row-Level Security (critical for this project)
 - Managed authentication reduces development time
 - Automatic backups and replication
@@ -48,6 +52,7 @@ title: "Decisions & Future Considerations"
 - Good free tier for initial development
 
 **Consequences**:
+
 - [+] Faster development (auth built-in)
 - [+] RLS support crucial for security model
 - [+] Reduced operational burden
@@ -56,6 +61,7 @@ title: "Decisions & Future Considerations"
 - [-] Potential migration complexity if needed
 
 **Alternatives Considered**:
+
 - Self-hosted PostgreSQL: More control but more ops
 - AWS RDS: Good but more complex setup
 - MongoDB: Document model doesn't fit relational needs
@@ -71,6 +77,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Context profiles inherit from base profile with field overrides.
 
 **Rationale**:
+
 - Reduces data duplication (DRY principle)
 - Ensures consistency across contexts
 - User updates base profile once, applies everywhere
@@ -78,6 +85,7 @@ title: "Decisions & Future Considerations"
 - Easier to maintain data integrity
 
 **Consequences**:
+
 - [+] Less data duplication
 - [+] Consistent user experience
 - [+] Simpler updates
@@ -85,6 +93,7 @@ title: "Decisions & Future Considerations"
 - [-] Need profile resolution layer
 
 **Alternatives Considered**:
+
 - Full duplication: Simpler queries but data inconsistency
 - Single profile with visibility flags: Doesn't support different names per context
 
@@ -99,6 +108,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Store translations in JSONB columns: `{"en": "John", "es": "Juan"}`.
 
 **Rationale**:
+
 - Flexible schema for variable number of languages
 - Simpler than separate translation tables
 - PostgreSQL has excellent JSONB support
@@ -106,6 +116,7 @@ title: "Decisions & Future Considerations"
 - Easy to add new languages without schema changes
 
 **Consequences**:
+
 - [+] Flexible language support
 - [+] Simple queries
 - [+] Easy to extend
@@ -113,6 +124,7 @@ title: "Decisions & Future Considerations"
 - [-] Requires application-level validation
 
 **Alternatives Considered**:
+
 - Separate translation tables: More normalized but complex queries
 - Single language only: Doesn't meet requirements
 - External translation service: Adds complexity and latency
@@ -128,6 +140,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Implement full OAuth 2.0 authorization server.
 
 **Rationale**:
+
 - Industry standard for third-party access
 - Scope-based access control aligns with requirements
 - Demonstrates understanding of modern auth patterns
@@ -135,12 +148,14 @@ title: "Decisions & Future Considerations"
 - Ecosystem support (libraries, tools)
 
 **Consequences**:
+
 - [+] Industry-standard approach
 - [+] Well-understood security model
 - [-] More complex than simple API keys
 - [-] Potentially requires consent management UI (If GDPR would be implemented)
 
 **Alternatives Considered**:
+
 - API keys: Simpler but less granular control
 - JWT only: Doesn't handle third-party consent
 - Custom protocol: Reinventing the wheel
@@ -156,6 +171,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Mark records as deleted (`deleted_at` timestamp) rather than physical removal.
 
 **Rationale**:
+
 - GDPR right to erasure allows grace period
 - Enables accidental deletion recovery
 - Maintains audit trail integrity
@@ -163,6 +179,7 @@ title: "Decisions & Future Considerations"
 - Common industry practice
 
 **Consequences**:
+
 - [+] Recovery from accidental deletion
 - [+] Audit trail preserved
 - [+] Grace period for GDPR
@@ -170,6 +187,7 @@ title: "Decisions & Future Considerations"
 - [-] Eventual hard delete still needed
 
 **Alternatives Considered**:
+
 - Hard deletes: Simpler but no recovery
 - Archive tables: More complex, duplicate schema
 
@@ -184,6 +202,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Deploy on Render.com rather than AWS.
 
 **Rationale**:
+
 - Simpler deployment for academic project
 - Lower cognitive overhead (focus on architecture)
 - Adequate for scale requirements (100K-1M users)
@@ -192,6 +211,7 @@ title: "Decisions & Future Considerations"
 - Auto-deploy from Git
 
 **Consequences**:
+
 - [+] Faster development (less DevOps)
 - [+] Simpler architecture
 - [+] Cost-effective
@@ -200,6 +220,7 @@ title: "Decisions & Future Considerations"
 - [-] Fewer managed services
 
 **Alternatives Considered**:
+
 - AWS: More powerful but steeper learning curve
 - Heroku: Similar to Render but more expensive
 - DigitalOcean: More control but more ops work
@@ -215,6 +236,7 @@ title: "Decisions & Future Considerations"
 **Decision**: Single API service, not microservices.
 
 **Rationale**:
+
 - Appropriate scale for project scope
 - Simpler development and debugging
 - Lower operational complexity
@@ -223,6 +245,7 @@ title: "Decisions & Future Considerations"
 - Single developer project
 
 **Consequences**:
+
 - [+] Simpler to develop and deploy
 - [+] Easier debugging
 - [+] Better for solo developer
@@ -230,12 +253,13 @@ title: "Decisions & Future Considerations"
 - [-] Harder to scale specific components independently
 
 **Alternatives Considered**:
+
 - Microservices: Overkill for this scale and timeline
 - Serverless: Good for scale but complex local development
 
 ---
 
-## 8.2 Trade-offs Analysis
+## Trade-offs Analysis
 
 ### Flexibility vs Complexity
 
@@ -267,26 +291,30 @@ title: "Decisions & Future Considerations"
 
 ---
 
-## 8.3 Future Enhancements (Post-Delivery)
+## Future Enhancements (Post-Delivery)
 
 ### Phase 2: Enhanced Identity Features
 
 **Biometric Integration**
+
 - Facial recognition for verification
 - Fingerprint authentication
 - Liveness detection
 
 **Verifiable Credentials (W3C)**
+
 - Digital diplomas
 - Professional certifications
 - Government-issued credentials
 
 **Blockchain Anchoring**
+
 - Immutable identity claims
 - Proof of existence
 - Tamper-evident history
 
 **Decentralized Identifiers (DIDs)**
+
 - Self-sovereign identity
 - User-controlled identifiers
 - Blockchain-based
@@ -296,21 +324,25 @@ title: "Decisions & Future Considerations"
 ### Phase 3: Advanced Access Control
 
 **Hierarchical Guardians**
+
 - Guardian of guardian relationships
 - Multi-level approval chains
 - Complex family structures
 
 **Temporary Access Delegation**
+
 - Time-limited access grants
 - Emergency access (medical)
 - Vacation delegation
 
 **Location-Based Access**
+
 - Geofencing policies
 - IP-based restrictions
 - Regional compliance rules
 
 **Attribute-Based Policies (ABAC)**
+
 - Complex boolean logic
 - Dynamic policy evaluation
 - Context-aware permissions
@@ -320,16 +352,19 @@ title: "Decisions & Future Considerations"
 ### Phase 4: Federation & Enterprise
 
 **SAML 2.0 Support**
+
 - Enterprise single sign-on
 - Identity provider role
 - Service provider integration
 
 **OpenID Connect Provider**
+
 - Standard identity federation
 - Third-party authentication
 - Claims mapping
 
 **Cross-Domain Federation**
+
 - Multiple organization support
 - Identity brokering
 - Trust relationships
@@ -339,23 +374,26 @@ title: "Decisions & Future Considerations"
 ### Phase 5: Analytics & Insights
 
 **Privacy-Preserving Analytics**
+
 - Differential privacy
 - Aggregate statistics only
 - No individual tracking
 
 **Identity Usage Dashboard**
+
 - Context usage patterns
 - OAuth integration health
 - Consent trends
 
 **Compliance Reporting**
+
 - GDPR compliance metrics
 - Audit trail analysis
 - Risk assessment
 
 ---
 
-## 8.4 Scalability Evolution
+## Scalability Evolution
 
 ### Current -> 100K Users
 
@@ -420,17 +458,19 @@ Database Sharding:
 
 ---
 
-## 8.5 Technical Debt Prevention
+## Technical Debt Prevention
 
 ### Architectural Hygiene
 
 **Quarterly Reviews**:
+
 - Architecture review meetings
 - Dependency audit
 - Security vulnerability scan
 - Performance profiling
 
 **Continuous Practices**:
+
 - Code reviews (100% coverage)
 - Automated testing (>80% coverage)
 - Documentation updates
@@ -441,6 +481,7 @@ Database Sharding:
 ### Documentation Maintenance
 
 **Keep Current**:
+
 - API documentation (auto-generated)
 - Architecture diagrams (with each ADR)
 - Runbooks (operational procedures)
@@ -460,6 +501,7 @@ Database Sharding:
 ```
 
 **Testing Practices**:
+
 - Maintain >80% code coverage
 - Contract tests for external integrations
 - Property-based testing for complex logic
@@ -468,53 +510,38 @@ Database Sharding:
 
 ---
 
-## 8.6 Open Questions
+## Open Questions
 
 ### Questions for Future Resolution
 
 1. **Identity Verification**: Which KYC provider to integrate?
 2. **Regional Compliance**: How to handle country-specific regulations?
-3. **Data Residency**: Multi-region deployment strategy?
-4. **Blockchain Integration**: Worth the complexity?
-5. **Mobile SDK**: Provide SDKs for mobile apps?
-6. **Biometric Storage**: How to securely store biometric templates?
+3. **Data Residency**: Multi-region/distributed deployment strategy?
 
 ---
 
-## 8.7 Success Metrics
+## Success Metrics
 
-### Short-Term (6 months)
+### Short-Term
 
 - [GOAL] System deployed and operational
 - [GOAL] >80% test coverage achieved
 - [GOAL] Academic project submitted
-- [GOAL] 100 test users onboarded
+- [GOAL] 5 test users onboarded
 - [GOAL] Zero security incidents
-
-### Medium-Term (12 months)
-
-- [GOAL] 10K active users
+- [GOAL] 1K fake users
 - [GOAL] 5 OAuth integrations
 - [GOAL] 99.9% uptime achieved
 - [GOAL] <200ms p95 response time
-- [GOAL] GDPR audit passed
-
-### Long-Term (24 months)
-
-- [GOAL] 100K active users
-- [GOAL] 50+ OAuth integrations
-- [GOAL] Multi-region deployment
-- [GOAL] Revenue-generating (premium features)
-- [GOAL] Industry recognition
 
 ---
 
-## 8.8 Risk Register
+## Risk Register
 
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|------------|
 | Security breach | Low | Critical | Multi-layer security, audits |
-| GDPR non-compliance | Low | High | Legal review, audit logs |
+| GDPR simulated compliance | Low | low | Legal review, audit logs |
 | Supabase outage | Medium | High | Backups, monitoring, failover plan |
 | Performance issues | Medium | Medium | Load testing, profiling |
 | Scope creep | High | Medium | Strict prioritization, MVP focus |
@@ -522,12 +549,18 @@ Database Sharding:
 
 ---
 
-## 8.9 Lessons Learned (To Be Updated)
+## Lessons Learned (To Be Updated)
 
-*This section will be populated during and after implementation.*
+- GDPR compliance is not in scope of this project, but it is a good practice to simulate it. I should have added a disclaimer in the overview section since the beginning.
+
+- The feedback from the reviewer was very helpful. I should contact them 
+very often
+
 
 ### What Went Well
-- TBD
+
+- The background research was well evaluated by the reviewer. I am apparently
+on the right track.
 
 ### What Could Be Improved
 - TBD
@@ -559,6 +592,7 @@ Database Sharding:
 ### B. References
 
 **Standards & Specifications**:
+
 - W3C Personal Names Around the World
 - Unicode LDML Part 8: Person Names
 - OWASP API Security Top 10 (2023)
@@ -566,12 +600,14 @@ Database Sharding:
 - OAuth 2.0 RFC 6749
 
 **Technical Resources**:
+
 - PostgreSQL Documentation (Row-Level Security)
 - FastAPI Documentation
 - Supabase Documentation
 - Pydantic Documentation
 
 **Best Practices**:
+
 - Martin Fowler - Bitemporal History Pattern
 - NIST Privacy Framework
 - ISO/IEC 27001 (Information Security)
@@ -580,5 +616,5 @@ Database Sharding:
 ---
 
 **Document Status**: Living Document  
-**Last Updated**: October 13, 2025  
-**Next Review**: Monthly during development
+**Last Updated**: November 1, 2025  
+**Next Review**: Weekly during development

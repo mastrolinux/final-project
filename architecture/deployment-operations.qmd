@@ -2,7 +2,7 @@
 title: "Deployment & Operations"
 ---
 
-## 7.1 Environment Strategy
+## Environment Strategy
 
 ```
 +-------------------------------------------------------------+
@@ -32,7 +32,7 @@ Production:
 
 ---
 
-## 7.2 Deployment Pipeline
+## Deployment Pipeline
 
 ```
 +-------------------------------------------------------------+
@@ -105,7 +105,7 @@ jobs:
 
 ---
 
-## 7.3 Infrastructure Components
+## Infrastructure Components
 
 ### Hosting: Render.com
 
@@ -120,7 +120,7 @@ services:
     startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 4
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.12
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
@@ -146,7 +146,7 @@ services:
 
 ---
 
-## 7.4 High Availability Design
+## High Availability Design
 
 ```
 +-------------------------------------------------------------+
@@ -177,7 +177,7 @@ Failover:
 
 ---
 
-## 7.5 Monitoring Strategy
+## Monitoring Strategy
 
 ### Observability Stack
 
@@ -226,7 +226,7 @@ async def health_check():
 
 ---
 
-## 7.6 Logging Architecture
+## Logging Architecture
 
 ### Structured Logging
 
@@ -260,7 +260,7 @@ async def health_check():
 
 ---
 
-## 7.7 Backup and Recovery
+## Backup and Recovery
 
 ### Backup Strategy
 
@@ -305,7 +305,7 @@ Disaster Recovery:
 
 ---
 
-## 7.8 Maintenance Windows
+## Maintenance Windows
 
 ### Scheduled Maintenance
 - **Frequency**: Monthly (3rd Sunday)
@@ -320,7 +320,7 @@ Disaster Recovery:
 
 ---
 
-## 7.9 Scaling Strategy
+## Scaling Strategy
 
 ### Horizontal Scaling (Scale Out)
 
@@ -362,7 +362,7 @@ triggers:
 
 ---
 
-## 7.10 Security Operations
+## Security Operations
 
 ### Security Monitoring
 - Failed authentication attempts
@@ -401,7 +401,7 @@ triggers:
 
 ---
 
-## 7.11 Performance Targets
+## Performance Targets
 
 | Metric | Target | Critical |
 |--------|--------|----------|

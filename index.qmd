@@ -7,8 +7,8 @@ title: "Preface"
 This thesis presents the design and implementation of an Identity and Profile Management API system - a comprehensive solution designed to handle the complexity of modern digital identity across cultural, contextual, and regulatory boundaries.
 
 
-**Version:** 1.0  
-**Date:** October 2025  
+**Version:** 1.4  
+**Date:** November 2025  
 
 ## Template used
 
@@ -28,7 +28,7 @@ This project is organized into focused sections for clarity and ease of navigati
 The core of this work presents a comprehensive architectural design for an identity management system that:
 
 - **Respects Cultural Diversity**: No assumptions about Western naming conventions or single-identity models
-- **Prioritizes Privacy**: GDPR-compliant privacy-by-design architecture with comprehensive audit trails
+- **Prioritizes Privacy**: Privacy-by-design architecture with comprehensive audit trails
 - **Enables Context-Awareness**: Different identity presentations for professional, social, family, and other contexts
 - **Supports Guardianship**: Complete framework for parents managing minor profiles with graduated autonomy
 - **Integrates via Standards**: OAuth 2.0 authorization server for controlled third-party access
@@ -39,7 +39,7 @@ This work makes several significant contributions to the field of digital identi
 
 1. **Context-Dependent Identity Model**: A novel approach to managing multiple identity presentations with inheritance and override mechanisms
 2. **Culturally-Neutral Design**: A data model that respects diverse naming conventions and identity expressions globally
-3. **Privacy-First Architecture**: Multi-layer security with defense-in-depth principles and GDPR Article 15-22 compliance
+3. **Privacy-First Architecture**: Multi-layer security with defense-in-depth principles and GDPR Article 15-22 considerations
 4. **Guardian Management Framework**: Comprehensive system for managing minor identities with age-appropriate graduated autonomy
 
 
@@ -65,5 +65,5 @@ Additional documentation and resources:
 
 ---
 
-**Last Updated:** October 29, 2025
+**Last Updated:** November 1, 2025
 

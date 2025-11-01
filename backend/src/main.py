@@ -14,7 +14,7 @@ from src.api.v1.router import api_router
 # Initialize FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Identity and Profile Management API - Multi-context, GDPR-compliant identity system",
+    description="Identity and Profile Management API - Multi-context, privacy oriented identity system",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

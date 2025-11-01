@@ -5,6 +5,8 @@ title: "System Context & Scope"
 ## System Context Diagram
 
 ```{mermaid}
+
+
 graph TB
     subgraph External["External Actors"]
         EndUsers[End Users<br/>Web/Mobile Apps]
@@ -49,6 +51,7 @@ graph TB
 ### In Scope [YES]
 
 **Identity Profile Management:**
+
 - Base user profiles (CRUD operations)
 - Context-specific profile variants
 - Profile inheritance and resolution
@@ -56,6 +59,7 @@ graph TB
 - Multilingual content support
 
 **Access Control:**
+
 - Role-based access control (RBAC)
 - Attribute-based access control (ABAC)
 - Row-level security (RLS)
@@ -63,6 +67,7 @@ graph TB
 - Permission management
 
 **OAuth 2.0 Authorization:**
+
 - Authorization code flow
 - Token issuance and validation
 - Scope-based access control
@@ -70,6 +75,7 @@ graph TB
 - Consent management
 
 **GDPR Compliance:**
+
 - Data export (Right of Access)
 - Data deletion (Right to Erasure)
 - Consent tracking and withdrawal
@@ -77,6 +83,7 @@ graph TB
 - Data retention policies
 
 **Guardian Features:**
+
 - Guardian-minor relationship management
 - Age verification
 - Permission hierarchies
@@ -85,6 +92,7 @@ graph TB
 ### Out of Scope [NO]
 
 **Delegated to External Services:**
+
 - User authentication credentials storage -> Supabase Auth
 - Password hashing and management -> Supabase Auth
 - Email delivery infrastructure -> Transactional email service
@@ -93,6 +101,7 @@ graph TB
 - CDN for static assets -> Hosting provider
 
 **Explicitly Not Included:**
+
 - Identity verification/KYC services
 - Biometric authentication
 - Federated identity (SAML, cross-org)
@@ -107,11 +116,11 @@ graph TB
 | Stakeholder | Interest | Concerns | Priority |
 |------------|----------|----------|----------|
 | **End Users** | Manage identity securely | Privacy, ease of use, control | High |
-| **Third-Party Apps** | Access user data with consent | API reliability, clear scopes | High |
-| **Guardians** | Manage minor profiles safely | Safety, appropriate controls | High |
+| **Third-Party Apps** | Access user data with consent | API reliability, clear scopes | Low |
+| **Guardians** | Manage minor profiles safely | Safety, appropriate controls | Mid |
 | **System Admins** | Monitor and maintain system | Observability, security | Medium |
-| **Compliance Officers** | Regulatory compliance | GDPR adherence, audit trails | High |
-| **Developers** | Build and maintain system | Code quality, documentation | Medium |
+| **Compliance Reviewers (simulated)** | Regulatory compliance | GDPR adherence, audit trails | Low |
+| **Developer (Myself)** | Build and maintain system | Code quality, documentation | Medium |
 
 ---
 
@@ -249,7 +258,7 @@ graph TB
 | Constraint | Description | Impact |
 |-----------|-------------|--------|
 | **PostgreSQL as primary database** | Architecture decision for ACID + RLS | All data modeling must fit relational model |
-| **Python 3.11+ required** | For modern type hints and async support | Cannot use older Python versions |
+| **Python 3.12+ required** | For modern type hints and async support | Cannot use older Python versions |
 | **Supabase platform** | Managed PostgreSQL + Auth | Limited to Supabase capabilities and regions |
 | **Render.com hosting** | Academic project simplicity | Limited infrastructure customization |
 | **5-month timeline** | Academic project deadline | Must prioritize features for MVP |

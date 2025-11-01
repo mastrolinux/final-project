@@ -2,7 +2,7 @@
 title: "Integration Architecture"
 ---
 
-## 6.0 Standards Compliance and Alignment
+## Standards Compliance and Alignment
 
 This system adheres to established international standards for identity management, API design, and internationalization to ensure interoperability, security, and cultural sensitivity.
 
@@ -23,7 +23,7 @@ See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance
 | **SCIM 2.0** | RFC 7643/7644 | Alignment | User schema inspiration | Extended for multi-context identity |
 | **Unicode TR35 PersonNames** | Draft v48 | Design Informed | Multilingual name handling | Implementation-specific JSONB structure |
 | **W3C i18n Guidelines** | Latest | Full Compliance | Internationalization best practices | None |
-| **GDPR/CCPA/HIPAA** | Various | **Architectural Inspiration** | Privacy-by-design principles | **Not legally compliant** (academic scope) |
+| **GDPR* | Various | **Architectural Inspiration** | Privacy-by-design principles | **Not legally compliant** (academic scope) |
 | **HTTP/1.1** | RFC 7231 | Full Compliance | REST API semantics | None |
 | **JSON API** | v1.1 | Partial | Response formatting | Custom error format |
 
@@ -32,6 +32,7 @@ See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance
 ### OAuth 2.0 (RFC 6749) - Full Compliance
 
 **Implementation:**
+
 - Authorization Code Grant flow (Section 4.1)
 - Access token issuance and validation
 - Refresh token support
@@ -47,12 +48,14 @@ POST /oauth/introspect   - Token introspection
 ```
 
 **Security:**
+
 - PKCE (Proof Key for Code Exchange) - RFC 7636
 - State parameter for CSRF protection
 - Redirect URI validation
 - Client authentication (client_secret)
 
 **Compliance verification:**
+
 - All flows pass OAuth 2.0 test suite
 - Security best practices from RFC 6819 implemented
 
@@ -61,6 +64,7 @@ POST /oauth/introspect   - Token introspection
 ### OpenID Connect Core 1.0 - Substantial Compliance
 
 **Implementation:**
+
 - UserInfo endpoint (`/oauth/userinfo`)
 - Standard claims (sub, name, email, picture)
 - ID Token issuance (JWT format)
@@ -83,6 +87,7 @@ POST /oauth/introspect   - Token introspection
 | `locale` | `preferred_language` | ISO 639-1 code |
 
 **Extensions (Non-Standard):**
+
 - `context` - Current identity context (professional, social, etc.)
 - `account_type` - Account verification level (verified, unverified, pseudonymous)
 - `names` - Multilingual JSONB name structure
@@ -90,6 +95,7 @@ POST /oauth/introspect   - Token introspection
 - `bio` - User biography/description
 
 **Divergences:**
+
 - **Context profiles**: Extension beyond standard single-identity model
 - **Multilingual names**: JSONB structure more flexible than standard claims
 - **Scope-based filtering**: Additional scopes for context-specific data
@@ -122,6 +128,7 @@ POST /oauth/introspect   - Token introspection
 ### SCIM 2.0 (RFC 7643/7644) - Alignment
 
 **Inspiration taken from SCIM:**
+
 - Resource-oriented API design
 - PATCH operations for partial updates
 - Bulk operations concept (future)
@@ -150,12 +157,14 @@ POST /oauth/introspect   - Token introspection
 ```
 
 **Extensions beyond SCIM:**
+
 - Context profiles (not in SCIM spec)
 - Multilingual attribute support
 - Guardian relationships
 - Temporal versioning
 
 **Why not full SCIM compliance:**
+
 - SCIM designed for enterprise directory sync (LDAP replacement)
 - Our use case: consumer identity with cultural sensitivity
 - Context-based identity not supported in SCIM
@@ -166,6 +175,7 @@ POST /oauth/introspect   - Token introspection
 ### Unicode TR35 PersonNames (Draft v48) - Design Informed
 
 **Principles adopted:**
+
 - No assumptions about name structure
 - Support for non-Western name orders
 - Language-specific formatting
@@ -194,12 +204,14 @@ POST /oauth/introspect   - Token introspection
 ```
 
 **Advantages of our approach:**
+
 - Full multilingual support per component
 - Arbitrary name components (patronymic, matronymic, etc.)
 - Cultural pattern extensibility
 - No forced structure
 
 **Alignment areas:**
+
 - Respect for name order preferences
 - Script-specific handling
 - Mononym support
@@ -261,6 +273,7 @@ Content-Type: application/json; charset=utf-8
 This section describes **GDPR-inspired privacy features** implemented as architectural best practices. This project does **NOT claim legal compliance** with GDPR, CCPA, or HIPAA.
 
 **Legal compliance requires**:
+
 - Legal counsel and Data Protection Officer
 - Formal Data Protection Impact Assessments (DPIAs)
 - Compliance documentation and policies
@@ -269,7 +282,8 @@ This section describes **GDPR-inspired privacy features** implemented as archite
 - Cookie consent management
 - Marketing compliance processes
 
-**This academic project provides**:
+**This project provides**:
+
 - Privacy-by-design architecture
 - Basic data subject rights implementation
 - Audit logging for transparency
@@ -294,6 +308,7 @@ Use this as a foundation, not as production-ready compliance.
 | HIPAA Minimum Necessary | Data minimization | OAuth scope filtering |
 
 **Privacy-by-Design Principles:**
+
 - Encryption at rest (AES-256)
 - Encryption in transit (TLS 1.3)
 - Data minimization (scope-based filtering)
@@ -302,12 +317,14 @@ Use this as a foundation, not as production-ready compliance.
 - User control over all personal data
 
 **Audit Trail (for transparency, not legal compliance):**
+
 - All data access logged
 - Processing basis recorded (consent, contract, etc.)
 - Retention: 7 years (academic requirement, not legal)
 - Immutable audit logs
 
 **What is NOT implemented:**
+
 - Formal breach notification (72-hour GDPR requirement)
 - Data Protection Impact Assessments (DPIAs)
 - Supervisory authority communication
@@ -320,21 +337,25 @@ Use this as a foundation, not as production-ready compliance.
 ### Standards-Driven Design Decisions
 
 **Decision 1: OAuth 2.0 over SAML**
+
 - **Reason**: Modern REST APIs, mobile-friendly, simpler implementation
 - **Standard**: OAuth 2.0 (RFC 6749)
 - **Benefit**: Wide third-party support, JSON-based
 
 **Decision 2: JSONB over Rigid Schema**
+
 - **Reason**: Cultural naming diversity requires flexibility
 - **Informed by**: Unicode TR35 PersonNames
 - **Benefit**: No Western assumptions, extensible
 
 **Decision 3: Context Profiles (Novel Extension)**
+
 - **Reason**: OIDC/SCIM don't support multi-context identity
 - **Informed by**: Research on identity presentation (Goffman, 1959)
 - **Trade-off**: Non-standard but addresses real need
 
 **Decision 4: Legal Name Optional**
+
 - **Reason**: Real-name policies harm vulnerable populations (Haimson, 2016)
 - **Informed by**: Research on pseudonymity necessity
 - **Privacy Principle**: Aligned with GDPR data minimization principle (Art. 5.1c)
@@ -344,24 +365,28 @@ Use this as a foundation, not as production-ready compliance.
 ### Standards Compliance Testing
 
 **OAuth 2.0 Compliance:**
+
 - Run OAuth 2.0 test suite
 - Validate token flows
 - Test PKCE implementation
 - Verify security recommendations (RFC 6819)
 
 **OIDC Compliance:**
+
 - Test standard claims mapping
 - Validate UserInfo endpoint format
 - Test ID Token structure
 - Verify signature validation
 
 **Internationalization Testing:**
+
 - Test Accept-Language parsing
 - Verify UTF-8 handling
 - Test RTL language support
 - Validate locale-aware sorting
 
 **Privacy Features Testing:**
+
 - Verify all data subject rights endpoints implemented
 - Test data export completeness
 - Validate audit log retention
@@ -373,19 +398,19 @@ Use this as a foundation, not as production-ready compliance.
 ### Future Standards Alignment
 
 **Planned:**
+
 - **WebAuthn (W3C)**: Passwordless authentication
 - **DID (W3C)**: Decentralized identifiers (research phase)
 - **Verifiable Credentials**: For professional credentials
 - **OpenID Connect for Identity Assurance**: Verification levels
 
 **Under Consideration:**
-- **FHIR (Healthcare)**: If healthcare context expands
+
 - **Schema.org Person**: For SEO/structured data
-- **ActivityPub**: For federated identity (long-term)
 
 ---
 
-## 6.1 Integration Patterns
+## Integration Patterns
 
 ```
 External Systems                    Identity API
@@ -423,7 +448,7 @@ Logging Service <----------------> Filesystem
 
 ---
 
-## 6.2 API Contract Design
+## API Contract Design
 
 ### REST API Principles
 
@@ -436,6 +461,7 @@ Logging Service <----------------> Filesystem
 ```
 
 **2. HTTP Verbs Semantics**
+
 - `GET`: Read (idempotent)
 - `POST`: Create
 - `PUT`: Full update (idempotent)
@@ -482,7 +508,7 @@ Response: Content-Language: en
 
 ---
 
-## 6.3 API Versioning Strategy
+## API Versioning Strategy
 
 ### URI-Based Versioning
 
@@ -499,12 +525,14 @@ Response: Content-Language: en
 ### Breaking vs Non-Breaking Changes
 
 **Non-Breaking (same version):**
+
 - [YES] Adding new endpoints
 - [YES] Adding optional parameters
 - [YES] Adding fields to responses
 - [YES] Adding new HTTP methods
 
 **Breaking (new version):**
+
 - [NO] Removing fields from responses
 - [NO] Changing field types
 - [NO] Changing authentication methods
@@ -512,7 +540,7 @@ Response: Content-Language: en
 
 ---
 
-## 6.4 OAuth 2.0 Integration
+## OAuth 2.0 Integration
 
 ### Authorization Code Flow
 
@@ -577,7 +605,7 @@ Third-Party App                    Identity API
 
 ---
 
-## 6.5 Third-Party Integration Points
+## Third-Party Integration Points
 
 ### OAuth Client Registration
 
@@ -622,7 +650,7 @@ Delivery:
 
 ---
 
-## 6.6 API Documentation
+## API Documentation
 
 ### OpenAPI Specification
 
@@ -664,11 +692,12 @@ paths:
 
 ---
 
-## 6.7 External Service Integration
+## External Service Integration
 
 ### Email Service (SendGrid/Mailgun)
 
 **Use Cases:**
+
 - Email verification
 - Password reset
 - Guardian verification
@@ -676,6 +705,7 @@ paths:
 - Data export ready
 
 **Integration Pattern:**
+
 - Async queue-based
 - Retry with exponential backoff
 - Template management
@@ -684,6 +714,7 @@ paths:
 ### Monitoring Service (CloudWatch/Datadog)
 
 **Metrics Sent:**
+
 - Request counts
 - Response times
 - Error rates
@@ -691,6 +722,7 @@ paths:
 - Cache hit/miss rates
 
 **Logs Sent:**
+
 - Application logs
 - Audit logs
 - Error logs
@@ -698,7 +730,7 @@ paths:
 
 ---
 
-## 6.8 API Rate Limiting
+## API Rate Limiting
 
 ```
 Rate Limit Strategy:
@@ -725,7 +757,7 @@ Response Headers:
 
 ---
 
-## 6.9 Content Negotiation
+## Content Negotiation
 
 ### Accept-Language Header
 
@@ -748,7 +780,7 @@ Response:
 
 ---
 
-## 6.10 Context-Based API Examples
+## Context-Based API Examples
 
 ### Example 1: Retrieve Professional Profile
 

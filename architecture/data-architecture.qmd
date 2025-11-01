@@ -2,7 +2,7 @@
 title: "Data Architecture"
 ---
 
-## 4.1 Data Model Philosophy
+## Data Model Philosophy
 
 ### Core Principles
 
@@ -15,7 +15,7 @@ title: "Data Architecture"
 
 ---
 
-## 4.2 Core Domain Model
+## Core Domain Model
 
 ### Identity Aggregate
 
@@ -186,7 +186,7 @@ erDiagram
 
 ---
 
-## 4.2a Pseudonymity and Unverified Accounts
+## Pseudonymity and Unverified Accounts
 
 ### Account Type Categories
 
@@ -230,6 +230,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 ### Context Restrictions by Account Type
 
 **Verified Accounts** - Full access:
+
 - Base profile
 - Professional contexts
 - Social contexts
@@ -237,6 +238,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 - Healthcare contexts (requires legal_name + date_of_birth)
 
 **Unverified Accounts** - Limited access:
+
 - Base profile
 - Professional contexts (without credentials verification)
 - Social contexts
@@ -244,6 +246,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 - Cannot access: Legal, Healthcare
 
 **Pseudonymous Accounts** - Minimal access:
+
 - Base profile (minimal fields)
 - Social contexts only
 - No OAuth integration with verified services
@@ -252,6 +255,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 ### Security Implications
 
 **Pseudonymous accounts have:**
+
 - Limited OAuth scopes (basic profile only)
 - No cross-context linking
 - Enhanced privacy protections
@@ -260,6 +264,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 - No guardian relationships (requires verification)
 
 **Verification upgrade path:**
+
 - Pseudonymous users can upgrade to unverified by adding contact info
 - Unverified users can upgrade to verified through KYC process
 - Upgrade preserves existing contexts and data
@@ -297,7 +302,7 @@ POST /api/v1/users/usr_pseudo_789/contexts
 
 ---
 
-## 4.2b Cultural Naming Pattern Examples
+## Cultural Naming Pattern Examples
 
 The system's JSONB-based name storage supports diverse cultural naming conventions without enforcing Western assumptions.
 
@@ -319,11 +324,13 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ```
 
 **Display Resolution:**
+
 - Display name: "Sukarno"
 - Sorting: Alphabetize by full_name
 - Formal address: "Sukarno" (no Mr./Ms. prefix unless specified)
 
 **Validation Rules:**
+
 - Do NOT require separate given/family fields
 - Accept null for family_name or given_name
 - full_name field is sufficient
@@ -358,16 +365,19 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ```
 
 **Display Resolution by Language:**
+
 - Chinese (zh-CN): "习近平" (family-first, characters)
 - English (en-US): "Xi Jinping" (family-first, romanized)
 - Context-aware: May use "Jinping Xi" in Western contexts if user specifies
 
 **Sorting:**
+
 - Chinese locale: Sort by family name (习)
 - English locale: Sort by family name (Xi)
 - Never assume given name is primary sort key
 
 **Validation Rules:**
+
 - Support both character and romanization forms
 - Respect display_order preference
 - Allow language-specific ordering overrides
@@ -408,15 +418,18 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ```
 
 **Display Resolution by Context:**
+
 - Formal: "Muhammad ibn Abdullah al-Hashimi"
 - Informal: "Muhammad al-Hashimi"
 - Very informal: "Abu Abdullah" (kunya)
 
 **Sorting:**
+
 - Primary: ism (given name)
 - Secondary: nisba (family/tribal affiliation)
 
 **Validation Rules:**
+
 - All components optional
 - No minimum component requirement
 - Support Arabic script + romanization
@@ -454,19 +467,23 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ```
 
 **Display Resolution:**
+
 - Full formal: "Maria Garcia Rodriguez"
 - Common informal: "Maria Garcia"
 - Professional: May use both surnames or paternal only per user preference
 
 **Inheritance Rules:**
+
 - Children inherit paternal_surname from father
 - Children inherit maternal_surname from mother (her paternal_surname)
 
 **Sorting:**
+
 - Primary: paternal_surname (Garcia)
 - Secondary: maternal_surname (Rodriguez)
 
 **Validation Rules:**
+
 - Support separate paternal/maternal fields
 - Allow single-surname simplification for international contexts
 - Preserve both surnames in legal contexts
@@ -504,16 +521,19 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ```
 
 **Display Resolution:**
+
 - Formal: "S. Rajeev"
 - International: "Rajeev S." or "Rajeev Suresh"
 - Tamil context: "ச. ராஜீவ்" (Tamil script with initial)
 
 **Sorting:**
+
 - Primary: given name (Rajeev)
 - Secondary: patronymic initial (S)
 - Note: NOT a family surname (changes each generation)
 
 **Validation Rules:**
+
 - Accept single-letter initials
 - Support Tamil script + romanization
 - Allow expansion of initial to full father's name
@@ -524,12 +544,14 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 ### Cross-Cultural Validation Principles
 
 **What the system DOES:**
+
 - Accept flexible name structures via JSONB
 - Support language-specific representations
 - Respect cultural ordering preferences
 - Allow null for any component
 
 **What the system DOES NOT do:**
+
 - Require "first name" and "last name"
 - Assume name ordering
 - Force Western name structure
@@ -555,17 +577,19 @@ POST /api/v1/users/profile
 
 ---
 
-## 4.3 Data Storage Strategy
+## Data Storage Strategy
 
 ### Primary Data Store: PostgreSQL (Supabase)
 
 **What it stores:**
+
 - Structured data (profiles, relationships, OAuth)
 - JSONB for flexible/multilingual fields
 - Temporal data with validity periods
 - Transactional data requiring ACID
 
 **Why PostgreSQL:**
+
 - Row-Level Security (RLS) for access control
 - Strong ACID guarantees
 - JSONB support for flexibility
@@ -575,6 +599,7 @@ POST /api/v1/users/profile
 ### Caching Layer: Redis
 
 **What it caches:**
+
 - Session data (user sessions)
 - Frequently accessed profiles (5 min TTL)
 - Context resolution results (5 min TTL)
@@ -583,6 +608,7 @@ POST /api/v1/users/profile
 - Rate limiting counters
 
 **Cache Invalidation:**
+
 - On profile update -> invalidate profile cache
 - On role change -> invalidate role cache
 - On OAuth client update -> invalidate client cache
@@ -590,6 +616,7 @@ POST /api/v1/users/profile
 ### Audit Log Storage
 
 **Separate from transactional database:**
+
 - Immutable, write-once logs
 - Long-term retention (7 years)
 - Optimized for append-only writes
@@ -598,6 +625,7 @@ POST /api/v1/users/profile
 ### File Storage: Supabase Storage
 
 **What it stores:**
+
 - Profile photos
 - Document uploads (verification)
 - Data export archives (GDPR)
@@ -605,7 +633,7 @@ POST /api/v1/users/profile
 
 ---
 
-## 4.4 Data Lifecycle
+## Data Lifecycle
 
 ```
 +-------------------------------------------------------------+
@@ -654,7 +682,7 @@ PURGE (after retention period)
 
 ---
 
-## 4.5 Data Consistency Model
+## Data Consistency Model
 
 ### Strong Consistency (within single aggregate)
 - All profile updates within transaction boundary
@@ -680,7 +708,7 @@ PURGE (after retention period)
 
 ---
 
-## 4.6 Indexing Strategy
+## Indexing Strategy
 
 ### Primary Indexes (Unique Constraints)
 
@@ -744,7 +772,7 @@ CREATE INDEX idx_audit_log_resource
 
 ---
 
-## 4.7 Data Retention Policy
+## Data Retention Policy
 
 | Data Type | Retention Period | Justification |
 |-----------|-----------------|---------------|
@@ -759,7 +787,7 @@ CREATE INDEX idx_audit_log_resource
 
 ---
 
-## 4.8 Data Migration Strategy
+## Data Migration Strategy
 
 ### Database Schema Migrations (Supabase CLI)
 
@@ -784,69 +812,27 @@ supabase/
 
 ---
 
-## 4.9 Backup and Recovery Strategy
+## Backup and Recovery Strategy
 
-### Backup Tiers
+The system relies on a multi-layered backup approach using standard cloud platform capabilities:
 
-The system implements a multi-tier backup strategy to balance recovery capabilities with storage costs and operational requirements.
+### Database Backups (Supabase)
 
-| Backup Type | Frequency | Retention | Storage Location | Purpose |
-|-------------|-----------|-----------|------------------|---------|
-| **Point-in-time** | Continuous | 7 days | Supabase (built-in) | Granular recovery from operational errors |
-| **Full Snapshot** | Daily | 30 days | Supabase automated | Standard disaster recovery |
-| **Cold Archive** | Weekly | 1 year | External storage | Long-term audit trail preservation |
+- **Automated Daily Backups**: Supabase provides automated daily snapshots with 7-day retention
+- **Point-in-Time Recovery**: Available on paid tiers for granular recovery within retention window
+- **Manual Exports**: Periodic database dumps (SQL format) for extended retention and portability
 
-### Point-in-Time Recovery
+### Application Backups (Render.com)
 
-Supabase provides continuous backup with point-in-time recovery (PITR) capabilities:
+- **Container State**: Render.com maintains automated backups of deployed application containers
+- **Configuration**: Infrastructure-as-code in `render.yaml` allows rapid redeployment
+- **Environment Variables**: Securely stored in Render dashboard, backed up via documentation
 
-- **Granularity**: Restore to any second within the last 7 days
-- **Use Cases**: 
-  - Accidental data deletion or corruption
-  - Testing schema migrations with rollback
-  - Investigating data integrity issues
-- **Performance**: Recovery typically completes within 15-30 minutes for databases under 10GB
+### Source Code Versioning (Git/GitHub)
 
-### Daily Full Snapshots
+- **Complete History**: All application code, migrations, and configuration files tracked in Git
+- **Branch Protection**: Main branch protected, requiring pull requests and reviews
+- **Release Tags**: Version tagging for production deployments enables rollback to known-good states
+- **Migration Files**: Database schema changes version-controlled in `supabase/migrations/`
 
-Automated daily backups provide reliable disaster recovery:
-
-- **Timing**: Executed at 2 AM UTC (lowest traffic period)
-- **Encryption**: AES-256 encryption at rest
-- **Verification**: Automated integrity checks post-backup
-- **Access Control**: Restricted to database administrators via Supabase dashboard
-
-### Weekly Cold Storage Archives
-
-Extended retention archives support audit trail preservation and regulatory considerations:
-
-- **Scope**: Full database export including audit logs and profile history
-- **Format**: Compressed SQL dumps + JSONL for audit logs
-- **Storage**: AWS S3 Glacier for cost-effective long-term storage
-- **Purpose**: Supports 7-year audit log retention requirement and forensic analysis
-
-### Recovery Objectives
-
-The system targets the following recovery parameters:
-
-- **RPO (Recovery Point Objective)**: 1 hour - Maximum acceptable data loss
-- **RTO (Recovery Time Objective)**: 4 hours - Maximum acceptable downtime
-
-**Rationale**: These objectives balance operational continuity with infrastructure costs. For a thesis project deployed on Render's free tier, more aggressive targets (e.g., RPO < 15 min) would require significant additional investment in replication and monitoring infrastructure.
-
-### Disaster Recovery Scenarios
-
-| Scenario | Recovery Method | Expected Downtime |
-|----------|-----------------|-------------------|
-| Single table corruption | Point-in-time restore (specific table) | 15-30 minutes |
-| Full database corruption | Daily snapshot restore | 2-4 hours |
-| Complete infrastructure failure | Rebuild from weekly archive | 6-8 hours |
-| Targeted data deletion attack | Point-in-time restore + audit log analysis | 1-2 hours |
-
-### Backup Testing
-
-Regular backup validation ensures recovery readiness:
-
-- **Monthly**: Restore test database from daily snapshot
-- **Quarterly**: Full recovery simulation from cold storage
-- **Documentation**: Maintain runbooks for each recovery scenario
+This pragmatic approach balances reliability with simplicity appropriate for an academic thesis project while maintaining professional-grade recovery capabilities.

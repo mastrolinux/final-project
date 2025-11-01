@@ -15,7 +15,7 @@ References to "GDPR Article" or "compliance" throughout this document should be 
 
 ---
 
-## 5.1 Security Layers (Defense in Depth)
+## Security Layers (Defense in Depth)
 
 ```{mermaid}
 graph TB
@@ -88,7 +88,7 @@ graph TB
 
 ---
 
-## 5.2 Authentication Architecture
+## Authentication Architecture
 
 ### JWT Token Strategy
 
@@ -131,7 +131,7 @@ Authorization Code Flow:
 
 ---
 
-## 5.3 Authorization Architecture
+## Authorization Architecture
 
 ### Multi-Level Authorization
 
@@ -166,7 +166,7 @@ Request with Token
 
 ---
 
-## 5.4 Data Protection
+## Data Protection
 
 ### Encryption Strategy
 
@@ -203,7 +203,7 @@ Password Hashing:
 
 ---
 
-## 5.4a Deadname Protection
+## Deadname Protection
 
 ### Overview and Rationale
 
@@ -246,16 +246,19 @@ Three visibility levels control name exposure:
 #### 3. Automatic Suppression Rules
 
 **User-Facing Audit Logs:**
+
 - Names marked `is_deprecated: true` are automatically redacted
 - Historical entries show: `[Previous name - suppressed for privacy]`
 - User can see "a name was changed" but not the old value
 
 **Admin Audit Logs:**
+
 - Full history retained for legal compliance
 - Access requires elevated permissions
 - All access to deprecated names is logged
 
 **Public APIs:**
+
 - Deprecated names NEVER returned via OAuth endpoints
 - Profile history endpoints filter deprecated names
 - Temporal queries (point-in-time) respect deprecation
@@ -336,11 +339,13 @@ Guardian relationships include specific permission for name changes on minor acc
 The `legal_name` field has additional protections:
 
 **Storage:**
+
 - Encrypted at rest using AES-256-GCM
 - Separate encryption key from general database encryption
 - Key rotation every 90 days
 
 **Access:**
+
 - NEVER exposed via OAuth (even with full scopes)
 - Only accessible directly to user via authenticated endpoint
 - Accessible in legal/healthcare contexts with explicit consent
@@ -391,6 +396,7 @@ Authorization: Bearer <user_token>
 ```
 
 **Result:**
+
 - Historical audit trail shows "Name changed on [date]" but not the actual name
 - Legal compliance maintained (proof that name was changed)
 - No way to recover deprecated name (irreversible)
@@ -398,24 +404,28 @@ Authorization: Bearer <user_token>
 #### 8. Implementation Checklist
 
 **Database Layer:**
+
 - [x] Add `is_deprecated` boolean to `identity_names` table
 - [x] Add `visibility_level` enum to `identity_names` table
 - [x] Create index on `is_deprecated` for query performance
 - [x] Implement triggers to prevent accidental is_deprecated=false updates
 
 **Application Layer:**
+
 - [x] Filter deprecated names in all profile resolution logic
 - [x] Redact deprecated names in user-visible audit logs
 - [x] Implement separate guardian permission for name changes
 - [x] Add legal_name encryption/decryption in repository layer
 
 **API Layer:**
+
 - [x] Never expose deprecated names via OAuth endpoints
 - [x] Provide user option to deprecate names on update
 - [x] Implement GDPR erasure endpoint for deprecated names
 - [x] Add deprecation flag to name change endpoints
 
 **Testing:**
+
 - [x] Test deprecated name filtering across all contexts
 - [x] Test audit log redaction for deprecated names
 - [x] Test legal_name never appears in OAuth responses
@@ -444,7 +454,7 @@ This design is informed by:
 
 ---
 
-## 5.5 Security Controls
+## Security Controls
 
 ### Input Validation
 - Schema validation (Pydantic)
@@ -474,7 +484,7 @@ X-XSS-Protection: 1; mode=block
 
 ---
 
-## 5.6 OWASP Top 10 Mitigations
+## OWASP Top 10 Mitigations
 
 | Vulnerability | Mitigation |
 |--------------|------------|
@@ -491,7 +501,7 @@ X-XSS-Protection: 1; mode=block
 
 ---
 
-## 5.7 Audit Logging
+## Audit Logging
 
 ### What Gets Logged
 

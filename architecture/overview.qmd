@@ -129,6 +129,7 @@ This approach aligns with GDPR data minimization principles: collect only what i
 ## In-Scope Capabilities [YES]
 
 **Identity Profile Management:**
+
 - Base user profiles (CRUD operations)
 - Context-specific profile variants
 - Profile inheritance and resolution
@@ -136,6 +137,7 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Multilingual content support
 
 **Access Control:**
+
 - Role-based access control (RBAC)
 - Attribute-based access control (ABAC)
 - Row-level security (RLS)
@@ -143,6 +145,7 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Permission management
 
 **OAuth 2.0 Authorization:**
+
 - Authorization code flow
 - Token issuance and validation
 - Scope-based access control
@@ -150,6 +153,7 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Consent management
 
 **GDPR-Inspired Privacy Features:**
+
 - Data export (Right of Access - basic implementation)
 - Data deletion (Right to Erasure - soft delete)
 - Consent tracking and withdrawal
@@ -167,6 +171,7 @@ This project implements **GDPR-inspired principles** as architectural best pract
 
 
 **Guardian Features:**
+
 - Guardian-minor relationship management
 - Age verification
 - Permission hierarchies
@@ -356,6 +361,7 @@ Privacy & Compliance
 **Scenario**: Dr. Sarah Chen is a psychiatrist who maintains strict boundaries between her professional and personal life for patient privacy and safety reasons.
 
 **Professional Context**:
+
 - Display Name: "Dr. Sarah Chen, MD, PhD"
 - Email: s.chen@mentalhealth.org
 - Bio: Board-certified psychiatrist specializing in anxiety disorders
@@ -363,6 +369,7 @@ Privacy & Compliance
 - Credentials: ["MD", "PhD", "Board Certified Psychiatry"]
 
 **Social Context**:
+
 - Display Name: "Sarah C."
 - Email: sarah.personal@email.com
 - Bio: Book lover, yoga enthusiast, amateur photographer
@@ -370,6 +377,7 @@ Privacy & Compliance
 - No professional credentials shown
 
 **API Behavior**:
+
 - LinkedIn (using professional context): Shows full credentials and professional bio
 - Fitness app (using social context): Shows casual name and personal interests only
 - Healthcare platform: Can access professional context with explicit consent
@@ -426,6 +434,7 @@ Accept-Language: en-US,zh;q=0.9
 **Returns**: Ming Li (李明) - Both representations with English primary
 
 **Cultural Sensitivity**: System respects:
+
 - Character vs. romanization preferences
 - Name order conventions (family-given vs. given-family)
 - Context-appropriate presentations
@@ -489,6 +498,7 @@ Accept-Language: en-US,zh;q=0.9
    - Full transition at age 18 (automatic)
 
 **Safety Features**:
+
 - All guardian actions are logged and visible
 - Minor receives age-appropriate notifications
 - Graduated permissions as minor matures
@@ -588,6 +598,7 @@ Accept-Language: en-US,zh;q=0.9
    ```
 
 **Privacy Features**:
+
 - Explicit scope-based permissions
 - Visual consent screen with clear data list
 - Context-specific data sharing
@@ -596,6 +607,7 @@ Accept-Language: en-US,zh;q=0.9
 - Audit log of all third-party access
 
 **User Can Later**:
+
 - View all apps with access: `/settings/connected-apps`
 - Revoke individual app access
 - See last access timestamp
@@ -609,6 +621,7 @@ Accept-Language: en-US,zh;q=0.9
 **Scenario**: Alex Taylor transitions from academia to industry, requiring a new professional context while preserving academic history.
 
 **Academic Context** (legacy, maintained):
+
 - Display Name: "Alex Taylor, PhD"
 - Email: a.taylor@university.edu
 - Affiliation: "Associate Professor of Computer Science"
@@ -616,6 +629,7 @@ Accept-Language: en-US,zh;q=0.9
 - Context: "academic"
 
 **Industry Context** (new, active):
+
 - Display Name: "Alex Taylor"
 - Email: alex@techstartup.com
 - Title: "Chief Technology Officer"
@@ -638,6 +652,7 @@ Accept-Language: en-US,zh;q=0.9
 ```
 
 **Behavior**:
+
 - Google Scholar (academic OAuth): Still shows academic context with publications
 - LinkedIn (professional OAuth): Shows current CTO role
 - Conference invitations: Can choose to present academic credentials
@@ -666,6 +681,7 @@ Accept-Language: en-US,zh;q=0.9
 ```
 
 **Benefits**:
+
 - Maintains professional history
 - Allows context-appropriate presentations
 - Temporal queries supported

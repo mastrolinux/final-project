@@ -2,7 +2,7 @@
 title: "Context Resolution"
 ---
 
-## 3a.1 Overview
+## Overview
 
 Context resolution is the core mechanism by which the Identity API returns different identity presentations based on the requesting context. This allows users to present themselves differently in professional, social, family, and other contexts while maintaining a single source of truth.
 
@@ -16,7 +16,7 @@ Context resolution is the core mechanism by which the Identity API returns diffe
 
 ---
 
-## 3a.2 Context Resolution Algorithm
+## Context Resolution Algorithm
 
 ```{mermaid}
 flowchart TD
@@ -53,7 +53,7 @@ flowchart TD
 
 ---
 
-## 3a.3 Real-World Use Case Examples
+## Real-World Use Case Examples
 
 ### Example 1: Professional vs Social Identity
 
@@ -255,6 +255,7 @@ GET /oauth/authorize?
 ```
 
 #### User Consent Screen Shows:
+
 - **App Name**: LinkedIn
 - **Requested Data**: Basic profile information (name, photo)
 - **Not Included**: Email, phone, legal name, date of birth
@@ -302,6 +303,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 **NOT Included** (due to scope limitations):
+
 - email (requires `profile:read:email` scope)
 - phone (requires `profile:read:phone` scope)
 - legal_name (requires `profile:read:full` scope)
@@ -309,35 +311,35 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-## 3a.4 Inheritance and Override Mechanics
+## Inheritance and Override Mechanics
 
 ```{mermaid}
 graph TD
     subgraph BP_Group["Base Profile"]
-        BP[Base Profile Fields]
-        BP --> F1[preferred_name:<br/>Bob Johnson]
-        BP --> F2[email:<br/>bob@email.com]
-        BP --> F3[phone:<br/>+1-555-0123]
-        BP --> F4[bio:<br/>Surgeon and enthusiast]
-        BP --> F5[photo_url: null]
+        BP["Base Profile Fields"]
+        BP --> F1["preferred_name<br/>Bob Johnson"]
+        BP --> F2["email<br/>bob@email.com"]
+        BP --> F3["phone<br/>+1-555-0123"]
+        BP --> F4["bio<br/>Surgeon and enthusiast"]
+        BP --> F5["photo_url: null"]
     end
     
     subgraph CP_Group["Professional Context Override"]
-        CP[Context Profile<br/>Overrides]
-        CP --> O1[display_name:<br/>Dr. Robert J. Johnson]
-        CP --> O2[email:<br/>r.johnson@hospital.org]
-        CP --> O3[bio:<br/>Board-certified surgeon]
-        CP --> O4[photo_url:<br/>professional.jpg]
+        CP["Context Profile<br/>Overrides"]
+        CP --> O1["display_name<br/>Dr. Robert J. Johnson"]
+        CP --> O2["email<br/>r.johnson@hospital.org"]
+        CP --> O3["bio<br/>Board-certified surgeon"]
+        CP --> O4["photo_url<br/>professional.jpg"]
     end
     
     subgraph RP_Group["Resolved Profile"]
-        RP[Merged Result]
-        RP --> R1[preferred_name:<br/>Bob Johnson<br/>from Base]
-        RP --> R2[display_name:<br/>Dr. Robert J. Johnson<br/>from Override]
-        RP --> R3[email:<br/>r.johnson@hospital.org<br/>from Override]
-        RP --> R4[phone:<br/>+1-555-0123<br/>from Base]
-        RP --> R5[bio:<br/>Board-certified surgeon<br/>from Override]
-        RP --> R6[photo_url:<br/>professional.jpg<br/>from Override]
+        RP["Merged Result"]
+        RP --> R1["preferred_name<br/>Bob Johnson<br/>from Base"]
+        RP --> R2["display_name<br/>Dr. Robert J. Johnson<br/>from Override"]
+        RP --> R3["email<br/>r.johnson@hospital.org<br/>from Override"]
+        RP --> R4["phone<br/>+1-555-0123<br/>from Base"]
+        RP --> R5["bio<br/>Board-certified surgeon<br/>from Override"]
+        RP --> R6["photo_url<br/>professional.jpg<br/>from Override"]
     end
     
     BP --> RP
@@ -393,7 +395,7 @@ graph TD
 
 ---
 
-## 3a.5 API Request Examples
+## API Request Examples
 
 ### Request 1: Get Base Profile
 ```http
@@ -527,7 +529,7 @@ Accept: application/json
 
 ---
 
-## 3a.6 Scope-Based Field Filtering
+## Scope-Based Field Filtering
 
 ```{mermaid}
 flowchart LR
@@ -591,7 +593,7 @@ flowchart LR
 
 ---
 
-## 3a.7 Performance Considerations
+## Performance Considerations
 
 ### Caching Strategy
 
@@ -623,6 +625,7 @@ sequenceDiagram
 **Pattern**: `profile:{user_id}:{context}:{language}:{scope_hash}`
 
 **Examples**:
+
 - `profile:usr_123:base:en:public` - Base profile, English, full access
 - `profile:usr_123:professional:es:basic` - Professional, Spanish, basic scope
 - `profile:usr_123:social:en:full` - Social, English, full scope

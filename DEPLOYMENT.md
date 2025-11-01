@@ -37,6 +37,7 @@ SUPABASE_SERVICE_KEY = your_supabase_service_role_key
 ```
 
 To get these values:
+
 - Run `supabase status` in your backend directory
 - Or go to your Supabase project dashboard > Settings > API
 
@@ -45,6 +46,7 @@ To get these values:
 ### Step 3: Wait for Deployment
 
 The deployment will automatically start. You'll see:
+
 - Build logs showing `pip install -r requirements.txt`
 - The service starting with `uvicorn`
 - Status will change to "Live" when ready (5-10 minutes)
@@ -78,6 +80,7 @@ Your `render.yaml` is configured with:
 ## Auto-Deploy Feature
 
 Every time you push to the `main` branch on GitHub, Render will automatically:
+
 1. Pull the latest code
 2. Run the build command
 3. Restart the service
@@ -86,6 +89,7 @@ Every time you push to the `main` branch on GitHub, Render will automatically:
 ## Monitoring Your Deployment
 
 In the Render dashboard, you can:
+
 - View real-time logs
 - See deployment history
 - Monitor resource usage
