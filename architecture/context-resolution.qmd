@@ -18,28 +18,28 @@ Context resolution is the core mechanism by which the Identity API returns diffe
 
 ## 3a.2 Context Resolution Algorithm
 
-```mermaid
+```{mermaid}
 flowchart TD
     Start([API Request]) --> Auth{Authenticated?}
-    Auth -->|No| Reject[Return 401 Unauthorized]
-    Auth -->|Yes| ExtractContext[Extract Context Parameter]
+    Auth -->|No| Reject[Return 401<br/>Unauthorized]
+    Auth -->|Yes| ExtractContext[Extract<br/>Context Parameter]
     
     ExtractContext --> ContextExists{Context<br/>Specified?}
-    ContextExists -->|No| UseBase[Use Base Profile]
-    ContextExists -->|Yes| LookupContext[Lookup Context Profile]
+    ContextExists -->|No| UseBase[Use<br/>Base Profile]
+    ContextExists -->|Yes| LookupContext[Lookup<br/>Context Profile]
     
-    LookupContext --> ContextFound{Context<br/>Profile Exists?}
+    LookupContext --> ContextFound{Context<br/>Profile<br/>Exists?}
     ContextFound -->|No| UseBase
-    ContextFound -->|Yes| MergeProfiles[Merge Base + Context Overrides]
+    ContextFound -->|Yes| MergeProfiles[Merge Base +<br/>Context Overrides]
     
     UseBase --> CheckScopes
-    MergeProfiles --> CheckScopes[Apply OAuth Scopes]
+    MergeProfiles --> CheckScopes[Apply<br/>OAuth Scopes]
     
-    CheckScopes --> FilterFields[Filter Allowed Fields]
-    FilterFields --> CheckLanguage[Check Accept-Language Header]
+    CheckScopes --> FilterFields[Filter<br/>Allowed Fields]
+    FilterFields --> CheckLanguage[Check<br/>Accept-Language<br/>Header]
     
-    CheckLanguage --> ResolveTranslations[Resolve Translations]
-    ResolveTranslations --> BuildResponse[Build Response]
+    CheckLanguage --> ResolveTranslations[Resolve<br/>Translations]
+    ResolveTranslations --> BuildResponse[Build<br/>Response]
     
     BuildResponse --> AuditLog[Log Access]
     AuditLog --> Return([Return Profile])
@@ -311,41 +311,41 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ## 3a.4 Inheritance and Override Mechanics
 
-```mermaid
+```{mermaid}
 graph TD
-    subgraph "Base Profile"
+    subgraph BP_Group["Base Profile"]
         BP[Base Profile Fields]
-        BP --> F1[preferred_name: Bob Johnson]
-        BP --> F2[email: bob@email.com]
-        BP --> F3[phone: +1-555-0123]
-        BP --> F4[bio: Surgeon and enthusiast]
+        BP --> F1[preferred_name:<br/>Bob Johnson]
+        BP --> F2[email:<br/>bob@email.com]
+        BP --> F3[phone:<br/>+1-555-0123]
+        BP --> F4[bio:<br/>Surgeon and enthusiast]
         BP --> F5[photo_url: null]
     end
     
-    subgraph "Professional Context Override"
-        CP[Context Profile Overrides]
-        CP --> O1[display_name: Dr. Robert J. Johnson]
-        CP --> O2[email: r.johnson@hospital.org]
-        CP --> O3[bio: Board-certified surgeon]
-        CP --> O4[photo_url: professional.jpg]
+    subgraph CP_Group["Professional Context Override"]
+        CP[Context Profile<br/>Overrides]
+        CP --> O1[display_name:<br/>Dr. Robert J. Johnson]
+        CP --> O2[email:<br/>r.johnson@hospital.org]
+        CP --> O3[bio:<br/>Board-certified surgeon]
+        CP --> O4[photo_url:<br/>professional.jpg]
     end
     
-    subgraph "Resolved Profile"
+    subgraph RP_Group["Resolved Profile"]
         RP[Merged Result]
-        RP --> R1[preferred_name: Bob Johnson - Base]
-        RP --> R2[display_name: Dr. Robert J. Johnson - Override]
-        RP --> R3[email: r.johnson@hospital.org - Override]
-        RP --> R4[phone: +1-555-0123 - Base]
-        RP --> R5[bio: Board-certified surgeon - Override]
-        RP --> R6[photo_url: professional.jpg - Override]
+        RP --> R1[preferred_name:<br/>Bob Johnson<br/>from Base]
+        RP --> R2[display_name:<br/>Dr. Robert J. Johnson<br/>from Override]
+        RP --> R3[email:<br/>r.johnson@hospital.org<br/>from Override]
+        RP --> R4[phone:<br/>+1-555-0123<br/>from Base]
+        RP --> R5[bio:<br/>Board-certified surgeon<br/>from Override]
+        RP --> R6[photo_url:<br/>professional.jpg<br/>from Override]
     end
     
     BP --> RP
     CP --> RP
     
-    style BP fill:#e3f2fd
-    style CP fill:#fff3e0
-    style RP fill:#e8f5e9
+    style BP_Group fill:#e3f2fd
+    style CP_Group fill:#fff3e0
+    style RP_Group fill:#e8f5e9
 ```
 
 ### Inheritance Rules
@@ -529,19 +529,19 @@ Accept: application/json
 
 ## 3a.6 Scope-Based Field Filtering
 
-```mermaid
+```{mermaid}
 flowchart LR
-    FullProfile[Full Profile Data] --> ScopeFilter{OAuth Scope}
+    FullProfile[Full Profile<br/>Data] --> ScopeFilter{OAuth<br/>Scope}
     
-    ScopeFilter -->|profile:read:basic| Basic[Basic Fields Only]
-    ScopeFilter -->|profile:read:email| Email[Basic + Email]
-    ScopeFilter -->|profile:read:phone| Phone[Basic + Phone]
-    ScopeFilter -->|profile:read:full| Full[All Fields Except Legal]
+    ScopeFilter -->|profile:read:basic| Basic[Basic<br/>Fields Only]
+    ScopeFilter -->|profile:read:email| Email[Basic +<br/>Email]
+    ScopeFilter -->|profile:read:phone| Phone[Basic +<br/>Phone]
+    ScopeFilter -->|profile:read:full| Full[All Fields<br/>Except Legal]
     
-    Basic --> Return1[display_name, photo_url, bio]
-    Email --> Return2[Basic + email]
-    Phone --> Return3[Basic + phone]
-    Full --> Return4[All non-sensitive fields]
+    Basic --> Return1[display_name<br/>photo_url<br/>bio]
+    Email --> Return2[Basic +<br/>email]
+    Phone --> Return3[Basic +<br/>phone]
+    Full --> Return4[All non-sensitive<br/>fields]
     
     style FullProfile fill:#e3f2fd
     style Basic fill:#ffebee
@@ -595,26 +595,26 @@ flowchart LR
 
 ### Caching Strategy
 
-```mermaid
+```{mermaid}
 sequenceDiagram
     participant Client
     participant API
     participant Cache
     participant DB
     
-    Client->>API: GET /profile?context=professional
-    API->>Cache: Check cache key: usr_123:professional:en
+    Client->>API: GET /profile<br/>?context=professional
+    API->>Cache: Check cache key:<br/>usr_123:professional:en
     
     alt Cache Hit
-        Cache-->>API: Return cached profile
-        API-->>Client: Profile (5ms response)
+        Cache-->>API: Return<br/>cached profile
+        API-->>Client: Profile<br/>(5ms response)
     else Cache Miss
         Cache-->>API: Not found
-        API->>DB: Query base + context profiles
+        API->>DB: Query base +<br/>context profiles
         DB-->>API: Profile data
-        API->>API: Merge & resolve
-        API->>Cache: Store (TTL: 5 min)
-        API-->>Client: Profile (50ms response)
+        API->>API: Merge &<br/>resolve
+        API->>Cache: Store<br/>(TTL: 5 min)
+        API-->>Client: Profile<br/>(50ms response)
     end
 ```
 

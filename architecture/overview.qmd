@@ -1,16 +1,27 @@
 ---
-title: "Overview & Vision"
+title: "System Overview and Architectural Vision"
+subtitle: "Design Principles for Context-Aware Identity Management"
 ---
 
-## Executive Summary
+# Executive Summary
 
-### Purpose
+## Problem Formulation
 
-This document describes the backend architecture for an Identity and Profile Management API system designed to handle the complexity of modern digital identity across cultural, contextual, and regulatory boundaries.
+Contemporary identity management systems demonstrate a fundamental architectural limitation: they enforce singular, culturally-biased identity models that fail to accommodate the documented complexity of human identity presentation across contexts. This system addresses this gap through a context-aware identity management architecture that reconciles security requirements with cultural sensitivity, privacy protection, and human identity flexibility.
 
-### Key Architectural Characteristics
+## Architectural Contribution
 
-The system prioritizes:
+The proposed architecture contributes three novel integrations to the identity management domain:
+
+1. **Context-Dependent Identity Presentation**: Implementation of Goffman's performative identity theory within a RESTful API framework, enabling users to maintain multiple legitimate identity presentations across distinct social contexts while preserving authentication integrity.
+
+2. **Cultural-Neutral Name Representation**: Application of W3C Internationalization guidelines and Unicode TR35 PersonNames specification to support global naming conventions without imposing Western structural assumptions.
+
+3. **Privacy-Preserving Selective Disclosure**: Integration of OAuth 2.0 scope-based access control with GDPR data minimization principles, enabling third-party integration while maintaining user privacy sovereignty.
+
+## Key Architectural Characteristics
+
+The system prioritizes the following quality attributes, ranked by criticality:
 
 - **Flexibility**: Support diverse naming conventions and identity expressions globally
 - **Security**: Multi-layered security with defense-in-depth principles
@@ -19,29 +30,39 @@ The system prioritizes:
 - **Extensibility**: Ability to add new identity attributes and contexts
 - **Auditability**: Complete tracking of all identity-related operations
 
-### Core Differentiators
+## Core Differentiators
 
 Unlike traditional identity systems that assume Western naming conventions and single-identity models, this architecture:
 
-- Treats identity as **multifaceted and context-dependent**
-- Separates **legal identity from preferred identity**
-- Supports **guardian-managed identities** for minors
+- Treats identity as **multifaceted and context-dependent** rather than singular and fixed
+- Separates **legal identity from preferred identity**, supporting pseudonymous accounts
+- Supports **guardian-managed identities** for minors with graduated autonomy
 - Enables **third-party selective disclosure** through OAuth scopes
-- Implements **temporal versioning** for identity evolution
-- Provides **multilingual identity representation**
+- Implements **temporal versioning** for identity evolution and auditability
+- Provides **multilingual identity representation** with locale-specific formatting
 - **Does NOT enforce real-name policies** - legal names optional, preferred names used for identification
 
 ---
 
-## Architectural Vision
+# Architectural Vision
 
-### Vision Statement
+## Vision Statement
 
-Create a culturally-sensitive, privacy-respecting identity management platform that recognizes the complexity of human identity while providing secure, controlled access to third-party applications through standardized protocols.
+Design and implement a culturally-sensitive, privacy-respecting identity management platform that recognizes the complexity of human identity while providing secure, controlled access to third-party applications through standardized protocols.
+
+The architecture treats identity as **performative and context-dependent** rather than singular and fixed, enabling users to maintain multiple legitimate identity presentations while ensuring security, privacy, and cultural sensitivity through defense-in-depth architecture.
+
+## Theoretical Foundations
+
+### Sociological Framework
+
+The architecture applies Goffman's dramaturgical theory of self-presentation, which posits that human identity is **performative rather than essential**—individuals naturally present different facets of identity depending on audience and context. Offline social interactions occur within bounded contexts (professional, familial, social), but digital platforms create **context collapse**, forcing interaction with heterogeneous audiences simultaneously.
+
+Research by Marwick and boyd documents the psychological costs of context collapse: self-censorship, anxiety, reduced authenticity, and privacy violations. The architecture addresses this through explicit support for multiple context-specific identity presentations, enabling users to recreate the bounded social contexts that occur naturally in physical spaces.
 
 ### Guiding Principles
 
-1. **Privacy by Design**: User privacy is not negotiable
+1. **Privacy by Design**: User privacy is not negotiable; embedded in every architectural decision
 2. **Cultural Neutrality**: No assumptions about naming or identity structure
 3. **Security by Default**: Deny-all approach with explicit grants
 4. **Transparency**: Users understand and control their data
@@ -50,7 +71,7 @@ Create a culturally-sensitive, privacy-respecting identity management platform t
 
 ### Real-Name Policy Position
 
-This system explicitly rejects "real-name policies" that require users to provide government-issued legal names for identification purposes. Research demonstrates that such policies cause documented harm to marginalized populations (see background document).
+This system explicitly rejects "real-name policies" that require users to provide government-issued legal names for identification purposes. Research demonstrates that such policies cause documented harm to marginalized populations.
 
 **This system's approach:**
 
@@ -78,6 +99,8 @@ This approach aligns with GDPR data minimization principles: collect only what i
 
 ---
 
+# Business Goals and Technical Objectives
+
 ## Business Goals
 
 1. Enable users to manage multiple identity presentations across different life contexts
@@ -85,8 +108,6 @@ This approach aligns with GDPR data minimization principles: collect only what i
 3. Support global users with diverse cultural naming practices
 4. Comply with international privacy regulations (GDPR, CCPA, etc.)
 5. Demonstrate academic excellence in system design and implementation
-
----
 
 ## Technical Goals
 
@@ -101,36 +122,76 @@ This approach aligns with GDPR data minimization principles: collect only what i
 
 ---
 
-## Non-Goals
+# Scope Definition
 
-This system explicitly does NOT aim to:
-- [NO] Provide identity verification services (rely on external KYC providers)
-- [NO] Implement federated identity across organizations (use OAuth for delegation)
-- [NO] Support blockchain-based decentralized identity (out of scope)
-- [NO] Manage authentication credentials for third-party services
-- [NO] Build a consumer-facing frontend (API-first design)
-- [NO] **Manage non-human identities (NHI)** - service accounts, bots, machine-to-machine identities (see below)
+## In-Scope Capabilities [YES]
+
+**Identity Profile Management:**
+- Base user profiles (CRUD operations)
+- Context-specific profile variants
+- Profile inheritance and resolution
+- Temporal versioning of profile changes
+- Multilingual content support
+
+**Access Control:**
+- Role-based access control (RBAC)
+- Attribute-based access control (ABAC)
+- Row-level security (RLS)
+- Guardian-minor relationships
+- Permission management
+
+**OAuth 2.0 Authorization:**
+- Authorization code flow
+- Token issuance and validation
+- Scope-based access control
+- Client application management
+- Consent management
+
+**GDPR Compliance:**
+- Data export (Right of Access)
+- Data deletion (Right to Erasure)
+- Consent tracking and withdrawal
+- Audit logging
+- Data retention policies
+
+**Guardian Features:**
+- Guardian-minor relationship management
+- Age verification
+- Permission hierarchies
+- Guardian action auditing
+
+## Explicit Scope Exclusions [NO]
+
+**Delegated to External Services:**
+
+- User authentication credentials storage -> Supabase Auth
+- Password hashing and management -> Supabase Auth
+- Email delivery infrastructure -> Transactional email service
+- SMS delivery -> SMS gateway
+- File storage for photos -> Supabase Storage
+- CDN for static assets -> Hosting provider
+
+**Explicitly Not Included:**
+
+- Identity verification/KYC services (rely on external providers)
+- Federated identity across organizations (use OAuth for delegation)
+- Blockchain-based decentralized identity (out of scope)
+- Non-human identities (NHI) - service accounts, bots, machine-to-machine identities
+- Biometric authentication
+- Social media profile syncing
+- Payment processing
+- Content moderation
 
 ### Non-Human Identity (NHI) - Explicit Scope Exclusion
 
 **Background context:**
-The research background document extensively discusses the 2024 NHI security crisis:
-- Non-human identities outnumber human identities 10x-50x in enterprise environments
-- Major 2024 breaches: BeyondTrust (API key compromise), Schneider Electric (service account exploit)
-- "Traditional IAM is broken because it was built for humans" - emerging consensus in industry
+Research documents the 2024 NHI security crisis where non-human identities outnumber human identities 10x-50x in enterprise environments, with major breaches at BeyondTrust (API key compromise) and Schneider Electric (service account exploit).
 
 **Why NHI is out of scope for this project:**
 
 1. **Academic Project Boundaries**: This thesis focuses on human identity complexity (cultural naming, context-based presentation, guardian relationships). Adding NHI would dilute the focus.
 
-2. **Different Problem Domain**: NHI management requires:
-
-   - Certificate lifecycle management
-   - Service account rotation
-   - Machine-to-machine authentication
-   - Privileged access management
-   - Secret rotation and vaulting
-   - These are fundamentally different from human identity concerns
+2. **Different Problem Domain**: NHI management requires certificate lifecycle management, service account rotation, machine-to-machine authentication, privileged access management, and secret rotation—fundamentally different from human identity concerns.
 
 3. **Different Solutions**: NHI requires specialized tools (HashiCorp Vault, CyberArk, AWS Secrets Manager) rather than profile management APIs.
 
@@ -148,30 +209,22 @@ In production enterprise environments, this system would need to integrate with 
 
 **What IS NOT in scope:**
 
-- Service accounts
-- API keys for automation
-- Bot identities
+- Service accounts, API keys for automation, bot identities
 - Machine-to-machine authentication tokens
-- Workload identities
-- IoT device identities
+- Workload identities, IoT device identities
 
 ---
 
-## Success Criteria
-
-
-**Requirements:**
-
-1. Strong requirements document with research and imagination
-2. Solid security and privacy with GDPR reference
-3. Data model beyond simplest use cases
-4. Robust, widely applicable API
-5. Frontend demonstrating multiple use cases
+# Success Criteria
 
 ### Technical Excellence
 
-**My definition:**
+**Definition:**
 
+- Strong requirements document with research and imagination
+- Solid security and privacy reference
+- Clear data model 
+- Robust API
 - Clean architecture with clear separation of concerns
 - Comprehensive security controls at multiple layers
 - Thoughtful handling of cultural diversity in identity
@@ -191,9 +244,9 @@ In production enterprise environments, this system would need to integrate with 
 
 ---
 
-## System Capabilities
+# System Capabilities
 
-### Core Capabilities
+## Core Capabilities
 
 ```
 User Management
@@ -235,9 +288,9 @@ Privacy & Compliance
 
 ---
 
-## Key Metrics
+# Key Metrics
 
-### System Health Metrics
+## System Health Metrics
 
 | Metric | Target | Critical Threshold |
 |--------|--------|-------------------|
@@ -246,7 +299,7 @@ Privacy & Compliance
 | Error Rate | <0.1% | >1.0% |
 | Database Query Time (p95) | <50ms | >200ms |
 
-### Business Metrics
+## Business Metrics
 
 | Metric | Purpose |
 |--------|---------|
@@ -259,23 +312,23 @@ Privacy & Compliance
 
 ---
 
-## Technology Stack
+# Technology Stack
 
-### Backend Core
+## Backend Core
 - **Language**: Python 3.12+
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 15+ (via Supabase)
 - **Cache**: Redis
 - **Authentication**: Supabase Auth + JWT
 
-### Infrastructure
+## Infrastructure
 - **Hosting**: Render.com
 - **Database**: Supabase (managed PostgreSQL)
 - **Storage**: Supabase Storage (S3-compatible)
 - **Monitoring**: Application-level logging + metrics
 - **CI/CD**: GitHub Actions
 
-### Development Tools
+## Development Tools
 - **Testing**: pytest, pytest-cov
 - **Type Checking**: mypy
 - **Linting**: ruff, black
@@ -284,9 +337,9 @@ Privacy & Compliance
 
 ---
 
-## Real-World Use Cases
+# Real-World Use Cases
 
-### Use Case 1: Professional vs Social Identity Presentation
+## Use Case 1: Professional vs Social Identity Presentation
 
 **Scenario**: Dr. Sarah Chen is a psychiatrist who maintains strict boundaries between her professional and personal life for patient privacy and safety reasons.
 
@@ -314,7 +367,7 @@ Privacy & Compliance
 
 ---
 
-### Use Case 2: Multilingual Name Handling
+## Use Case 2: Multilingual Name Handling
 
 **Scenario**: 李明 (Lǐ Míng) is a Chinese software engineer working internationally, with different name presentations depending on cultural context.
 
@@ -368,7 +421,7 @@ Accept-Language: en-US,zh;q=0.9
 
 ---
 
-### Use Case 3: Guardian Managing Minor Profile
+## Use Case 3: Guardian Managing Minor Profile
 
 **Scenario**: Jessica Williams is the mother of 13-year-old Emma. Jessica manages Emma's digital identity while teaching her about online safety.
 
@@ -432,7 +485,7 @@ Accept-Language: en-US,zh;q=0.9
 
 ---
 
-### Use Case 4: Third-Party OAuth App Requesting Profile with Scopes
+## Use Case 4: Third-Party OAuth App Requesting Profile with Scopes
 
 **Scenario**: HealthTrack, a healthcare coordination platform, wants to integrate with the identity system to streamline patient onboarding.
 
@@ -469,20 +522,20 @@ Accept-Language: en-US,zh;q=0.9
 3. **Consent Screen Shows**:
    ```
    HealthTrack wants to access your profile
-   
+
    Requested Information:
    [YES] Your name and photo
    [YES] Your email address (r.johnson@hospital.org)
    [YES] Your phone number
    [YES] Your professional credentials
-   
+
    Will NOT receive:
    [NO] Your legal name
    [NO] Your date of birth
    [NO] Your home address
-   
+
    Context: Professional profile will be shared
-   
+
    [Approve]  [Deny]  [Customize]
    ```
 
@@ -539,7 +592,7 @@ Accept-Language: en-US,zh;q=0.9
 
 ---
 
-### Use Case 5: Career Transition - Name and Context Evolution
+## Use Case 5: Career Transition - Name and Context Evolution
 
 **Scenario**: Alex Taylor transitions from academia to industry, requiring a new professional context while preserving academic history.
 
@@ -606,4 +659,3 @@ Accept-Language: en-US,zh;q=0.9
 - Temporal queries supported
 - No data loss during transitions
 - Flexible identity evolution
-

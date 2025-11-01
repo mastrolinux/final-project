@@ -137,9 +137,8 @@ title: "Decisions & Future Considerations"
 **Consequences**:
 - [+] Industry-standard approach
 - [+] Well-understood security model
-- [+] Good for academic evaluation
 - [-] More complex than simple API keys
-- [-] Requires consent management UI
+- [-] Potentially requires consent management UI (If GDPR would be implemented)
 
 **Alternatives Considered**:
 - API keys: Simpler but less granular control

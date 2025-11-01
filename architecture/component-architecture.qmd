@@ -8,15 +8,15 @@ title: "Component Architecture"
 
 The system adopts a **Layered Architecture** with **RESTful API** principles:
 
-```mermaid
+```{mermaid}
 graph TD
-    subgraph PL["Presentation Layer (REST API Endpoints)"]
+    subgraph PL["Presentation Layer<br/>REST API Endpoints"]
         IE[Identity Endpoints]
         OE[OAuth Endpoints]
         GE[Guardian Endpoints]
     end
     
-    subgraph AL["Application Layer (Business Logic / Use Cases)"]
+    subgraph AL["Application Layer<br/>Business Logic & Use Cases"]
         PS[Profile Service]
         OS[OAuth Service]
         GS[Guardian Service]
@@ -25,13 +25,13 @@ graph TD
         AS[Audit Service]
     end
     
-    subgraph DL["Domain Layer (Domain Models)"]
+    subgraph DL["Domain Layer<br/>Domain Models"]
         IA[Identity Aggregate]
         CA[Context Aggregate]
         GR[Guardian Relationship]
     end
     
-    subgraph DAL["Data Access Layer (Repositories)"]
+    subgraph DAL["Data Access Layer<br/>Repositories"]
         PR[Profile Repository]
         OR[OAuth Repository]
         AR[Audit Repository]
@@ -183,7 +183,7 @@ checkPermission(guardianId, minorId, action) -> boolean
 
 ### Flow 1: User Creates Professional Profile
 
-```mermaid
+```{mermaid}
 sequenceDiagram
     actor User
     participant API as API Gateway
@@ -196,14 +196,14 @@ sequenceDiagram
     User->>API: POST /profiles (context=professional)
     API->>Auth: Validate JWT Token
     Auth-->>API: Token Valid
-    API->>PS: createContextProfile(userId, context, data)
-    PS->>Auth: Check Permissions (can_create_profile)
+    API->>PS: createContextProfile<br/>(userId, context, data)
+    PS->>Auth: Check Permissions<br/>(can_create_profile)
     Auth-->>PS: Permission Granted
     PS->>PR: save(contextProfile)
     PR->>DB: INSERT INTO context_profiles
     DB-->>PR: Profile Created
     PR-->>PS: contextProfile
-    PS->>Audit: log(event: context_profile.created)
+    PS->>Audit: log<br/>(event: context_profile.created)
     Audit-->>PS: Logged
     PS-->>API: Profile Response
     API-->>User: 201 Created (Profile Data)
@@ -211,7 +211,7 @@ sequenceDiagram
 
 ### Flow 2: Third-Party OAuth Access
 
-```mermaid
+```{mermaid}
 sequenceDiagram
     actor ThirdParty as Third-Party App
     actor User
@@ -222,32 +222,32 @@ sequenceDiagram
     participant Profile as Profile Service
     participant Filter as Scope Filter
     
-    ThirdParty->>OAuth: GET /oauth/authorize (client_id, scopes)
+    ThirdParty->>OAuth: GET /oauth/authorize<br/>(client_id, scopes)
     OAuth->>User: Show Consent Screen
-    Note over Consent: Requested: profile:read:basic<br/>Context: professional
+    Note over Consent: Requested:<br/>profile:read:basic<br/>Context: professional
     User->>OAuth: Approve Access
     OAuth->>OAuth: Generate Auth Code
-    OAuth-->>ThirdParty: Redirect with code=auth_xyz
+    OAuth-->>ThirdParty: Redirect with<br/>code=auth_xyz
     
-    ThirdParty->>Token: POST /oauth/token (code, client_secret)
+    ThirdParty->>Token: POST /oauth/token<br/>(code, client_secret)
     Token->>Token: Validate Client Credentials
     Token->>Token: Verify Auth Code
     Token->>Token: Issue Access Token
-    Token-->>ThirdParty: access_token + scopes
+    Token-->>ThirdParty: access_token<br/>+ scopes
     
-    ThirdParty->>API: GET /oauth/profile (Bearer token)
+    ThirdParty->>API: GET /oauth/profile<br/>(Bearer token)
     API->>Token: Validate Token
-    Token-->>API: Token Valid (scopes, context)
-    API->>Profile: getProfile(userId, context=professional)
+    Token-->>API: Token Valid<br/>(scopes, context)
+    API->>Profile: getProfile<br/>(userId, context=professional)
     Profile-->>API: Full Profile Data
-    API->>Filter: Apply Scope Filter (profile:read:basic)
+    API->>Filter: Apply Scope Filter<br/>(profile:read:basic)
     Filter-->>API: Filtered Profile
-    API-->>ThirdParty: 200 OK (name, photo only)
+    API-->>ThirdParty: 200 OK<br/>(name, photo only)
 ```
 
 ### Flow 3: Guardian Updates Minor Profile
 
-```mermaid
+```{mermaid}
 sequenceDiagram
     actor Guardian
     participant API as API Gateway
@@ -263,26 +263,26 @@ sequenceDiagram
     Guardian->>API: PATCH /users/minor_123/profile
     API->>Auth: Validate Guardian Token
     Auth-->>API: Token Valid (guardian_id)
-    API->>GS: checkRelationship(guardian_id, minor_id)
+    API->>GS: checkRelationship<br/>(guardian_id, minor_id)
     GS->>DB: Query guardian_relationships
     DB-->>GS: Relationship Found
-    GS->>GS: Verify Permission (can_edit_profile=true)
+    GS->>GS: Verify Permission<br/>(can_edit_profile=true)
     GS-->>API: Permission Granted
-    API->>PS: updateProfile(minor_id, updates, actor=guardian_id)
+    API->>PS: updateProfile<br/>(minor_id, updates, actor=guardian_id)
     PS->>PR: getProfile(minor_id)
     PR-->>PS: Current Profile (for history)
-    PS->>History: saveVersion(old_profile, actor=guardian)
+    PS->>History: saveVersion<br/>(old_profile, actor=guardian)
     History-->>PS: Version Saved
-    PS->>PR: update(minor_id, new_data)
+    PS->>PR: update<br/>(minor_id, new_data)
     PR->>DB: UPDATE profiles
     DB-->>PR: Updated
     PR-->>PS: Updated Profile
-    PS->>Audit: log(guardian_action, actor=guardian_id)
+    PS->>Audit: log<br/>(guardian_action, actor=guardian_id)
     Audit-->>PS: Logged
-    PS->>Notify: notifyMinor(profile_updated_by_guardian)
+    PS->>Notify: notifyMinor<br/>(profile_updated_by_guardian)
     Notify-->>PS: Notification Queued
     PS-->>API: Success Response
-    API-->>Guardian: 200 OK (Updated Profile)
+    API-->>Guardian: 200 OK<br/>(Updated Profile)
 ```
 
 ---

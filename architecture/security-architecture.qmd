@@ -4,7 +4,7 @@ title: "Security Architecture"
 
 ## 5.1 Security Layers (Defense in Depth)
 
-```mermaid
+```{mermaid}
 graph TB
     Request[Incoming Request] --> L1
     

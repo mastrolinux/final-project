@@ -19,7 +19,7 @@ title: "Data Architecture"
 
 ### Identity Aggregate
 
-```mermaid
+```{mermaid}
 erDiagram
     BaseProfile ||--o{ IdentityNames : has
     BaseProfile ||--o{ ContextProfiles : has
@@ -72,7 +72,7 @@ erDiagram
 
 ### Authorization Aggregate
 
-```mermaid
+```{mermaid}
 erDiagram
     User ||--o{ UserRoles : has
     User ||--o{ GuardianRelationships : "guardian_for"
@@ -101,7 +101,7 @@ erDiagram
 
 ### OAuth Aggregate
 
-```mermaid
+```{mermaid}
 erDiagram
     OAuthClients ||--o{ OAuthGrants : authorizes
     OAuthScopes ||--o{ OAuthGrants : defines
@@ -139,7 +139,7 @@ erDiagram
 
 ### Audit/Compliance Aggregate
 
-```mermaid
+```{mermaid}
 erDiagram
     User ||--o{ AuditLog : generates
     User ||--o{ ConsentRecords : consents
