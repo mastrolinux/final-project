@@ -4,7 +4,7 @@ title: "System Context & Scope"
 
 ## System Context Diagram
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph External["External Actors"]
         EndUsers[End Users<br/>Web/Mobile Apps]
@@ -12,7 +12,7 @@ graph TB
         Guardians[Guardian Users<br/>Parents/Legal Guardians]
     end
     
-    subgraph System["Identity & Profile Management API (This System)"]
+    subgraph System["Identity & Profile Management API<br/>This System"]
         APIGateway[API Gateway<br/>REST Endpoints]
         OAuth[OAuth 2.0 Server<br/>Authorization]
         Guardian[Guardian Management<br/>Relationships & Permissions]
@@ -111,7 +111,6 @@ graph TB
 | **Guardians** | Manage minor profiles safely | Safety, appropriate controls | High |
 | **System Admins** | Monitor and maintain system | Observability, security | Medium |
 | **Compliance Officers** | Regulatory compliance | GDPR adherence, audit trails | High |
-| **Academic Evaluators** | Assess project quality | Technical depth, best practices | High |
 | **Developers** | Build and maintain system | Code quality, documentation | Medium |
 
 ---
@@ -123,6 +122,7 @@ graph TB
 **Definition**: Privacy considerations embedded in every design decision from the start, not added as an afterthought.
 
 **Application**:
+
 - Minimize data collection (only essential fields)
 - Encrypt sensitive data at rest and in transit
 - Implement granular consent mechanisms
@@ -138,6 +138,7 @@ graph TB
 **Definition**: System denies all access by default; access must be explicitly granted.
 
 **Application**:
+
 - Zero-trust architecture
 - Multi-layered security (defense in depth)
 - Principle of least privilege
@@ -153,6 +154,7 @@ graph TB
 **Definition**: Each component has a single, well-defined responsibility.
 
 **Application**:
+
 - Authentication != Authorization
 - Business logic != Data access
 - Identity storage != Identity presentation
@@ -167,6 +169,7 @@ graph TB
 **Definition**: System failures must not compromise security or expose sensitive data.
 
 **Application**:
+
 - Authorization failures -> deny access (not grant)
 - Invalid tokens -> reject request (not bypass)
 - Error messages -> generic (no leak)
@@ -181,6 +184,7 @@ graph TB
 **Definition**: Make security and privacy decisions explicit and visible.
 
 **Application**:
+
 - Require explicit user consent (no pre-checked boxes)
 - Make security boundaries clear in architecture
 - Document all assumptions
@@ -195,6 +199,7 @@ graph TB
 **Definition**: No assumptions about name structure, gender, or identity presentation.
 
 **Application**:
+
 - Avoid "first name/last name" fields
 - Support mononyms (single names)
 - Handle patronymics and matronymics
@@ -210,6 +215,7 @@ graph TB
 **Definition**: All identity-related operations are logged permanently and cannot be altered.
 
 **Application**:
+
 - Write-once audit log storage
 - Tamper-evident logs
 - Complete who/what/when/where/why tracking
@@ -225,6 +231,7 @@ graph TB
 **Definition**: All functionality exposed through well-defined, documented APIs.
 
 **Application**:
+
 - OpenAPI specifications for all endpoints
 - Versioned APIs for backward compatibility
 - Consumer-driven contract testing
@@ -251,8 +258,7 @@ graph TB
 
 | Constraint | Description | Impact |
 |-----------|-------------|--------|
-| **GDPR compliance mandatory** | European privacy law | Data handling must meet GDPR requirements |
-| **Academic evaluation criteria** | Grading rubric | Must demonstrate specific technical competencies |
+| **GDPR compliance considered** | European privacy law | Data handling should consider GDPR requirements, actual implementation is not in scope |
 | **Zero budget** | Student project | Free-tier services only initially |
 | **Solo developer** | Single person project | Architecture must be manageable alone |
 

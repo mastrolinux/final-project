@@ -2,6 +2,19 @@
 title: "Security Architecture"
 ---
 
+::: {.callout-note}
+## Scope Note: Regulatory Compliance
+
+This architecture document describes security and privacy features inspired by regulatory requirements (GDPR, CCPA, HIPAA), but **does not claim full legal compliance**. The implementation follows privacy-by-design principles and security best practices, but full regulatory compliance requires legal counsel, formal Data Protection Impact Assessments, organizational governance, and compliance certification beyond the scope of this academic project.
+
+**What IS implemented**: Security best practices, privacy-by-design, user data control, audit logging, basic GDPR rights (export, delete)  
+**What IS NOT implemented**: Legal compliance certification, formal breach notification (72-hour), DPIAs, regulatory audit trails for compliance reporting
+
+References to "GDPR Article" or "compliance" throughout this document should be understood as architectural inspiration, not legal certification.
+:::
+
+---
+
 ## 5.1 Security Layers (Defense in Depth)
 
 ```{mermaid}

@@ -784,28 +784,69 @@ supabase/
 
 ---
 
-## 4.9 Backup Strategy
+## 4.9 Backup and Recovery Strategy
 
-```
-+-------------------------------------------------------------+
-|                    Backup Strategy                          |
-+-------------------------------------------------------------+
+### Backup Tiers
 
-Continuous Backups:
-   +-> Point-in-time recovery (Supabase built-in)
-       +-> Can restore to any point in last 7 days
+The system implements a multi-tier backup strategy to balance recovery capabilities with storage costs and operational requirements.
 
-Daily Full Backups:
-   |-> Automated by Supabase
-   |-> 30-day retention
-   +-> Encrypted at rest
+| Backup Type | Frequency | Retention | Storage Location | Purpose |
+|-------------|-----------|-----------|------------------|---------|
+| **Point-in-time** | Continuous | 7 days | Supabase (built-in) | Granular recovery from operational errors |
+| **Full Snapshot** | Daily | 30 days | Supabase automated | Standard disaster recovery |
+| **Cold Archive** | Weekly | 1 year | External storage | Long-term audit trail preservation |
 
-Weekly Archive:
-   |-> Export to cold storage
-   |-> 1-year retention
-   +-> Compliance requirement
+### Point-in-Time Recovery
 
-Recovery Objectives:
-   |-> RPO (Recovery Point Objective): 1 hour
-   +-> RTO (Recovery Time Objective): 4 hours
-```
+Supabase provides continuous backup with point-in-time recovery (PITR) capabilities:
+
+- **Granularity**: Restore to any second within the last 7 days
+- **Use Cases**: 
+  - Accidental data deletion or corruption
+  - Testing schema migrations with rollback
+  - Investigating data integrity issues
+- **Performance**: Recovery typically completes within 15-30 minutes for databases under 10GB
+
+### Daily Full Snapshots
+
+Automated daily backups provide reliable disaster recovery:
+
+- **Timing**: Executed at 2 AM UTC (lowest traffic period)
+- **Encryption**: AES-256 encryption at rest
+- **Verification**: Automated integrity checks post-backup
+- **Access Control**: Restricted to database administrators via Supabase dashboard
+
+### Weekly Cold Storage Archives
+
+Extended retention archives support audit trail preservation and regulatory considerations:
+
+- **Scope**: Full database export including audit logs and profile history
+- **Format**: Compressed SQL dumps + JSONL for audit logs
+- **Storage**: AWS S3 Glacier for cost-effective long-term storage
+- **Purpose**: Supports 7-year audit log retention requirement and forensic analysis
+
+### Recovery Objectives
+
+The system targets the following recovery parameters:
+
+- **RPO (Recovery Point Objective)**: 1 hour - Maximum acceptable data loss
+- **RTO (Recovery Time Objective)**: 4 hours - Maximum acceptable downtime
+
+**Rationale**: These objectives balance operational continuity with infrastructure costs. For a thesis project deployed on Render's free tier, more aggressive targets (e.g., RPO < 15 min) would require significant additional investment in replication and monitoring infrastructure.
+
+### Disaster Recovery Scenarios
+
+| Scenario | Recovery Method | Expected Downtime |
+|----------|-----------------|-------------------|
+| Single table corruption | Point-in-time restore (specific table) | 15-30 minutes |
+| Full database corruption | Daily snapshot restore | 2-4 hours |
+| Complete infrastructure failure | Rebuild from weekly archive | 6-8 hours |
+| Targeted data deletion attack | Point-in-time restore + audit log analysis | 1-2 hours |
+
+### Backup Testing
+
+Regular backup validation ensures recovery readiness:
+
+- **Monthly**: Restore test database from daily snapshot
+- **Quarterly**: Full recovery simulation from cold storage
+- **Documentation**: Maintain runbooks for each recovery scenario

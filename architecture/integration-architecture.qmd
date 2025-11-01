@@ -6,6 +6,14 @@ title: "Integration Architecture"
 
 This system adheres to established international standards for identity management, API design, and internationalization to ensure interoperability, security, and cultural sensitivity.
 
+::: {.callout-important}
+## Regulatory Compliance Scope
+
+This project implements **privacy-by-design principles inspired by GDPR, CCPA, and HIPAA**, but does NOT claim legal compliance certification. Full regulatory compliance requires legal counsel, Data Protection Impact Assessments, organizational governance, and formal compliance processes beyond the scope of this academic thesis.
+
+See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance.
+:::
+
 ### Standards Compliance Matrix
 
 | Standard | Version | Compliance Level | Purpose | Divergences |
@@ -15,7 +23,7 @@ This system adheres to established international standards for identity manageme
 | **SCIM 2.0** | RFC 7643/7644 | Alignment | User schema inspiration | Extended for multi-context identity |
 | **Unicode TR35 PersonNames** | Draft v48 | Design Informed | Multilingual name handling | Implementation-specific JSONB structure |
 | **W3C i18n Guidelines** | Latest | Full Compliance | Internationalization best practices | None |
-| **GDPR** | EU 2016/679 | Full Compliance | Privacy and data protection | None |
+| **GDPR/CCPA/HIPAA** | Various | **Architectural Inspiration** | Privacy-by-design principles | **Not legally compliant** (academic scope) |
 | **HTTP/1.1** | RFC 7231 | Full Compliance | REST API semantics | None |
 | **JSON API** | v1.1 | Partial | Response formatting | Custom error format |
 
@@ -245,32 +253,67 @@ Content-Type: application/json; charset=utf-8
 
 ---
 
-### GDPR (EU 2016/679) - Full Compliance
+### GDPR/CCPA/HIPAA - Privacy-by-Design Principles (Architectural Inspiration)
 
-**Data Subject Rights Implementation:**
+::: {.callout-warning}
+## Implementation vs. Legal Compliance
 
-| GDPR Article | Right | Implementation |
-|--------------|-------|----------------|
-| Article 15 | Right to Access | `GET /api/v1/users/{id}/gdpr/export` |
-| Article 16 | Right to Rectification | `PATCH /api/v1/users/{id}/profile` |
-| Article 17 | Right to Erasure | `DELETE /api/v1/users/{id}` (30-day grace) |
-| Article 18 | Right to Restriction | Context visibility controls |
-| Article 20 | Right to Data Portability | JSON export with machine-readable format |
-| Article 21 | Right to Object | Consent withdrawal endpoints |
-| Article 22 | Right to Human Review | No automated decision-making |
+This section describes **GDPR-inspired privacy features** implemented as architectural best practices. This project does **NOT claim legal compliance** with GDPR, CCPA, or HIPAA.
 
-**Privacy by Design:**
+**Legal compliance requires**:
+- Legal counsel and Data Protection Officer
+- Formal Data Protection Impact Assessments (DPIAs)
+- Compliance documentation and policies
+- 72-hour breach notification procedures
+- Supervisory authority registration
+- Cookie consent management
+- Marketing compliance processes
+
+**This academic project provides**:
+- Privacy-by-design architecture
+- Basic data subject rights implementation
+- Audit logging for transparency
+- User control over data
+
+Use this as a foundation, not as production-ready compliance.
+:::
+
+**Data Subject Rights Implementation (GDPR-Inspired):**
+
+| Privacy Principle | Inspiration | Implementation |
+|------------------|-------------|----------------|
+| Right to Access (GDPR Art. 15) | Data transparency | `GET /api/v1/users/{id}/export` |
+| Right to Rectification (Art. 16) | Data accuracy | `PATCH /api/v1/users/{id}/profile` |
+| Right to Erasure (Art. 17) | Deletion rights | `DELETE /api/v1/users/{id}` (soft delete) |
+| Right to Restriction (Art. 18) | User control | Context visibility settings |
+| Right to Portability (Art. 20) | Data freedom | JSON export format |
+| Right to Object (Art. 21) | Consent control | Revoke consent endpoints |
+| No Automated Decisions (Art. 22) | Human review | Manual verification for sensitive actions |
+| CCPA Right to Know | Transparency | Same as GDPR export |
+| CCPA Right to Delete | User control | Same as GDPR erasure |
+| HIPAA Minimum Necessary | Data minimization | OAuth scope filtering |
+
+**Privacy-by-Design Principles:**
 - Encryption at rest (AES-256)
 - Encryption in transit (TLS 1.3)
 - Data minimization (scope-based filtering)
 - Purpose limitation (consent per processing)
 - Storage limitation (retention policies)
+- User control over all personal data
 
-**Audit Trail:**
+**Audit Trail (for transparency, not legal compliance):**
 - All data access logged
-- Legal basis recorded (consent, contract, legal obligation)
-- Retention: 7 years
+- Processing basis recorded (consent, contract, etc.)
+- Retention: 7 years (academic requirement, not legal)
 - Immutable audit logs
+
+**What is NOT implemented:**
+- Formal breach notification (72-hour GDPR requirement)
+- Data Protection Impact Assessments (DPIAs)
+- Supervisory authority communication
+- Cookie consent banners
+- Marketing/advertising compliance
+- Cross-border data transfer safeguards (Standard Contractual Clauses)
 
 ---
 
@@ -294,7 +337,7 @@ Content-Type: application/json; charset=utf-8
 **Decision 4: Legal Name Optional**
 - **Reason**: Real-name policies harm vulnerable populations (Haimson, 2016)
 - **Informed by**: Research on pseudonymity necessity
-- **Compliance**: Still GDPR-compliant (data minimization)
+- **Privacy Principle**: Aligned with GDPR data minimization principle (Art. 5.1c)
 
 ---
 
@@ -318,10 +361,11 @@ Content-Type: application/json; charset=utf-8
 - Test RTL language support
 - Validate locale-aware sorting
 
-**GDPR Compliance Auditing:**
-- Verify all rights implemented
+**Privacy Features Testing:**
+- Verify all data subject rights endpoints implemented
 - Test data export completeness
 - Validate audit log retention
+- Note: This tests feature implementation, not legal compliance
 - Check consent management
 
 ---

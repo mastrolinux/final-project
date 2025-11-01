@@ -213,6 +213,17 @@ This domain establishes the regulatory and security constraints that any identit
 
 ## Privacy Regulations Create Requirements Current Systems Barely Meet
 
+::: {.callout-note}
+## Scope Note: Regulatory Compliance in This Project
+
+The privacy regulations discussed in this section (GDPR, CCPA, HIPAA) form an important part of the background research and architectural considerations for this thesis project. However, **full legal compliance with these regulations is explicitly out of scope for the practical implementation**.
+
+The project will implement GDPR-inspired principles (data minimization, user control, audit logging, data export) as architectural best practices, but does not claim legal compliance. True regulatory compliance requires legal counsel, extensive documentation, breach notification systems, Data Protection Impact Assessments, and organizational processes beyond the scope of an academic thesis.
+
+**What IS in scope**: Privacy-by-design principles, user data control, basic GDPR rights implementation (export, delete)  
+**What IS NOT in scope**: Legal compliance certification, DPIAs, formal breach notification, full regulatory audit trails
+:::
+
 ## GDPR Establishes Data Subject Rights
 
 **Article 16 Right to Rectification** [@gdpr2016; @idpro2024gdpr] requires data subjects to correct inaccurate personal data without undue delay. Implementation requires self-service mechanisms, system-wide propagation, audit trails without PII in logs, and authenticated API endpoints. When names change through marriage or transition, systems must update across all holdings while maintaining historical records for compliance.
@@ -226,6 +237,8 @@ Breach notification under Articles 33-34 requires 72-hour notification to superv
 **California CCPA/CPRA** [@ccpa2018] applies to organizations with $25M+ revenue OR 100,000+ consumers' data OR 50%+ revenue from data sales. Consumer rights include Know, Delete, Opt-Out, Correct (CPRA), and Limit Use of Sensitive Information. Enforcement reaches $7,500 per intentional violation with private right of action for breaches. The expanded definition of **Sensitive Personal Information** includes government IDs, health info, sex life/orientation, and citizenship/immigration status (2024 addition).
 
 Similar comprehensive frameworks exist globally: Brazil LGPD (2% revenue fines, max 50M BRL), UK GDPR (post-Brexit), Singapore PDPA, China PIPL, Canada PIPEDA, plus U.S. state laws in Virginia, Colorado, Connecticut, and Utah. Sector-specific regulations include HIPAA for healthcare PHI, FERPA for student records, and GLBA for financial institutions. Navigating this regulatory landscape while supporting flexible identity presentation requires sophisticated data governance.
+
+**Note**: These regulations inform the architectural design principles but are not fully implemented for legal compliance in this academic project.
 
 ## Security Threats Related to Identity are Escalating
 

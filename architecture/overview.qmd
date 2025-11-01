@@ -25,7 +25,7 @@ The system prioritizes the following quality attributes, ranked by criticality:
 
 - **Flexibility**: Support diverse naming conventions and identity expressions globally
 - **Security**: Multi-layered security with defense-in-depth principles
-- **Privacy**: GDPR-compliant privacy-by-design architecture
+- **Privacy**: Privacy-by-design architecture (GDPR-inspired, not certified compliant)
 - **Context-awareness**: Different identity presentations for different contexts
 - **Extensibility**: Ability to add new identity attributes and contexts
 - **Auditability**: Complete tracking of all identity-related operations
@@ -106,8 +106,10 @@ This approach aligns with GDPR data minimization principles: collect only what i
 1. Enable users to manage multiple identity presentations across different life contexts
 2. Provide third-party applications controlled access to identity information
 3. Support global users with diverse cultural naming practices
-4. Comply with international privacy regulations (GDPR, CCPA, etc.)
+4. Implement privacy-by-design principles inspired by international regulations (GDPR, CCPA)
 5. Demonstrate academic excellence in system design and implementation
+
+**Note**: Goal #4 focuses on architectural best practices, not legal compliance certification.
 
 ## Technical Goals
 
@@ -147,12 +149,22 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Client application management
 - Consent management
 
-**GDPR Compliance:**
-- Data export (Right of Access)
-- Data deletion (Right to Erasure)
+**GDPR-Inspired Privacy Features:**
+- Data export (Right of Access - basic implementation)
+- Data deletion (Right to Erasure - soft delete)
 - Consent tracking and withdrawal
 - Audit logging
 - Data retention policies
+
+::: {.callout-warning}
+## Scope Limitation: Privacy Compliance
+
+This project implements **GDPR-inspired principles** as architectural best practices, but does NOT claim full legal compliance with GDPR, CCPA, or HIPAA. True regulatory compliance requires legal counsel, Data Protection Impact Assessments, formal breach notification processes, and organizational governance beyond an academic thesis scope.
+
+**What IS implemented**: Privacy-by-design, user control, data export, data deletion, basic audit trails  
+**What IS NOT implemented**: Legal compliance certification, DPIAs, 72-hour breach notification, full regulatory documentation
+:::
+
 
 **Guardian Features:**
 - Guardian-minor relationship management
@@ -252,7 +264,7 @@ In production enterprise environments, this system would need to integrate with 
 User Management
 |-- Create and manage base profile
 |-- Update profile information
-|-- Delete account (with GDPR compliance)
+|-- Delete account (with privacy considerations)
 +-- Export personal data
 
 Multi-Context Identity
