@@ -11,7 +11,7 @@ book:
     - index.qmd
     - part: "System Architecture"
       chapters:
-        - architecture/original-problem.qmd
+        # - architecture/original-problem.qmd
         - architecture/overview.qmd
         - architecture/system-context.qmd
         - architecture/component-architecture.qmd
@@ -23,6 +23,7 @@ book:
         - architecture/decisions-future.qmd
 
 bibliography: references.bib
+csl: quarto_files/ieee.csl
 
 format:
   html:

@@ -11,6 +11,7 @@ This document describes the backend architecture for an Identity and Profile Man
 ### Key Architectural Characteristics
 
 The system prioritizes:
+
 - **Flexibility**: Support diverse naming conventions and identity expressions globally
 - **Security**: Multi-layered security with defense-in-depth principles
 - **Privacy**: GDPR-compliant privacy-by-design architecture
@@ -21,6 +22,7 @@ The system prioritizes:
 ### Core Differentiators
 
 Unlike traditional identity systems that assume Western naming conventions and single-identity models, this architecture:
+
 - Treats identity as **multifaceted and context-dependent**
 - Separates **legal identity from preferred identity**
 - Supports **guardian-managed identities** for minors
@@ -51,6 +53,7 @@ Create a culturally-sensitive, privacy-respecting identity management platform t
 This system explicitly rejects "real-name policies" that require users to provide government-issued legal names for identification purposes. Research demonstrates that such policies cause documented harm to marginalized populations (see background document).
 
 **This system's approach:**
+
 - **Legal name is OPTIONAL**: Only required for verified accounts accessing legal/healthcare contexts
 - **Preferred names are primary**: User-chosen names used for identification and third-party sharing
 - **Never exposed via OAuth**: Legal names NEVER shared with third-party applications
@@ -58,12 +61,14 @@ This system explicitly rejects "real-name policies" that require users to provid
 - **Distinction is clear**: Legal name for legal compliance contexts only, NOT for identification
 
 **Example use cases:**
+
 - Transgender individual: Uses preferred name "Alex" everywhere; legal name encrypted, never shared
 - Political dissident: Pseudonymous account with no legal name required
 - Domestic violence survivor: Creates profile without revealing legal identity
 - Professional with stage name: Legal name for contracts, stage name for public interactions
 
 **Contrast with "real-name policies":**
+
 - Facebook policy (2014): Required government ID matching profile name
 - Our policy: Legal name optional, preferred name sufficient for most contexts
 - Their harm: Outing, harassment, exclusion of vulnerable populations
@@ -119,6 +124,7 @@ The research background document extensively discusses the 2024 NHI security cri
 1. **Academic Project Boundaries**: This thesis focuses on human identity complexity (cultural naming, context-based presentation, guardian relationships). Adding NHI would dilute the focus.
 
 2. **Different Problem Domain**: NHI management requires:
+
    - Certificate lifecycle management
    - Service account rotation
    - Machine-to-machine authentication
@@ -134,12 +140,14 @@ The research background document extensively discusses the 2024 NHI security cri
 In production enterprise environments, this system would need to integrate with NHI management solutions for complete identity coverage. This is explicitly left as future work.
 
 **What IS in scope:**
+
 - Human users (adults and minors)
 - Guardian-managed minor accounts
 - Verified, unverified, and pseudonymous human accounts
 - Human-to-service OAuth integrations (humans authorizing apps)
 
 **What IS NOT in scope:**
+
 - Service accounts
 - API keys for automation
 - Bot identities
@@ -151,18 +159,19 @@ In production enterprise environments, this system would need to integrate with 
 
 ## Success Criteria
 
-### Academic Excellence (Project Evaluation)
 
-**Outstanding Grade Requirements:**
-1. [YES] Strong requirements document with research and imagination
-2. [YES] Solid security and privacy with GDPR reference
-3. [YES] Data model beyond simplest use cases
-4. [YES] Robust, widely applicable API
-5. [YES] Frontend demonstrating multiple use cases
+**Requirements:**
+
+1. Strong requirements document with research and imagination
+2. Solid security and privacy with GDPR reference
+3. Data model beyond simplest use cases
+4. Robust, widely applicable API
+5. Frontend demonstrating multiple use cases
 
 ### Technical Excellence
 
-**System must demonstrate:**
+**My definition:**
+
 - Clean architecture with clear separation of concerns
 - Comprehensive security controls at multiple layers
 - Thoughtful handling of cultural diversity in identity
@@ -173,6 +182,7 @@ In production enterprise environments, this system would need to integrate with 
 ### User Experience Excellence
 
 **System must provide:**
+
 - Intuitive profile management
 - Clear consent mechanisms
 - Transparent data usage
@@ -252,7 +262,7 @@ Privacy & Compliance
 ## Technology Stack
 
 ### Backend Core
-- **Language**: Python 3.11+
+- **Language**: Python 3.12+
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 15+ (via Supabase)
 - **Cache**: Redis

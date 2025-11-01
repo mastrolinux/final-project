@@ -1,7 +1,7 @@
 ---
 title: "Managing Names and Identity Across Contexts: A Background Research Report"
 subtitle: "A Comprehensive Analysis of Previous Attempts and Current State of the Problem"
-author: "Research Report"
+author: "Luca Cipriani"
 date: "2025-10-20"
 format:
   pdf:
@@ -48,7 +48,7 @@ The assumption that names have a "first name" and "last name" breaks immediately
 
 **Arabic naming traditionally includes five components**: ism (given name), kunya (parent-of-X), nasab (chain of ancestors using ibn/bint), laqab (descriptive epithet), and nisba (geographic/tribal origin). Modern Arabs typically use 2-4 components, but which components varies by country. Women don't change names upon marriage in most Arab countries, meaning married couples and their children may have entirely different "last names" by Western understanding.
 
-**Spanish and Latin American conventions use two surnames**—one from each parent's first surname—creating constructions like María José Carreño Quiñones. The order matters, but which surname is used for address varies: sometimes the second surname is preferred if the first is too common. Children's surnames are constructed differently than either parent's, breaking database assumptions about family name inheritance [@w3c2023personal].
+**Spanish and Latin American conventions use two surnames** — one from each parent's first surname—creating constructions like María José Carreño Quiñones. The order matters, but which surname is used for address varies: sometimes the second surname is preferred if the first is too common. Children's surnames are constructed differently than either parent's, breaking database assumptions about family name inheritance [@w3c2023personal].
 
 **Icelandic naming is purely patronymic with no hereditary surnames**. Björk Guðmundsdóttir means "Björk, daughter of Guðmundur." Each generation creates new "surnames" from parents' given names, so siblings and parent-child don't share "family names." Systems expecting hereditary surnames completely fail [@w3c2023personal].
 
@@ -98,7 +98,7 @@ The costs of collapsed contexts are real: professional damage when posts intende
 
 Research documents three classes of pseudonyms: **functional** (denoting specific roles), **situational** (external forces compelling hidden identity), and **personal** (internal drive for different personas) [@vandernagel2015gonewild]. Users manage nearly 200 credentials across platforms [@ping2024passwords], creating multiple usernames for security segregation, platform-specific requirements, and context separation.
 
-The benefits of pseudonymity are well-documented. @vandernagel2015gonewild study of r/gonewild (a subreddit for amateur exhibitionism) showed how pseudonymity enables **sexual identity exploration while maintaining safety**—users post content under pseudonyms without faces, using verification systems and community guidelines. To remove anonymous communication is to "shut off important avenues for productive identity play, self-exploration, and behavior contextualization online."
+The benefits of pseudonymity are well-documented. @vandernagel2015gonewild study of r/gonewild (a subreddit for amateur exhibitionism) showed how pseudonymity enables **sexual identity exploration while maintaining safety**. Users post content under pseudonyms without faces, using verification systems and community guidelines. To remove anonymous communication is to "shut off important avenues for productive identity play, self-exploration, and behavior contextualization online."
 
 **84% of transgender youth** report online communities as important or very important [@trevorproject2021]. LGBTQ+ individuals use pseudonyms to control coming out processes. Domestic violence survivors avoid abusers. Political dissidents in authoritarian regimes protect themselves (despite real-name requirements in China). Whistleblowers and journalists avoid retaliation. Sex workers prevent violence and discrimination. The list of legitimate pseudonymity uses is extensive and well-researched.
 
@@ -308,7 +308,7 @@ Academic consensus points toward passwordless authentication where appropriate [
 
 # Conclusion: The Path Forward
 
-Patrick McKenzie wrote in 2010 [@mckenzie2010falsehoods]: "I have never seen a computer system which handles names properly and doubt one exists, anywhere." Fourteen years later, this remains accurate because **names are fundamentally about human identity and culture, not database fields**. Any system that truly handles names must handle the full diversity of human societies—past, present, and future.
+Patrick McKenzie wrote in 2010 [@mckenzie2010falsehoods]: "I have never seen a computer system which handles names properly and doubt one exists, anywhere." Fourteen years later, this remains accurate because **names are fundamentally about human identity and culture, not database fields**. Any system that handles names must handle the full diversity of human societies—past, present, and future.
 
 The problem of managing names and identities across contexts through Web APIs is not primarily technical. The technologies exist: extensible schemas [@rfc7643; @unicode2024personnames], content negotiation [@rfc7231], federated identity [@openidconnect2014], cryptographic attestations, privacy-enhancing technologies [@gdpr2016]. The challenge is **architectural, social, and ethical**—reconceptualizing identity systems to serve human needs rather than enforce administrative convenience.
 
@@ -318,7 +318,7 @@ The research documented in this report provides comprehensive background for und
 
 Designing systems that successfully manage names and identities across contexts requires starting from human needs [@chi2012identity; @devries2020streaming] rather than technical convenience, supporting multiple concurrent valid identities [@vandernagel2015gonewild; @poole2011identity] rather than enforcing singular paradigm, enabling context-dependent presentation [@marwick2011tweet] rather than forced universality, protecting vulnerable users [@trevorproject2021; @haimson2016authenticself] rather than exposing them, embracing cultural diversity [@w3c2023personal; @unicode2024personnames] rather than imposing Western assumptions, and reconceiving identity as performative and contextual [@goffman1959presentation] rather than fixed and singular.
 
-The technical foundations exist. The research is clear. The user needs are documented. The failures of current approaches provide crucial lessons. What remains is the will to build systems that truly serve human dignity, safety, and identity expression rather than optimizing for surveillance, simplicity, and administrative control.
+The technical foundations already exist. The user needs are documented. The failures of current approaches provide crucial lessons. What remains is the will to build systems that serve human dignity, safety, and identity expression rather than optimizing for surveillance, simplicity, and administrative control.
 
 # References
 
