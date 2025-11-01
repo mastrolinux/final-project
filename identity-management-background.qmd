@@ -26,9 +26,42 @@ csl: quarto_files/ieee.csl
 
 # Executive Summary
 
-Every human identity system designer eventually discovers the same uncomfortable truth: **names are not data fields**. They are complex, culturally-embedded, historically-contingent, socially-negotiated aspects of human identity that resist standardization [@mckenzie2010falsehoods]. This report provides comprehensive background on the problem of managing different names, usernames, and identity presentations across contexts through a Web API—not to propose solutions, but to understand why this problem is so challenging and what has been tried before.
+This report establishes the research foundation for building a context-aware identity and profile management API that addresses a fundamental architectural gap in modern identity systems. Every human identity system designer eventually discovers the same uncomfortable truth: **names are not data fields**. They are complex, culturally-embedded, historically-contingent, socially-negotiated aspects of human identity that resist standardization [@mckenzie2010falsehoods]. 
 
-# The Problem is Fundamentally Human, Not Technical
+While current platforms excel at authentication and security, they fail to support how humans actually use identity—presenting different facets of themselves in different contexts while maintaining control over personal information. This report provides comprehensive background on why this problem is so challenging, what has been tried before, and establishes the foundation for a technical solution.
+
+# Problem Statement
+
+**Modern identity management systems enforce a singular identity paradigm that fundamentally conflicts with how humans actually use identity across contexts, cultures, and lifecycles.**
+
+The problem has five interconnected dimensions:
+
+1. **Human identity is performative and context-dependent**: People naturally present different facets depending on context—professional names at work, preferred names with friends, legal names with government, and pseudonyms for safety or exploration [@goffman1959presentation; @marwick2011tweet]. Yet systems enforce singular representations, creating context collapse with documented harms.
+
+2. **Cultural naming diversity defies standardization**: Billions of people have names that don't fit Western "first name + last name" assumptions [@mckenzie2010falsehoods; @w3c2023personal]. Chinese surname-first, Arabic five-component names, Icelandic patronymics, Spanish double surnames, and South Indian initials are not edge cases—they're how most of the world's population structures names.
+
+3. **Identity lifecycle includes legitimate changes**: Marriage, gender transition, professional development, and safety needs create valid reasons for name changes [@wikipedia2024deadnaming; @trevorproject2021]. Systems treating changes as exceptional errors cause systematic harm—trans youth who can change legal names have significantly lower suicide attempt rates.
+
+4. **Privacy requires context-aware disclosure**: Users need to present different information to different audiences (employers, family, social networks, healthcare providers, third-party applications), but current systems force universal disclosure or universal hiding with no context-aware middle ground.
+
+5. **Safety demands pseudonymity and separation**: Marginalized groups—transgender individuals, domestic abuse survivors, political dissidents, LGBTQ+ youth—require pseudonymity and context separation for safety [@haimson2016authenticself; @vandernagel2015gonewild], yet real-name policies and singular identity enforcement systematically exclude and endanger them.
+
+**The measurable impact**: 90% of enterprises experienced identity-related security incidents in 2024 [@idsa2024report], often because rigid systems drove users to insecure workarounds. 71% of young adults modify privacy settings to manage context collapse [@pew2010reputation]. The human cost is documented and substantial.
+
+**The technical capabilities exist**—extensible claims in OpenID Connect [@openidconnect2014], attribute systems in SCIM [@rfc7643], JSONB storage in PostgreSQL, Unicode name formatting specifications [@unicode2024personnames], context-aware authorization patterns—but no system has assembled them into a user-centric, context-aware identity API. The problem is architectural and social, not technological: systems optimize for administrative simplicity and tracking rather than user agency, privacy, cultural sensitivity, and identity flexibility.
+
+**This project proposes to fill that gap** by building a privacy-first, culturally-aware, context-supporting identity and profile management API using FastAPI (Python 3.12+), PostgreSQL/Supabase, Redis, OAuth 2.0/OIDC, SCIM 2.0, and Unicode PersonNames standards—integrating proven technologies in a novel architecture informed by decades of research on human identity practices.
+
+# Research Background: Organizing Framework
+
+The remainder of this report provides comprehensive background research organized into four problem domains that directly inform the technical architecture. Each domain synthesizes academic research, industry standards, documented failures, and current system limitations to establish requirements for the proposed solution.
+
+
+# Domain 1: How Humans Actually Use Identity Across Contexts
+
+This domain examines the sociological and psychological research showing identity as performative, context-dependent, and legitimately multi-faceted—not the singular, fixed paradigm current systems enforce.
+
+## The Problem is Fundamentally Human, Not Technical
 
 ## Identity as Performance, Not Fixed Data
 
@@ -40,51 +73,7 @@ But virtually every digital identity system enforces a singular identity paradig
 
 This failure isn't merely inconvenient. It's measured in real human costs: domestic abuse survivors exposed to their abusers, professionals unable to separate personal and work identities, transgender individuals forced to use deadnames [@wikipedia2024deadnaming] in systems that can't accommodate name changes, and entire cultural groups whose naming conventions simply don't fit Western database assumptions. **90% of enterprises experienced identity-related security incidents in 2024** [@idsa2024report], often because rigid systems drove users to insecure workarounds.
 
-# Names Vary Dramatically Across Cultures
-
-## Global Naming Systems Defy Universal Structure
-
-The assumption that names have a "first name" and "last name" breaks immediately when examining global practices [@w3c2023personal]. **Chinese naming places family name first** (Xi Jinping = Xi family + Jinping given), directly opposite Western convention. This isn't a minor detail—databases built for Western names fail catastrophically, creating situations where President Xi is addressed as "President Jinping," equivalent to calling Donald Trump "President Don."
-
-**Arabic naming traditionally includes five components**: ism (given name), kunya (parent-of-X), nasab (chain of ancestors using ibn/bint), laqab (descriptive epithet), and nisba (geographic/tribal origin). Modern Arabs typically use 2-4 components, but which components varies by country. Women don't change names upon marriage in most Arab countries, meaning married couples and their children may have entirely different "last names" by Western understanding.
-
-**Spanish and Latin American conventions use two surnames** — one from each parent's first surname—creating constructions like María José Carreño Quiñones. The order matters, but which surname is used for address varies: sometimes the second surname is preferred if the first is too common. Children's surnames are constructed differently than either parent's, breaking database assumptions about family name inheritance [@w3c2023personal].
-
-**Icelandic naming is purely patronymic with no hereditary surnames**. Björk Guðmundsdóttir means "Björk, daughter of Guðmundur." Each generation creates new "surnames" from parents' given names, so siblings and parent-child don't share "family names." Systems expecting hereditary surnames completely fail [@w3c2023personal].
-
-**South Indian Tamil naming uses initials**: S. Rajeev means Suresh's son Rajeev, where the father's given name appears as a prefix initial. Upon marriage, women may or may not take their husband's given name as their last name. The same person might be "S. Rajeev" or "Rajeev Suresh" depending on context, and the Dravidian movement encourages dropping caste-associated names entirely [@w3c2023personal].
-
-These aren't edge cases—they represent billions of people whose names cannot be accurately represented in systems assuming Western structure.
-
-## Names Serve Different Purposes in Different Contexts
-
-**Jews often maintain two complete naming systems**: Hebrew names used within religious community, and secular names for broader society engagement. The same person is known by entirely different names depending on context. Ashkenazi Jewish superstition avoids naming children after living relatives, believing the Angel of Death might take the wrong person—names are intimately connected to fate and spiritual identity [@w3c2023personal].
-
-**Chinese individuals use multiple concurrent names**: formal names (míng) for official contexts, milk names known only to close family, generation names (characters shared among siblings), professional names that may differ from legal names, and English/Christian names adopted for convenience. Historical and contemporary Japanese practices include multiple name readings, romanization inconsistencies, and posthumous names for emperors [@w3c2023personal].
-
-**Professional versus legal names diverge constantly**: women retaining maiden names professionally while legally changing them, academics whose PhD credentials are tied to one name but who now use another, immigrants with legal birth names who adopt adapted names socially, and artists whose stage names become their primary identity. These aren't failures of identity—they're how humans actually use names.
-
-# Marriage and Gender Transition Create Legitimate Name Changes
-
-## Marriage Name Practices Vary Dramatically Worldwide
-
-Some countries **legally prohibit women from changing surnames** upon marriage: Quebec (since 1981), Greece (since 1983), France (since 1789), Italy (since 1975), and Belgium and the Netherlands all forbid legal name changes, though social use may be permitted [@time2015marriage]. Japan requires married couples to share one surname (96% choose the husband's). Meanwhile, in China, Korea, Vietnam, Malaysia, and throughout Spanish- and Portuguese-speaking countries, women typically retain their birth surnames.
-
-Even in Western countries where women traditionally took husbands' names, practices are evolving. In the United States, 80-90% of college-educated women still take husbands' names, but **30% of UK women now include birth names alongside spouse names** (up significantly 2020-2021). The historical basis for name changes—Norman Conquest coverture laws where women's legal identity was "covered" by husbands—reveals these practices encoded assumptions about women as property.
-
-Professional women face particular challenges: established reputations built under original names, academic credentials and publications tied to maiden names, and professional networks that lose track of individuals when names change. Systems treating name changes as simple field updates create discontinuities in professional records that damage careers.
-
-## Transgender Naming and Deadnaming are Human Rights Issues
-
-**Deadnaming**—using a transgender person's former name—originated as trans community terminology in 2010-2013 and carries deeply negative connotations [@wikipedia2024deadnaming]. It misgenders subjects, reveals transgender status without consent (creating safety risks), denies and invalidates identity, causes gender dysphoria, and can lead to harassment and violence. @trevorproject2021 survey found trans and nonbinary youth who changed legal names had **significantly lower suicide attempt rates**, directly linking proper name usage to mental health outcomes.
-
-Bureaucratic deadnaming poses severe challenges. Legal name changes require time, money, and navigating complex procedures that vary by jurisdiction. Documents must be updated everywhere: birth certificates, driver's licenses, passports, Social Security, banks, medical records, educational transcripts, employment records. When systems store legal names separately from preferred names but display legal names by default, they cause systemic harm.
-
-Technical challenges in published works are particularly intractable [@tanenbaum2014deadnaming]. Researcher Theresa Tanenbaum attempted to update **83 academic publications**—many publishers ignored or refused requests. Film credits are permanent in released works. IMDb initially refused to remove actors' birth names, only changing policy in 2019 to remove names "not broadly publicly known" (but still showing previous names for credited work). In contrast, Netflix updated Elliot Page's credits the same day he came out—but doesn't extend this respect to less prominent trans actors.
-
-Wikipedia's current policy treats deadnames as private information unless the person was "notable under former name." Twitter/X **removed deadnaming from hateful conduct guidelines** after Musk's 2023 acquisition, exemplifying how platform policies inconsistently protect transgender individuals. Healthcare standards recommend documenting both preferred and legal names for medical safety, using preferred names in all interactions while maintaining legal names only for prescriptions and insurance matching [@equity2024inclusiveforms].
-
-# Online Identity Creates New Complexities
+## Online Identity Creates New Complexities
 
 ## Context Collapse Forces Unwanted Audience Merging
 
@@ -112,101 +101,7 @@ Research by @haimson2016authenticself found real-name policies "simultaneously d
 
 Chris Poole, 4chan founder, articulated the counterargument [@poole2011identity]: users are "like diamonds" with multiple valid facets, not monolithic singular identities. This "prismatic self" concept aligns with decades of sociological research showing humans naturally segment identities across contexts.
 
-# Technical Standards Exist But Don't Address Full Complexity
-
-## Unicode and W3C Provide Formatting Guidance
-
-**Unicode TR35 PersonNames** [@unicode2024personnames] (draft version 48) specifies standardized formatting for personal names across locales. It defines seven core fields (title, given, given2, surname, surname2, generation, credentials) and provides formatting patterns based on four attributes: order (givenFirst/surnameFirst/sorting), length (long/medium/short), usage (addressing/referring/monogram), and formality (formal/informal). The specification includes modifiers for transformations: -informal for casual versions, -initial for first grapheme clusters, -monogram for abbreviations.
-
-This represents significant progress, yet fundamental limitations remain. The specification is **out of scope for parsing names into components**, extracting surname prefixes automatically, handling special protocol formatting (royalty, religious figures), and doesn't address pronunciation data (crucial for Japanese kanji). It assumes at least one of given or surname fields is present, excluding mononyms. Cultural coverage, while extensive, doesn't encompass all global practices. Application-specific data like preferred names, stage names, and context-dependent variations must be handled outside the standard.
-
-**W3C Internationalization guidelines** [@w3c2023personal] emphasize avoiding rigid field structures. Key recommendations: don't assume "first name" and "last name" translate globally; consider single fields for full names; make fields long enough for any name; use UTF-8 encoding; don't force uppercase conversion; allow punctuation; preserve user-entered casing. The guidelines document cultural variations (Icelandic patronymics, Spanish double surnames, mononyms in Indonesia) but acknowledge **no perfect solution exists for all use cases**.
-
-## SCIM Provides REST API Standards Focused on Provisioning
-
-**SCIM 2.0** [@rfc7643; @rfc7644] is the de facto standard for cross-domain identity management via REST APIs. It defines standardized user and group schemas with structured name objects containing formatted, familyName, givenName, middleName, honorificPrefix, and honorificSuffix fields. The Enterprise extension adds employeeNumber, costCenter, organization, division, department, and manager references.
-
-SCIM excels at **automated provisioning and deprovisioning** from HR systems [@okta2024scim], cross-system synchronization, and multi-tenant SaaS provisioning. Major providers (Okta, Azure AD, Google Workspace) support SCIM, reducing custom integration work. The specification includes filtering, bulk operations, and extensibility for custom attributes.
-
-However, SCIM's name model has **critical limitations for multi-context identity**: single name object doesn't handle multiple representations well, limited support for patronymics and particles, no concept of persona or alternate identities, no standard for pronouns (requires custom extensions), and focus on provisioning rather than flexible identity expression. The name object represents organizational perspective (who is this employee?) rather than user perspective (how do I want to be known in different contexts?).
-
-## OAuth and OpenID Connect Enable Authentication
-
-**OpenID Connect** [@openidconnect2014] builds an identity layer on OAuth 2.0, providing standard claims in ID tokens: sub (unique identifier), name (full name string), given_name, family_name, middle_name, nickname, preferred_username, profile (URL), picture (URL), and email. These claims work well for basic identity exchange but **fall short for multi-name scenarios**: no support for multiple legal names or context-specific names, no way to express name preferences by context, simple string `name` field without context, no standard for deadnaming protection or name history, and no support for cultural naming variations beyond the basic structure.
-
-OAuth 2.0 scopes control what information is shared, and claims can be requested individually for fine-grained access, but the underlying assumption remains singular identity. SAML 2.0 [@auth02024saml; @varonis2024saml], while dominant in enterprise SSO, suffers similar limitations: attributes typically mirror LDAP/Active Directory schemas with no built-in support for multi-name or context-aware identity, requiring extensive pre-configuration of attribute mapping between identity providers and service providers.
-
-## HTTP Content Negotiation Exists But Isn't Applied
-
-**Accept-Language headers** [@mdn2024acceptlanguage] indicate preferred natural languages with quality values: `Accept-Language: da, en-gb;q=0.8, en;q=0.7` requests Danish preferentially, accepting British English (quality 0.8) or other English (quality 0.7). The Vary header indicates which request headers influenced content selection, critical for caching [@rfc7231; @mdn2024contentnegotiation]. This mechanism could theoretically support locale-specific name presentations, but **no standards exist for negotiating identity representation format**. Should context be expressed through Accept-Language, custom headers, query parameters, or token claims? The semantics are unclear, and no major platform has implemented identity-aware content negotiation.
-
-# Current Identity Management Systems Excel at Security But Fail at Flexibility
-
-## Major Platforms Enforce Singular Identity
-
-**Google Identity Platform** uses OpenID Connect with Workspace extensions. Users can configure display names and Workspace admins can add custom attributes (up to 1500), but **fundamentally one primary identity** exists per user across all Google services. Display name changes affect all services uniformly, with no native support for professional versus personal name distinctions within the same account. Multi-IdP SSO (in beta) allows different identity providers but still maintains singular identity per provider.
-
-**Microsoft Entra ID** [@azure2024bestpractices] (formerly Azure AD) provides displayName, givenName, surname, userPrincipalName, mail, otherMails, and custom attributes via directory extensions. Its sophisticated **Conditional Access** implements context-aware policies based on user identity, device compliance, location, sign-in risk, and application—but this context awareness focuses on access control decisions, not identity presentation. External identities (B2B guests) maintain separate identity in home tenant, but there's no support for multiple personas within single user accounts.
-
-**Apple's Sign in with Apple** takes a privacy-first approach with Hide My Email generating unique relay addresses per app (`<random>@privaterelay.appleid.com`). Users control whether to share names and can edit names shared with each app, but the focus is **hiding information rather than flexible identity expression**. Still fundamentally single name per user with no context-aware name presentation.
-
-**LinkedIn** focuses on professional identity, requiring "real or preferred professional name" with first, middle, and last names only (no business names or pseudonyms). Person IDs are application-specific, and API access heavily restricted. There's **no built-in way to maintain separate personal identity** or support professional names different from legal names in structured formats. Users sometimes create separate accounts for different professional contexts, violating terms of service.
-
-## Facebook's Real-Name Policy Evolution
-
-Facebook's controversial "authentic name" policy evolved from strict "real name" enforcement (2004-2015) to allowing "the name friends and family know you by" following LGBTQ+ community protests [@haimson2016authenticself; @cnn2014facebook], but enforcement remains inconsistent and harmful. The "Additional Profiles" feature acknowledges multiple identity facets but the system remains **fundamentally single-identity**. Name verification requires documentation when reported, with documented issues for Native Americans, drag queens, international users with non-Western name formats, transgender individuals, and abuse victims.
-
-The Graph API provides access to basic profile information (ID, name, email, picture) but no support for multiple identity contexts or alternative names. This demonstrates the persistent gap between platform business models (unified trackable identity) and user needs (context-dependent identity presentation).
-
-## Context-Aware Systems Focus on Access Control
-
-**ATIS Context-Aware Identity Management Framework** aggregates contextual information (who, what, where, when, how) to make authentication and authorization decisions [@wso22017patterns]. Google Cloud IAP uses device attributes and IP addresses for access levels. Microsoft Conditional Access provides real-time risk detection and adaptive authentication. These implementations show **context awareness primarily for security policy enforcement**, not for supporting user identity flexibility or persona management.
-
-Specialized persona systems exist but remain niche: **TrustBuilder Persona** allows multiple personas within organizations with Policy-Based Access Control per persona. **Evolveum midPoint** supports persona links where physical user identity connects to multiple persona users. But these focus on role-based access control and privilege separation rather than personal identity expression. The common pattern: personas for organizational/administrative purposes, not user-controlled context-dependent identity presentation.
-
-# Privacy Regulations Create Requirements Current Systems Barely Meet
-
-## GDPR Establishes Data Subject Rights
-
-**Article 16 Right to Rectification** [@gdpr2016; @idpro2024gdpr] requires data subjects to correct inaccurate personal data without undue delay. Implementation requires self-service mechanisms, system-wide propagation, audit trails without PII in logs, and authenticated API endpoints. When names change through marriage or transition, systems must update across all holdings while maintaining historical records for compliance.
-
-**Article 5(1)(c) Data Minimization** mandates collecting only adequate, relevant, necessary data for specified purposes. This suggests using federation (SAML, OpenID Connect) for transient identity, attribute services that verify properties without storing data ("over 18" without date of birth), and avoiding duplicate collection. **Article 5(1)(b) Purpose Limitation** requires specified, explicit purposes with technical controls preventing purpose creep.
-
-Breach notification under Articles 33-34 requires 72-hour notification to supervisory authorities and individual notification if high risk exists. Fines reach 4% of global revenue or €20M (whichever is greater). Handling name changes, deadnaming protection, and multi-context identity while maintaining GDPR compliance creates significant technical challenges that few systems adequately address.
-
-## Other Privacy Regulations Compound Requirements
-
-**California CCPA/CPRA** [@ccpa2018] applies to organizations with $25M+ revenue OR 100,000+ consumers' data OR 50%+ revenue from data sales. Consumer rights include Know, Delete, Opt-Out, Correct (CPRA), and Limit Use of Sensitive Information. Enforcement reaches $7,500 per intentional violation with private right of action for breaches. The expanded definition of **Sensitive Personal Information** includes government IDs, health info, sex life/orientation, and citizenship/immigration status (2024 addition).
-
-Similar comprehensive frameworks exist globally: Brazil LGPD (2% revenue fines, max 50M BRL), UK GDPR (post-Brexit), Singapore PDPA, China PIPL, Canada PIPEDA, plus U.S. state laws in Virginia, Colorado, Connecticut, and Utah. Sector-specific regulations include HIPAA for healthcare PHI, FERPA for student records, and GLBA for financial institutions. Navigating this regulatory landscape while supporting flexible identity presentation requires sophisticated data governance.
-
-# Security Threats Related to Identity are Escalating
-
-## 2024 Reveals Crisis in Identity Security
-
-**90% of enterprises** with 1000+ employees had identity-related security incidents in 2024 [@idsa2024report]. 24+ billion credentials circulate on the dark web. Average breach costs reached $4.88M with $169 per record [@ibm2024cost]. The Snowflake attacks demonstrated consequences: compromised credentials without MFA led to 9 public victims with data sold for $150K-$2M per organization [@pushsecurity2024breaches].
-
-Non-human identities emerged as critical vulnerability in 2024 [@aembit2024nhid]. **Service accounts, API keys, and bots now outnumber humans 10x-50x** in typical organizations, with NHIs 5x more likely to be privileged than human accounts. Traditional IAM is "broken because it was built for humans, not machines" (NHIMG 2024). High-profile breaches through compromised non-human identities included BeyondTrust (compromised API key, CVSS 9.8), Schneider Electric (exposed dev credentials, 40GB/400K records), Dropbox Sign (service account breach), and NY Times (GitHub credentials leaked).
-
-Common attack vectors remain credential stuffing, phishing, session hijacking, API key compromise, lack of MFA, and overprivileged accounts. **Microsoft research shows MFA prevents 99.9% of account compromises** [@microsoft2024mfa], yet adoption remains incomplete. The majority of 2024's major breaches would have been prevented by properly implemented MFA.
-
-## Authentication Best Practices Are Well-Established
-
-**NIST SP800-63B and OWASP guidelines** [@nist2017digital; @owasp2024auth] recommend: 8 character minimum passwords (64+ for passphrases), allowing all characters including Unicode, no composition rules required, blocking breached passwords (Have I Been Pwned API), no periodic forced changes, and password strength meters (zxcvbn library). Storage requires Argon2, bcrypt, or PBKDF2 hashing with constant-time comparison. Transmission always via TLS/HTTPS.
-
-**FIDO2/WebAuthn** provides phishing-resistant passwordless authentication using public key cryptography tied to website URLs. JWT security requires strong secret keys or RSA pairs, appropriate expiration times, signature validation on every use, never storing sensitive data in payload, and using httpOnly/secure cookies rather than localStorage. OAuth 2.0 security demands Authorization Code Flow with PKCE, strict redirect URI validation, short-lived access tokens, and refresh token rotation.
-
-Session management requires high-entropy session IDs, regeneration after login, appropriate timeouts, secure logout, and cookie flags (Secure, HttpOnly, SameSite). These best practices are technically understood but **implementation remains inconsistent**, particularly in systems managing complex identity requirements.
-
-## Web API Security Fundamentals
-
-**CSRF protection** [@owasp2024csrf] requires synchronizer tokens (unique unpredictable per session/request, validated server-side), double submit cookies (HMAC-signed recommended), SameSite cookie attributes (Strict/Lax), custom headers for APIs (requires CORS preflight), and Origin/Referer verification. State-changing operations should never use GET methods, and XSS can bypass CSRF protections.
-
-**XSS prevention** demands context-specific output encoding (HTML entity, JavaScript, URL, CSS), whitelist input validation, Content Security Policy headers, HTTPOnly cookies, and framework protection (auto-escaping in Angular, React, Vue). **SQL injection prevention** relies primarily on parameterized queries, stored procedures with parameterization, whitelist input validation, least privilege database permissions, and Web Application Firewalls as defense in depth.
-
-API security fundamentals include OAuth 2.0 for authorization, API keys for app identification (not authentication), JWT for stateless auth, mutual TLS for high security, and validation of every request. Rate limiting per API key/user/IP with different limits by endpoint prevents abuse. Generic error messages prevent information leakage, with detailed logging server-side only.
-
-# Research Reveals Fundamental Gaps
+## Research Reveals Fundamental Gaps
 
 ## Academic Studies Document Authentication Fatigue
 
@@ -236,7 +131,157 @@ Louis Althusser's interpellation theory [@althusser1971ideology] applied to HCI 
 
 Live streaming research [@devries2020streaming] on female and LGBTQ streamers shows gender/sexual representation as "demonstration of controlling their own bodies," with awareness of audiences and resistance to expectations. This reveals **less audience-oriented but more self-driven aspects of digital representations**, emphasizing affirmation and empowerment. Professional identity formation research shows self-presentation considered "necessary" for career development, learned from faculty and peers, helping expand networks and obtain professional information.
 
-# Current Systems Leave Critical Gaps Unaddressed
+# Domain 2: Cultural and Lifecycle Diversity in Naming
+
+This domain documents how global naming conventions and legitimate lifecycle changes create requirements that Western-centric, static-name systems cannot meet.
+
+## Names Vary Dramatically Across Cultures
+
+## Global Naming Systems Defy Universal Structure
+
+The assumption that names have a "first name" and "last name" breaks immediately when examining global practices [@w3c2023personal]. **Chinese naming places family name first** (Xi Jinping = Xi family + Jinping given), directly opposite Western convention. This isn't a minor detail—databases built for Western names fail catastrophically, creating situations where President Xi is addressed as "President Jinping," equivalent to calling Donald Trump "President Don."
+
+**Arabic naming traditionally includes five components**: ism (given name), kunya (parent-of-X), nasab (chain of ancestors using ibn/bint), laqab (descriptive epithet), and nisba (geographic/tribal origin). Modern Arabs typically use 2-4 components, but which components varies by country. Women don't change names upon marriage in most Arab countries, meaning married couples and their children may have entirely different "last names" by Western understanding.
+
+**Spanish and Latin American conventions use two surnames** — one from each parent's first surname—creating constructions like María José Carreño Quiñones. The order matters, but which surname is used for address varies: sometimes the second surname is preferred if the first is too common. Children's surnames are constructed differently than either parent's, breaking database assumptions about family name inheritance [@w3c2023personal].
+
+**Icelandic naming is purely patronymic with no hereditary surnames**. Björk Guðmundsdóttir means "Björk, daughter of Guðmundur." Each generation creates new "surnames" from parents' given names, so siblings and parent-child don't share "family names." Systems expecting hereditary surnames completely fail [@w3c2023personal].
+
+**South Indian Tamil naming uses initials**: S. Rajeev means Suresh's son Rajeev, where the father's given name appears as a prefix initial. Upon marriage, women may or may not take their husband's given name as their last name. The same person might be "S. Rajeev" or "Rajeev Suresh" depending on context, and the Dravidian movement encourages dropping caste-associated names entirely [@w3c2023personal].
+
+These aren't edge cases—they represent billions of people whose names cannot be accurately represented in systems assuming Western structure.
+
+## Names Serve Different Purposes in Different Contexts
+
+**Jews often maintain two complete naming systems**: Hebrew names used within religious community, and secular names for broader society engagement. The same person is known by entirely different names depending on context. Ashkenazi Jewish superstition avoids naming children after living relatives, believing the Angel of Death might take the wrong person—names are intimately connected to fate and spiritual identity [@w3c2023personal].
+
+**Chinese individuals use multiple concurrent names**: formal names (míng) for official contexts, milk names known only to close family, generation names (characters shared among siblings), professional names that may differ from legal names, and English/Christian names adopted for convenience. Historical and contemporary Japanese practices include multiple name readings, romanization inconsistencies, and posthumous names for emperors [@w3c2023personal].
+
+**Professional versus legal names diverge constantly**: women retaining maiden names professionally while legally changing them, academics whose PhD credentials are tied to one name but who now use another, immigrants with legal birth names who adopt adapted names socially, and artists whose stage names become their primary identity. These aren't failures of identity—they're how humans actually use names.
+
+## Marriage and Gender Transition Create Legitimate Name Changes
+
+## Marriage Name Practices Vary Dramatically Worldwide
+
+Some countries **legally prohibit women from changing surnames** upon marriage: Quebec (since 1981), Greece (since 1983), France (since 1789), Italy (since 1975), and Belgium and the Netherlands all forbid legal name changes, though social use may be permitted [@time2015marriage]. Japan requires married couples to share one surname (96% choose the husband's). Meanwhile, in China, Korea, Vietnam, Malaysia, and throughout Spanish- and Portuguese-speaking countries, women typically retain their birth surnames.
+
+Even in Western countries where women traditionally took husbands' names, practices are evolving. In the United States, 80-90% of college-educated women still take husbands' names, but **30% of UK women now include birth names alongside spouse names** (up significantly 2020-2021). The historical basis for name changes—Norman Conquest coverture laws where women's legal identity was "covered" by husbands—reveals these practices encoded assumptions about women as property.
+
+Professional women face particular challenges: established reputations built under original names, academic credentials and publications tied to maiden names, and professional networks that lose track of individuals when names change. Systems treating name changes as simple field updates create discontinuities in professional records that damage careers.
+
+## Transgender Naming and Deadnaming are Human Rights Issues
+
+**Deadnaming**—using a transgender person's former name—originated as trans community terminology in 2010-2013 and carries deeply negative connotations [@wikipedia2024deadnaming]. It misgenders subjects, reveals transgender status without consent (creating safety risks), denies and invalidates identity, causes gender dysphoria, and can lead to harassment and violence. @trevorproject2021 survey found trans and nonbinary youth who changed legal names had **significantly lower suicide attempt rates**, directly linking proper name usage to mental health outcomes.
+
+Bureaucratic deadnaming poses severe challenges. Legal name changes require time, money, and navigating complex procedures that vary by jurisdiction. Documents must be updated everywhere: birth certificates, driver's licenses, passports, Social Security, banks, medical records, educational transcripts, employment records. When systems store legal names separately from preferred names but display legal names by default, they cause systemic harm.
+
+Technical challenges in published works are particularly intractable [@tanenbaum2014deadnaming]. Researcher Theresa Tanenbaum attempted to update **83 academic publications**—many publishers ignored or refused requests. Film credits are permanent in released works. IMDb initially refused to remove actors' birth names, only changing policy in 2019 to remove names "not broadly publicly known" (but still showing previous names for credited work). In contrast, Netflix updated Elliot Page's credits the same day he came out—but doesn't extend this respect to less prominent trans actors.
+
+Wikipedia's current policy treats deadnames as private information unless the person was "notable under former name." Twitter/X **removed deadnaming from hateful conduct guidelines** after Musk's 2023 acquisition, exemplifying how platform policies inconsistently protect transgender individuals. Healthcare standards recommend documenting both preferred and legal names for medical safety, using preferred names in all interactions while maintaining legal names only for prescriptions and insurance matching [@equity2024inclusiveforms].
+
+## Technical Standards Exist But Don't Address Full Complexity
+
+## Unicode and W3C Provide Formatting Guidance
+
+**Unicode TR35 PersonNames** [@unicode2024personnames] (draft version 48) specifies standardized formatting for personal names across locales. It defines seven core fields (title, given, given2, surname, surname2, generation, credentials) and provides formatting patterns based on four attributes: order (givenFirst/surnameFirst/sorting), length (long/medium/short), usage (addressing/referring/monogram), and formality (formal/informal). The specification includes modifiers for transformations: -informal for casual versions, -initial for first grapheme clusters, -monogram for abbreviations.
+
+This represents significant progress, yet fundamental limitations remain. The specification is **out of scope for parsing names into components**, extracting surname prefixes automatically, handling special protocol formatting (royalty, religious figures), and doesn't address pronunciation data (crucial for Japanese kanji). It assumes at least one of given or surname fields is present, excluding mononyms. Cultural coverage, while extensive, doesn't encompass all global practices. Application-specific data like preferred names, stage names, and context-dependent variations must be handled outside the standard.
+
+**W3C Internationalization guidelines** [@w3c2023personal] emphasize avoiding rigid field structures. Key recommendations: don't assume "first name" and "last name" translate globally; consider single fields for full names; make fields long enough for any name; use UTF-8 encoding; don't force uppercase conversion; allow punctuation; preserve user-entered casing. The guidelines document cultural variations (Icelandic patronymics, Spanish double surnames, mononyms in Indonesia) but acknowledge **no perfect solution exists for all use cases**.
+
+## SCIM Provides REST API Standards Focused on Provisioning
+
+**SCIM 2.0** [@rfc7643; @rfc7644] is the de facto standard for cross-domain identity management via REST APIs. It defines standardized user and group schemas with structured name objects containing formatted, familyName, givenName, middleName, honorificPrefix, and honorificSuffix fields. The Enterprise extension adds employeeNumber, costCenter, organization, division, department, and manager references.
+
+SCIM excels at **automated provisioning and deprovisioning** from HR systems [@okta2024scim], cross-system synchronization, and multi-tenant SaaS provisioning. Major providers (Okta, Azure AD, Google Workspace) support SCIM, reducing custom integration work. The specification includes filtering, bulk operations, and extensibility for custom attributes.
+
+However, SCIM's name model has **critical limitations for multi-context identity**: single name object doesn't handle multiple representations well, limited support for patronymics and particles, no concept of persona or alternate identities, no standard for pronouns (requires custom extensions), and focus on provisioning rather than flexible identity expression. The name object represents organizational perspective (who is this employee?) rather than user perspective (how do I want to be known in different contexts?).
+
+## OAuth and OpenID Connect Enable Authentication
+
+**OpenID Connect** [@openidconnect2014] builds an identity layer on OAuth 2.0, providing standard claims in ID tokens: sub (unique identifier), name (full name string), given_name, family_name, middle_name, nickname, preferred_username, profile (URL), picture (URL), and email. These claims work well for basic identity exchange but **fall short for multi-name scenarios**: no support for multiple legal names or context-specific names, no way to express name preferences by context, simple string `name` field without context, no standard for deadnaming protection or name history, and no support for cultural naming variations beyond the basic structure.
+
+OAuth 2.0 scopes control what information is shared, and claims can be requested individually for fine-grained access, but the underlying assumption remains singular identity. SAML 2.0 [@auth02024saml; @varonis2024saml], while dominant in enterprise SSO, suffers similar limitations: attributes typically mirror LDAP/Active Directory schemas with no built-in support for multi-name or context-aware identity, requiring extensive pre-configuration of attribute mapping between identity providers and service providers.
+
+## HTTP Content Negotiation Exists But Isn't Applied
+
+**Accept-Language headers** [@mdn2024acceptlanguage] indicate preferred natural languages with quality values: `Accept-Language: da, en-gb;q=0.8, en;q=0.7` requests Danish preferentially, accepting British English (quality 0.8) or other English (quality 0.7). The Vary header indicates which request headers influenced content selection, critical for caching [@rfc7231; @mdn2024contentnegotiation]. This mechanism could theoretically support locale-specific name presentations, but **no standards exist for negotiating identity representation format**. Should context be expressed through Accept-Language, custom headers, query parameters, or token claims? The semantics are unclear, and no major platform has implemented identity-aware content negotiation.
+
+# Domain 3: Privacy, Security, and Regulatory Requirements
+
+This domain establishes the regulatory and security constraints that any identity system must meet, particularly in light of 2024's threat landscape and global privacy legislation.
+
+## Privacy Regulations Create Requirements Current Systems Barely Meet
+
+## GDPR Establishes Data Subject Rights
+
+**Article 16 Right to Rectification** [@gdpr2016; @idpro2024gdpr] requires data subjects to correct inaccurate personal data without undue delay. Implementation requires self-service mechanisms, system-wide propagation, audit trails without PII in logs, and authenticated API endpoints. When names change through marriage or transition, systems must update across all holdings while maintaining historical records for compliance.
+
+**Article 5(1)(c) Data Minimization** mandates collecting only adequate, relevant, necessary data for specified purposes. This suggests using federation (SAML, OpenID Connect) for transient identity, attribute services that verify properties without storing data ("over 18" without date of birth), and avoiding duplicate collection. **Article 5(1)(b) Purpose Limitation** requires specified, explicit purposes with technical controls preventing purpose creep.
+
+Breach notification under Articles 33-34 requires 72-hour notification to supervisory authorities and individual notification if high risk exists. Fines reach 4% of global revenue or €20M (whichever is greater). Handling name changes, deadnaming protection, and multi-context identity while maintaining GDPR compliance creates significant technical challenges that few systems adequately address.
+
+## Other Privacy Regulations Compound Requirements
+
+**California CCPA/CPRA** [@ccpa2018] applies to organizations with $25M+ revenue OR 100,000+ consumers' data OR 50%+ revenue from data sales. Consumer rights include Know, Delete, Opt-Out, Correct (CPRA), and Limit Use of Sensitive Information. Enforcement reaches $7,500 per intentional violation with private right of action for breaches. The expanded definition of **Sensitive Personal Information** includes government IDs, health info, sex life/orientation, and citizenship/immigration status (2024 addition).
+
+Similar comprehensive frameworks exist globally: Brazil LGPD (2% revenue fines, max 50M BRL), UK GDPR (post-Brexit), Singapore PDPA, China PIPL, Canada PIPEDA, plus U.S. state laws in Virginia, Colorado, Connecticut, and Utah. Sector-specific regulations include HIPAA for healthcare PHI, FERPA for student records, and GLBA for financial institutions. Navigating this regulatory landscape while supporting flexible identity presentation requires sophisticated data governance.
+
+## Security Threats Related to Identity are Escalating
+
+## 2024 Reveals Crisis in Identity Security
+
+**90% of enterprises** with 1000+ employees had identity-related security incidents in 2024 [@idsa2024report]. 24+ billion credentials circulate on the dark web. Average breach costs reached $4.88M with $169 per record [@ibm2024cost]. The Snowflake attacks demonstrated consequences: compromised credentials without MFA led to 9 public victims with data sold for $150K-$2M per organization [@pushsecurity2024breaches].
+
+Non-human identities emerged as critical vulnerability in 2024 [@aembit2024nhid]. **Service accounts, API keys, and bots now outnumber humans 10x-50x** in typical organizations, with NHIs 5x more likely to be privileged than human accounts. Traditional IAM is "broken because it was built for humans, not machines" (NHIMG 2024). High-profile breaches through compromised non-human identities included BeyondTrust (compromised API key, CVSS 9.8), Schneider Electric (exposed dev credentials, 40GB/400K records), Dropbox Sign (service account breach), and NY Times (GitHub credentials leaked).
+
+Common attack vectors remain credential stuffing, phishing, session hijacking, API key compromise, lack of MFA, and overprivileged accounts. **Microsoft research shows MFA prevents 99.9% of account compromises** [@microsoft2024mfa], yet adoption remains incomplete. The majority of 2024's major breaches would have been prevented by properly implemented MFA.
+
+## Authentication Best Practices Are Well-Established
+
+**NIST SP800-63B and OWASP guidelines** [@nist2017digital; @owasp2024auth] recommend: 8 character minimum passwords (64+ for passphrases), allowing all characters including Unicode, no composition rules required, blocking breached passwords (Have I Been Pwned API), no periodic forced changes, and password strength meters (zxcvbn library). Storage requires Argon2, bcrypt, or PBKDF2 hashing with constant-time comparison. Transmission always via TLS/HTTPS.
+
+**FIDO2/WebAuthn** provides phishing-resistant passwordless authentication using public key cryptography tied to website URLs. JWT security requires strong secret keys or RSA pairs, appropriate expiration times, signature validation on every use, never storing sensitive data in payload, and using httpOnly/secure cookies rather than localStorage. OAuth 2.0 security demands Authorization Code Flow with PKCE, strict redirect URI validation, short-lived access tokens, and refresh token rotation.
+
+Session management requires high-entropy session IDs, regeneration after login, appropriate timeouts, secure logout, and cookie flags (Secure, HttpOnly, SameSite). These best practices are technically understood but **implementation remains inconsistent**, particularly in systems managing complex identity requirements.
+
+## Web API Security Fundamentals
+
+**CSRF protection** [@owasp2024csrf] requires synchronizer tokens (unique unpredictable per session/request, validated server-side), double submit cookies (HMAC-signed recommended), SameSite cookie attributes (Strict/Lax), custom headers for APIs (requires CORS preflight), and Origin/Referer verification. State-changing operations should never use GET methods, and XSS can bypass CSRF protections.
+
+**XSS prevention** demands context-specific output encoding (HTML entity, JavaScript, URL, CSS), whitelist input validation, Content Security Policy headers, HTTPOnly cookies, and framework protection (auto-escaping in Angular, React, Vue). **SQL injection prevention** relies primarily on parameterized queries, stored procedures with parameterization, whitelist input validation, least privilege database permissions, and Web Application Firewalls as defense in depth.
+
+API security fundamentals include OAuth 2.0 for authorization, API keys for app identification (not authentication), JWT for stateless auth, mutual TLS for high security, and validation of every request. Rate limiting per API key/user/IP with different limits by endpoint prevents abuse. Generic error messages prevent information leakage, with detailed logging server-side only.
+
+# Domain 4: Existing Systems and Their Limitations
+
+This domain analyzes how major platforms, enterprise systems, and specialized solutions fail to support the documented human needs from Domains 1-3, revealing the architectural gap this project addresses.
+
+## Current Identity Management Systems Excel at Security But Fail at Flexibility
+
+## Major Platforms Enforce Singular Identity
+
+**Google Identity Platform** uses OpenID Connect with Workspace extensions. Users can configure display names and Workspace admins can add custom attributes (up to 1500), but **fundamentally one primary identity** exists per user across all Google services. Display name changes affect all services uniformly, with no native support for professional versus personal name distinctions within the same account. Multi-IdP SSO (in beta) allows different identity providers but still maintains singular identity per provider.
+
+**Microsoft Entra ID** [@azure2024bestpractices] (formerly Azure AD) provides displayName, givenName, surname, userPrincipalName, mail, otherMails, and custom attributes via directory extensions. Its sophisticated **Conditional Access** implements context-aware policies based on user identity, device compliance, location, sign-in risk, and application—but this context awareness focuses on access control decisions, not identity presentation. External identities (B2B guests) maintain separate identity in home tenant, but there's no support for multiple personas within single user accounts.
+
+**Apple's Sign in with Apple** takes a privacy-first approach with Hide My Email generating unique relay addresses per app (`<random>@privaterelay.appleid.com`). Users control whether to share names and can edit names shared with each app, but the focus is **hiding information rather than flexible identity expression**. Still fundamentally single name per user with no context-aware name presentation.
+
+**LinkedIn** focuses on professional identity, requiring "real or preferred professional name" with first, middle, and last names only (no business names or pseudonyms). Person IDs are application-specific, and API access heavily restricted. There's **no built-in way to maintain separate personal identity** or support professional names different from legal names in structured formats. Users sometimes create separate accounts for different professional contexts, violating terms of service.
+
+## Facebook's Real-Name Policy Evolution
+
+Facebook's controversial "authentic name" policy evolved from strict "real name" enforcement (2004-2015) to allowing "the name friends and family know you by" following LGBTQ+ community protests [@haimson2016authenticself; @cnn2014facebook], but enforcement remains inconsistent and harmful. The "Additional Profiles" feature acknowledges multiple identity facets but the system remains **fundamentally single-identity**. Name verification requires documentation when reported, with documented issues for Native Americans, drag queens, international users with non-Western name formats, transgender individuals, and abuse victims.
+
+The Graph API provides access to basic profile information (ID, name, email, picture) but no support for multiple identity contexts or alternative names. This demonstrates the persistent gap between platform business models (unified trackable identity) and user needs (context-dependent identity presentation).
+
+## Context-Aware Systems Focus on Access Control
+
+**ATIS Context-Aware Identity Management Framework** aggregates contextual information (who, what, where, when, how) to make authentication and authorization decisions [@wso22017patterns]. Google Cloud IAP uses device attributes and IP addresses for access levels. Microsoft Conditional Access provides real-time risk detection and adaptive authentication. These implementations show **context awareness primarily for security policy enforcement**, not for supporting user identity flexibility or persona management.
+
+Specialized persona systems exist but remain niche: **TrustBuilder Persona** allows multiple personas within organizations with Policy-Based Access Control per persona. **Evolveum midPoint** supports persona links where physical user identity connects to multiple persona users. But these focus on role-based access control and privilege separation rather than personal identity expression. The common pattern: personas for organizational/administrative purposes, not user-controlled context-dependent identity presentation.
+
+## Current Systems Leave Critical Gaps Unaddressed
 
 ## No Standards Exist for Context-Aware Identity
 
@@ -262,7 +307,10 @@ Different protocols (SAML, OAuth, OpenID Connect) create incompatible ecosystems
 
 Platform fragmentation means different reputations on each service, loss of reputation when platforms shut down, and no continuity across digital life. The "right to be forgotten" exists in regulation [@gdpr2016] but proves nearly impossible in practice—old content resurfaces inappropriately, data brokers aggregate information beyond individual control, and time collapse [@brandtzaeg2018timecollapse] creates situations where past and present identities collide harmfully.
 
-# The Research Points Toward Clear Conclusions
+# Synthesis and Conclusions
+
+
+## The Research Points Toward Clear Conclusions
 
 ## Why Singular Identity Systems Consistently Fail
 
@@ -298,7 +346,7 @@ No current system successfully balances all five. Most optimize for security and
 
 **Real-name policies cause documented harm**: Facebook's 2014 enforcement [@haimson2016authenticself; @cnn2014facebook], Google+'s Nymwars [@wikipedia2024nymwars], and platform policies consistently harm marginalized groups. Claims that real names reduce trolling, improve trust, or increase accountability have no research support [@privacyguides2025realname]. The evidence strongly favors supporting pseudonymity as fundamental right.
 
-# Opportunities for Innovation Exist at Every Level
+## Opportunities for Innovation Exist at Every Level
 
 The gap between current systems and human needs creates substantial opportunity. Context-aware identity standards could extend OIDC/SCIM [@openidconnect2014; @rfc7643] with context-tagged attributes, user-configurable presentation rules, and preferred names by audience. Persona management standards could enable declaring and managing multiple personas, switching between them, persona-scoped authentication/authorization, and portable preferences across platforms.
 
@@ -306,7 +354,7 @@ Privacy-preserving multi-identity approaches could enable identity flexibility w
 
 Academic consensus points toward passwordless authentication where appropriate [@nist2017digital], risk-based adaptive authentication, federated identity with user control [@openidconnect2014], privacy-preserving selective disclosure, machine identity as first-class concern [@aembit2024nhid], cultural competence in design [@equity2024inclusiveforms], trauma-informed approaches, and intersectional design thinking.
 
-# Conclusion: The Path Forward
+## Conclusion: The Path Forward
 
 Patrick McKenzie wrote in 2010 [@mckenzie2010falsehoods]: "I have never seen a computer system which handles names properly and doubt one exists, anywhere." Fourteen years later, this remains accurate because **names are fundamentally about human identity and culture, not database fields**. Any system that handles names must handle the full diversity of human societies—past, present, and future.
 
