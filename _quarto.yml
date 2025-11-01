@@ -25,18 +25,42 @@ book:
 bibliography: references.bib
 csl: quarto_files/ieee.csl
 
+mermaid:
+  theme: default
+
+execute:
+  freeze: auto
+
 format:
   html:
     theme: cosmo
     toc: true
-    toc-depth: 3
+    toc-depth: 2
     number-sections: true
     code-fold: false
     code-tools: true
   pdf:
     documentclass: scrreprt
     toc: true
-    toc-depth: 3
+    toc-depth: 2
     number-sections: true
     colorlinks: true
+    fig-width: 6
+    fig-height: 4
+    fig-pos: 'htbp'
+    keep-tex: false
+    geometry:
+      - top=25mm
+      - bottom=25mm
+      - left=25mm
+      - right=25mm
+      - textwidth=160mm
+    include-in-header:
+      text: |
+        \usepackage{graphicx}
+        \usepackage{calc}
+        \let\Oldincludegraphics\includegraphics
+        \renewcommand{\includegraphics}[2][]{%
+          \Oldincludegraphics[width=\linewidth,height=\textheight,keepaspectratio]{#2}%
+        }
 
