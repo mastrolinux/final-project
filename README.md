@@ -9,11 +9,12 @@ This **monorepo** contains a complete implementation and documentation of an ide
 ### What This Project Solves
 
 People present themselves differently in different contexts:
+
 - **Professional**: Dr. Sarah Chen, Board-Certified Psychiatrist
 - **Social**: Sarah C., Book lover and photographer
 - **Family**: Mom, wife, weekend adventurer
 
-This system provides secure, GDPR-compliant infrastructure for managing these multiple identity presentations.
+This system provides secure, privacy oriented infrastructure for managing these multiple identity presentations.
 
 ## Repository Structure
 
@@ -121,7 +122,7 @@ quarto render --to html
 - **Multi-Context Identity**: Professional, social, family, healthcare contexts
 - **Cultural Neutrality**: No assumptions about Western naming conventions
 - **Guardian Management**: Parents manage minor profiles with graduated autonomy
-- **GDPR Compliance**: Full Article 15-22 data subject rights
+- **GDPR Consideration**: attempt to respect Article 15-22 data subject rights
 - **OAuth 2.0**: Third-party integration with scope-based access control
 - **Multilingual**: Store and present names in multiple languages
 
@@ -164,6 +165,7 @@ services:
 ```
 
 **Deployment**:
+
 - Auto-deploy from `main` branch
 - Environment: Production PostgreSQL (Supabase)
 - Scaling: Auto-scale based on load
@@ -191,7 +193,7 @@ HTML version can be published to GitHub Pages.
 | Frontend UI | Planned | 0% |
 | Integration Tests | Planned | 0% |
 | OAuth Implementation | Planned | 0% |
-| GDPR Features | Planned | 0% |
+| GDPR Considerations | Planned | 0% |
 
 ## Academic Context
 
