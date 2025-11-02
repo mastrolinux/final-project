@@ -37,7 +37,7 @@ The frontend will demonstrate:
 - Multi-context profile management
 - Guardian-minor relationships
 - OAuth integration flows
-- GDPR compliance features
+- Privacy features (inspired by GDPR)
 
 ## Documentation
 
