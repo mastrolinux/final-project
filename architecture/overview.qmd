@@ -1,7 +1,5 @@
----
 title: "System Overview and Architectural Vision"
 subtitle: "Design Principles for Context-Aware Identity Management"
----
 
 # Executive Summary
 
@@ -42,7 +40,6 @@ Unlike traditional identity systems that assume Western naming conventions and s
 - Provides **multilingual identity representation** with locale-specific formatting
 - **Does NOT enforce real-name policies** - legal names optional, preferred names used for identification
 
----
 
 # Architectural Vision
 
@@ -97,7 +94,6 @@ This system explicitly rejects "real-name policies" that require users to provid
 
 This approach aligns with GDPR data minimization principles: collect only what is necessary for the specific purpose.
 
----
 
 # Business Goals and Technical Objectives
 
@@ -122,7 +118,6 @@ This approach aligns with GDPR data minimization principles: collect only what i
 | **Maintainability** | Modular architecture | Code metrics |
 | **Testability** | >80% code coverage | Test reports |
 
----
 
 # Scope Definition
 
@@ -230,7 +225,6 @@ In production enterprise environments, this system would need to integrate with 
 - Machine-to-machine authentication tokens
 - Workload identities, IoT device identities
 
----
 
 # Success Criteria
 
@@ -259,7 +253,6 @@ In production enterprise environments, this system would need to integrate with 
 - Easy guardian-minor management
 - Accessible interface (WCAG 2.1 AA)
 
----
 
 # System Capabilities
 
@@ -303,7 +296,6 @@ Privacy & Compliance
 +-- Data retention policies
 ```
 
----
 
 # Key Metrics
 
@@ -327,7 +319,6 @@ Privacy & Compliance
 | Data Export Requests | GDPR compliance |
 | Consent Withdrawals | User trust |
 
----
 
 # Technology Stack
 
@@ -352,7 +343,6 @@ Privacy & Compliance
 - **API Docs**: OpenAPI/Swagger (auto-generated)
 - **Database Migrations**: Supabase CLI
 
----
 
 # Real-World Use Cases
 
@@ -385,7 +375,6 @@ Privacy & Compliance
 
 **Security Benefit**: Even if one context is compromised, the other remains protected. Third parties cannot cross-reference contexts without explicit user permission.
 
----
 
 ## Use Case 2: Multilingual Name Handling
 
@@ -440,7 +429,6 @@ Accept-Language: en-US,zh;q=0.9
 - Context-appropriate presentations
 - User's preferred default language
 
----
 
 ## Use Case 3: Guardian Managing Minor Profile
 
@@ -505,7 +493,6 @@ Accept-Language: en-US,zh;q=0.9
 - Cannot delete profile (prevents abuse)
 - Two-factor verification for sensitive changes
 
----
 
 ## Use Case 4: Third-Party OAuth App Requesting Profile with Scopes
 
@@ -614,7 +601,6 @@ Accept-Language: en-US,zh;q=0.9
 - Review what data was shared
 - Download audit log of third-party access
 
----
 
 ## Use Case 5: Career Transition - Name and Context Evolution
 

@@ -1,6 +1,4 @@
----
 title: "Data Architecture"
----
 
 ## Data Model Philosophy
 
@@ -13,7 +11,6 @@ title: "Data Architecture"
 5. **Normalized Core**: Core entities normalized; extensions flexible
 6. **Multilingual Ready**: Text fields support multiple languages
 
----
 
 ## Core Domain Model
 
@@ -184,7 +181,6 @@ erDiagram
     }
 ```
 
----
 
 ## Pseudonymity and Unverified Accounts
 
@@ -300,7 +296,6 @@ POST /api/v1/users/usr_pseudo_789/contexts
 }
 ```
 
----
 
 ## Cultural Naming Pattern Examples
 
@@ -335,7 +330,6 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 - Accept null for family_name or given_name
 - full_name field is sufficient
 
----
 
 ### 2. Chinese Family-First Ordering
 
@@ -382,7 +376,6 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 - Respect display_order preference
 - Allow language-specific ordering overrides
 
----
 
 ### 3. Arabic Multi-Component Names
 
@@ -435,7 +428,6 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 - Support Arabic script + romanization
 - Respect culturally appropriate abbreviation
 
----
 
 ### 4. Spanish Double Surnames
 
@@ -488,7 +480,6 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 - Allow single-surname simplification for international contexts
 - Preserve both surnames in legal contexts
 
----
 
 ### 5. Tamil Patronymic Initials
 
@@ -539,7 +530,6 @@ The system's JSONB-based name storage supports diverse cultural naming conventio
 - Allow expansion of initial to full father's name
 - Do not treat initial as "last name"
 
----
 
 ### Cross-Cultural Validation Principles
 
@@ -575,7 +565,6 @@ POST /api/v1/users/profile
 }
 ```
 
----
 
 ## Data Storage Strategy
 
@@ -631,7 +620,6 @@ POST /api/v1/users/profile
 - Data export archives (GDPR)
 - Guardian verification documents
 
----
 
 ## Data Lifecycle
 
@@ -680,7 +668,6 @@ PURGE (after retention period)
    +-> Physical deletion (except audit logs)
 ```
 
----
 
 ## Data Consistency Model
 
@@ -706,7 +693,6 @@ PURGE (after retention period)
 
 **Example**: Query "what was this user's name on March 15, 2024?"
 
----
 
 ## Indexing Strategy
 
@@ -770,7 +756,6 @@ CREATE INDEX idx_audit_log_resource
   ON audit_log(resource_type, resource_id);
 ```
 
----
 
 ## Data Retention Policy
 
@@ -785,7 +770,6 @@ CREATE INDEX idx_audit_log_resource
 | **Backups** | 30 days rolling | Disaster recovery |
 | **Session Data** | 24 hours | Security best practice |
 
----
 
 ## Data Migration Strategy
 
@@ -810,7 +794,6 @@ supabase/
 4. Test on staging before production
 5. Zero-downtime deployments
 
----
 
 ## Backup and Recovery Strategy
 

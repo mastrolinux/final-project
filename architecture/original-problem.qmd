@@ -1,6 +1,4 @@
----
 title: "Project Idea: Identity and Profile Management API"
----
 
 ## What problem is this project solving, or what is the project idea?
 

@@ -1,6 +1,4 @@
----
 title: "System Context & Scope"
----
 
 ## System Context Diagram
 
@@ -44,7 +42,6 @@ graph TB
     style Infrastructure fill:#f3e5f5
 ```
 
----
 
 ## System Boundaries
 
@@ -109,7 +106,6 @@ graph TB
 - Payment processing
 - Content moderation
 
----
 
 ## Stakeholders
 
@@ -122,7 +118,6 @@ graph TB
 | **Compliance Reviewers (simulated)** | Regulatory compliance | GDPR adherence, audit trails | Low |
 | **Developer (Myself)** | Build and maintain system | Code quality, documentation | Medium |
 
----
 
 ## Architectural Principles
 
@@ -140,7 +135,6 @@ graph TB
 
 **Example**: Legal names are encrypted and access-logged, while preferred names are user-controlled visibility.
 
----
 
 ### 2. Security by Default
 
@@ -156,7 +150,6 @@ graph TB
 
 **Example**: Row-Level Security in database prevents unauthorized access even if application code has bugs.
 
----
 
 ### 3. Separation of Concerns
 
@@ -171,7 +164,6 @@ graph TB
 
 **Example**: Profile Service handles business logic; Profile Repository handles database access.
 
----
 
 ### 4. Fail Securely
 
@@ -186,7 +178,6 @@ graph TB
 
 **Example**: Database connection failure during authorization check results in access denial, not grant.
 
----
 
 ### 5. Explicit Over Implicit
 
@@ -201,7 +192,6 @@ graph TB
 
 **Example**: OAuth consent screen explicitly lists requested scopes and data fields.
 
----
 
 ### 6. Cultural Neutrality
 
@@ -217,7 +207,6 @@ graph TB
 
 **Example**: Base profile stores identity components flexibly; context profiles allow cultural-specific presentations.
 
----
 
 ### 7. Immutable Audit Trail
 
@@ -233,7 +222,6 @@ graph TB
 
 **Example**: Profile name change logs old value, new value, who changed it, when, and from what IP address.
 
----
 
 ### 8. API-First Design
 
@@ -249,7 +237,6 @@ graph TB
 
 **Example**: Every feature implemented as API endpoint before UI; UI is just another API consumer.
 
----
 
 ## Constraints
 
@@ -279,7 +266,6 @@ graph TB
 | **Minor protection laws** | Guardian consent for under-18 | Age verification and parental controls needed |
 | **Data residency requirements** | GDPR requires EU data storage | Database region selection critical |
 
----
 
 ## Assumptions
 
@@ -307,7 +293,6 @@ graph TB
 4. **Guardians act in minor's interest**: No abuse of guardian permissions
 5. **Users can navigate web interfaces**: Basic digital literacy
 
----
 
 ## Dependencies
 

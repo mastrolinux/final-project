@@ -1,6 +1,4 @@
----
 title: "Component Architecture"
----
 
 ## System Architecture Overview
 
@@ -57,7 +55,6 @@ graph TD
     style IL fill:#fce4ec
 ```
 
----
 
 ## Core Components
 
@@ -89,7 +86,6 @@ resolveProfile(userId, context, scopes) -> FilteredProfile
 - **Localization Manager**: Handles multilingual content
 - **Version Manager**: Tracks profile history
 
----
 
 ### OAuth Authorization Component
 
@@ -119,7 +115,6 @@ recordConsent(userId, clientId, scopes) -> ConsentRecord
 - **Consent Manager**: Tracks user authorizations
 - **Authorization Flow Handler**: Implements OAuth flows
 
----
 
 ### Guardian Management Component
 
@@ -148,7 +143,6 @@ checkPermission(guardianId, minorId, action) -> boolean
 - **Permission Evaluator**: Checks guardian permissions
 - **Notification Service**: Alerts for guardian actions
 
----
 
 ### Shared Services
 
@@ -174,7 +168,6 @@ checkPermission(guardianId, minorId, action) -> boolean
 - Consent management
 - Compliance reporting
 
----
 
 ## Architectural Patterns
 
@@ -188,7 +181,6 @@ checkPermission(guardianId, minorId, action) -> boolean
 | **Observer Pattern** | Audit logging | Decouples logging from operations |
 | **Decorator Pattern** | Security layers | Adds security checks transparently |
 
----
 
 ## Component Interaction Flows
 
@@ -302,7 +294,6 @@ sequenceDiagram
     API-->>Guardian: 200 OK<br/>(Updated Profile)
 ```
 
----
 
 ## Cross-Cutting Concerns
 
@@ -356,7 +347,6 @@ These concerns span all layers:
 - Deprecation warnings
 - Migration guides
 
----
 
 ## Project Structure
 

@@ -1,6 +1,4 @@
----
 title: "Integration Architecture"
----
 
 ## Standards Compliance and Alignment
 
@@ -27,7 +25,6 @@ See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance
 | **HTTP/1.1** | RFC 7231 | Full Compliance | REST API semantics | None |
 | **JSON API** | v1.1 | Partial | Response formatting | Custom error format |
 
----
 
 ### OAuth 2.0 (RFC 6749) - Full Compliance
 
@@ -59,7 +56,6 @@ POST /oauth/introspect   - Token introspection
 - All flows pass OAuth 2.0 test suite
 - Security best practices from RFC 6819 implemented
 
----
 
 ### OpenID Connect Core 1.0 - Substantial Compliance
 
@@ -123,7 +119,6 @@ POST /oauth/introspect   - Token introspection
 }
 ```
 
----
 
 ### SCIM 2.0 (RFC 7643/7644) - Alignment
 
@@ -170,7 +165,6 @@ POST /oauth/introspect   - Token introspection
 - Context-based identity not supported in SCIM
 - JSONB flexibility needed for diverse naming patterns
 
----
 
 ### Unicode TR35 PersonNames (Draft v48) - Design Informed
 
@@ -217,7 +211,6 @@ POST /oauth/introspect   - Token introspection
 - Mononym support
 - Fallback strategies
 
----
 
 ### W3C Internationalization Guidelines - Full Compliance
 
@@ -263,7 +256,6 @@ Content-Type: application/json; charset=utf-8
 }
 ```
 
----
 
 ### GDPR/CCPA/HIPAA - Privacy-by-Design Principles (Architectural Inspiration)
 
@@ -332,7 +324,6 @@ Use this as a foundation, not as production-ready compliance.
 - Marketing/advertising compliance
 - Cross-border data transfer safeguards (Standard Contractual Clauses)
 
----
 
 ### Standards-Driven Design Decisions
 
@@ -360,7 +351,6 @@ Use this as a foundation, not as production-ready compliance.
 - **Informed by**: Research on pseudonymity necessity
 - **Privacy Principle**: Aligned with GDPR data minimization principle (Art. 5.1c)
 
----
 
 ### Standards Compliance Testing
 
@@ -393,7 +383,6 @@ Use this as a foundation, not as production-ready compliance.
 - Note: This tests feature implementation, not legal compliance
 - Check consent management
 
----
 
 ### Future Standards Alignment
 
@@ -408,7 +397,6 @@ Use this as a foundation, not as production-ready compliance.
 
 - **Schema.org Person**: For SEO/structured data
 
----
 
 ## Integration Patterns
 
@@ -446,7 +434,6 @@ Logging Service <----------------> Filesystem
                                     +-> Metrics
 ```
 
----
 
 ## API Contract Design
 
@@ -506,7 +493,6 @@ Response: Content-Type: application/json; charset=utf-8
 Response: Content-Language: en
 ```
 
----
 
 ## API Versioning Strategy
 
@@ -538,7 +524,6 @@ Response: Content-Language: en
 - [NO] Changing authentication methods
 - [NO] Removing endpoints
 
----
 
 ## OAuth 2.0 Integration
 
@@ -603,7 +588,6 @@ Third-Party App                    Identity API
 | `profile:read:full` | Read | All fields except legal_name |
 | `profile:write` | Write | Update profile fields |
 
----
 
 ## Third-Party Integration Points
 
@@ -648,7 +632,6 @@ Delivery:
   - Delivery status tracking
 ```
 
----
 
 ## API Documentation
 
@@ -690,7 +673,6 @@ paths:
 - Postman collection export
 - Code examples in Python, JavaScript, cURL
 
----
 
 ## External Service Integration
 
@@ -728,7 +710,6 @@ paths:
 - Error logs
 - Security events
 
----
 
 ## API Rate Limiting
 
@@ -755,7 +736,6 @@ Response Headers:
    X-RateLimit-Reset: 1634567890
 ```
 
----
 
 ## Content Negotiation
 
@@ -778,7 +758,6 @@ Response:
    }
 ```
 
----
 
 ## Context-Based API Examples
 
@@ -822,7 +801,6 @@ X-RateLimit-Reset: 1697472000
 }
 ```
 
----
 
 ### Example 2: Retrieve Social Profile
 
@@ -856,7 +834,6 @@ Content-Language: en
 }
 ```
 
----
 
 ### Example 3: Retrieve Profile with Query Parameter
 
@@ -885,7 +862,6 @@ Accept: application/json
 }
 ```
 
----
 
 ### Example 4: OAuth Client Requests Profile with Limited Scope
 
@@ -915,7 +891,6 @@ X-Client-ID: linkedin_client_123
 
 **Note**: Email and phone are NOT included because `profile:read:basic` scope doesn't grant access to contact information.
 
----
 
 ### Example 5: OAuth Client with Full Scope Access
 
@@ -952,7 +927,6 @@ X-Client-ID: healthplatform_client_456
 
 **Still Excluded**: `legal_name`, `date_of_birth` (never exposed via OAuth for privacy)
 
----
 
 ### Example 6: Multilingual Profile Request
 
@@ -1002,7 +976,6 @@ Accept-Language: en-US,en;q=0.9
 }
 ```
 
----
 
 ### Example 7: Error Cases
 

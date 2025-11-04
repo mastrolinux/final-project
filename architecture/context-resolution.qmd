@@ -1,6 +1,4 @@
----
 title: "Context Resolution"
----
 
 ## Overview
 
@@ -14,7 +12,6 @@ Context resolution is the core mechanism by which the Identity API returns diffe
 4. **Language Negotiation**: Accept-Language header selects appropriate translations
 5. **Default Fallback**: Missing context returns base profile
 
----
 
 ## Context Resolution Algorithm
 
@@ -51,7 +48,6 @@ flowchart TD
     style CheckScopes fill:#fff4cc
 ```
 
----
 
 ## Real-World Use Case Examples
 
@@ -113,7 +109,6 @@ flowchart TD
 }
 ```
 
----
 
 ### Example 2: Multilingual Identity
 
@@ -172,7 +167,6 @@ Authorization: Bearer <token>
 }
 ```
 
----
 
 ### Example 3: Guardian Managing Minor Profile
 
@@ -239,7 +233,6 @@ Content-Type: application/json
 }
 ```
 
----
 
 ### Example 4: Third-Party OAuth Integration
 
@@ -309,7 +302,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 - legal_name (requires `profile:read:full` scope)
 - date_of_birth (never exposed via OAuth)
 
----
 
 ## Inheritance and Override Mechanics
 
@@ -393,7 +385,6 @@ graph TD
 }
 ```
 
----
 
 ## API Request Examples
 
@@ -422,7 +413,6 @@ Accept-Language: en-US
 }
 ```
 
----
 
 ### Request 2: Get Professional Context Profile
 ```http
@@ -450,7 +440,6 @@ Accept-Language: en-US
 }
 ```
 
----
 
 ### Request 3: Get Social Context Profile
 ```http
@@ -476,7 +465,6 @@ Accept: application/json
 }
 ```
 
----
 
 ### Request 4: Create New Context Profile
 ```http
@@ -516,7 +504,6 @@ Content-Type: application/json
 }
 ```
 
----
 
 ### Request 5: Query Profile with Context Parameter
 ```http
@@ -527,7 +514,6 @@ Accept: application/json
 
 **Response**: Same as Request 2 (Professional Context)
 
----
 
 ## Scope-Based Field Filtering
 
@@ -591,7 +577,6 @@ flowchart LR
 }
 ```
 
----
 
 ## Performance Considerations
 

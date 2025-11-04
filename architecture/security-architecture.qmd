@@ -1,6 +1,4 @@
----
 title: "Security Architecture"
----
 
 ::: {.callout-note}
 ## Scope Note: Regulatory Compliance
@@ -13,7 +11,6 @@ This architecture document describes security and privacy features inspired by r
 References to "GDPR Article" or "compliance" throughout this document should be understood as architectural inspiration, not legal certification.
 :::
 
----
 
 ## Security Layers (Defense in Depth)
 
@@ -86,7 +83,6 @@ graph TB
     style Response fill:#e8f5e9
 ```
 
----
 
 ## Authentication Architecture
 
@@ -129,7 +125,6 @@ Authorization Code Flow:
        +-> context_profile_id
 ```
 
----
 
 ## Authorization Architecture
 
@@ -164,7 +159,6 @@ Request with Token
 | **Scope-Based** | OAuth client access | `required_scope IN token.scopes` |
 | **Context-Based** | Profile visibility | `profile.is_public OR user_authorized` |
 
----
 
 ## Data Protection
 
@@ -201,7 +195,6 @@ Password Hashing:
 | Pronouns | Public | No special protection |
 | Deprecated Names | Highly Sensitive | Suppressed + encrypted + never in public APIs |
 
----
 
 ## Deadname Protection
 
@@ -452,7 +445,6 @@ This design is informed by:
 - **Haimson (2016)**: Harm caused by real-name policies and deadnaming on social platforms
 - **van der Nagel (2015)**: Importance of identity control for marginalized populations
 
----
 
 ## Security Controls
 
@@ -482,7 +474,6 @@ Content-Security-Policy: default-src 'self'
 X-XSS-Protection: 1; mode=block
 ```
 
----
 
 ## OWASP Top 10 Mitigations
 
@@ -499,7 +490,6 @@ X-XSS-Protection: 1; mode=block
 | **Logging Failures** | Comprehensive audit logs + monitoring |
 | **SSRF** | Input validation + network segmentation |
 
----
 
 ## Audit Logging
 

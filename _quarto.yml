@@ -47,20 +47,29 @@ format:
     colorlinks: true
     fig-width: 6
     fig-height: 4
-    fig-pos: 'htbp'
+    fig-pos: 'H'
     keep-tex: false
     geometry:
-      - top=25mm
-      - bottom=25mm
-      - left=25mm
-      - right=25mm
-      - textwidth=160mm
+      - top=20mm
+      - bottom=20mm
+      - left=20mm
+      - right=20mm
+      - heightrounded
+    classoption:
+      - oneside
+      - open=any
     include-in-header:
       text: |
         \usepackage{graphicx}
         \usepackage{calc}
+        \usepackage{float}
         \let\Oldincludegraphics\includegraphics
         \renewcommand{\includegraphics}[2][]{%
-          \Oldincludegraphics[width=\linewidth,height=\textheight,keepaspectratio]{#2}%
+          \Oldincludegraphics[width=\linewidth,height=0.8\textheight,keepaspectratio]{#2}%
         }
+        \raggedbottom
+        \setlength{\parskip}{0.5em}
+        \RedeclareSectionCommand[beforeskip=1.5em,afterskip=0.5em]{section}
+        \RedeclareSectionCommand[beforeskip=1em,afterskip=0.3em]{subsection}
+        \RedeclareSectionCommand[beforeskip=0.8em,afterskip=0.2em]{subsubsection}
 
