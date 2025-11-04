@@ -1,0 +1,201 @@
+"""
+Database Test Endpoints
+
+Provides endpoints for testing database connectivity and querying sample data.
+Useful for development, testing, and debugging.
+"""
+
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import text, func
+
+from src.core.database import get_db
+from src.models.profile import BaseProfile, IdentityName
+
+router = APIRouter()
+
+
+@router.get("/test", response_model=Dict[str, Any])
+def test_database_connection(db: Session = Depends(get_db)):
+    """
+    Test database connection and query sample data
+    
+    Performs simple database queries to verify:
+    - Database connectivity
+    - Table existence
+    - Sample data access
+    
+    Returns count of profiles and sample profile data.
+    """
+    try:
+        # Count profiles
+        profile_count = db.query(func.count(BaseProfile.user_id)).filter(
+            BaseProfile.deleted_at.is_(None)
+        ).scalar()
+        
+        # Count identity names
+        name_count = db.query(func.count(IdentityName.id)).scalar()
+        
+        # Get sample profiles (limit to 5)
+        sample_profiles = db.query(BaseProfile).filter(
+            BaseProfile.deleted_at.is_(None)
+        ).limit(5).all()
+        
+        # Format sample data
+        profiles_data = []
+        for profile in sample_profiles:
+            # Get associated names
+            names = db.query(IdentityName).filter(
+                IdentityName.identity_id == profile.user_id
+            ).all()
+            
+            profiles_data.append({
+                "user_id": str(profile.user_id),
+                "account_type": profile.account_type.value,
+                "primary_email": profile.primary_email,
+                "preferred_language": profile.preferred_language,
+                "created_at": profile.created_at.isoformat() if profile.created_at else None,
+                "names_count": len(names),
+                "names": [
+                    {
+                        "type": name.name_type.value,
+                        "value": name.name_value,
+                        "is_primary": name.is_primary
+                    }
+                    for name in names
+                ]
+            })
+        
+        return {
+            "status": "success",
+            "message": "Database connection successful",
+            "data": {
+                "profile_count": profile_count,
+                "name_count": name_count,
+                "sample_profiles": profiles_data
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "message": "Database query failed",
+                "error": str(e)
+            }
+        )
+
+
+@router.get("/profiles/count", response_model=Dict[str, Any])
+def get_profile_counts(db: Session = Depends(get_db)):
+    """
+    Get profile counts by account type
+    
+    Returns breakdown of profile counts by account type
+    (verified, unverified, pseudonymous).
+    """
+    try:
+        # Count by account type
+        counts = db.query(
+            BaseProfile.account_type,
+            func.count(BaseProfile.user_id).label('count')
+        ).filter(
+            BaseProfile.deleted_at.is_(None)
+        ).group_by(
+            BaseProfile.account_type
+        ).all()
+        
+        counts_dict = {
+            account_type.value: count
+            for account_type, count in counts
+        }
+        
+        # Get total count
+        total = sum(counts_dict.values())
+        
+        return {
+            "status": "success",
+            "data": {
+                "total": total,
+                "by_type": counts_dict
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "message": "Failed to get profile counts",
+                "error": str(e)
+            }
+        )
+
+
+@router.get("/profiles/{user_id}", response_model=Dict[str, Any])
+def get_profile_with_names(user_id: str, db: Session = Depends(get_db)):
+    """
+    Get a specific profile with all associated names
+    
+    Retrieves profile and all identity names for testing.
+    """
+    try:
+        # Get profile
+        profile = db.query(BaseProfile).filter(
+            BaseProfile.user_id == user_id,
+            BaseProfile.deleted_at.is_(None)
+        ).first()
+        
+        if not profile:
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found"
+            )
+        
+        # Get associated names
+        names = db.query(IdentityName).filter(
+            IdentityName.identity_id == profile.user_id
+        ).all()
+        
+        return {
+            "status": "success",
+            "data": {
+                "profile": {
+                    "user_id": str(profile.user_id),
+                    "account_type": profile.account_type.value,
+                    "legal_name": profile.legal_name,
+                    "primary_email": profile.primary_email,
+                    "primary_phone": profile.primary_phone,
+                    "preferred_language": profile.preferred_language,
+                    "created_at": profile.created_at.isoformat() if profile.created_at else None,
+                    "updated_at": profile.updated_at.isoformat() if profile.updated_at else None,
+                },
+                "names": [
+                    {
+                        "id": str(name.id),
+                        "type": name.name_type.value,
+                        "value": name.name_value,
+                        "is_primary": name.is_primary,
+                        "is_deprecated": name.is_deprecated,
+                        "visibility_level": name.visibility_level.value,
+                        "created_at": name.created_at.isoformat() if name.created_at else None,
+                    }
+                    for name in names
+                ]
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "message": "Failed to get profile",
+                "error": str(e)
+            }
+        )
+
