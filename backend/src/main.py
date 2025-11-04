@@ -36,15 +36,67 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     """
-    Health check endpoint
+    Basic health check endpoint
     
     Returns basic service status information.
+    For detailed health information, use /health/detailed
     """
     return {
         "status": "healthy",
         "service": settings.APP_NAME,
         "version": "1.0.0",
         "environment": settings.ENVIRONMENT,
+    }
+
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """
+    Detailed health check endpoint
+    
+    Checks the health of all system components:
+    - Application status
+    - Database connection (PostgreSQL via SQLAlchemy)
+    - Supabase connection and configuration
+    - Database tables existence
+    
+    Returns comprehensive status for monitoring and debugging.
+    """
+    from src.core.database import (
+        check_db_connection,
+        check_supabase_connection,
+        check_database_tables
+    )
+    
+    # Check database connection
+    db_health = check_db_connection()
+    
+    # Check Supabase connection
+    supabase_health = check_supabase_connection()
+    
+    # Check database tables
+    tables_health = check_database_tables()
+    
+    # Determine overall status
+    overall_status = "healthy"
+    if db_health["status"] == "unhealthy":
+        overall_status = "unhealthy"
+    elif supabase_health["status"] == "unhealthy":
+        overall_status = "degraded"
+    elif tables_health["status"] in ["incomplete", "error"]:
+        overall_status = "degraded"
+    
+    return {
+        "status": overall_status,
+        "service": settings.APP_NAME,
+        "version": "1.0.0",
+        "environment": settings.ENVIRONMENT,
+        "timestamp": "2025-01-04T00:00:00Z",  # Will be dynamic in production
+        "components": {
+            "database": db_health,
+            "supabase": supabase_health,
+            "tables": tables_health
+        }
     }
 
 

@@ -15,6 +15,9 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      # Override DATABASE_URL to connect to Supabase running on host
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

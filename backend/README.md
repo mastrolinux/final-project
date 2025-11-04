@@ -28,14 +28,41 @@ A sophisticated identity and profile management system designed to handle comple
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Option 1: Using Management Scripts (Recommended)
+
+The easiest way to get started is using the provided management scripts:
 
 ```bash
+# 1. Clone the repository
 git clone <repository-url>
 cd thesis/backend
+
+# 2. Copy environment template
+cp env.local.template .env
+
+# 3. Start all services (Supabase + FastAPI)
+chmod +x scripts/*.sh
+./scripts/start.sh
 ```
 
-### 2. Install Supabase CLI (if not already installed)
+That's it! The start script will:
+- Check prerequisites (Docker, Supabase CLI)
+- Start Supabase services
+- Apply database migrations and seed data
+- Start FastAPI application
+- Display all service URLs
+
+**Management Commands:**
+- `./scripts/start.sh` - Start all services
+- `./scripts/stop.sh` - Stop all services
+- `./scripts/reset.sh` - Reset database (reapply migrations + seeds)
+- `./scripts/status.sh` - Check service status and view logs
+
+### Option 2: Manual Setup
+
+If you prefer manual control:
+
+#### 1. Install Prerequisites
 
 ```bash
 # macOS
@@ -44,63 +71,84 @@ brew install supabase/tap/supabase
 # Other platforms: https://supabase.com/docs/guides/cli
 ```
 
-### 3. Start Supabase
+#### 2. Start Supabase
 
 ```bash
 supabase start
 ```
 
-This will start all Supabase services:
-- PostgreSQL database on port 54322
-- Supabase Studio (UI) on http://127.0.0.1:54323
-- API on http://127.0.0.1:54321
-
-Note the connection details displayed after startup - you'll need them for the next step.
-
-### 4. Set Up Environment Variables
+#### 3. Configure Environment
 
 ```bash
-cp .env.example .env
+cp env.local.template .env
+# Update with values from 'supabase status' output
 ```
 
-Update `.env` with the Supabase keys from `supabase status`:
-- `SUPABASE_ANON_KEY` - the publishable (anon) key
-- `SUPABASE_SERVICE_KEY` - the secret (service role) key
-
-### 5. Start the FastAPI Application
+#### 4. Start FastAPI
 
 ```bash
 docker compose up -d
 ```
 
-This will start:
-- FastAPI application on http://localhost:8000
-
-### 6. Verify the Installation
-
-Visit http://localhost:8000 in your browser. You should see the API welcome message.
-
-**Available Services:**
-- API: http://localhost:8000
-- API Documentation (Swagger): http://localhost:8000/docs
-- API Documentation (ReDoc): http://localhost:8000/redoc  
-- Supabase Studio: http://127.0.0.1:54323
-- Mailpit (Email Testing): http://127.0.0.1:54324
-
-### 7. Check Health Status
+#### 5. Apply Migrations
 
 ```bash
-curl http://localhost:8000/health
+supabase db reset
 ```
+
+### Verify Installation
+
+Visit http://localhost:8000/docs to access the interactive API documentation.
+
+**Available Services:**
+- **API:** http://localhost:8000
+- **API Docs (Swagger):** http://localhost:8000/docs
+- **Health Check:** http://localhost:8000/health
+- **Detailed Health:** http://localhost:8000/health/detailed
+- **Database Test:** http://localhost:8000/api/v1/database/test
+- **Supabase Studio:** http://127.0.0.1:54323
+- **Email Testing:** http://127.0.0.1:54324
+- **Database:** postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
 ## Development Workflow
 
-### Managing Services
+### Using Management Scripts
+
+The backend includes convenient management scripts for common operations:
+
+#### Start Services
+```bash
+./scripts/start.sh
+```
+Starts Supabase and FastAPI, displays service URLs.
+
+#### Check Status
+```bash
+./scripts/status.sh
+```
+Shows service status, recent logs, and available URLs.
+
+#### Reset Database
+```bash
+./scripts/reset.sh
+```
+Resets database (applies migrations and seeds), useful for testing.
+
+#### Stop Services
+```bash
+./scripts/stop.sh
+```
+Gracefully stops all services, preserves data.
+
+### Manual Service Management
 
 **Supabase:**
 ```bash
 # Start Supabase
 supabase start
+
+# Check status
+supabase status
 
 # Stop Supabase
 supabase stop
@@ -128,29 +176,26 @@ docker compose down
 
 ```bash
 # View all logs
-docker-compose logs
+docker compose logs
 
-# Follow logs
-docker-compose logs -f
+# Follow logs (live tail)
+docker compose logs -f
 
 # View API logs only
-docker-compose logs -f api
-
-# View database logs only
-docker-compose logs -f db
+docker compose logs -f api
 ```
 
 ### Running Commands Inside Container
 
 ```bash
 # Access API container shell
-docker-compose exec api bash
+docker compose exec api bash
 
 # Run tests
-docker-compose exec api pytest
+docker compose exec api pytest
 
 # Run tests with coverage
-docker-compose exec api pytest --cov=src --cov-report=term-missing
+docker compose exec api pytest --cov=src --cov-report=term-missing
 ```
 
 ### Database Management
@@ -176,16 +221,16 @@ pg_dump postgresql://postgres:postgres@127.0.0.1:54322/postgres > backup.sql
 
 ```bash
 # Type checking
-docker-compose exec api mypy src/
+docker compose exec api mypy src/
 
 # Linting
-docker-compose exec api ruff check src/
+docker compose exec api ruff check src/
 
 # Format code
-docker-compose exec api black src/
+docker compose exec api black src/
 
 # Security scanning
-docker-compose exec api bandit -r src/
+docker compose exec api bandit -r src/
 ```
 
 ## Project Structure
@@ -240,7 +285,7 @@ backend/
 
 ### Port Already in Use
 
-If port 8000 or 5432 is already in use, you can change the port mapping in `docker-compose.yml`:
+If port 8000 is already in use, you can change the port mapping in `docker-compose.yml`:
 
 ```yaml
 ports:
@@ -252,13 +297,13 @@ ports:
 Ensure the database service is healthy:
 
 ```bash
-docker-compose ps
-docker-compose logs db
+docker compose ps
+docker compose logs api
 ```
 
 ### Hot Reload Not Working
 
-Ensure the volume mounts are correctly configured in `docker-compose.yml` and that you're editing files in the mounted directories.
+Ensure the volume mounts are correctly configured in `docker-compose.yml` and that you're editing files in the mounted directories. The container will auto-reload when you make changes to Python files.
 
 ## License
 
