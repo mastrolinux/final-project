@@ -1,6 +1,4 @@
----
 title: "Deployment & Operations"
----
 
 ## Environment Strategy
 
@@ -30,7 +28,6 @@ Production:
    +-> Monitoring active
 ```
 
----
 
 ## Deployment Pipeline
 
@@ -103,7 +100,6 @@ jobs:
         run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
 ```
 
----
 
 ## Infrastructure Components
 
@@ -144,7 +140,6 @@ services:
 - Persistence disabled (cache only)
 - Eviction policy: LRU
 
----
 
 ## High Availability Design
 
@@ -175,7 +170,6 @@ Failover:
    +-> RTO: < 5 minutes
 ```
 
----
 
 ## Monitoring Strategy
 
@@ -224,7 +218,6 @@ async def health_check():
     }
 ```
 
----
 
 ## Logging Architecture
 
@@ -258,7 +251,6 @@ async def health_check():
 - Security logs: 2 years
 - Debug logs: 7 days
 
----
 
 ## Backup and Recovery
 
@@ -303,7 +295,6 @@ Disaster Recovery:
    +-> Prevention measures
 ```
 
----
 
 ## Maintenance Windows
 
@@ -318,7 +309,6 @@ Disaster Recovery:
 - Critical bugs: Within 24 hours
 - Performance issues: Within 72 hours
 
----
 
 ## Scaling Strategy
 
@@ -360,7 +350,6 @@ triggers:
     action: scale_down
 ```
 
----
 
 ## Security Operations
 
@@ -399,7 +388,6 @@ triggers:
    +-> Update procedures
 ```
 
----
 
 ## Performance Targets
 

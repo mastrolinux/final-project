@@ -1,6 +1,4 @@
----
 title: "Decisions & Future Considerations"
----
 
 ## Architectural Decision Records (ADRs)
 
@@ -33,7 +31,6 @@ title: "Decisions & Future Considerations"
 - Django REST Framework: More batteries-included but heavier
 - Flask: Lightweight but lacks async and auto-docs
 
----
 
 ### ADR-002: Supabase over Self-Hosted PostgreSQL
 
@@ -66,7 +63,6 @@ title: "Decisions & Future Considerations"
 - AWS RDS: Good but more complex setup
 - MongoDB: Document model doesn't fit relational needs
 
----
 
 ### ADR-003: Profile Inheritance over Duplication
 
@@ -97,7 +93,6 @@ title: "Decisions & Future Considerations"
 - Full duplication: Simpler queries but data inconsistency
 - Single profile with visibility flags: Doesn't support different names per context
 
----
 
 ### ADR-004: JSONB for Multilingual Content
 
@@ -129,7 +124,6 @@ title: "Decisions & Future Considerations"
 - Single language only: Doesn't meet requirements
 - External translation service: Adds complexity and latency
 
----
 
 ### ADR-005: OAuth 2.0 over Custom Authorization
 
@@ -160,7 +154,6 @@ title: "Decisions & Future Considerations"
 - JWT only: Doesn't handle third-party consent
 - Custom protocol: Reinventing the wheel
 
----
 
 ### ADR-006: Soft Deletes over Hard Deletes
 
@@ -191,7 +184,6 @@ title: "Decisions & Future Considerations"
 - Hard deletes: Simpler but no recovery
 - Archive tables: More complex, duplicate schema
 
----
 
 ### ADR-007: Render.com over AWS
 
@@ -225,7 +217,6 @@ title: "Decisions & Future Considerations"
 - Heroku: Similar to Render but more expensive
 - DigitalOcean: More control but more ops work
 
----
 
 ### ADR-008: Monolithic API over Microservices
 
@@ -257,7 +248,6 @@ title: "Decisions & Future Considerations"
 - Microservices: Overkill for this scale and timeline
 - Serverless: Good for scale but complex local development
 
----
 
 ## Trade-offs Analysis
 
@@ -289,7 +279,6 @@ title: "Decisions & Future Considerations"
 - **Lost**: Some simplicity (need to manage both)
 - **Worth it**: Yes, appropriate for use case
 
----
 
 ## Future Enhancements (Post-Delivery)
 
@@ -319,7 +308,6 @@ title: "Decisions & Future Considerations"
 - User-controlled identifiers
 - Blockchain-based
 
----
 
 ### Phase 3: Advanced Access Control
 
@@ -347,7 +335,6 @@ title: "Decisions & Future Considerations"
 - Dynamic policy evaluation
 - Context-aware permissions
 
----
 
 ### Phase 4: Federation & Enterprise
 
@@ -369,7 +356,6 @@ title: "Decisions & Future Considerations"
 - Identity brokering
 - Trust relationships
 
----
 
 ### Phase 5: Analytics & Insights
 
@@ -391,7 +377,6 @@ title: "Decisions & Future Considerations"
 - Audit trail analysis
 - Risk assessment
 
----
 
 ## Scalability Evolution
 
@@ -404,7 +389,6 @@ title: "Decisions & Future Considerations"
 
 **Estimated Timeline**: Month 6-7
 
----
 
 ### 100K -> 1M Users
 
@@ -428,7 +412,6 @@ Add Queue System:
 
 **Estimated Timeline**: Month 12-18
 
----
 
 ### 1M+ Users
 
@@ -456,7 +439,6 @@ Database Sharding:
 
 **Estimated Timeline**: Year 2-3
 
----
 
 ## Technical Debt Prevention
 
@@ -476,7 +458,6 @@ Database Sharding:
 - Documentation updates
 - Refactoring sprints
 
----
 
 ### Documentation Maintenance
 
@@ -487,7 +468,6 @@ Database Sharding:
 - Runbooks (operational procedures)
 - Onboarding guide (for new developers)
 
----
 
 ### Testing Evolution
 
@@ -508,7 +488,6 @@ Database Sharding:
 - Performance regression tests in CI/CD
 - Security testing (OWASP ZAP)
 
----
 
 ## Open Questions
 
@@ -518,7 +497,6 @@ Database Sharding:
 2. **Regional Compliance**: How to handle country-specific regulations?
 3. **Data Residency**: Multi-region/distributed deployment strategy?
 
----
 
 ## Success Metrics
 
@@ -534,7 +512,6 @@ Database Sharding:
 - [GOAL] 99.9% uptime achieved
 - [GOAL] <200ms p95 response time
 
----
 
 ## Risk Register
 
@@ -547,7 +524,6 @@ Database Sharding:
 | Scope creep | High | Medium | Strict prioritization, MVP focus |
 | Single developer | High | High | Documentation, modular design |
 
----
 
 ## Lessons Learned (To Be Updated)
 
@@ -568,7 +544,6 @@ on the right track.
 ### Action Items
 - TBD
 
----
 
 ## Appendices
 
@@ -587,7 +562,6 @@ on the right track.
 | **Scope** | OAuth permission defining data access |
 | **Soft Delete** | Mark deleted without physical removal |
 
----
 
 ### B. References
 
@@ -613,7 +587,6 @@ on the right track.
 - ISO/IEC 27001 (Information Security)
 
 
----
 
 **Document Status**: Living Document  
 **Last Updated**: November 1, 2025  
