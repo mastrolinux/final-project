@@ -16,7 +16,7 @@ See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance
 
 | Standard | Version | Compliance Level | Purpose | Divergences |
 |----------|---------|------------------|---------|-------------|
-| **OAuth 2.0** | RFC 6749 | Full Compliance | Third-party authorization | None |
+| **OAuth 2.1** | Draft RFC | Full Compliance | Third-party authorization | None - using latest security best practices |
 | **OpenID Connect** | OIDC Core 1.0 | Substantial Compliance | UserInfo endpoint format | Extended profile fields for contexts |
 | **SCIM 2.0** | RFC 7643/7644 | Alignment | User schema inspiration | Extended for multi-context identity |
 | **Unicode TR35 PersonNames** | Draft v48 | Design Informed | Multilingual name handling | Implementation-specific JSONB structure |
@@ -26,35 +26,72 @@ See Section 6.6 for details on GDPR-inspired implementation vs. legal compliance
 | **JSON API** | v1.1 | Partial | Response formatting | Custom error format |
 
 
-### OAuth 2.0 (RFC 6749) - Full Compliance
+### OAuth 2.1 - Full Compliance with Security Best Practices
 
 **Implementation:**
 
-- Authorization Code Grant flow (Section 4.1)
-- Access token issuance and validation
-- Refresh token support
+- Authorization Code Grant with PKCE (mandatory)
+- PKCE for all client types (public and confidential)
+- Refresh token rotation
 - Token revocation (RFC 7009)
 - Token introspection (RFC 7662)
 
 **Endpoints:**
 ```
-POST /oauth/authorize    - Authorization endpoint
-POST /oauth/token        - Token endpoint  
+POST /oauth/authorize    - Authorization endpoint (with PKCE)
+POST /oauth/token        - Token endpoint (validates code_verifier)
 POST /oauth/revoke       - Token revocation
 POST /oauth/introspect   - Token introspection
+GET  /oauth/.well-known/oauth-authorization-server - Metadata endpoint
 ```
 
-**Security:**
+**Security Improvements in OAuth 2.1:**
 
-- PKCE (Proof Key for Code Exchange) - RFC 7636
-- State parameter for CSRF protection
-- Redirect URI validation
-- Client authentication (client_secret)
+- **PKCE Mandatory**: Prevents authorization code interception attacks
+- **No Implicit Flow**: Removed (tokens in URL fragment are insecure)
+- **No Password Grant**: Removed (anti-pattern for modern apps)
+- **Refresh Token Rotation**: New refresh token issued each use, old one invalidated
+- **Stricter Redirect URI**: Exact matching required, no partial matches
+- **Bearer Token Best Practices**: Clearer guidance on token usage
+
+**PKCE Flow Example:**
+
+```python
+# Client generates PKCE parameters
+import secrets, hashlib, base64
+
+code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+code_challenge = base64.urlsafe_b64encode(
+    hashlib.sha256(code_verifier.encode('utf-8')).digest()
+).decode('utf-8').rstrip('=')
+
+# Authorization request includes challenge
+GET /oauth/authorize?
+    client_id=client_123
+    &redirect_uri=https://app.example.com/callback
+    &scope=profile:read
+    &state=random_state
+    &response_type=code
+    &code_challenge=CHALLENGE_HERE
+    &code_challenge_method=S256
+
+# Token exchange includes verifier
+POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=AUTH_CODE
+&client_id=client_123
+&redirect_uri=https://app.example.com/callback
+&code_verifier=VERIFIER_HERE
+```
 
 **Compliance verification:**
 
-- All flows pass OAuth 2.0 test suite
-- Security best practices from RFC 6819 implemented
+- PKCE enforcement for all clients
+- Refresh token rotation implemented
+- Insecure grant types disabled
+- Security best practices from OAuth 2.1 draft implemented
 
 
 ### OpenID Connect Core 1.0 - Substantial Compliance
@@ -327,11 +364,12 @@ Use this as a foundation, not as production-ready compliance.
 
 ### Standards-Driven Design Decisions
 
-**Decision 1: OAuth 2.0 over SAML**
+**Decision 1: OAuth 2.1 with Custom Auth over Supabase Auth**
 
-- **Reason**: Modern REST APIs, mobile-friendly, simpler implementation
-- **Standard**: OAuth 2.0 (RFC 6749)
-- **Benefit**: Wide third-party support, JSON-based
+- **Reason**: Full control over authentication logic, no vendor lock-in, demonstrates technical depth
+- **Standard**: OAuth 2.1 (draft RFC, security improvements over 2.0)
+- **Benefit**: PKCE mandatory (more secure), thesis demonstrates advanced implementation, custom RLS policies
+- **Trade-off**: More implementation work, but better for academic evaluation
 
 **Decision 2: JSONB over Rigid Schema**
 
@@ -354,12 +392,14 @@ Use this as a foundation, not as production-ready compliance.
 
 ### Standards Compliance Testing
 
-**OAuth 2.0 Compliance:**
+**OAuth 2.1 Compliance:**
 
-- Run OAuth 2.0 test suite
-- Validate token flows
-- Test PKCE implementation
-- Verify security recommendations (RFC 6819)
+- Validate PKCE enforcement for all clients
+- Test refresh token rotation
+- Verify insecure flows are disabled (Implicit, Password Grant)
+- Test authorization code flow
+- Validate redirect URI strict matching
+- Security best practices compliance
 
 **OIDC Compliance:**
 
@@ -410,16 +450,23 @@ Frontend Apps  ------------------> REST API (JSON)
                                     |-> Versioned endpoints
                                     +-> JSON responses
 
-Third-Party Apps ----------------> OAuth 2.0 Server
+Third-Party Apps ----------------> OAuth 2.1 Server
 (LinkedIn, etc.)                    |
-                                    |-> Authorization Code flow
+                                    |-> Authorization Code flow + PKCE
                                     |-> Scope-based access
                                     +-> Token introspection
 
-Supabase Auth  <-----------------> JWT Validation
+Custom Auth    <-----------------> JWT Validation
                                     |
                                     |-> Token verification
+                                    |-> Session validation (Redis)
                                     +-> User context extraction
+
+Social Providers <---------------> Hybrid Auth Handler
+(Google, GitHub)                    |
+                                    |-> Supabase OAuth config
+                                    |-> Custom callback processing
+                                    +-> JWT token issuance
 
 Email Service  <-----------------> Event-Driven (async)
 (SendGrid)                          |
@@ -521,13 +568,13 @@ Response: Content-Language: en
 
 - [NO] Removing fields from responses
 - [NO] Changing field types
-- [NO] Changing authentication methods
+- [NO] Changing authentication methods (breaking change)
 - [NO] Removing endpoints
 
 
-## OAuth 2.0 Integration
+## OAuth 2.1 Integration
 
-### Authorization Code Flow
+### Authorization Code Flow with PKCE
 
 ```
 Third-Party App                    Identity API

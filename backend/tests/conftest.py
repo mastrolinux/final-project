@@ -66,7 +66,9 @@ def db_session(db_engine) -> Generator[Session, None, None]:
     yield session
     
     session.close()
-    transaction.rollback()
+    # Only rollback if transaction is still active
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
 
 
@@ -97,7 +99,7 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
 def sample_verified_profile(db_session: Session) -> BaseProfile:
     """Create a sample verified profile for testing"""
     profile = BaseProfile(
-        account_type=AccountType.VERIFIED,
+        account_type=AccountType.verified,
         legal_name="Sarah Elizabeth Chen",
         primary_email="sarah.chen@example.com",
         primary_phone="+1-555-0101",
@@ -113,7 +115,7 @@ def sample_verified_profile(db_session: Session) -> BaseProfile:
 def sample_unverified_profile(db_session: Session) -> BaseProfile:
     """Create a sample unverified profile for testing"""
     profile = BaseProfile(
-        account_type=AccountType.UNVERIFIED,
+        account_type=AccountType.unverified,
         legal_name=None,
         primary_email="john.doe@example.com",
         primary_phone="+1-555-0202",
@@ -129,7 +131,7 @@ def sample_unverified_profile(db_session: Session) -> BaseProfile:
 def sample_pseudonymous_profile(db_session: Session) -> BaseProfile:
     """Create a sample pseudonymous profile for testing"""
     profile = BaseProfile(
-        account_type=AccountType.PSEUDONYMOUS,
+        account_type=AccountType.pseudonymous,
         legal_name=None,
         primary_email="anonymous@protonmail.com",
         primary_phone=None,
@@ -146,11 +148,11 @@ def sample_identity_name(db_session: Session, sample_verified_profile: BaseProfi
     """Create a sample identity name for testing"""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={"en": "Dr. Sarah Chen"},
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.PUBLIC
+        visibility_level=VisibilityLevel.public
     )
     db_session.add(name)
     db_session.commit()
@@ -163,7 +165,7 @@ def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseP
     """Create a sample multilingual identity name for testing"""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.GIVEN,
+        name_type=NameType.given,
         name_value={
             "en": "Sarah",
             "zh": "萨拉",
@@ -171,7 +173,7 @@ def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseP
         },
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.PUBLIC
+        visibility_level=VisibilityLevel.public
     )
     db_session.add(name)
     db_session.commit()
@@ -184,11 +186,11 @@ def sample_deprecated_name(db_session: Session, sample_verified_profile: BasePro
     """Create a sample deprecated (deadname) for testing"""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.GIVEN,
+        name_type=NameType.given,
         name_value={"en": "[REDACTED]"},
         is_primary=False,
         is_deprecated=True,
-        visibility_level=VisibilityLevel.HISTORICAL_SUPPRESSED
+        visibility_level=VisibilityLevel.historical_suppressed
     )
     db_session.add(name)
     db_session.commit()
@@ -203,7 +205,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     # Profile 1: Western naming
     profile1 = BaseProfile(
-        account_type=AccountType.VERIFIED,
+        account_type=AccountType.verified,
         legal_name="John Smith",
         primary_email="john.smith@example.com",
         preferred_language="en"
@@ -213,7 +215,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     name1 = IdentityName(
         identity_id=profile1.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={"en": "John Smith"},
         is_primary=True
     )
@@ -222,7 +224,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     # Profile 2: Chinese naming
     profile2 = BaseProfile(
-        account_type=AccountType.UNVERIFIED,
+        account_type=AccountType.unverified,
         primary_email="li.ming@example.com",
         preferred_language="zh"
     )
@@ -231,7 +233,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     name2 = IdentityName(
         identity_id=profile2.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={"zh": "李明", "en": "Li Ming"},
         is_primary=True
     )
@@ -240,7 +242,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     # Profile 3: Mononym
     profile3 = BaseProfile(
-        account_type=AccountType.VERIFIED,
+        account_type=AccountType.verified,
         legal_name="Sukarno",
         primary_email="sukarno@example.id",
         preferred_language="id"
@@ -250,7 +252,7 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     
     name3 = IdentityName(
         identity_id=profile3.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={"id": "Sukarno", "en": "Sukarno"},
         is_primary=True
     )

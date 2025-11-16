@@ -28,7 +28,7 @@ fi
 # Check if Docker is running
 if ! docker info &> /dev/null; then
     echo -e "${RED}Error: Docker is not running${NC}"
-    echo "Please start Docker Desktop and try again"
+    echo "Please start Docker and try again"
     exit 1
 fi
 

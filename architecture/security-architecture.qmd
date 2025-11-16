@@ -31,14 +31,14 @@ graph TB
     end
     
     subgraph L3["Layer 3: Authentication"]
-        JWT[JWT Token Validation]
-        OAuth[OAuth 2.0 Flows]
-        MFA[Multi-Factor Auth]
-        Session[Session Management]
+        JWT[Custom JWT Validation]
+        Social[Social OAuth - Hybrid]
+        MFA[Multi-Factor Auth - TOTP]
+        Session[Session Management - Redis]
     end
     
     subgraph L4["Layer 4: Authorization"]
-        Scopes[OAuth 2.0 Scopes]
+        Scopes[OAuth 2.1 Scopes]
         RBAC[Role-Based Access Control]
         ABAC[Attribute-Based Access Control]
         RLS[Row-Level Security]
@@ -86,43 +86,118 @@ graph TB
 
 ## Authentication Architecture
 
-### JWT Token Strategy
+### Custom JWT Token Strategy
+
+The system uses **custom JWT-based authentication** with full control over token lifecycle:
 
 ```
-User Authentication Flow:
+User Authentication Flow (Password-Based):
    |
-   |-> Supabase Auth Issues JWT
-   |   |-> Access token (1 hour expiry)
-   |   +-> Refresh token (30 days expiry)
+   |-> POST /api/v1/auth/login
+   |   |-> Validate credentials
+   |   |-> Verify password with Argon2id
+   |   |-> Check account status
+   |
+   |-> Custom Auth Service Issues JWT
+   |   |-> Access token (15 minutes expiry)
+   |   |-> Refresh token (7 days expiry)
+   |   |-> Store session in Redis
    |
    |-> Access Token Contains:
-   |   |-> sub (user_id)
+   |   |-> sub (user_id from auth_users.id)
    |   |-> email
-   |   |-> aud (audience)
+   |   |-> account_type (verified/unverified/pseudonymous)
+   |   |-> roles [] (for RBAC)
+   |   |-> iat (issued at)
    |   |-> exp (expiration)
-   |   +-> Custom claims (roles)
+   |   |-> jti (unique token ID)
    |
    +-> API validates token on each request
-       |-> Verify signature
+       |-> Verify signature (HS256 or RS256)
        |-> Check expiration
-       |-> Validate audience
-       +-> Extract user context
+       |-> Validate against session store (Redis)
+       |-> Set PostgreSQL RLS context
+       +-> Extract user context for authorization
 ```
 
-### OAuth 2.0 Token Flow
+### Social Authentication Flow (Hybrid Approach)
 
 ```
-Authorization Code Flow:
+Social Login Flow (Google/GitHub/Apple):
+   |
+   |-> User clicks "Login with Google"
+   |-> Redirect to /api/v1/auth/social/google
+   |
+   |-> Supabase OAuth Configuration Handles:
+   |   |-> OAuth redirect to Google
+   |   |-> User authorizes
+   |   |-> Google returns to callback
+   |   +-> Supabase processes OAuth response
+   |
+   |-> Custom Callback Endpoint /api/v1/auth/callback/google
+   |   |-> Receive provider user data
+   |   |-> Extract email, name, provider_id
+   |
+   |-> Check auth_social_connections table
+   |   |-> Connection exists? -> Link to existing user
+   |   |-> New user? -> Create in auth_users
+   |   +-> Email conflict? -> Require account linking
+   |
+   |-> Issue Custom JWT Tokens
+   |   |-> Same format as password auth
+   |   |-> Store session in Redis
+   |   +-> Return to client
+   |
+   +-> User authenticated with custom tokens
+       (not Supabase Auth tokens)
+```
+
+**Why Hybrid Approach:**
+
+- **Leverage Supabase**: OAuth provider configuration and redirect handling
+- **Maintain Control**: User data in custom tables, custom JWT format
+- **No Lock-in**: Can migrate OAuth handling later if needed
+- **Unified Experience**: Same token format for all auth methods
+- **RLS Compatible**: Works seamlessly with PostgreSQL RLS policies
+
+### OAuth 2.1 Authorization Code Flow (with PKCE)
+
+```
+Authorization Code Flow with PKCE (mandatory in OAuth 2.1):
+   |
+   |-> Client generates code_verifier (random string)
+   |-> Client generates code_challenge = SHA256(code_verifier)
+   |
+   |-> Authorization Request:
+   |   |-> GET /oauth/authorize
+   |   |-> client_id, redirect_uri, scope, state
+   |   |-> code_challenge, code_challenge_method=S256
+   |   +-> response_type=code
    |
    |-> User authorizes third-party app
-   |-> System issues authorization code
-   |-> Third-party exchanges code for tokens
+   |-> System issues authorization code (10 min expiry)
    |
-   +-> Access Token Contains:
-       |-> user_id
-       |-> client_id
-       |-> granted_scopes
-       +-> context_profile_id
+   |-> Token Exchange:
+   |   |-> POST /oauth/token
+   |   |-> code, client_id, redirect_uri
+   |   |-> code_verifier (to verify PKCE challenge)
+   |   +-> grant_type=authorization_code
+   |
+   +-> Access Token Response:
+       |-> access_token (1 hour expiry)
+       |-> refresh_token (with rotation)
+       |-> token_type: "Bearer"
+       |-> scope: granted scopes
+       |-> expires_in: 3600
+       +-> context_profile_id (if context-specific)
+
+OAuth 2.1 Improvements Over 2.0:
+   |-> PKCE mandatory for all clients (prevents auth code interception)
+   |-> Implicit flow removed (insecure)
+   |-> Password grant removed (insecure)
+   |-> Refresh token rotation enforced
+   |-> Stricter redirect URI matching
+   +-> Bearer token usage clarified
 ```
 
 

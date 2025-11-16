@@ -87,15 +87,16 @@ resolveProfile(userId, context, scopes) -> FilteredProfile
 - **Version Manager**: Tracks profile history
 
 
-### OAuth Authorization Component
+### OAuth 2.1 Authorization Component
 
 **Responsibilities:**
 
-- Implement OAuth 2.0 authorization server
+- Implement OAuth 2.1 authorization server with mandatory PKCE
 - Manage client applications and permissions
-- Handle authorization code and token flows
+- Handle authorization code flow with PKCE validation
 - Enforce scope-based access control
-- Maintain consent records
+- Maintain consent records with revocation support
+- Implement refresh token rotation
 
 **Key Interfaces:**
 ```
@@ -142,6 +143,40 @@ checkPermission(guardianId, minorId, action) -> boolean
 - **Age Verification Service**: Determines minor status
 - **Permission Evaluator**: Checks guardian permissions
 - **Notification Service**: Alerts for guardian actions
+
+
+### Authentication Component
+
+**Responsibilities:**
+
+- Custom JWT-based authentication
+- Password management (Argon2id hashing)
+- Social OAuth integration (hybrid with Supabase)
+- Session management (Redis)
+- Multi-factor authentication (TOTP)
+- Account verification workflows
+
+**Key Interfaces:**
+```
+register(email, password, accountType) -> User
+login(email, password) -> Tokens
+loginSocial(provider, providerToken) -> Tokens
+refreshToken(refreshToken) -> Tokens
+logout(refreshToken) -> void
+verifyEmail(token) -> User
+resetPassword(token, newPassword) -> void
+enableMFA(userId, secret) -> QRCode
+verifyMFA(userId, code) -> boolean
+```
+
+**Internal Modules:**
+
+- **Password Manager**: Argon2id hashing and validation
+- **Token Manager**: JWT issuance and validation
+- **Session Store**: Redis-based session management
+- **Social Auth Handler**: Processes Supabase OAuth callbacks
+- **MFA Manager**: TOTP generation and verification
+- **Email Verification**: Token-based email confirmation
 
 
 ### Shared Services
@@ -300,10 +335,12 @@ sequenceDiagram
 These concerns span all layers:
 
 ### Authentication & Authorization
-- JWT token validation
-- OAuth 2.0 flows
-- Role-based checks
-- Scope enforcement
+- Custom JWT token validation (HS256/RS256)
+- OAuth 2.1 flows with PKCE
+- Social authentication (hybrid)
+- Role-based access control (RBAC)
+- Scope enforcement (OAuth scopes)
+- PostgreSQL RLS integration
 
 ### Audit Logging
 - All operations logged

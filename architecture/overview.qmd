@@ -15,7 +15,7 @@ The proposed architecture contributes three novel integrations to the identity m
 
 2. **Cultural-Neutral Name Representation**: Application of W3C Internationalization guidelines and Unicode TR35 PersonNames specification to support global naming conventions without imposing Western structural assumptions.
 
-3. **Privacy-Preserving Selective Disclosure**: Integration of OAuth 2.0 scope-based access control with GDPR data minimization principles, enabling third-party integration while maintaining user privacy sovereignty.
+3. **Privacy-Preserving Selective Disclosure**: Integration of OAuth 2.1 scope-based access control with PKCE-enforced security, combined with GDPR data minimization principles, enabling third-party integration while maintaining user privacy sovereignty.
 
 ## Key Architectural Characteristics
 
@@ -63,7 +63,7 @@ Research by Marwick and boyd documents the psychological costs of context collap
 2. **Cultural Neutrality**: No assumptions about naming or identity structure
 3. **Security by Default**: Deny-all approach with explicit grants
 4. **Transparency**: Users understand and control their data
-5. **Standards-Based**: Use proven protocols (OAuth 2.0, GDPR)
+5. **Standards-Based**: Use proven protocols (OAuth 2.1, GDPR-inspired)
 6. **No Real-Name Enforcement**: Pseudonymity supported for vulnerable populations
 
 ### Real-Name Policy Position
@@ -139,7 +139,7 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Guardian-minor relationships
 - Permission management
 
-**OAuth 2.0 Authorization:**
+**OAuth 2.1 Authorization:**
 
 - Authorization code flow
 - Token issuance and validation
@@ -176,8 +176,10 @@ This project implements **GDPR-inspired principles** as architectural best pract
 
 **Delegated to External Services:**
 
-- User authentication credentials storage -> Supabase Auth
-- Password hashing and management -> Supabase Auth
+- User authentication credentials storage -> Custom auth_users table (PostgreSQL)
+- Password hashing -> Argon2id (Python passlib)
+- Social OAuth provider configuration -> Supabase config.toml (hybrid approach)
+- JWT token management -> Custom implementation (python-jose)
 - Email delivery infrastructure -> Transactional email service
 - SMS delivery -> SMS gateway
 - File storage for photos -> Supabase Storage
@@ -284,7 +286,7 @@ Guardian Management
 +-- Audit guardian actions
 
 Third-Party Integration
-|-- OAuth 2.0 authorization server
+|-- OAuth 2.1 authorization server (with mandatory PKCE)
 |-- Scope-based access control
 |-- Consent management
 +-- Token lifecycle management
@@ -327,7 +329,9 @@ Privacy & Compliance
 - **Framework**: FastAPI
 - **Database**: PostgreSQL 15+ (via Supabase)
 - **Cache**: Redis
-- **Authentication**: Supabase Auth + JWT
+- **Authentication**: Custom JWT-based system
+- **Social Auth**: Supabase OAuth providers (hybrid)
+- **Authorization Server**: OAuth 2.1 with PKCE
 
 ## Infrastructure
 - **Hosting**: Render.com
