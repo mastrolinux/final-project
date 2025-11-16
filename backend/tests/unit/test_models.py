@@ -5,7 +5,7 @@ Tests BaseProfile and IdentityName models with their behaviors.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from src.models.profile import (
@@ -16,7 +16,7 @@ from src.models.profile import (
 def test_create_base_profile(db_session: Session):
     """Test creating a BaseProfile"""
     profile = BaseProfile(
-        account_type=AccountType.VERIFIED,
+        account_type=AccountType.verified,
         legal_name="John Doe",
         primary_email="john@example.com",
         primary_phone="+1-555-0123",
@@ -28,7 +28,7 @@ def test_create_base_profile(db_session: Session):
     db_session.refresh(profile)
     
     assert profile.user_id is not None
-    assert profile.account_type == AccountType.VERIFIED
+    assert profile.account_type == AccountType.verified
     assert profile.legal_name == "John Doe"
     assert profile.primary_email == "john@example.com"
     assert profile.created_at is not None
@@ -45,7 +45,7 @@ def test_base_profile_defaults(db_session: Session):
     db_session.commit()
     db_session.refresh(profile)
     
-    assert profile.account_type == AccountType.UNVERIFIED
+    assert profile.account_type == AccountType.unverified
     assert profile.preferred_language == "en"
     assert profile.legal_name is None
     assert profile.deleted_at is None
@@ -56,7 +56,7 @@ def test_base_profile_soft_delete(db_session: Session, sample_verified_profile: 
     assert sample_verified_profile.is_deleted is False
     
     # Soft delete
-    sample_verified_profile.deleted_at = datetime.utcnow()
+    sample_verified_profile.deleted_at = datetime.now(timezone.utc)
     db_session.commit()
     
     assert sample_verified_profile.is_deleted is True
@@ -73,11 +73,11 @@ def test_create_identity_name(db_session: Session, sample_verified_profile: Base
     """Test creating an IdentityName"""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={"en": "Dr. John Doe"},
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.PUBLIC
+        visibility_level=VisibilityLevel.public
     )
     
     db_session.add(name)
@@ -86,7 +86,7 @@ def test_create_identity_name(db_session: Session, sample_verified_profile: Base
     
     assert name.id is not None
     assert name.identity_id == sample_verified_profile.user_id
-    assert name.name_type == NameType.FULL_NAME
+    assert name.name_type == NameType.full_name
     assert name.name_value == {"en": "Dr. John Doe"}
     assert name.is_primary is True
 
@@ -95,13 +95,13 @@ def test_identity_name_relationship(db_session: Session, sample_verified_profile
     """Test relationship between BaseProfile and IdentityName"""
     name1 = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.GIVEN,
+        name_type=NameType.given,
         name_value={"en": "John"},
         is_primary=True
     )
     name2 = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.FAMILY,
+        name_type=NameType.family,
         name_value={"en": "Doe"},
         is_primary=True
     )
@@ -118,7 +118,7 @@ def test_identity_name_multilingual(db_session: Session, sample_verified_profile
     """Test multilingual name storage in JSONB"""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.FULL_NAME,
+        name_type=NameType.full_name,
         name_value={
             "en": "John Doe",
             "es": "Juan Doe",
@@ -154,7 +154,7 @@ def test_identity_name_get_name_for_language(db_session: Session, sample_multili
 def test_identity_name_deprecated(db_session: Session, sample_deprecated_name: IdentityName):
     """Test deprecated name (deadname) handling"""
     assert sample_deprecated_name.is_deprecated is True
-    assert sample_deprecated_name.visibility_level == VisibilityLevel.HISTORICAL_SUPPRESSED
+    assert sample_deprecated_name.visibility_level == VisibilityLevel.historical_suppressed
     assert sample_deprecated_name.is_primary is False
 
 
@@ -163,13 +163,13 @@ def test_cascade_delete(db_session: Session, sample_verified_profile: BaseProfil
     # Create names associated with profile
     name1 = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.GIVEN,
+        name_type=NameType.given,
         name_value={"en": "John"},
         is_primary=True
     )
     name2 = IdentityName(
         identity_id=sample_verified_profile.user_id,
-        name_type=NameType.FAMILY,
+        name_type=NameType.family,
         name_value={"en": "Doe"},
         is_primary=True
     )
@@ -196,23 +196,23 @@ def test_cascade_delete(db_session: Session, sample_verified_profile: BaseProfil
 
 def test_account_type_enum():
     """Test AccountType enum values"""
-    assert AccountType.VERIFIED.value == "verified"
-    assert AccountType.UNVERIFIED.value == "unverified"
-    assert AccountType.PSEUDONYMOUS.value == "pseudonymous"
+    assert AccountType.verified.value == "verified"
+    assert AccountType.unverified.value == "unverified"
+    assert AccountType.pseudonymous.value == "pseudonymous"
 
 
 def test_name_type_enum():
     """Test NameType enum values"""
-    assert NameType.GIVEN.value == "given"
-    assert NameType.FAMILY.value == "family"
-    assert NameType.PREFERRED.value == "preferred"
-    assert NameType.LEGAL.value == "legal"
-    assert NameType.FULL_NAME.value == "full_name"
+    assert NameType.given.value == "given"
+    assert NameType.family.value == "family"
+    assert NameType.preferred.value == "preferred"
+    assert NameType.legal.value == "legal"
+    assert NameType.full_name.value == "full_name"
 
 
 def test_visibility_level_enum():
     """Test VisibilityLevel enum values"""
-    assert VisibilityLevel.PUBLIC.value == "public"
-    assert VisibilityLevel.PRIVATE.value == "private"
-    assert VisibilityLevel.HISTORICAL_SUPPRESSED.value == "historical_suppressed"
+    assert VisibilityLevel.public.value == "public"
+    assert VisibilityLevel.private.value == "private"
+    assert VisibilityLevel.historical_suppressed.value == "historical_suppressed"
 

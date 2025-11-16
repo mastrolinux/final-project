@@ -14,7 +14,7 @@ graph TB
     
     subgraph System["Identity & Profile Management API<br/>This System"]
         APIGateway[API Gateway<br/>REST Endpoints]
-        OAuth[OAuth 2.0 Server<br/>Authorization]
+        OAuth[OAuth 2.1 Server<br/>Authorization + PKCE]
         Guardian[Guardian Management<br/>Relationships & Permissions]
     end
     
@@ -63,7 +63,7 @@ graph TB
 - Guardian-minor relationships
 - Permission management
 
-**OAuth 2.0 Authorization:**
+**OAuth 2.1 Authorization:**
 
 - Authorization code flow
 - Token issuance and validation
@@ -90,8 +90,10 @@ graph TB
 
 **Delegated to External Services:**
 
-- User authentication credentials storage -> Supabase Auth
-- Password hashing and management -> Supabase Auth
+- User authentication credentials storage -> Custom auth_users table
+- Password hashing -> Argon2id (passlib library)
+- Social OAuth provider setup -> Supabase config.toml (hybrid approach)
+- Session management -> Redis
 - Email delivery infrastructure -> Transactional email service
 - SMS delivery -> SMS gateway
 - File storage for photos -> Supabase Storage
@@ -300,7 +302,9 @@ graph TB
 
 | Service | Purpose | Criticality | Fallback |
 |---------|---------|------------|----------|
-| **Supabase Auth** | User authentication | Critical | None (system unavailable) |
+| **PostgreSQL** | Database + auth storage | Critical | None (system unavailable) |
+| **Redis** | Session management | High | Degraded (re-auth required more frequently) |
+| **Supabase OAuth Config** | Social auth providers | Medium | Social login unavailable (password auth still works) |
 | **Supabase Database** | Data persistence | Critical | None (system unavailable) |
 | **Email Service** | Transactional emails | High | Queue for retry |
 | **Supabase Storage** | File storage | Medium | Graceful degradation |

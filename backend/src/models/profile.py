@@ -5,7 +5,7 @@ SQLAlchemy models for base profiles and identity names.
 Implements core identity aggregate from data architecture.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import uuid as uuid_pkg
 from sqlalchemy import (
@@ -73,33 +73,33 @@ class JSONBType(TypeDecorator):
 
 class AccountType(str, enum.Enum):
     """Account type enumeration"""
-    VERIFIED = "verified"
-    UNVERIFIED = "unverified"
-    PSEUDONYMOUS = "pseudonymous"
+    verified = "verified"
+    unverified = "unverified"
+    pseudonymous = "pseudonymous"
 
 
 class NameType(str, enum.Enum):
     """Name type enumeration"""
-    GIVEN = "given"
-    FAMILY = "family"
-    PREFERRED = "preferred"
-    LEGAL = "legal"
-    PATRONYMIC = "patronymic"
-    FULL_NAME = "full_name"
-    CUSTOM = "custom"
+    given = "given"
+    family = "family"
+    preferred = "preferred"
+    legal = "legal"
+    patronymic = "patronymic"
+    full_name = "full_name"
+    custom = "custom"
 
 
 class VisibilityLevel(str, enum.Enum):
     """Visibility level enumeration"""
-    PUBLIC = "public"
-    PRIVATE = "private"
-    HISTORICAL_SUPPRESSED = "historical_suppressed"
+    public = "public"
+    private = "private"
+    historical_suppressed = "historical_suppressed"
 
 
 class TimestampMixin:
     """Mixin for timestamp fields"""
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class SoftDeleteMixin:
@@ -114,16 +114,21 @@ class SoftDeleteMixin:
 
 class TemporalMixin:
     """Mixin for temporal validity"""
-    valid_from = Column(DateTime, nullable=False, default=datetime.utcnow)
+    valid_from = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     valid_to = Column(DateTime, nullable=True)
 
     @property
     def is_valid(self) -> bool:
         """Check if entity is currently valid"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
+        # Make stored datetimes timezone-aware for comparison if they're naive
+        valid_from = self.valid_from.replace(tzinfo=timezone.utc) if self.valid_from.tzinfo is None else self.valid_from
+        
         if self.valid_to is None:
-            return self.valid_from <= now
-        return self.valid_from <= now <= self.valid_to
+            return valid_from <= now
+        
+        valid_to = self.valid_to.replace(tzinfo=timezone.utc) if self.valid_to.tzinfo is None else self.valid_to
+        return valid_from <= now <= valid_to
 
 
 class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
@@ -148,7 +153,7 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     account_type = Column(
         SQLEnum(AccountType, name="account_type"),
         nullable=False,
-        default=AccountType.UNVERIFIED
+        default=AccountType.unverified
     )
     
     # Optional - only required for verified accounts accessing legal/healthcare contexts
@@ -216,7 +221,7 @@ class IdentityName(Base, TimestampMixin, TemporalMixin):
     visibility_level = Column(
         SQLEnum(VisibilityLevel, name="visibility_level"),
         nullable=False,
-        default=VisibilityLevel.PUBLIC
+        default=VisibilityLevel.public
     )
     
     # Future: Link to context profiles
