@@ -29,10 +29,13 @@ async def api_health():
 from src.api.v1.endpoints import database
 api_router.include_router(database.router, prefix="/database", tags=["Database Testing"])
 
+# Include profile endpoints
+from src.api.v1.endpoints import profiles
+api_router.include_router(profiles.router, tags=["Profiles"])
+
 # Future endpoint routers will be included here:
-# from src.api.v1.endpoints import auth, profiles, contexts, oauth, guardians, gdpr
+# from src.api.v1.endpoints import auth, contexts, oauth, guardians, gdpr
 # api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-# api_router.include_router(profiles.router, prefix="/profiles", tags=["Profiles"])
 # api_router.include_router(contexts.router, prefix="/contexts", tags=["Contexts"])
 # api_router.include_router(oauth.router, prefix="/oauth", tags=["OAuth 2.0"])
 # api_router.include_router(guardians.router, prefix="/guardians", tags=["Guardians"])

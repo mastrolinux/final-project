@@ -15,6 +15,8 @@ from sqlalchemy.pool import StaticPool
 from src.main import app
 from src.core.database import Base, get_db
 from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
+from src.repositories.profile_repository import ProfileRepository
+from src.services.profile_service import ProfileService
 
 
 # Use in-memory SQLite database for testing
@@ -264,4 +266,18 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
         db_session.refresh(profile)
     
     return profiles
+
+
+# Repository and Service fixtures
+
+@pytest.fixture
+def profile_repository(db_session: Session) -> ProfileRepository:
+    """Create ProfileRepository instance for testing"""
+    return ProfileRepository(db_session)
+
+
+@pytest.fixture
+def profile_service(profile_repository: ProfileRepository) -> ProfileService:
+    """Create ProfileService instance for testing"""
+    return ProfileService(profile_repository)
 
