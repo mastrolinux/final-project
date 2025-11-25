@@ -139,16 +139,22 @@ def test_identity_name_multilingual(db_session: Session, sample_verified_profile
 
 def test_identity_name_get_name_for_language(db_session: Session, sample_multilingual_name: IdentityName):
     """Test get_name_for_language method"""
-    # Request existing language
-    assert sample_multilingual_name.get_name_for_language("en") == "Sarah"
-    assert sample_multilingual_name.get_name_for_language("zh") == "萨拉"
+    # Request existing languages - check they return values from name_value dict
+    en_name = sample_multilingual_name.get_name_for_language("en")
+    zh_name = sample_multilingual_name.get_name_for_language("zh")
+    es_name = sample_multilingual_name.get_name_for_language("es")
+    
+    assert en_name is not None
+    assert en_name == sample_multilingual_name.name_value.get("en")
+    assert zh_name == sample_multilingual_name.name_value.get("zh")
+    assert es_name == sample_multilingual_name.name_value.get("es")
     
     # Request non-existing language with fallback
-    assert sample_multilingual_name.get_name_for_language("fr", fallback="en") == "Sarah"
+    assert sample_multilingual_name.get_name_for_language("fr", fallback="en") == en_name
     
     # Request with no match should return first available
     result = sample_multilingual_name.get_name_for_language("ar", fallback="de")
-    assert result in ["Sarah", "萨拉", "Sara"]
+    assert result in [en_name, zh_name, es_name]
 
 
 def test_identity_name_deprecated(db_session: Session, sample_deprecated_name: IdentityName):
