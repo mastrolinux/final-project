@@ -77,7 +77,7 @@ def test_database_test_endpoint_with_data(client: TestClient, sample_profiles_wi
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["profile_count"] == 3  # From sample_profiles_with_names fixture
+    assert data["data"]["profile_count"] == 3  
     assert len(data["data"]["sample_profiles"]) <= 5  # Max 5 samples
 
 
@@ -98,7 +98,7 @@ def test_profile_counts_endpoint_with_data(client: TestClient, sample_profiles_w
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["total"] == 3
+    assert data["data"]["total"] == 3  
     assert "by_type" in data["data"]
 
 

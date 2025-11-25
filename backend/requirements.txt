@@ -21,9 +21,13 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
-# Testing (for future use)
+# Testing
 pytest==7.4.4
 pytest-cov==4.1.0
 pytest-asyncio==0.23.3
 httpx==0.24.1
+
+# Test Data Factories
+factory-boy==3.3.0
+faker==22.0.0
 

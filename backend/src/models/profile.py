@@ -6,7 +6,7 @@ Implements core identity aggregate from data architecture.
 """
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 import uuid as uuid_pkg
 from sqlalchemy import (
     Column, String, Boolean, DateTime, ForeignKey, 
@@ -144,24 +144,24 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     """
     __tablename__ = "base_profiles"
 
-    user_id = Column(
+    user_id = Column[Any](
         UUID(),
         primary_key=True,
         default=uuid_pkg.uuid4
     )
     
-    account_type = Column(
+    account_type = Column[str](
         SQLEnum(AccountType, name="account_type"),
         nullable=False,
         default=AccountType.unverified
     )
     
     # Optional - only required for verified accounts accessing legal/healthcare contexts
-    legal_name = Column(Text, nullable=True)
+    legal_name = Column[str](Text, nullable=True)
     
-    primary_email = Column(String(255), nullable=False, unique=True)
-    primary_phone = Column(String(50), nullable=True)
-    preferred_language = Column(String(10), nullable=False, default="en")
+    primary_email = Column[str](String(255), nullable=False, unique=True)
+    primary_phone = Column[str](String(50), nullable=True)
+    preferred_language = Column[str](String(10), nullable=False, default="en")
     
     # Relationships
     identity_names = relationship(
