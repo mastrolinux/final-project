@@ -12,7 +12,7 @@ sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 
 # Supabase client (optional but recommended for Auth and RLS)
-supabase==2.3.0
+supabase==2.9.0
 
 # Environment variables
 python-dotenv==1.0.0

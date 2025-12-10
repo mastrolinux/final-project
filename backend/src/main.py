@@ -78,12 +78,14 @@ async def detailed_health_check():
     tables_health = check_database_tables()
     
     # Determine overall status
+    # Note: Supabase client is optional - system uses direct PostgreSQL
     overall_status = "healthy"
     if db_health["status"] == "unhealthy":
         overall_status = "unhealthy"
-    elif supabase_health["status"] == "unhealthy":
-        overall_status = "degraded"
     elif tables_health["status"] in ["incomplete", "error"]:
+        overall_status = "degraded"
+    # Supabase "unavailable" is non-critical, only "unhealthy" indicates real issues
+    elif supabase_health["status"] == "unhealthy":
         overall_status = "degraded"
     
     return {

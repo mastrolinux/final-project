@@ -1,0 +1,150 @@
+--- 
+title: "Literature Review: Identity and Profile Management"
+subtitle: "A Thematic Analysis of Cultural, Theoretical, and Regulatory Foundations"
+author: "Luca Cipriani"
+date: 2025-11-29
+bibliography: identity-management-background.bib
+csl: quarto_files/ieee.csl
+format:
+  pdf:
+    documentclass: scrreprt
+    fontsize: 11pt
+    geometry:
+      - top=20mm
+      - bottom=20mm
+      - left=20mm
+      - right=20mm
+    toc: false
+    number-sections: true
+    colorlinks: true
+    keep-tex: false
+---
+
+# Introduction
+
+Modern identity systems get authentication right but identity wrong. They can verify who you are, but they cannot represent the fact that you might go by "Dr. Smith" at work, "Sarah" with friends, and your Chinese name with family. They assume names follow Western conventions, that people have one fixed identity, and that privacy means hiding information rather than controlling how it flows.
+
+Three bodies of literature explain why this matters and what to do about it. Technical standards from W3C and Unicode document how billions of people have names that do not fit "first name, last name" fields. Sociological research from Goffman through contemporary social media studies shows that presenting different facets of identity in different contexts is not deception but a fundamental human practice. Privacy regulations like GDPR and security frameworks from NIST establish that users must control their own data.
+
+Authentication and security have matured considerably over the past two decades, but no existing solution adequately supports how humans actually use identity. The project proposed in this thesis aims to fill that gap: an API that treats identity as contextual and culturally neutral rather than singular and Western-centric.
+
+# The Technical and Cultural Challenge of Names
+
+The fundamental assumption underlying most identity systems, that names consist of a "first name" and "last name", fails immediately when examined against global naming practices. Three key sources illuminate this challenge and inform the project's approach to flexible name storage.
+
+## Foundational Critique
+
+Patrick McKenzie's influential 2010 blog post "Falsehoods Programmers Believe About Names" [@mckenzie2010falsehoods] catalogs over 40 incorrect assumptions that pervade identity system design. Among these falsehoods are the beliefs that people have exactly one canonical name, that names fit within a reasonable length, that names can be represented in ASCII characters, and that names remain constant throughout a person's life. McKenzie concludes with a notable observation: he has never encountered a computer system that handles names properly and doubts one exists anywhere.
+
+While this source is a blog post rather than peer-reviewed research, its credibility stems from several factors. The post has been cited extensively in technical literature and industry discussions for over fourteen years, draws on documented examples from real systems, and its observations align with subsequent academic and standards work. The post serves as a useful heuristic for identifying oversimplified assumptions in identity system design, though it does not prescribe solutions. For guidance on addressing these problems, we turn to international standards bodies.
+
+## Technical Guidance from W3C and Unicode
+
+The W3C Internationalization Activity provides authoritative technical guidance through "Personal names around the world" [@w3c2023personal], a continuously updated resource documenting global naming conventions. As the primary international standards organization for the web, the W3C represents a highly credible source for technical implementation decisions.
+
+The W3C guidance documents specific challenges that arise from cultural variation. Chinese naming conventions place the family name first, directly opposite to Western practice, a distinction that causes systems to address President Xi Jinping incorrectly as "President Jinping." Arabic naming traditionally includes five components: the ism (given name), kunya (parent-of-X), nasab (chain of ancestors), laqab (descriptive epithet), and nisba (geographic origin). Spanish and Latin American conventions employ two surnames derived from each parent, with complex rules governing which surname applies in different contexts. Icelandic naming is purely patronymic with no hereditary surnames, meaning siblings and parent-child pairs do not share family names. South Indian Tamil naming uses initials derived from the father's given name as a prefix, creating constructions that shift depending on context.
+
+These patterns are not edge cases requiring accommodation but represent the naming conventions of billions of people whose identities cannot be accurately represented in systems assuming Western structure. The W3C recommends avoiding rigid field structures, using single fields for full names where possible, ensuring fields accommodate names of any length, and preserving user-entered casing.
+
+The Unicode Consortium's Technical Report 35 [@unicode2024personnames] extends this guidance with a formal specification for name formatting across locales. The specification defines seven core fields (title, given, given2, surname, surname2, generation, credentials) with formatting patterns based on order, length, usage, and formality. However, the specification explicitly notes that parsing names into components, handling special protocols for royalty or religious figures, and managing context-dependent variations remain out of scope.
+
+## Synthesis and Implications for System Design
+
+Together, these sources reveal a fundamental tension in identity system design. McKenzie identifies what systems get wrong; W3C and Unicode provide partial solutions for formatting and storage; but none address context-dependent identity presentation. A person may legitimately maintain different names in different contexts, professional versus personal, different language communities, or different life stages, and no existing standard addresses this requirement.
+
+This analysis informs the project's design decision to use JSONB storage for multilingual name representation without imposing structural assumptions. Rather than fields for "first name" and "last name," the system stores name values keyed by language code (for example, `{"en": "John Smith", "zh": "Li Ming"}`) with separate name type indicators for given, family, preferred, and legal names. This approach accommodates cultural diversity while enabling context-specific name presentation through inheritance and override mechanisms.
+
+# Identity Theory and Context Collapse
+
+The sociological literature provides theoretical foundations for understanding why singular identity systems cause harm. Three sources trace the development of context-dependent identity theory from foundational sociology through contemporary digital contexts.
+
+## Theoretical Foundation
+
+Erving Goffman's *The Presentation of Self in Everyday Life* [@goffman1959presentation] established the dramaturgical metaphor for understanding human identity. Goffman argued that identity is performative rather than fixed, people play different roles depending on audience and context, managing impressions through "front stage" presentations while maintaining "back stage" regions where they can relax their performance.
+
+This 1959 work predates digital technology but proves remarkably prescient for understanding contemporary identity challenges. Goffman observed that humans naturally maintain bounded social contexts: individuals are rarely simultaneously visible to coworkers, family members, romantic partners, and casual acquaintances. Each context calls forth different aspects of identity, and the boundaries between contexts enable authentic self-presentation within each domain.
+
+Published by Anchor Books and continuously in print for over sixty-five years, this work represents a foundational text in sociology with extensive peer-reviewed citations. Its theoretical framework has been applied across disciplines including human-computer interaction, communication studies, and identity management research, establishing its relevance to digital system design.
+
+## Digital Context and Social Media
+
+Marwick and boyd's 2011 study "I Tweet Honestly, I Tweet Passionately: Twitter Users, Context Collapse, and the Imagined Audience" [@marwick2011tweet] applied Goffman's framework to digital platforms. Published in New Media & Society, a peer-reviewed Sage journal, this research introduced the term "context collapse" to describe how social media merges previously discrete audiences into single spaces.
+
+The researchers documented how Twitter users navigate the tension between authentic self-expression and awareness of diverse audiences. Unlike face-to-face interaction where environmental cues signal appropriate presentation, social media posts become simultaneously visible to professional contacts, family members, friends, and strangers. Users respond through self-censorship, strategic ambiguity, and lowest-common-denominator content that avoids offending any potential audience segment.
+
+Mark Zuckerberg predicted this merging of contexts would normalize, suggesting that maintaining different images for different audiences was "coming to an end." The research demonstrates this prediction was incorrect. Rather than accepting singular identity, users actively resist through elaborate coping strategies: creating secondary accounts for close friends, segmenting platforms by audience type, and aggressively managing privacy settings. Survey data indicates that 71% of social networking users ages 18-29 have modified privacy settings [@pew2010reputation], with 47% deleting unwanted comments and 41% removing their names from tagged photos.
+
+## Contemporary Extension
+
+Loh and Walsh's 2021 article "Social Media Context Collapse: The Consequential Differences Between Context Collusion Versus Context Collision" [@loh2021contextcollapse] extended the framework by distinguishing between intentional and unintentional context collapse. Also published in Social Media + Society, this peer-reviewed research identifies two distinct phenomena. Context collusion occurs when users intentionally merge contexts, such as adding professional contacts on personal social media accounts. Context collision occurs when contexts merge unexpectedly, such as when a post intended for friends reaches employers through shared connections.
+
+Both phenomena create challenges, but collision produces more significant harm because users cannot anticipate or control it. The research documented that context collapse particularly affects emotional expression, professional reputation, and identity performance, with network size and heterogeneity correlating to increased self-presentation challenges.
+
+## Synthesis and Implications for System Design
+
+The progression from Goffman through Marwick and boyd to Loh and Walsh establishes that context-dependent identity presentation is not merely a preference but a fundamental human need. Systems forcing singular identity create documented harms including reduced authenticity, self-censorship, exposure to unintended audiences, professional damage, and relationship strain.
+
+This literature directly informs the project's multi-context architecture. Rather than maintaining a single profile, users can create context profiles (professional, social, legal, healthcare) that inherit from a base profile while overriding specific fields. OAuth scopes control which context is presented to which third-party application, enabling the bounded contexts that humans naturally maintain offline to be recreated in digital systems.
+
+# Privacy Regulations and Security Requirements
+
+Any identity system must operate within regulatory frameworks governing personal data. Two primary sources establish the requirements that inform the project's privacy-by-design approach, while research on marginalized communities reveals how privacy intersects with identity dignity.
+
+## Rights-Based Regulatory Framework
+
+The General Data Protection Regulation [@gdpr2016], effective since 2018, establishes data subject rights that directly impact identity system design. As binding EU legislation published in the Official Journal of the European Union, this represents an authoritative legal source.
+
+Several GDPR requirements bear directly on identity management. Article 16 establishes the right to rectification, requiring that data subjects be able to correct inaccurate personal data without undue delay. When names change through marriage, transition, or other life events, systems must support updates across all data holdings while maintaining historical records for compliance purposes. Article 5(1)(c) mandates data minimization, requiring systems to collect only data that is adequate, relevant, and necessary for specified purposes. This suggests using federation for transient identity rather than duplicating identity data across systems. Articles 15, 17, and 20 establish rights to access, erasure, and portability, requiring systems to export user data in machine-readable formats and delete data upon request.
+
+The project implements these principles architecturally: processing basis is recorded for every operation, audit trails track data access, and export/delete endpoints implement data subject rights. However, full GDPR compliance requires legal counsel, Data Protection Impact Assessments, and organizational processes that extend beyond academic scope. The project demonstrates privacy-by-design principles without claiming legal compliance.
+
+## Risk-Based Security Framework
+
+NIST Special Publication 800-63-3 [@nist2017digital] provides technical guidance for digital identity from a security perspective. As a U.S. federal government publication from the National Institute of Standards and Technology, this represents authoritative security guidance that has been widely adopted across industries.
+
+NIST establishes identity assurance levels (IAL), authenticator assurance levels (AAL), and federation assurance levels (FAL) based on risk assessment. Key recommendations include minimum 8-character passwords without arbitrary composition rules, blocking of passwords known to be breached, multi-factor authentication for sensitive operations, password storage using Argon2, bcrypt, or PBKDF2, and session management with high-entropy identifiers and appropriate timeouts. These requirements establish baseline security expectations that the project incorporates.
+
+## The Intersection of Privacy and Identity Dignity
+
+Haimson and Hoffmann's 2016 study "Constructing and enforcing 'authentic' identity online: Facebook, real names, and non-normative identities" [@haimson2016authenticself] examines how identity policies affect marginalized users. Published in First Monday, a peer-reviewed open-access journal, this research documented how Facebook's real-name policy systematically harmed transgender individuals, drag performers, domestic abuse survivors, and Native Americans whose names did not conform to Western expectations.
+
+The research found that real-name policies "simultaneously demand authenticity yet proscribe certain people from authentic self-presentation," creating what the authors describe as a double bind. Transgender individuals forced to use deadnames, names assigned at birth that no longer reflect their identity, experience documented psychological harm. The Trevor Project survey [@trevorproject2021] found that transgender youth who changed their legal names reported significantly lower suicide attempt rates, directly linking proper name support to mental health outcomes.
+
+## Synthesis and Converging Requirements
+
+GDPR (rights-based) and NIST (risk-based) frameworks converge on user control as a requirement. GDPR mandates that users can correct and delete their data; NIST emphasizes informed consent and transparency. Both frameworks support the project's approach of recording processing basis, maintaining audit trails, and implementing data export capabilities.
+
+The deadname protection requirement emerges from the intersection of privacy rights (GDPR Article 16), security needs (preventing harmful information disclosure), and human dignity (supporting authentic self-presentation). The project implements this through visibility controls on name records, with a "historical_suppressed" visibility level that maintains records for audit purposes while preventing display to unauthorized parties.
+
+# Comparison of Existing Solutions
+
+To position the project within the current landscape, this section compares five categories of identity management solutions against requirements derived from the literature review: context support, cultural flexibility, privacy compliance, and usability.
+
+| Solution | Context | Cultural | Privacy | Usability |
+|:-------------------------|:----------|:----------|:----------|:----------|
+| Google Identity | None | Limited | Partial | High |
+| Microsoft Entra ID | Security | Extensions | Strong | Moderate |
+| Apple Sign In | Privacy | None | Strong | High |
+| SCIM / OpenID Connect | None | Limited | Varies | High |
+| Self-Sovereign Identity | Theoretical | Theoretical | Strong | Poor |
+
+: Comparison of Identity Management Solutions
+
+Google Identity Platform excels at authentication with familiar OAuth flows but provides only one displayName across all services. Custom attributes require Workspace administration and cannot be user-controlled per context. Microsoft Entra ID (formerly Azure AD) offers sophisticated Conditional Access for security decisions based on location, device, and risk level, but this context awareness controls access rather than identity presentation. Users cannot maintain different professional versus personal identities within the same account.
+
+Apple's Sign in with Apple takes a privacy-first approach, generating unique relay email addresses per application. However, the focus remains on hiding information rather than enabling flexible expression, users still maintain only one name. SCIM [@rfc7643] and OpenID Connect [@openidconnect2014] provide industry-standard protocols for identity provisioning and authentication with structured name fields, but offer no support for context-specific names, cultural variations beyond basic Western structure, or user-controlled presentation preferences.
+
+Self-Sovereign Identity approaches, including W3C Verifiable Credentials and platforms like Hyperledger Indy, promise user control through decentralization. However, usability research from SOUPS 2022 [@soups2022didm] found these systems "too sophisticated for average users." Participants expected automatic backups but did not realize they bore sole responsibility for key management. The complexity creates burden rather than empowerment for typical users.
+
+The comparison reveals a consistent pattern: existing solutions optimize for one dimension while sacrificing others. Centralized platforms achieve high usability but enforce singular identity. Standards enable interoperability but assume Western name structures. Decentralized approaches offer theoretical flexibility but fail on usability. No existing solution combines user-controlled context-dependent identity presentation, cultural neutrality without structural assumptions, privacy compliance with user agency, and usability appropriate for general users. This gap defines the project's intended contribution.
+
+# Conclusion
+
+Rigid "first name/last name" structures cannot capture global naming diversity as seen in technical literature [@mckenzie2010falsehoods; @w3c2023personal; @unicode2024personnames]. The sociological literature [@goffman1959presentation; @marwick2011tweet; @loh2021contextcollapse] shows that presenting different facets of identity in different contexts is how humans naturally operate. The regulatory literature [@gdpr2016; @nist2017digital] demands user control over personal data that current systems provide only partially.
+
+The existing solutions optimize for different things: Google and Apple for usability, enterprise systems for security, decentralized approaches for theoretical control. None combine context-dependent identity presentation, cultural neutrality, privacy compliance, and usability in a single coherent system. The proposed project addresses this gap by using JSONB storage for cultural flexibility, context profiles for presentation control, and GDPR-inspired data subject rights, aiming to demonstrate that identity systems can serve human needs rather than just administrative convenience.
+
+# References
+
+::: {#refs}
+:::
