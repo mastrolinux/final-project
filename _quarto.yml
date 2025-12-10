@@ -9,6 +9,7 @@ book:
   date: today
   chapters:
     - index.qmd
+    - literature-review.qmd
     - part: "System Architecture"
       chapters:
         # - architecture/original-problem.qmd

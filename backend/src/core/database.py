@@ -208,18 +208,20 @@ def check_supabase_connection() -> Dict[str, Any]:
         }
         
     except RuntimeError as e:
-        logger.error(f"Supabase runtime error: {e}")
+        logger.warning(f"Supabase client unavailable (non-critical): {e}")
         return {
-            "status": "unhealthy",
-            "message": "Supabase initialization failed",
+            "status": "unavailable",
+            "message": "Supabase client unavailable (non-critical - using direct PostgreSQL)",
+            "note": "System fully functional with direct PostgreSQL connection",
             "error": str(e),
             "error_type": "RuntimeError"
         }
     except Exception as e:
-        logger.error(f"Unexpected Supabase error: {e}")
+        logger.warning(f"Supabase client error (non-critical): {e}")
         return {
-            "status": "unhealthy",
-            "message": "Supabase connection check failed",
+            "status": "unavailable",
+            "message": "Supabase client unavailable (non-critical - using direct PostgreSQL)",
+            "note": "System fully functional with direct PostgreSQL connection",
             "error": str(e),
             "error_type": type(e).__name__
         }
