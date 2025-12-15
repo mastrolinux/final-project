@@ -1,0 +1,400 @@
+--- 
+title: "Identity and Profile Management API"
+subtitle: "Design Document - Preliminary Report"
+author: "Luca Cipriani"
+date: 2025-12-18
+bibliography: ../identity-management-background.bib
+csl: ../quarto_files/ieee.csl
+format:
+  pdf:
+    documentclass: scrartcl
+    pdf-engine: xelatex
+    monofont: "Noto Sans"
+    fontsize: 12pt
+    geometry:
+      - top=20mm
+      - bottom=20mm
+      - left=20mm
+      - right=20mm
+    toc: true
+    toc-depth: 1
+    number-sections: true
+    colorlinks: true
+    keep-tex: false
+    include-in-header:
+      text: |
+        \usepackage{fontspec}
+        \defaultfontfeatures{Scale=MatchLowercase}
+        \setmonofont{Noto Sans}[Scale=0.9]
+        \newfontfamily\arabicfont[Script=Arabic]{Noto Sans Arabic}
+        \usepackage{xeCJK}
+        \setCJKmonofont{Noto Sans SC}
+        \usepackage[Latin, Arabic]{ucharclasses}
+        \setkomafont{disposition}{\normalfont\bfseries}
+        \setTransitionTo{Arabic}{\arabicfont}
+        \setTransitionFrom{Arabic}{\normalfont}
+---
+
+# Project Overview
+
+## Problem Formulation
+
+Contemporary identity management systems enforce singular, culturally-biased identity models that fail to accommodate human identity presentation across contexts. Research by Marwick and boyd [@marwick2011tweet] documents the psychological costs of "context collapse," where users present a single identity to heterogeneous audiences. This project addresses this gap through a context-aware architecture reconciling security requirements with cultural sensitivity and privacy protection.
+
+The design applies Goffman's dramaturgical theory [@goffman1959presentation], positing that identity is performative rather than essential. Digital platforms forcing singular identity models result in self-censorship and documented harm to marginalized populations [@haimson2016authenticself].
+
+## Vision and Scope
+
+The project implements a culturally-sensitive, privacy-respecting identity management platform providing secure third-party access through standardized protocols. The architecture treats identity as contextual and performative rather than singular and fixed.
+
+The implementation follows the Web API Development template, focusing on RESTful API design, secure authentication and authorization systems, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
+
+The scope includes multi-context identity profile management, an OAuth 2.1 authorization server with mandatory PKCE, guardian-minor relationship management, GDPR-inspired privacy features including data export and deletion, multilingual name support across cultures, and comprehensive audit logging. Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management, blockchain-based decentralized identity, and biometric authentication.
+
+# Domain and Users
+
+## Domain Description
+
+The project operates in the identity management domain, specifically addressing the challenge of managing multiple identity presentations across different life contexts. The W3C Internationalization Activity [@w3c2023personal] documents how global naming conventions cannot be accurately represented in systems assuming Western structure, affecting billions of users whose names do not fit "first name, last name" fields. This domain encompasses professional contexts where work-appropriate identity is presented to career platforms, social contexts for personal identity in social applications, legal contexts for official identity in government and healthcare systems, and guardian-managed contexts where parents manage minor identities.
+
+## User Personas and Requirements
+
+Four personas inform requirements. A privacy-focused professional (psychiatrist) requires different identity presentations for different applications: credentials for healthcare platforms while concealing professional information from fitness apps. The solution enables context-specific OAuth tokens bound to identity contexts.
+
+A multilingual user (Chinese engineer) requires culturally-appropriate name display: "Li Ming" in Western contexts, Chinese characters in Chinese contexts. The W3C [@w3c2023personal] documents failures of Western-structured systems. The solution stores names as JSONB with language keys, resolving via Accept-Language headers.
+
+A guardian managing a minor requires oversight of third-party requests with visibility into shared data. The solution implements guardian relationships with granular permissions and audit logging.
+
+A vulnerable population member (transgender individual) requires preferred name usage without exposing deprecated names. Research [@trevorproject2021] correlates proper name support with reduced suicide attempts. The solution provides pseudonymous accounts with automatic suppression of deprecated names.
+
+## Analysis of Existing Solutions
+
+Existing identity solutions optimize for different dimensions while sacrificing others. Google Identity Platform and Microsoft Entra ID provide sophisticated authentication but maintain fundamentally singular identity per user with no native support for context-dependent presentation. Apple's Sign in with Apple prioritizes hiding information rather than flexible identity expression. Facebook's real-name policy evolution demonstrates persistent tension between platform tracking needs and user identity flexibility. LinkedIn requires professional names only, with no support for separate personal identity or cultural naming variations.
+
+Table 1 compares major identity platforms across dimensions critical to context-aware, culturally-sensitive identity management. The evaluation considers proprietary cloud services (Google, Microsoft, Apple), open-source providers (Keycloak), and commercial identity-as-a-service (Auth0/Okta). Each dimension reflects requirements from the literature review.
+
+**Table 1: Identity Platform Comparison**
+
+| Platform | Context Support | Cultural Names | Pseudonymity | OAuth/OIDC | Open Source |
+|----------|----------------|----------------|--------------|------------|-------------|
+| Google Identity | No | Limited | No | Full | No |
+| Microsoft Entra | No | Limited | No | Full | No |
+| Apple Sign In | No | Limited | Partial | OIDC | No |
+| Auth0/Okta | Custom only | Flexible | Yes | Full | No |
+| Keycloak | Partial | Flexible | Yes | Full | Yes |
+| **This Project** | **Native** | **Native** | **Full** | **OAuth 2.1** | **Yes** |
+
+No existing solution combines user-controlled context-dependent identity presentation, cultural neutrality without structural assumptions, privacy compliance, and appropriate usability.
+
+# Design Justification
+
+## Theoretical Foundation
+
+The multi-context architecture derives directly from the sociological literature on identity presentation. Goffman's dramaturgical framework [@goffman1959presentation] establishes that humans naturally maintain bounded social contexts, presenting different aspects of identity to different audiences. Marwick and boyd [@marwick2011tweet] documented how digital platforms create "context collapse" that forces users to navigate tensions between authentic self-expression and awareness of diverse audiences. Loh and Walsh [@loh2021contextcollapse] extended this framework by distinguishing between intentional context merging (collusion) and unintentional context merging (collision), with the latter producing more significant harm.
+
+The architecture recreates bounded contexts through context profiles inheriting from base profiles while overriding specific fields. OAuth tokens bind to specific contexts, ensuring context-appropriate data access.
+
+## Feature Justification
+
+Multilingual name storage using JSONB derives from W3C [@w3c2023personal] and Unicode [@unicode2024personnames] guidance documenting challenges including Chinese family-first ordering, Arabic multi-component names, Spanish double surnames, Tamil patronymic initials, and Indonesian mononyms. The system stores name values keyed by language code with type indicators, accommodating cultural diversity without Western structural assumptions.
+
+Guardian management provides granular permissions (view, edit, manage contexts, OAuth), verification requirements, audit logging visible to minors, and automatic transition at age of majority, balancing parental oversight with developing autonomy.
+
+Deadname protection implements privacy rights (GDPR Article 16 [@gdpr2016]) and human dignity requirements [@haimson2016authenticself]. Deprecated names use `is_deprecated` and `visibility_level` flags, automatically suppressing in user-facing contexts while maintaining administrative records.
+
+## Security Design Rationale
+
+Security decisions follow guidance from NIST Special Publication 800-63-3 [@nist2017digital] and address OWASP Top 10 vulnerabilities [@owasp-api-security]. Password hashing uses Argon2id as recommended by NIST, providing memory-hard properties that resist GPU-based attacks. JWT tokens employ RS256 asymmetric signing in production for distributed validation without shared secrets. OAuth 2.1 with mandatory PKCE addresses authorization code interception vulnerabilities eliminated in the updated specification.
+
+Defense in depth implements authentication validation, role-based access control, attribute-based access control, scope-based filtering, and PostgreSQL Row-Level Security. This layered approach prevents compromise of single layers from granting unauthorized access.
+
+# Project Structure
+
+## System Architecture
+
+The system follows five-layer architecture: presentation (FastAPI REST endpoints), application (business logic services), domain (models and aggregates), data access (repository pattern), and infrastructure (PostgreSQL, Redis, external services). This enables independent layer testing, downward dependency flow, and domain-infrastructure separation. The repository pattern decouples business logic from storage for unit testing with mocks and potential storage migration.
+
+## Domain Model
+
+The domain model comprises six aggregates: BaseProfile (account type, contact, language), IdentityNames (multilingual JSONB with type, deprecation, visibility), ContextProfiles (context-specific overrides inheriting from base), GuardianRelationships (permissions, verification), OAuthClients and OAuthGrants (registration, authorizations, scopes), and AuditLog (immutable operation records). All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention.
+
+## Data Flow
+
+OAuth third-party access illustrates data flow: applications redirect to authorization endpoints with scopes and PKCE challenges, users view consent screens, and the system generates authorization codes bound to context profiles. Third parties exchange codes for tokens via PKCE code verifiers. Access tokens encode scopes and context identifiers. API requests validate tokens and filter responses to permitted fields within authorized contexts, ensuring explicit consent per application-context combination and preventing scope creep.
+
+# Technologies and Methods
+
+## Technology Stack
+
+The backend implementation uses Python 3.12 with FastAPI, selected for its async support, automatic OpenAPI documentation generation, and Pydantic integration for request validation. PostgreSQL 15 via Supabase provides relational storage with Row-Level Security policies, JSONB support for flexible schema elements, and temporal query capabilities. Redis serves as the caching layer for session storage, rate limiting counters, and frequently accessed profile data with configurable TTL values.
+
+Authentication uses custom JWT implementation with Argon2id password hashing, providing full control over token lifecycle and claims structure. The OAuth 2.1 authorization server implements the authorization code flow with mandatory PKCE as specified in the current IETF draft [@oauth21-draft]. Social authentication operates in a hybrid mode, leveraging Supabase OAuth provider configuration for redirect handling while maintaining user data in custom tables with custom-issued tokens.
+
+Testing uses pytest with pytest-cov (80% minimum coverage), mypy (strict mode), ruff and black (linting). Deployment targets Render.com and Supabase with GitHub Actions CI/CD.
+
+## Development Methods
+
+Test-driven development structures the implementation process, with tests written before implementation code. This approach ensures comprehensive coverage, provides executable documentation of expected behavior, and enables confident refactoring. Current test coverage stands at 89% with all critical paths covered by integration tests.
+
+Privacy by design principles informed by GDPR [@gdpr2016] guide architectural decisions. Data minimization constrains OAuth responses to explicitly requested scopes. Processing basis is recorded for every data operation. Consent tracking enables users to view and withdraw authorizations. Data export and deletion endpoints implement data subject rights, though full legal compliance requires organizational processes beyond implementation scope.
+
+Defense in depth structures the security architecture, with protections at network, transport, authentication, authorization, application, and database layers. This redundancy ensures that compromise of any single layer does not expose user data.
+
+# Work Plan
+
+## Timeline Overview
+
+The project spans 24 weeks (October 13, 2025 to March 24, 2026) with milestones: preliminary design (December 18, 2025), production deployment (March 2, 2026), and final submission (March 24, 2026). Completed work includes pitch, research, requirements, architecture, database schema, and initial profile CRUD (89% test coverage).
+
+## Development Phases
+
+Phase 1 (Dec 19 - Jan 2): Authentication and security (auth_users migration, Argon2id hashing, JWT tokens, registration/login, Redis sessions).
+
+Phase 2 (Jan 3-12): Context profiles (context_profiles migration, inheritance engine, multilingual fallback, temporal versioning).
+
+Phase 3 (Jan 13-26): OAuth 2.1 (client registration, authorization code flow with PKCE, token issuance, scope filtering, consent management).
+
+Phase 4 (Jan 27 - Feb 9): Guardian management and privacy (guardian_relationships table, permissions, audit logging, data export/deletion).
+
+Phase 5 (Feb 10-23): Frontend demonstration (Vue.js setup, profile management, OAuth visualization, guardian dashboard).
+
+Phases 6-8 (Feb 24 - Mar 16): Deployment (Render.com, Supabase), security testing (OWASP Top 10), user testing (5-10 participants), and refinement (code freeze March 9).
+
+## Risk Mitigation
+
+Timeline slippage is mitigated through buffer time allocated in the refinement phase and feature prioritization to ensure core functionality completes before optional enhancements. Technical complexity is addressed through test-driven development ensuring incremental progress and spike solutions for uncertain technical areas. Production issues are mitigated through staging environment testing before production deployment and rollback capability through version-controlled infrastructure. User testing delays are addressed through early participant recruitment and definition of minimum viable testing scope.
+
+# Evaluation Plan
+
+## Evaluation Objectives
+
+The evaluation addresses five objectives: verification that the system meets functional requirements, validation of security and privacy controls, assessment of usability and user experience, measurement of performance against defined targets, and confirmation of deployment stability.
+
+## Technical Evaluation
+
+Quantitative metrics establish technical quality. Code coverage must exceed 80% as measured by pytest-cov. API response time at the 95th percentile must remain below 200ms under load testing. Error rate must remain below 0.1% during sustained operation. Security scanning using OWASP ZAP must identify zero critical vulnerabilities.
+
+Functional testing occurs at three levels. Unit tests verify services and repositories in isolation with mocked dependencies. Integration tests exercise API endpoints end-to-end against a test database. Security tests specifically target authentication bypass attempts, authorization boundary violations, and input validation through fuzzing.
+
+## User Evaluation
+
+Task-based usability testing with 5-10 participants validates the user experience. Participants complete defined tasks: creating a profile with multilingual name, creating a professional context profile, authorizing a third-party application with specific scopes, viewing and revoking OAuth access, and for guardian participants, approving an OAuth request for a minor.
+
+Measured outcomes include task completion rate, time to complete each task, error count during task execution, and System Usability Scale score. A SUS score of 70 or above indicates "good" usability suitable for the target user population.
+
+## Success Criteria
+
+The project succeeds if core features (profiles, contexts, OAuth, guardians) are implemented and tested, security testing identifies zero critical vulnerabilities, 95th percentile response time remains under 200ms, SUS score reaches 70 or above, and the production system remains accessible and stable.
+
+The evaluation explicitly does not constitute legal compliance certification, penetration testing by external security professionals, long-term scalability validation, or accessibility audit for WCAG compliance. These limitations are documented as future work in the final report.
+
+
+# Appendix A: Gantt Chart
+
+```{mermaid}
+%%| fig-width: 7
+gantt
+    title Identity Management API - Project Timeline
+    dateFormat YYYY-MM-DD
+    
+    section Completed
+    Present the pitch           :done, pitch, 2025-10-13, 2025-11-04
+    
+    section Documentation
+    Implementation Draft        :done, impl, 2025-11-05, 2025-11-28
+    Preliminary Design          :active, prelim, 2025-11-29, 2025-12-18
+    
+    section Backend Development
+    Authentication + Security   :phase1, 2025-12-19, 2026-01-02
+    Context Profiles            :phase2, 2026-01-03, 2026-01-12
+    OAuth 2.1 Authorization     :phase3, 2026-01-13, 2026-01-26
+    Guardian + Privacy          :phase4, 2026-01-27, 2026-02-09
+    
+    section Frontend
+    Frontend Demo               :phase5, 2026-02-10, 2026-02-23
+    
+    section Production
+    Production Deployment       :phase6, 2026-02-24, 2026-03-02
+    Testing + Validation        :phase7, 2026-03-03, 2026-03-09
+    Refinement                  :phase8, 2026-03-10, 2026-03-16
+    
+    section Final Submission
+    Final Report + Video        :crit, phase9, 2026-03-17, 2026-03-24
+    
+    section Milestones
+    Preliminary Design Due      :milestone, m1, 2025-12-18, 0d
+    Production Live             :milestone, m2, 2026-03-02, 0d
+    Code Freeze                 :milestone, m3, 2026-03-09, 0d
+    Final Submission            :crit, milestone, m4, 2026-03-24, 0d
+```
+
+\newpage
+
+# Appendix B: System Context Diagram
+
+```{mermaid}
+%%| fig-width: 6.5
+flowchart TB
+    subgraph users["Users"]
+        user["User<br>(Individual managing identity)"]
+        guardian["Guardian<br>(Parent managing minor)"]
+        minor["Minor<br>(User under supervision)"]
+    end
+    
+    api[["Identity Management API<br>(Multi-context identity with OAuth 2.1)"]]
+    
+    subgraph external["External Systems"]
+        thirdparty["Third-Party Apps<br>(OAuth clients)"]
+        social["Social Auth Providers<br>(Google, GitHub, Apple)"]
+    end
+    
+    user -->|"Manages profiles"| api
+    guardian -->|"Manages minor profiles"| api
+    minor -->|"Views own profile"| api
+    thirdparty -->|"Requests identity via OAuth"| api
+    api -->|"Delegates authentication"| social
+```
+
+\newpage
+
+# Appendix C: Data Model
+
+```{mermaid}
+%%| fig-width: 6
+erDiagram
+    BaseProfile ||--o{ IdentityNames : has
+    BaseProfile ||--o{ ContextProfiles : has
+    BaseProfile ||--o{ GuardianRelationships : "guardian_for"
+    BaseProfile ||--o{ GuardianRelationships : "minor_of"
+    BaseProfile ||--o{ OAuthGrants : authorizes
+    
+    BaseProfile {
+        uuid user_id PK
+        enum account_type
+        string primary_email
+        string preferred_language
+    }
+    
+    IdentityNames {
+        uuid id PK
+        uuid identity_id FK
+        enum name_type
+        jsonb name_value
+        boolean is_deprecated
+        enum visibility_level
+    }
+    
+    ContextProfiles {
+        uuid id PK
+        uuid user_id FK
+        enum context_type
+        jsonb overrides
+        array allowed_scopes
+    }
+    
+    GuardianRelationships {
+        uuid id PK
+        uuid guardian_user_id FK
+        uuid minor_user_id FK
+        jsonb permissions
+        boolean verified
+    }
+    
+    OAuthGrants {
+        uuid id PK
+        uuid user_id FK
+        string client_id
+        array granted_scopes
+        uuid context_profile_id
+    }
+```
+
+## JSONB Data Examples
+
+The system uses PostgreSQL JSONB fields to support flexible, culturally-sensitive data structures. Key examples demonstrate the architecture's capacity to handle diverse naming conventions without imposing Western structural assumptions.
+
+**Chinese Family-First Ordering (IdentityNames.name_value):**
+
+```json
+{
+  "family": {
+    "zh": "李",
+    "zh-Latn": "Li",
+    "en": "Li"
+  },
+  "given": {
+    "zh": "明",
+    "zh-Latn": "Ming",
+    "en": "Ming"
+  },
+  "display_order": "family_first",
+  "full_name": {
+    "zh": "李明",
+    "en": "Li Ming"
+  }
+}
+```
+
+**Indonesian Mononym (IdentityNames.name_value):**
+
+```json
+{
+  "full_name": {
+    "id": "Sukarno",
+    "en": "Sukarno"
+  },
+  "explanation": "Mononym (single name)"
+}
+```
+
+**Arabic Multi-Component (IdentityNames.name_value):**
+
+```json
+{
+  "ism": {
+    "ar": "محمد",
+    "ar-Latn": "Muhammad"
+  },
+  "kunya": {
+    "ar": "أبو عبد الله",
+    "ar-Latn": "Abu Abdullah"
+  },
+  "nasab": {
+    "ar": "بن عبد الله",
+    "ar-Latn": "ibn Abdullah"
+  },
+  "display_preference": "formal_full"
+}
+```
+
+**Context Profile Overrides (ContextProfiles.overrides):**
+
+```json
+{
+  "display_name": "Dr. Sarah Chen, MD, PhD",
+  "email": "s.chen@hospital.org",
+  "bio": "Board-certified psychiatrist",
+  "credentials": ["MD", "PhD", "Board Certified"]
+}
+```
+
+**Guardian Permissions (GuardianRelationships.permissions):**
+
+```json
+{
+  "can_view_profile": true,
+  "can_edit_profile": true,
+  "can_create_contexts": true,
+  "can_manage_oauth": true,
+  "can_delete_profile": false
+}
+```
+
+These flexible structures enable the system to accommodate global naming conventions including Spanish double surnames, Tamil patronymic initials, and Western given-family patterns, all stored within a single schema supporting over 7000 languages without structural assumptions.
+
+# References
+
+::: {#refs}
+:::
+
+
