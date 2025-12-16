@@ -527,6 +527,149 @@ The evaluation explicitly does not constitute legal compliance certification for
 
 \newpage
 
+# Appendix: Data Model {-}
+
+## Entity Relationship Diagram
+
+Figure 3 presents the domain model as an entity-relationship diagram showing the six core aggregates and their relationships. BaseProfile serves as the root aggregate with one-to-many relationships to IdentityNames, ContextProfiles, GuardianRelationships (as both guardian and minor), and OAuthGrants.
+
+```{mermaid}
+%%| label: fig-datamodel
+%%| fig-cap: "Entity-relationship diagram showing domain model"
+%%| fig-width: 6
+erDiagram
+    BaseProfile ||--o{ IdentityNames : has
+    BaseProfile ||--o{ ContextProfiles : has
+    BaseProfile ||--o{ GuardianRelationships : "guardian_for"
+    BaseProfile ||--o{ GuardianRelationships : "minor_of"
+    BaseProfile ||--o{ OAuthGrants : authorizes
+    
+    BaseProfile {
+        uuid user_id PK
+        enum account_type
+        string primary_email
+        string preferred_language
+    }
+    
+    IdentityNames {
+        uuid id PK
+        uuid identity_id FK
+        enum name_type
+        jsonb name_value
+        boolean is_deprecated
+        enum visibility_level
+    }
+    
+    ContextProfiles {
+        uuid id PK
+        uuid user_id FK
+        enum context_type
+        jsonb overrides
+        array allowed_scopes
+    }
+    
+    GuardianRelationships {
+        uuid id PK
+        uuid guardian_user_id FK
+        uuid minor_user_id FK
+        jsonb permissions
+        boolean verified
+    }
+    
+    OAuthGrants {
+        uuid id PK
+        uuid user_id FK
+        string client_id
+        array granted_scopes
+        uuid context_profile_id
+    }
+```
+
+## JSONB Data Examples
+
+The system uses PostgreSQL JSONB fields to support flexible, culturally-sensitive data structures. Key examples demonstrate the architecture's capacity to handle diverse naming conventions without imposing Western structural assumptions.
+
+**Chinese Family-First Ordering (IdentityNames.name_value):**
+
+```json
+{
+  "family": {
+    "zh": "李",
+    "zh-Latn": "Li",
+    "en": "Li"
+  },
+  "given": {
+    "zh": "明",
+    "zh-Latn": "Ming",
+    "en": "Ming"
+  },
+  "display_order": "family_first",
+  "full_name": {
+    "zh": "李明",
+    "en": "Li Ming"
+  }
+}
+```
+
+**Indonesian Mononym (IdentityNames.name_value):**
+
+```json
+{
+  "full_name": {
+    "id": "Sukarno",
+    "en": "Sukarno"
+  },
+  "explanation": "Mononym (single name)"
+}
+```
+
+**Arabic Multi-Component (IdentityNames.name_value):**
+
+```json
+{
+  "ism": {
+    "ar": "محمد",
+    "ar-Latn": "Muhammad"
+  },
+  "kunya": {
+    "ar": "أبو عبد الله",
+    "ar-Latn": "Abu Abdullah"
+  },
+  "nasab": {
+    "ar": "بن عبد الله",
+    "ar-Latn": "ibn Abdullah"
+  },
+  "display_preference": "formal_full"
+}
+```
+
+**Context Profile Overrides (ContextProfiles.overrides):**
+
+```json
+{
+  "display_name": "Dr. Sarah Chen, MD, PhD",
+  "email": "s.chen@hospital.org",
+  "bio": "Board-certified psychiatrist",
+  "credentials": ["MD", "PhD", "Board Certified"]
+}
+```
+
+**Guardian Permissions (GuardianRelationships.permissions):**
+
+```json
+{
+  "can_view_profile": true,
+  "can_edit_profile": true,
+  "can_create_contexts": true,
+  "can_manage_oauth": true,
+  "can_delete_profile": false
+}
+```
+
+These flexible structures enable the system to accommodate global naming conventions including Spanish double surnames, Tamil patronymic initials, and Western given-family patterns, all stored within a single schema supporting hundreds of languages without structural assumptions.
+
+\newpage
+
 # References {-}
 
 ::: {#refs}
