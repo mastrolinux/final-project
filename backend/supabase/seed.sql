@@ -192,7 +192,98 @@ VALUES
         'historical_suppressed'
     );
 
--- Verification query (useful for checking seed data loaded correctly)
--- SELECT COUNT(*) FROM base_profiles;  -- Should return 5
--- SELECT COUNT(*) FROM identity_names; -- Should return 12
+-- ============================================================================
+-- CONTEXT PROFILES - Multi-Context Identity Presentation
+-- ============================================================================
+-- Demonstrates Goffman's dramaturgical theory: context-dependent identity
+
+-- Context 1: Sarah Chen's Professional Context (Psychiatrist at work)
+INSERT INTO context_profiles (id, user_id, context_type, context_name, display_name_override, email_override, phone_override, bio, is_active)
+VALUES (
+    '20000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',  -- Sarah Chen
+    'professional',
+    'Hospital Network',
+    'Dr. Sarah Chen, MD, PhD',
+    's.chen@hospital.org',
+    '+1-555-0100',
+    'Board-certified psychiatrist specializing in trauma and PTSD. Over 15 years of clinical experience.',
+    true
+);
+
+-- Context 2: Sarah Chen's Social Context (Fitness apps, personal use)
+INSERT INTO context_profiles (id, user_id, context_type, context_name, display_name_override, email_override, phone_override, bio, is_active)
+VALUES (
+    '20000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000001',  -- Sarah Chen
+    'social',
+    'Fitness Apps',
+    'Sarah',
+    NULL,  -- Inherits primary_email from base profile
+    NULL,  -- Inherits primary_phone from base profile
+    'Health and wellness enthusiast. Loves running and yoga.',
+    true
+);
+
+-- Context 3: Li Ming's Professional Context (Software engineer)
+INSERT INTO context_profiles (id, user_id, context_type, context_name, display_name_override, email_override, phone_override, bio, is_active)
+VALUES (
+    '20000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000002',  -- Li Ming
+    'professional',
+    'LinkedIn',
+    'Ming Li',  -- Western order for international context
+    'ming.li@techcorp.com',
+    NULL,
+    'Senior Software Engineer specializing in distributed systems and cloud architecture.',
+    true
+);
+
+-- Context 4: Jordan's Social Context (LGBTQ+ support groups)
+INSERT INTO context_profiles (id, user_id, context_type, context_name, display_name_override, email_override, phone_override, bio, is_active)
+VALUES (
+    '20000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000005',  -- Jordan
+    'social',
+    'Support Communities',
+    'Jordan (they/them)',
+    NULL,
+    NULL,
+    'Advocate for transgender rights. Always happy to help others on their journey.',
+    true
+);
+
+-- Context 5: Jordan's Legal Context (Government services)
+INSERT INTO context_profiles (id, user_id, context_type, context_name, display_name_override, email_override, phone_override, bio, is_active)
+VALUES (
+    '20000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000005',  -- Jordan
+    'legal',
+    'Government ID',
+    'Jordan Taylor Smith',  -- Legal name for official documents
+    NULL,
+    NULL,
+    NULL,
+    true
+);
+
+-- Note: Alex (pseudonymous profile) cannot create legal/healthcare contexts
+-- This demonstrates the business rule preventing pseudonymous accounts from
+-- accessing sensitive context types
+
+-- ============================================================================
+-- Verification queries (useful for checking seed data loaded correctly)
+-- ============================================================================
+-- SELECT COUNT(*) FROM base_profiles;      -- Should return 5
+-- SELECT COUNT(*) FROM identity_names;     -- Should return 12
+-- SELECT COUNT(*) FROM context_profiles;   -- Should return 5
+
+-- Test inheritance engine:
+-- SELECT 
+--   bp.primary_email as base_email,
+--   cp.email_override as context_email,
+--   COALESCE(cp.email_override, bp.primary_email) as resolved_email
+-- FROM context_profiles cp
+-- JOIN base_profiles bp ON cp.user_id = bp.user_id
+-- WHERE cp.context_name = 'Fitness Apps';
 
