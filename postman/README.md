@@ -157,7 +157,7 @@ pm.test("Phone is inherited from base profile", function () {
     // This validates the inheritance engine!
     pm.expect(jsonData.phone).to.eql(basePhone);
     
-    console.log("✓ Inheritance verified: phone inherited from base");
+    console.log("[PASS] Inheritance verified: phone inherited from base");
 });
 ```
 
