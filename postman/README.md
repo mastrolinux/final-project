@@ -267,12 +267,17 @@ To run Postman tests in your CI/CD pipeline:
 # GitHub Actions example
 - name: Run Postman Tests
   run: |
+    cd backend
+    ./scripts/reset.sh <<< "yes"
+    cd ../postman
     npm install -g newman
-    newman run postman/thesis-api.postman_collection.json \
-      -e postman/thesis-local.postman_environment.json \
+    newman run thesis-api.postman_collection.json \
+      -e thesis-local.postman_environment.json \
       --reporters cli,json \
       --reporter-json-export test-results/newman-results.json
 ```
+
+**Note**: Database reset is required before running tests to avoid 409 Conflict errors from previous test data.
 
 ## Version Control
 
