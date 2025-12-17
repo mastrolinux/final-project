@@ -320,9 +320,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{prof_context_id}}/resolved",
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{seed_prof_context_id}}/resolved",
               "host": ["{{base_url}}"],
-              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{prof_context_id}}", "resolved"]
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{seed_prof_context_id}}", "resolved"]
             }
           },
           "event": [
@@ -519,9 +519,9 @@
               "raw": "{\n  \"bio\": \"Updated professional bio\",\n  \"email_override\": \"updated@hospital.org\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{prof_context_id}}",
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{seed_prof_context_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{prof_context_id}}"]
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{seed_prof_context_id}}"]
             }
           },
           "event": [
@@ -555,9 +555,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{partial_context_id}}",
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{seed_social_context_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{partial_context_id}}"]
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{seed_social_context_id}}"]
             }
           },
           "event": [
