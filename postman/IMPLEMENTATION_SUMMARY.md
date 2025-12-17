@@ -64,28 +64,28 @@ This implementation provides a comprehensive Postman collection that mirrors the
 
 ```
 Identity Management API Collection
-├── 01 - Health Checks (2 requests)
-│   ├── GET /health
-│   └── GET /health/detailed
-├── 02 - Create Context Profile (4 requests)
-│   ├── Create Professional Context (Success)
-│   ├── Create Social Context (Minimal Fields)
-│   ├── Create for Nonexistent User (404)
-│   └── Pseudonymous Cannot Create Legal (403)
-├── 03 - List User Contexts (1 request)
-├── 04 - Get Resolved Profile - CRITICAL (4 requests)
-│   ├── Resolve Context with Full Overrides
-│   ├── Resolve with Partial Overrides (Inheritance Test)
-│   ├── Get Resolved Partial Context (Validates Inheritance)
-│   └── Resolve Base Profile (No Context)
-├── 05 - Update Context Profile (1 request)
-├── 06 - Delete Context Profile (1 request)
-└── 07 - End-to-End Scenarios (5 requests)
-    ├── Step 1: Create Professional Context
-    ├── Step 2: Create Social Context
-    ├── Step 3: Resolve Professional Context
-    ├── Step 4: Resolve Social Context
-    └── Step 5: Validate Context Isolation
++-- 01 - Health Checks (2 requests)
+|   +-- GET /health
+|   +-- GET /health/detailed
++-- 02 - Create Context Profile (4 requests)
+|   +-- Create Professional Context (Success)
+|   +-- Create Social Context (Minimal Fields)
+|   +-- Create for Nonexistent User (404)
+|   +-- Pseudonymous Cannot Create Legal (403)
++-- 03 - List User Contexts (1 request)
++-- 04 - Get Resolved Profile - CRITICAL (4 requests)
+|   +-- Resolve Context with Full Overrides
+|   +-- Resolve with Partial Overrides (Inheritance Test)
+|   +-- Get Resolved Partial Context (Validates Inheritance)
+|   +-- Resolve Base Profile (No Context)
++-- 05 - Update Context Profile (1 request)
++-- 06 - Delete Context Profile (1 request)
++-- 07 - End-to-End Scenarios (5 requests)
+    +-- Step 1: Create Professional Context
+    +-- Step 2: Create Social Context
+    +-- Step 3: Resolve Professional Context
+    +-- Step 4: Resolve Social Context
+    +-- Step 5: Validate Context Isolation
 ```
 
 **Total**: 20 requests across 7 test scenario folders
@@ -127,11 +127,11 @@ pm.test("Phone is inherited from base profile", function () {
 ### 3. Sequential Request Chaining
 
 End-to-end scenario uses collection variables to chain requests:
-1. Create professional context → Save context_id
-2. Create social context → Save context_id
-3. Resolve professional → Save email and bio
-4. Resolve social → Save email and bio
-5. Validate isolation → Compare saved values
+1. Create professional context -> Save context_id
+2. Create social context -> Save context_id
+3. Resolve professional -> Save email and bio
+4. Resolve social -> Save email and bio
+5. Validate isolation -> Compare saved values
 
 ### 4. Environment Variables
 
@@ -163,13 +163,13 @@ The collection directly mirrors `backend/tests/integration/test_context_endpoint
 
 ### Inheritance Engine (Most Important)
 
-**Request**: `04 - Get Resolved Profile` → `Get Resolved Partial Context`
+**Request**: `04 - Get Resolved Profile` -> `Get Resolved Partial Context`
 
 This test validates the core algorithm:
 1. Creates context with only email override (partial override)
 2. Retrieves resolved profile
 3. Verifies email is overridden from context
-4. **Verifies phone is inherited from base profile** ← Critical!
+4. **Verifies phone is inherited from base profile** <- Critical!
 
 This proves the inheritance engine correctly merges base + context data.
 
