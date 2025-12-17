@@ -1,0 +1,841 @@
+{
+  "info": {
+    "name": "Identity and Profile Management API",
+    "description": "Context-Dependent Identity Management System - Integration Tests\n\nThis collection mirrors the pytest integration tests in tests/integration/test_context_endpoints.py\n\nCore Feature: Multi-context identity profiles based on Goffman's dramaturgical theory",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Health Checks",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has status field\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"status\");",
+                  "    pm.expect(jsonData.status).to.eql(\"healthy\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /health/detailed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/detailed",
+              "host": ["{{base_url}}"],
+              "path": ["health", "detailed"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has components health data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"components\");",
+                  "    pm.expect(jsonData.components).to.have.property(\"database\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Create Context Profile",
+      "item": [
+        {
+          "name": "Create Professional Context (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"professional\",\n  \"context_name\": \"{{context_name}}\",\n  \"display_name_override\": \"Dr. Sarah Chen, MD, PhD\",\n  \"email_override\": \"s.chen@hospital.org\",\n  \"bio\": \"Board-certified psychiatrist specializing in trauma and PTSD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique context name to prevent 409 conflicts",
+                  "const timestamp = Date.now();",
+                  "const contextName = `Test-Professional-${timestamp}`;",
+                  "",
+                  "// Store in collection variable for use in request",
+                  "pm.collectionVariables.set(\"context_name\", contextName);",
+                  "",
+                  "console.log(`Creating context: ${contextName} for user: ${pm.environment.get(\"sarah_user_id\")}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has context data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    ",
+                  "    pm.expect(jsonData).to.have.property(\"context_type\");",
+                  "    pm.expect(jsonData.context_type).to.eql(\"professional\");",
+                  "    ",
+                  "    pm.expect(jsonData).to.have.property(\"display_name_override\");",
+                  "    pm.expect(jsonData.display_name_override).to.include(\"Dr. Sarah Chen\");",
+                  "    ",
+                  "    pm.expect(jsonData).to.have.property(\"email_override\");",
+                  "    pm.expect(jsonData.email_override).to.eql(\"s.chen@hospital.org\");",
+                  "    ",
+                  "    pm.expect(jsonData).to.have.property(\"is_active\");",
+                  "    pm.expect(jsonData.is_active).to.be.true;",
+                  "    ",
+                  "    pm.expect(jsonData).to.have.property(\"id\");",
+                  "});",
+                  "",
+                  "pm.test(\"Save context_id for subsequent requests\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"prof_context_id\", jsonData.id);",
+                  "    console.log(`Saved professional context ID: ${jsonData.id}`);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Social Context (Minimal Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"social\",\n  \"context_name\": \"{{context_name}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "const contextName = `Test-Social-${timestamp}`;",
+                  "pm.collectionVariables.set(\"context_name\", contextName);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Minimal context created\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.context_type).to.eql(\"social\");",
+                  "    pm.expect(jsonData.display_name_override).to.be.null;",
+                  "    pm.expect(jsonData.email_override).to.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create for Nonexistent User (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"professional\",\n  \"context_name\": \"Work\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/00000000-0000-0000-0000-000000000999/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "00000000-0000-0000-0000-000000000999", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pseudonymous Cannot Create Legal (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"legal\",\n  \"context_name\": \"Government\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{alex_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{alex_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions restriction\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.include(\"cannot create\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - List User Contexts",
+      "item": [
+        {
+          "name": "List User Contexts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Get Resolved Profile (CRITICAL)",
+      "item": [
+        {
+          "name": "Resolve Context with Full Overrides",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{prof_context_id}}/resolved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{prof_context_id}}", "resolved"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Overrides are applied\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    ",
+                  "    pm.expect(jsonData.display_name).to.include(\"Dr. Sarah Chen\");",
+                  "    pm.expect(jsonData.email).to.eql(\"s.chen@hospital.org\");",
+                  "    pm.expect(jsonData.bio).to.include(\"psychiatrist\");",
+                  "});",
+                  "",
+                  "pm.test(\"Base profile fields preserved\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.account_type).to.eql(\"verified\");",
+                  "    pm.expect(jsonData.preferred_language).to.eql(\"en\");",
+                  "});",
+                  "",
+                  "pm.test(\"Context metadata included\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"context_type\");",
+                  "    pm.expect(jsonData.context_type).to.eql(\"professional\");",
+                  "});",
+                  "",
+                  "pm.test(\"Identity names included\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"identity_names\");",
+                  "    pm.expect(jsonData.identity_names).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve with Partial Overrides (Inheritance Test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"professional\",\n  \"context_name\": \"{{context_name}}\",\n  \"email_override\": \"work@company.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.collectionVariables.set(\"context_name\", `Test-Partial-${timestamp}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Context created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"partial_context_id\", jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Resolved Partial Context (Validates Inheritance)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{partial_context_id}}/resolved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{partial_context_id}}", "resolved"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Email override is applied\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.eql(\"work@company.com\");",
+                  "});",
+                  "",
+                  "pm.test(\"Phone is inherited from base profile\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const basePhone = pm.environment.get(\"sarah_base_phone\");",
+                  "    ",
+                  "    // This validates the inheritance engine!",
+                  "    pm.expect(jsonData.phone).to.eql(basePhone);",
+                  "    ",
+                  "    console.log(\"✓ Inheritance verified: phone inherited from base\");",
+                  "});",
+                  "",
+                  "pm.test(\"Display name is not overridden (null)\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.display_name).to.be.null;",
+                  "});",
+                  "",
+                  "pm.test(\"Context metadata is included\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"context_type\");",
+                  "    pm.expect(jsonData).to.have.property(\"context_name\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve Base Profile (No Context)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/resolved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "resolved"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Base profile values returned\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.eql(pm.environment.get(\"sarah_base_email\"));",
+                  "    pm.expect(jsonData.phone).to.eql(pm.environment.get(\"sarah_base_phone\"));",
+                  "});",
+                  "",
+                  "pm.test(\"No context metadata\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.context_type).to.be.null;",
+                  "    pm.expect(jsonData.context_name).to.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Update Context Profile",
+      "item": [
+        {
+          "name": "Update Context Success",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated professional bio\",\n  \"email_override\": \"updated@hospital.org\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{prof_context_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{prof_context_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Fields are updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.bio).to.eql(\"Updated professional bio\");",
+                  "    pm.expect(jsonData.email_override).to.eql(\"updated@hospital.org\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Delete Context Profile",
+      "item": [
+        {
+          "name": "Delete Context Success",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{partial_context_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{partial_context_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - End-to-End Scenarios",
+      "item": [
+        {
+          "name": "Step 1: Create Professional Context",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"professional\",\n  \"context_name\": \"{{context_name}}\",\n  \"display_name_override\": \"Dr. Sarah Chen, MD, PhD\",\n  \"email_override\": \"s.chen@hospital.org\",\n  \"bio\": \"Board-certified psychiatrist specializing in trauma and PTSD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.collectionVariables.set(\"context_name\", `E2E-Professional-${timestamp}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Professional context created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"e2e_prof_context_id\", jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: Create Social Context",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"context_type\": \"social\",\n  \"context_name\": \"{{context_name}}\",\n  \"display_name_override\": \"Sarah\",\n  \"bio\": \"Health and wellness enthusiast\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.collectionVariables.set(\"context_name\", `E2E-Social-${timestamp}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Social context created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"e2e_social_context_id\", jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: Resolve Professional Context",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{e2e_prof_context_id}}/resolved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{e2e_prof_context_id}}", "resolved"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Professional context resolved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    ",
+                  "    pm.expect(jsonData.display_name).to.include(\"Dr. Sarah Chen\");",
+                  "    pm.expect(jsonData.email).to.eql(\"s.chen@hospital.org\");",
+                  "    pm.expect(jsonData.bio).to.include(\"psychiatrist\");",
+                  "    ",
+                  "    // Save for final validation",
+                  "    pm.collectionVariables.set(\"prof_email\", jsonData.email);",
+                  "    pm.collectionVariables.set(\"prof_bio\", jsonData.bio);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4: Resolve Social Context",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/profiles/{{sarah_user_id}}/contexts/{{e2e_social_context_id}}/resolved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "profiles", "{{sarah_user_id}}", "contexts", "{{e2e_social_context_id}}", "resolved"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Social context resolved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    ",
+                  "    pm.expect(jsonData.display_name).to.eql(\"Sarah\");",
+                  "    pm.expect(jsonData.email).to.eql(pm.environment.get(\"sarah_base_email\"));",
+                  "    pm.expect(jsonData.bio).to.include(\"wellness\");",
+                  "    ",
+                  "    // Save for final validation",
+                  "    pm.collectionVariables.set(\"social_email\", jsonData.email);",
+                  "    pm.collectionVariables.set(\"social_bio\", jsonData.bio);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5: Validate Context Isolation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Professional and social contexts are isolated\", function () {",
+                  "    const profEmail = pm.collectionVariables.get(\"prof_email\");",
+                  "    const socialEmail = pm.collectionVariables.get(\"social_email\");",
+                  "    ",
+                  "    pm.expect(profEmail).to.not.equal(socialEmail);",
+                  "    ",
+                  "    console.log(\"✓ Context collapse prevented!\");",
+                  "    console.log(`  Professional email: ${profEmail}`);",
+                  "    console.log(`  Social email: ${socialEmail}`);",
+                  "});",
+                  "",
+                  "pm.test(\"Professional credentials hidden from social context\", function () {",
+                  "    const socialBio = pm.collectionVariables.get(\"social_bio\");",
+                  "    pm.expect(socialBio).to.not.include(\"psychiatrist\");",
+                  "    pm.expect(socialBio).to.not.include(\"MD\");",
+                  "    ",
+                  "    console.log(\"✓ Professional credentials not leaked to social context\");",
+                  "});",
+                  "",
+                  "pm.test(\"Personal wellness info hidden from professional context\", function () {",
+                  "    const profBio = pm.collectionVariables.get(\"prof_bio\");",
+                  "    pm.expect(profBio).to.not.include(\"wellness\");",
+                  "    pm.expect(profBio).to.not.include(\"fitness\");",
+                  "    ",
+                  "    console.log(\"✓ Personal info not leaked to professional context\");",
+                  "});",
+                  "",
+                  "console.log(\"\");",
+                  "console.log(\"======================================\");",
+                  "console.log(\"END-TO-END TEST COMPLETE\");",
+                  "console.log(\"Context-Dependent Identity Working!\");",
+                  "console.log(\"======================================\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "prof_context_id",
+      "value": ""
+    },
+    {
+      "key": "social_context_id",
+      "value": ""
+    },
+    {
+      "key": "partial_context_id",
+      "value": ""
+    },
+    {
+      "key": "context_name",
+      "value": ""
+    },
+    {
+      "key": "e2e_prof_context_id",
+      "value": ""
+    },
+    {
+      "key": "e2e_social_context_id",
+      "value": ""
+    },
+    {
+      "key": "prof_email",
+      "value": ""
+    },
+    {
+      "key": "social_email",
+      "value": ""
+    },
+    {
+      "key": "prof_bio",
+      "value": ""
+    },
+    {
+      "key": "social_bio",
+      "value": ""
+    }
+  ]
+}
