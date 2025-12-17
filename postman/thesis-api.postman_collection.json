@@ -799,19 +799,23 @@
   "variable": [
     {
       "key": "prof_context_id",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "social_context_id",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "partial_context_id",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "context_name",
-      "value": ""
+      "value": "DefaultContext",
+      "type": "string"
     },
     {
       "key": "e2e_prof_context_id",
