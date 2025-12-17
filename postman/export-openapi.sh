@@ -11,7 +11,7 @@ echo ""
 
 # Check if backend is running
 if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    echo "❌ Backend is not running!"
+    echo "Backend is not running!"
     echo ""
     echo "Please start the backend first:"
     echo "  cd backend"
@@ -20,7 +20,7 @@ if ! curl -s http://localhost:8000/health > /dev/null 2>&1; then
     exit 1
 fi
 
-echo "✓ Backend is running"
+echo "Backend is running"
 echo ""
 
 # Export OpenAPI spec
@@ -41,6 +41,6 @@ if [ $? -eq 0 ]; then
     echo "  Import → File → Select postman/openapi.json"
     echo ""
 else
-    echo "❌ Failed to export OpenAPI spec"
+    echo "Failed to export OpenAPI spec"
     exit 1
 fi
