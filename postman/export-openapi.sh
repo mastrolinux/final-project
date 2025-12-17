@@ -28,7 +28,7 @@ echo "Exporting OpenAPI specification..."
 curl -s http://localhost:8000/openapi.json -o openapi.json
 
 if [ $? -eq 0 ]; then
-    echo "✓ OpenAPI spec exported to: postman/openapi.json"
+    echo "[OK] OpenAPI spec exported to: postman/openapi.json"
     echo ""
     echo "Import into Postman:"
     echo "  1. Open Postman"
@@ -38,7 +38,7 @@ if [ $? -eq 0 ]; then
     echo "  5. Click 'Continue' and 'Import'"
     echo ""
     echo "Or use the file:"
-    echo "  Import → File → Select postman/openapi.json"
+    echo "  Import -> File -> Select postman/openapi.json"
     echo ""
 else
     echo "Failed to export OpenAPI spec"
