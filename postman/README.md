@@ -67,31 +67,31 @@ The collection is organized to mirror the pytest test classes:
 
 ```
 Identity Management API
-├── 01 - Health Checks
-│   ├── GET /health
-│   └── GET /health/detailed
-├── 02 - Create Context Profile
-│   ├── Create Professional Context (Success)
-│   ├── Create Social Context (Minimal Fields)
-│   ├── Create for Nonexistent User (404)
-│   └── Pseudonymous Cannot Create Legal (403)
-├── 03 - List User Contexts
-│   └── List User Contexts
-├── 04 - Get Resolved Profile (CRITICAL)
-│   ├── Resolve Context with Full Overrides
-│   ├── Resolve with Partial Overrides (Inheritance Test)
-│   ├── Get Resolved Partial Context (Validates Inheritance)
-│   └── Resolve Base Profile (No Context)
-├── 05 - Update Context Profile
-│   └── Update Context Success
-├── 06 - Delete Context Profile
-│   └── Delete Context Success
-└── 07 - End-to-End Scenarios
-    ├── Step 1: Create Professional Context
-    ├── Step 2: Create Social Context
-    ├── Step 3: Resolve Professional Context
-    ├── Step 4: Resolve Social Context
-    └── Step 5: Validate Context Isolation
++-- 01 - Health Checks
+|   +-- GET /health
+|   +-- GET /health/detailed
++-- 02 - Create Context Profile
+|   +-- Create Professional Context (Success)
+|   +-- Create Social Context (Minimal Fields)
+|   +-- Create for Nonexistent User (404)
+|   +-- Pseudonymous Cannot Create Legal (403)
++-- 03 - List User Contexts
+|   +-- List User Contexts
++-- 04 - Get Resolved Profile (CRITICAL)
+|   +-- Resolve Context with Full Overrides
+|   +-- Resolve with Partial Overrides (Inheritance Test)
+|   +-- Get Resolved Partial Context (Validates Inheritance)
+|   +-- Resolve Base Profile (No Context)
++-- 05 - Update Context Profile
+|   +-- Update Context Success
++-- 06 - Delete Context Profile
+|   +-- Delete Context Success
++-- 07 - End-to-End Scenarios
+    +-- Step 1: Create Professional Context
+    +-- Step 2: Create Social Context
+    +-- Step 3: Resolve Professional Context
+    +-- Step 4: Resolve Social Context
+    +-- Step 5: Validate Context Isolation
 ```
 
 ## Key Features
@@ -189,7 +189,7 @@ If you want to regenerate the collection from the live API:
    ```bash
    curl http://localhost:8000/openapi.json -o postman/openapi.json
    ```
-3. In Postman: Import → Link → `http://localhost:8000/openapi.json`
+3. In Postman: Import -> Link -> `http://localhost:8000/openapi.json`
 
 Note: The current collection was manually crafted to include comprehensive test scripts. Auto-imported collections will need test scripts added.
 
