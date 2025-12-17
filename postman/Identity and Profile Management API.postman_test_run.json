@@ -1,0 +1,700 @@
+{
+	"id": "493cf5f9-36fe-4415-9f61-ac6aeb8ada54",
+	"name": "Identity and Profile Management API",
+	"timestamp": "2025-12-17T11:48:00.220Z",
+	"collection_id": "1570737-3b08ed31-1bdc-4f1d-999c-c7b3728c66bc",
+	"folder_id": 0,
+	"environment_id": "1570737-16db803b-cdce-4ba2-b9fb-f52627912854",
+	"totalPass": 15,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-12-17T11:47:59.765Z",
+	"totalFail": 23,
+	"results": [
+		{
+			"id": "9b8b8d06-f926-4f98-ac38-a199d3742967",
+			"name": "GET /health",
+			"url": "http://localhost:8000/health",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response has status field": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has status field": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response has status field": true
+				}
+			]
+		},
+		{
+			"id": "84aa1f93-1cb3-40e9-ba4f-db9cf60febbb",
+			"name": "GET /health/detailed",
+			"url": "http://localhost:8000/health/detailed",
+			"time": 29,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response has components health data": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has components health data": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				29
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response has components health data": true
+				}
+			]
+		},
+		{
+			"id": "a120fa30-8ac4-4478-90f4-a8e0024de6ab",
+			"name": "Create Professional Context (Success)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 2,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Status code is 201 Created": false,
+				"Response has context data": false,
+				"Save context_id for subsequent requests": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201 Created": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has context data": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Save context_id for subsequent requests": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 201 Created": false,
+					"Response has context data": false,
+					"Save context_id for subsequent requests": true
+				}
+			]
+		},
+		{
+			"id": "38a130db-c143-46e5-92e0-3dc236ccaf84",
+			"name": "Create Social Context (Minimal Fields)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 2,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Status code is 201 Created": false,
+				"Minimal context created": false
+			},
+			"testPassFailCounts": {
+				"Status code is 201 Created": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Minimal context created": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 201 Created": false,
+					"Minimal context created": false
+				}
+			]
+		},
+		{
+			"id": "178eff75-6c23-40b2-9ab1-60d5e9b65b07",
+			"name": "Create for Nonexistent User (404)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000999/contexts",
+			"time": 13,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Status code is 404 Not Found": true
+			},
+			"testPassFailCounts": {
+				"Status code is 404 Not Found": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				13
+			],
+			"allTests": [
+				{
+					"Status code is 404 Not Found": true
+				}
+			]
+		},
+		{
+			"id": "d6e2a205-a3c7-4fff-83fc-a58b0ee4aa0c",
+			"name": "Pseudonymous Cannot Create Legal (403)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000003/contexts",
+			"time": 6,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"Status code is 403 Forbidden": true,
+				"Error message mentions restriction": true
+			},
+			"testPassFailCounts": {
+				"Status code is 403 Forbidden": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Error message mentions restriction": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"Status code is 403 Forbidden": true,
+					"Error message mentions restriction": true
+				}
+			]
+		},
+		{
+			"id": "ff7a7ae7-17ec-4c32-8233-1be395a1ee68",
+			"name": "List User Contexts",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 8,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200 OK": true,
+				"Response is an array": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200 OK": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				8
+			],
+			"allTests": [
+				{
+					"Status code is 200 OK": true,
+					"Response is an array": true
+				}
+			]
+		},
+		{
+			"id": "1c712372-2cbe-46af-aecc-921f0c6eea8f",
+			"name": "Resolve Context with Full Overrides",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts//resolved",
+			"time": 2,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Status code is 200 OK": false,
+				"Overrides are applied": false,
+				"Base profile fields preserved": false,
+				"Context metadata included": false,
+				"Identity names included": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200 OK": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Overrides are applied": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Base profile fields preserved": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Context metadata included": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Identity names included": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 200 OK": false,
+					"Overrides are applied": false,
+					"Base profile fields preserved": false,
+					"Context metadata included": false,
+					"Identity names included": false
+				}
+			]
+		},
+		{
+			"id": "5eed3331-e9a8-4542-a542-f1f080eefa7d",
+			"name": "Resolve with Partial Overrides (Inheritance Test)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 2,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Context created": false
+			},
+			"testPassFailCounts": {
+				"Context created": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Context created": false
+				}
+			]
+		},
+		{
+			"id": "c4233ee2-bc5a-45b6-8d4c-0b1f2d46e34f",
+			"name": "Get Resolved Partial Context (Validates Inheritance)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts//resolved",
+			"time": 2,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Status code is 200 OK": false,
+				"Email override is applied": false,
+				"Phone is inherited from base profile": false,
+				"Display name is not overridden (null)": false,
+				"Context metadata is included": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200 OK": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Email override is applied": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Phone is inherited from base profile": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Display name is not overridden (null)": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Context metadata is included": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 200 OK": false,
+					"Email override is applied": false,
+					"Phone is inherited from base profile": false,
+					"Display name is not overridden (null)": false,
+					"Context metadata is included": false
+				}
+			]
+		},
+		{
+			"id": "fc45d291-c8a7-43ef-b3f4-848957e56fed",
+			"name": "Resolve Base Profile (No Context)",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/resolved",
+			"time": 8,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200 OK": true,
+				"Base profile values returned": true,
+				"No context metadata": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200 OK": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Base profile values returned": {
+					"pass": 1,
+					"fail": 0
+				},
+				"No context metadata": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				8
+			],
+			"allTests": [
+				{
+					"Status code is 200 OK": true,
+					"Base profile values returned": true,
+					"No context metadata": true
+				}
+			]
+		},
+		{
+			"id": "d72278df-e402-4e46-b18f-add2d8ede9bb",
+			"name": "Update Context Success",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts/",
+			"time": 2,
+			"responseCode": {
+				"code": 405,
+				"name": "Method Not Allowed"
+			},
+			"tests": {
+				"Status code is 200 OK": false,
+				"Fields are updated": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200 OK": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Fields are updated": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 200 OK": false,
+					"Fields are updated": false
+				}
+			]
+		},
+		{
+			"id": "42dc46e5-e5e9-46bf-b448-5d824e01fb52",
+			"name": "Delete Context Success",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts/",
+			"time": 1,
+			"responseCode": {
+				"code": 405,
+				"name": "Method Not Allowed"
+			},
+			"tests": {
+				"Status code is 204 No Content": false
+			},
+			"testPassFailCounts": {
+				"Status code is 204 No Content": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				1
+			],
+			"allTests": [
+				{
+					"Status code is 204 No Content": false
+				}
+			]
+		},
+		{
+			"id": "30b6fc6b-dd8d-43dc-a703-b9242d382f99",
+			"name": "Step 1: Create Professional Context",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 2,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Professional context created": false
+			},
+			"testPassFailCounts": {
+				"Professional context created": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Professional context created": false
+				}
+			]
+		},
+		{
+			"id": "a93f0640-3fdd-48b5-b281-ff18f939b1e9",
+			"name": "Step 2: Create Social Context",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts",
+			"time": 2,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Social context created": false
+			},
+			"testPassFailCounts": {
+				"Social context created": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Social context created": false
+				}
+			]
+		},
+		{
+			"id": "165bbb69-397e-4426-a053-2b318a850bb7",
+			"name": "Step 3: Resolve Professional Context",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts//resolved",
+			"time": 2,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Professional context resolved": false
+			},
+			"testPassFailCounts": {
+				"Professional context resolved": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Professional context resolved": false
+				}
+			]
+		},
+		{
+			"id": "910ef4bd-ae20-4dc9-95a7-359a9e00bab1",
+			"name": "Step 4: Resolve Social Context",
+			"url": "http://localhost:8000/api/v1/profiles/00000000-0000-0000-0000-000000000001/contexts//resolved",
+			"time": 2,
+			"responseCode": {
+				"code": 404,
+				"name": "Not Found"
+			},
+			"tests": {
+				"Social context resolved": false
+			},
+			"testPassFailCounts": {
+				"Social context resolved": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Social context resolved": false
+				}
+			]
+		},
+		{
+			"id": "85d84cab-6503-4329-a068-3312c7f4a31e",
+			"name": "Step 5: Validate Context Isolation",
+			"url": "http://localhost:8000/health",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Professional and social contexts are isolated": false,
+				"Professional credentials hidden from social context": true,
+				"Personal wellness info hidden from professional context": true
+			},
+			"testPassFailCounts": {
+				"Professional and social contexts are isolated": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Professional credentials hidden from social context": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Personal wellness info hidden from professional context": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Professional and social contexts are isolated": false,
+					"Professional credentials hidden from social context": true,
+					"Personal wellness info hidden from professional context": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 93,
+	"collection": {
+		"requests": [
+			{
+				"id": "9b8b8d06-f926-4f98-ac38-a199d3742967",
+				"method": "GET"
+			},
+			{
+				"id": "84aa1f93-1cb3-40e9-ba4f-db9cf60febbb",
+				"method": "GET"
+			},
+			{
+				"id": "a120fa30-8ac4-4478-90f4-a8e0024de6ab",
+				"method": "POST"
+			},
+			{
+				"id": "38a130db-c143-46e5-92e0-3dc236ccaf84",
+				"method": "POST"
+			},
+			{
+				"id": "178eff75-6c23-40b2-9ab1-60d5e9b65b07",
+				"method": "POST"
+			},
+			{
+				"id": "d6e2a205-a3c7-4fff-83fc-a58b0ee4aa0c",
+				"method": "POST"
+			},
+			{
+				"id": "ff7a7ae7-17ec-4c32-8233-1be395a1ee68",
+				"method": "GET"
+			},
+			{
+				"id": "1c712372-2cbe-46af-aecc-921f0c6eea8f",
+				"method": "GET"
+			},
+			{
+				"id": "5eed3331-e9a8-4542-a542-f1f080eefa7d",
+				"method": "POST"
+			},
+			{
+				"id": "c4233ee2-bc5a-45b6-8d4c-0b1f2d46e34f",
+				"method": "GET"
+			},
+			{
+				"id": "fc45d291-c8a7-43ef-b3f4-848957e56fed",
+				"method": "GET"
+			},
+			{
+				"id": "d72278df-e402-4e46-b18f-add2d8ede9bb",
+				"method": "PATCH"
+			},
+			{
+				"id": "42dc46e5-e5e9-46bf-b448-5d824e01fb52",
+				"method": "DELETE"
+			},
+			{
+				"id": "30b6fc6b-dd8d-43dc-a703-b9242d382f99",
+				"method": "POST"
+			},
+			{
+				"id": "a93f0640-3fdd-48b5-b281-ff18f939b1e9",
+				"method": "POST"
+			},
+			{
+				"id": "165bbb69-397e-4426-a053-2b318a850bb7",
+				"method": "GET"
+			},
+			{
+				"id": "910ef4bd-ae20-4dc9-95a7-359a9e00bab1",
+				"method": "GET"
+			},
+			{
+				"id": "85d84cab-6503-4329-a068-3312c7f4a31e",
+				"method": "GET"
+			}
+		]
+	}
+}
