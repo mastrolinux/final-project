@@ -3,6 +3,8 @@
 -- Part of Identity and Profile Management API - Academic Thesis Project
 
 -- Clear existing data (for reset)
+-- Note: auth_users must be truncated first due to FK constraint to base_profiles
+TRUNCATE TABLE auth_users CASCADE;
 TRUNCATE TABLE identity_names CASCADE;
 TRUNCATE TABLE base_profiles CASCADE;
 
@@ -272,11 +274,101 @@ VALUES (
 -- accessing sensitive context types
 
 -- ============================================================================
+-- AUTHENTICATION USERS - Credentials for Auth System
+-- ============================================================================
+-- Creates auth_users entries matching the 5 base_profiles above
+-- Password hashes are FAKE placeholders - real Argon2id hashing in MAS-26 Auth Service
+-- Verification tokens are STUB values - real token generation in MAS-26
+
+INSERT INTO auth_users (
+    id, 
+    user_id, 
+    email, 
+    password_hash, 
+    is_email_verified, 
+    email_verified_at,
+    verification_token,
+    verification_token_expires_at,
+    password_changed_at
+) VALUES
+    -- 1. Sarah Chen - Email verified, verified account
+    (
+        '30000000-0000-0000-0000-000000000001',
+        '00000000-0000-0000-0000-000000000001',
+        'sarah.chen@example.com',
+        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_SARAH$FAKE_HASH_PLACEHOLDER',
+        true,  -- Email verified
+        '2024-10-15 10:00:00+00',  -- Verified timestamp
+        NULL,  -- No token needed (already verified)
+        NULL,
+        '2024-10-15 09:00:00+00'
+    ),
+    -- 2. Li Ming - Email NOT verified, unverified account with stub token
+    (
+        '30000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000002',
+        'li.ming@example.com',
+        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_LIMING$FAKE_HASH_PLACEHOLDER',
+        false,  -- Email NOT verified
+        NULL,
+        'stub-verification-token-li-ming-001',  -- Stub token for testing
+        '2026-12-31 23:59:59+00',  -- Far-future expiry for testing
+        '2024-11-01 12:00:00+00'
+    ),
+    -- 3. Alex - Email verified, pseudonymous account
+    (
+        '30000000-0000-0000-0000-000000000003',
+        '00000000-0000-0000-0000-000000000003',
+        'alex.anonymous@protonmail.com',
+        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_ALEX$FAKE_HASH_PLACEHOLDER',
+        true,  -- Email verified (privacy-focused users verify)
+        '2024-09-20 14:30:00+00',
+        NULL,
+        NULL,
+        '2024-09-20 14:00:00+00'
+    ),
+    -- 4. Sukarno - Email verified, verified account
+    (
+        '30000000-0000-0000-0000-000000000004',
+        '00000000-0000-0000-0000-000000000004',
+        'sukarno@example.id',
+        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_SUKARNO$FAKE_HASH_PLACEHOLDER',
+        true,  -- Email verified
+        '2024-08-10 08:00:00+00',
+        NULL,
+        NULL,
+        '2024-08-10 07:30:00+00'
+    ),
+    -- 5. Jordan Smith - Email verified, verified account
+    (
+        '30000000-0000-0000-0000-000000000005',
+        '00000000-0000-0000-0000-000000000005',
+        'jordan.smith@example.com',
+        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_JORDAN$FAKE_HASH_PLACEHOLDER',
+        true,  -- Email verified
+        '2024-07-15 16:45:00+00',
+        NULL,
+        NULL,
+        '2024-07-15 16:00:00+00'
+    );
+
+-- ============================================================================
 -- Verification queries (useful for checking seed data loaded correctly)
 -- ============================================================================
 -- SELECT COUNT(*) FROM base_profiles;      -- Should return 5
 -- SELECT COUNT(*) FROM identity_names;     -- Should return 12
 -- SELECT COUNT(*) FROM context_profiles;   -- Should return 5
+-- SELECT COUNT(*) FROM auth_users;         -- Should return 5
+
+-- Test auth_users to base_profiles relationship:
+-- SELECT 
+--   au.email,
+--   bp.primary_email,
+--   bp.account_type,
+--   au.is_email_verified,
+--   au.verification_token
+-- FROM auth_users au
+-- JOIN base_profiles bp ON au.user_id = bp.user_id;
 
 -- Test inheritance engine:
 -- SELECT 
