@@ -68,3 +68,7 @@ COMMENT ON COLUMN context_profiles.is_active IS 'Whether this context profile is
 -- Constraint: Pseudonymous accounts cannot create legal or healthcare contexts
 -- This will be enforced at the service layer for flexibility
 
+
+
+
+
