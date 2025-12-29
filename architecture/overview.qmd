@@ -176,7 +176,7 @@ This project implements **GDPR-inspired principles** as architectural best pract
 
 **Delegated to External Services:**
 
-- User authentication credentials storage -> Custom auth_users table (PostgreSQL)
+- User authentication credentials storage -> Custom auth_users table (PostgreSQL) **[IMPLEMENTED Dec 29, 2025]**
 - Password hashing -> Argon2id (Python passlib)
 - Social OAuth provider configuration -> Supabase config.toml (hybrid approach)
 - JWT token management -> Custom implementation (python-jose)

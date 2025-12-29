@@ -67,6 +67,58 @@ erDiagram
 - **is_deprecated**: Boolean - Marks names as deprecated (e.g., deadnames) to prevent display in public contexts
 - **visibility_level**: Enum (`public`, `private`, `historical_suppressed`) - Controls whether historical names appear in audit logs and API responses
 
+### Authentication Aggregate
+
+```{mermaid}
+erDiagram
+    AuthUsers ||--|| BaseProfile : "1:1 relationship"
+    
+    AuthUsers {
+        uuid id PK
+        uuid user_id FK "UNIQUE"
+        string email "UNIQUE for login"
+        string password_hash "Argon2id hashed"
+        boolean is_email_verified
+        timestamp email_verified_at
+        string verification_token
+        timestamp verification_token_expires_at
+        timestamp last_login_at
+        integer failed_login_attempts
+        timestamp locked_until
+        timestamp password_changed_at
+        string reset_token
+        timestamp reset_token_expires_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+    
+    BaseProfile {
+        uuid user_id PK
+        enum account_type
+        string primary_email
+        string primary_phone
+        timestamp created_at
+    }
+```
+
+**Implementation Status: COMPLETED (Dec 29, 2025)**
+
+**Key Features:**
+
+- **1:1 Relationship**: Each BaseProfile has exactly one AuthUsers record via unique foreign key
+- **Email Verification**: Complete flow with tokens, expiry tracking, and Mailpit integration
+- **Login Protection**: Failed attempt counters and account lockout for brute-force prevention
+- **Password Reset**: Token-based password reset workflow
+- **Soft Delete**: Supports 30-day grace period for account recovery
+
+**Field Notes:**
+
+- **password_hash**: Argon2id with parameters (m=65536, t=3, p=4) - implementation in MAS-26 Auth Service
+- **verification_token**: Sent via email (captured by Mailpit at http://127.0.0.1:54324 in local dev)
+- **locked_until**: Prevents login attempts until timestamp expires
+- **email**: Must match BaseProfile.primary_email for consistency
+
 ### Authorization Aggregate
 
 ```{mermaid}
@@ -703,7 +755,12 @@ PURGE (after retention period)
 PRIMARY KEY (user_id)
 UNIQUE (primary_email) WHERE deleted_at IS NULL
 
--- Context profiles
+-- Authentication users (IMPLEMENTED)
+PRIMARY KEY (id)
+UNIQUE (user_id)  -- 1:1 with base_profiles
+UNIQUE (email) WHERE deleted_at IS NULL
+
+-- Context profiles (IMPLEMENTED)
 PRIMARY KEY (id)
 UNIQUE (user_id, context_type, context_name)
 
@@ -728,6 +785,18 @@ CREATE INDEX idx_profiles_user ON base_profiles(user_id)
 
 CREATE INDEX idx_context_profiles_user ON context_profiles(user_id) 
   WHERE deleted_at IS NULL;
+
+-- Authentication indexes (IMPLEMENTED)
+CREATE INDEX idx_auth_users_email ON auth_users(email);
+CREATE INDEX idx_auth_users_user_id ON auth_users(user_id);
+CREATE INDEX idx_auth_users_verification_token ON auth_users(verification_token) 
+  WHERE verification_token IS NOT NULL;
+CREATE INDEX idx_auth_users_reset_token ON auth_users(reset_token) 
+  WHERE reset_token IS NOT NULL;
+CREATE INDEX idx_auth_users_locked ON auth_users(locked_until) 
+  WHERE locked_until IS NOT NULL;
+CREATE INDEX idx_auth_users_deleted ON auth_users(deleted_at) 
+  WHERE deleted_at IS NOT NULL;
 
 CREATE INDEX idx_guardian_relationships_guardian 
   ON guardian_relationships(guardian_user_id) 
