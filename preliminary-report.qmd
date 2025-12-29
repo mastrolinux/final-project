@@ -54,15 +54,15 @@ Every human identity system designer eventually discovers the same uncomfortable
 
 Contemporary identity management systems enforce a singular identity paradigm that fundamentally conflicts with how humans actually use identity across contexts, cultures, and lifecycles. This creates five interconnected problems.
 
-First, **human identity is performative and context-dependent**. People naturally present different facets depending on context: professional names at work, preferred names with friends, legal names with government, and pseudonyms for safety or exploration [@goffman1959presentation; @marwick2011tweet]. Yet systems enforce singular representations, creating context collapse with documented harms.
+First, human identity is performative and context-dependent. People naturally present different facets depending on context: professional names at work, preferred names with friends, legal names with government, and pseudonyms for safety or exploration [@goffman1959presentation; @marwick2011tweet]. Yet systems enforce singular representations, creating context collapse with documented harms.
 
-Second, **cultural naming diversity defies standardization**. Billions of people have names that do not fit Western "first name + last name" assumptions [@mckenzie2010falsehoods; @w3c2023personal]. Chinese surname-first, Arabic five-component names, Icelandic patronymics, Spanish double surnames, and South Indian initials are not edge cases - they represent how most of the world's population structures names.
+Second, cultural naming diversity defies standardization. Billions of people have names that do not fit Western "first name + last name" assumptions [@mckenzie2010falsehoods; @w3c2023personal]. Chinese surname-first, Arabic five-component names, Icelandic patronymics, Spanish double surnames, and South Indian initials are not edge cases - they represent how most of the world's population structures names.
 
-Third, **identity lifecycle includes legitimate changes**. Marriage, gender transition, professional development, and safety needs create valid reasons for name changes [@trevorproject2021]. Systems treating changes as exceptional errors cause systematic harm - transgender youth who can change legal names have significantly lower suicide attempt rates.
+Third, identity lifecycle includes legitimate changes. Marriage, gender transition, professional development, and safety needs create valid reasons for name changes [@trevorproject2021]. Systems treating changes as exceptional errors cause systematic harm - transgender youth who can change legal names have significantly lower suicide attempt rates.
 
-Fourth, **privacy requires context-aware disclosure**. Users need to present different information to different audiences (employers, family, social networks, healthcare providers, third-party applications), but current systems force universal disclosure or universal hiding with no context-aware middle ground.
+Fourth, privacy requires context-aware disclosure. Users need to present different information to different audiences (employers, family, social networks, healthcare providers, third-party applications), but current systems force universal disclosure or universal hiding with no context-aware middle ground.
 
-Fifth, **safety demands pseudonymity and separation**. Marginalized groups (transgender individuals, domestic abuse survivors, political dissidents, LGBTQ+ youth) require pseudonymity and context separation for safety [@haimson2016authenticself], yet real-name policies and singular identity enforcement systematically exclude and endanger them.
+Fifth, safety demands pseudonymity and separation. Marginalized groups (transgender individuals, domestic abuse survivors, political dissidents, LGBTQ+ youth) require pseudonymity and context separation for safety [@haimson2016authenticself], yet real-name policies and singular identity enforcement systematically exclude and endanger them.
 
 The measurable impact is substantial. 90% of enterprises experienced identity-related security incidents in 2024 [@idsa2024report], often because rigid systems drove users to insecure workarounds. 71% of young adults modify privacy settings to manage context collapse [@pew2010reputation].
 
@@ -94,7 +94,7 @@ The fundamental assumption underlying most identity systems, that names consist 
 
 Patrick McKenzie's influential 2010 blog post "Falsehoods Programmers Believe About Names" [@mckenzie2010falsehoods] catalogs over 40 incorrect assumptions that pervade identity system design. Among these falsehoods are the beliefs that people have exactly one canonical name, that names fit within a reasonable length, that names can be represented in ASCII characters, and that names remain constant throughout a person's life. McKenzie concludes with a notable observation: he has never encountered a computer system that handles names properly and doubts one exists anywhere.
 
-While this source is a blog post rather than peer-reviewed research, its credibility stems from extensive citation in technical literature for over fourteen years, documented examples from real systems, and alignment with subsequent academic and standards work. The post serves as a useful heuristic for identifying oversimplified assumptions in identity system design.
+While this source is a blog post, its extensive citation in technical literature over fourteen years and alignment with subsequent standards work establishes credibility for identifying oversimplified assumptions in identity system design.
 
 ### Standards-Based Guidance
 
@@ -122,7 +122,7 @@ Erving Goffman's *The Presentation of Self in Everyday Life* [@goffman1959presen
 
 This 1959 work predates digital technology but proves remarkably prescient for understanding contemporary identity challenges. Goffman observed that humans naturally maintain bounded social contexts: individuals are rarely simultaneously visible to coworkers, family members, romantic partners, and casual acquaintances. Each context calls forth different aspects of identity, and the boundaries between contexts enable authentic self-presentation within each domain.
 
-Published by Anchor Books and continuously in print for over sixty-five years, this work represents a foundational text in sociology with extensive peer-reviewed citations applied across human-computer interaction, communication studies, and identity management research.
+This foundational text in sociology has extensive peer-reviewed citations applied across human-computer interaction, communication studies, and identity management research.
 
 ### Digital Context and Social Media
 
@@ -327,6 +327,26 @@ gantt
     Final Submission            :crit, milestone, m4, 2026-03-24, 0d
 ```
 
+## Implementation Plan
+
+The project spans 24 weeks from October 2025 to March 2026, with backend development allocated 14 weeks across clearly scoped phases. Each phase delivers testable functionality enabling incremental validation. The feature prototype (Chapter 4) demonstrates Phase 2 completion ahead of schedule.
+
+### Development Phases
+
+Development proceeds through eight phases with defined deliverables. Phase 1 (December 19 - January 2) implements authentication and security, including Argon2id password hashing per NIST recommendations, JWT token generation with RS256 signing, registration and login endpoints, and Redis session management. Phase 2 (January 3-12) implements context profiles with the inheritance engine, multilingual name fallback, and temporal versioning. Phase 3 (January 13-26) builds the OAuth 2.1 authorization server with client registration, authorization code flow with mandatory PKCE, token issuance with scope and context binding, and consent management. Phase 4 (January 27 - February 9) adds guardian relationships, audit logging, and privacy features including data export and deletion with 30-day grace period.
+
+Phase 5 (February 10-23) develops the frontend demonstration using Vue.js, implementing profile management with multilingual names, context switching, OAuth visualization, and guardian dashboard. Phases 6-8 (February 24 - March 16) handle production deployment to Render.com and Supabase (Phase 6), testing including security scanning, load testing, and user testing with 5-10 participants measuring System Usability Scale scores (Phase 7), and refinement with code freeze on March 9 (Phase 8).
+
+### Development Methodology
+
+Test-driven development structures implementation, with tests written before code to ensure coverage, provide executable documentation, and enable refactoring. Current test coverage stands at 89% with all critical paths covered. Privacy by design principles informed by GDPR [@gdpr2016] guide decisions: data minimization constrains responses to requested scopes, processing basis is recorded for operations, and data export and deletion endpoints implement data subject rights. Defense in depth structures security with protections at network (TLS 1.3), authentication (Argon2id, JWT), authorization (RBAC, ABAC, scopes), application (input validation), and database (Row-Level Security) layers.
+
+### Risk Management and Feasibility
+
+Timeline slippage is mitigated through buffer time in the refinement phase and feature prioritization ensuring core functionality completes before enhancements. Technical complexity is addressed through test-driven development, spike solutions for uncertain areas (guardian relationships, PKCE validation), and comprehensive documentation. Production issues are mitigated through staging environment testing, rollback capability, health checks, and gradual rollout. User testing delays are addressed through early participant recruitment and clearly defined minimum viable scope.
+
+The project is feasible given completed foundational work: implemented database schema, established five-layer architecture, and 89% test coverage for profile operations. The technology stack (FastAPI, PostgreSQL, Redis) is proven and well-documented. Development environments enable rapid iteration. The most significant technical risk is OAuth 2.1 implementation complexity, mitigated by mid-project scheduling after authentication is proven, allocating 2 weeks, and planning spike solutions to validate PKCE implementation before full development.
+
 \newpage
 
 # Feature Prototype: Context-Dependent Identity {#sec-prototype}
@@ -452,78 +472,6 @@ Users can inadvertently create contexts with conflicting information exposing id
 ## Conclusion on Prototype
 
 The Context-Dependent Identity prototype successfully demonstrates feasibility of the thesis's core contribution. The inheritance engine implements Goffman's dramaturgical theory in production-ready architecture, preventing context collapse while maintaining a single source of truth. With 45 automated tests, zero linting errors, and RESTful conventions, the implementation fulfills the Week 10 requirement for demonstrating technical feasibility. Limitations discovered inform Phases 3 and 4 integration work.
-
-\newpage
-
-# Work Plan and Evaluation {#sec-workplan}
-
-**Note:** This chapter describes the original work plan. The feature prototype (Chapter 5) demonstrates that Phase 2 (Context Profiles) has been substantially completed ahead of schedule.
-
-## Timeline Overview
-
-The project spans 24 weeks (October 13, 2025 to March 24, 2026) with key milestones: preliminary design (December 18, 2025), production deployment (March 2, 2026), and final submission (March 24, 2026). Completed work includes pitch video, comprehensive research documented in the literature review, requirements analysis informed by user personas, system architecture design establishing five-layer structure, database schema with migrations for base profiles and identity names, and initial profile CRUD implementation achieving 89% test coverage.
-
-## Development Phases
-
-Phase 1 (December 19 - January 2) focuses on authentication and security. This phase implements the auth_users migration extending base profiles with authentication credentials, Argon2id password hashing following NIST recommendations, JWT token generation and validation with RS256 asymmetric signing, registration and login endpoints with comprehensive input validation, and Redis session management with configurable TTL values. Deliverables include functional authentication system, test coverage exceeding 85%, and security scan showing zero critical vulnerabilities.
-
-Phase 2 (January 3-12) implements context profiles. This phase creates the context_profiles migration with inheritance relationships, implements the inheritance engine resolving effective profiles from base and overrides, adds multilingual name fallback logic using Accept-Language headers with graceful degradation, and implements temporal versioning for point-in-time profile reconstruction. Deliverables include functional context resolution, multilingual name display, and comprehensive integration tests.
-
-Phase 3 (January 13-26) builds the OAuth 2.1 authorization server. This phase implements client registration with redirect URI validation, authorization code flow with mandatory PKCE preventing interception attacks, token issuance with scope and context binding, scope-based response filtering ensuring minimal disclosure, and consent management with withdrawal capabilities. Deliverables include functional OAuth flows, authorization UI, and third-party integration examples.
-
-Phase 4 (January 27 - February 9) adds guardian management and privacy features. This phase creates the guardian_relationships table with permissions schema, implements permission checking in service layer, adds comprehensive audit logging capturing all operations, implements data export in machine-readable JSON format, and implements data deletion with 30-day grace period. Deliverables include functional guardian features, audit trail, and privacy endpoints.
-
-Phase 5 (February 10-23) develops the frontend demonstration. This phase sets up Vue.js with Tailwind CSS, implements profile management interfaces showing multilingual names and context switching, creates OAuth visualization demonstrating scope-based filtering, and builds guardian dashboard with approval workflows. Deliverables include functional demonstration frontend and user documentation.
-
-Phases 6-8 (February 24 - March 16) handle deployment, testing, and refinement. Phase 6 deploys to Render.com and Supabase production infrastructure. Phase 7 conducts security testing against OWASP Top 10, load testing to verify performance targets, and user testing with 5-10 participants measuring task completion and SUS scores. Phase 8 addresses findings and implements refinements, with code freeze on March 9.
-
-## Development Methods
-
-Test-driven development structures the implementation process, with tests written before implementation code. This approach ensures comprehensive coverage, provides executable documentation of expected behavior, and enables confident refactoring. Current test coverage stands at 89% with all critical paths covered by integration tests.
-
-Privacy by design principles informed by GDPR [@gdpr2016] guide architectural decisions. Data minimization constrains OAuth responses to explicitly requested scopes. Processing basis is recorded for every data operation. Consent tracking enables users to view and withdraw authorizations. Data export and deletion endpoints implement data subject rights, though full legal compliance requires organizational processes beyond implementation scope.
-
-Defense in depth structures the security architecture, with protections at network (TLS 1.3), transport (HTTPS only), authentication (Argon2id, JWT), authorization (RBAC, ABAC, scopes), application (input validation, output encoding), and database (Row-Level Security) layers. This redundancy ensures that compromise of any single layer does not expose user data.
-
-## Risk Mitigation
-
-Timeline slippage is mitigated through buffer time allocated in the refinement phase (March 10-16) and feature prioritization ensuring core functionality completes before optional enhancements. Critical path items (authentication, profiles, OAuth, guardians) are scheduled early to identify blockers. Weekly progress reviews enable early detection of delays.
-
-Technical complexity is addressed through test-driven development ensuring incremental progress, spike solutions for uncertain technical areas (context inheritance, PKCE validation), and comprehensive documentation of design decisions. The five-layer architecture enables isolated testing of components before integration.
-
-Production issues are mitigated through staging environment testing before production deployment, rollback capability through version-controlled infrastructure, comprehensive health checks and monitoring, and gradual rollout starting with limited users. Deployment to Render.com provides automatic scaling and zero-downtime deployments.
-
-User testing delays are addressed through early participant recruitment (beginning February 1), clearly defined minimum viable testing scope (5 participants completing core tasks), and prepared testing materials (scripts, consent forms, observation protocols) enabling rapid execution when participants are available.
-
-## Feasibility Assessment
-
-The project is feasible given completed foundational work. The database schema is implemented and tested. The five-layer architecture is established. Profile CRUD operations achieve 89% test coverage. The technology stack (FastAPI, PostgreSQL, Redis) is proven and well-documented. Development environments (Docker Compose, Supabase local) enable rapid iteration.
-
-The timeline allocates 14 weeks to backend development with clearly scoped phases. Each phase delivers testable functionality enabling incremental progress validation. The frontend phase (2 weeks) focuses on demonstration rather than production-quality application, managing scope appropriately.
-
-The most significant technical risk is OAuth 2.1 implementation complexity. This is mitigated by scheduling OAuth work mid-project after authentication is proven, allocating 2 weeks (longest single phase), and planning spike solution to validate PKCE implementation before full development.
-
-## Evaluation Strategy
-
-The evaluation addresses five objectives: verification that the system meets functional requirements, validation of security and privacy controls, assessment of usability and user experience, measurement of performance against defined targets, and confirmation of deployment stability.
-
-### Technical Evaluation
-
-Quantitative metrics establish technical quality. Code coverage must exceed 80% as measured by pytest-cov across unit and integration tests. API response time at the 95th percentile must remain below 200ms under load testing with 100 concurrent requests. Error rate must remain below 0.1% during sustained operation over 24 hours. Security scanning using OWASP ZAP must identify zero critical vulnerabilities with any medium or high findings addressed before production deployment.
-
-Functional testing occurs at three levels. Unit tests verify services and repositories in isolation with mocked dependencies, validating business logic correctness. Integration tests exercise API endpoints end-to-end against a test database, validating request-response contracts. Security tests specifically target authentication bypass attempts, authorization boundary violations (users accessing other users' data), and input validation through fuzzing common attack vectors.
-
-### User Evaluation
-
-Task-based usability testing with 5-10 participants validates the user experience. Participants represent the four personas: privacy-focused professional, multilingual user, guardian, and vulnerable population member. Each participant completes defined tasks: creating a profile with multilingual name, creating a professional context profile overriding base profile fields, authorizing a third-party application with specific scopes and viewing the consent screen, viewing and revoking OAuth access through the user dashboard, and for guardian participants, approving an OAuth request for a minor.
-
-Measured outcomes include task completion rate (percentage of tasks completed successfully without intervention), time to complete each task (compared against baseline estimates), error count during task execution (incorrect clicks, navigation errors, confusion), and System Usability Scale score (standardized 10-question survey). A SUS score of 70 or above indicates "good" usability suitable for the target user population. Qualitative feedback is collected through think-aloud protocol during tasks and semi-structured interviews after task completion, identifying pain points and improvement opportunities.
-
-### Success Criteria
-
-The project succeeds if core features (profiles with multilingual names, context profiles with inheritance, OAuth 2.1 with PKCE, guardian relationships with permissions) are implemented and tested with coverage exceeding 80%, security testing identifies zero critical vulnerabilities with all medium/high findings addressed, 95th percentile response time remains under 200ms during load testing, SUS score reaches 70 or above indicating acceptable usability, and the production system remains accessible and stable for 7 days post-deployment.
-
-The evaluation explicitly does not constitute legal compliance certification for GDPR or CCPA, penetration testing by external security professionals (which requires specialized expertise and tools beyond academic scope), long-term scalability validation under production load patterns, or accessibility audit for WCAG compliance. These limitations are documented as future work requiring professional expertise and extended timelines beyond the academic project scope.
 
 \newpage
 
@@ -668,7 +616,6 @@ The system uses PostgreSQL JSONB fields to support flexible, culturally-sensitiv
 
 These flexible structures enable the system to accommodate global naming conventions including Spanish double surnames, Tamil patronymic initials, and Western given-family patterns, all stored within a single schema supporting hundreds of languages without structural assumptions.
 
-\newpage
 
 # References {-}
 
