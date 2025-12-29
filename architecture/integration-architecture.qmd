@@ -723,11 +723,24 @@ paths:
 
 ## External Service Integration
 
-### Email Service (SendGrid/Mailgun)
+### Email Service
+
+**Local Development (IMPLEMENTED):**
+
+- **Mailpit** (Supabase Inbucket replacement): Email testing server at http://127.0.0.1:54324
+- Captures all outgoing emails for testing without external delivery
+- Web UI for viewing captured emails
+- No configuration required for local development
+
+**Production (Future - SendGrid/Mailgun):**
+
+- Transactional email service integration via SMTP
+- Configuration in `supabase/config.toml` under `[auth.email.smtp]`
+- Supported providers: SendGrid, AWS SES, Postmark, Mailgun
 
 **Use Cases:**
 
-- Email verification
+- Email verification (infrastructure ready, email sending pending in MAS-26)
 - Password reset
 - Guardian verification
 - Consent notifications
@@ -738,7 +751,7 @@ paths:
 - Async queue-based
 - Retry with exponential backoff
 - Template management
-- Delivery tracking
+- Delivery tracking (production only)
 
 ### Monitoring Service (CloudWatch/Datadog)
 
