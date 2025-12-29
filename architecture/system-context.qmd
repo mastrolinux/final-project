@@ -90,11 +90,11 @@ graph TB
 
 **Delegated to External Services:**
 
-- User authentication credentials storage -> Custom auth_users table
-- Password hashing -> Argon2id (passlib library)
+- User authentication credentials storage -> Custom auth_users table **[IMPLEMENTED Dec 29, 2025]**
+- Password hashing -> Argon2id (passlib library) [Schema ready, implementation pending]
 - Social OAuth provider setup -> Supabase config.toml (hybrid approach)
 - Session management -> Redis
-- Email delivery infrastructure -> Transactional email service
+- Email delivery infrastructure -> Mailpit (local dev) / Transactional email service (production)
 - SMS delivery -> SMS gateway
 - File storage for photos -> Supabase Storage
 - CDN for static assets -> Hosting provider
