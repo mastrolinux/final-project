@@ -16,8 +16,63 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
+      # Suppress third-party library deprecation warnings
+      - PYTHONWARNINGS=ignore::DeprecationWarning
       # Override DATABASE_URL to connect to Supabase running on host
       - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      # Redis connection
+      - REDIS_URL=redis://redis:6379/0
+      # SMTP for Mailpit on host
+      - SMTP_HOST=host.docker.internal
+      - SMTP_PORT=54325
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Redis service for Celery message broker
+  redis:
+    image: redis:7-alpine
+    container_name: identity-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Celery worker for async email tasks
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identity-celery-worker
+    command: celery -A src.core.celery_app worker --loglevel=info -Q emails
+    volumes:
+      - ./src:/app/src
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      # Redis connection
+      - REDIS_URL=redis://redis:6379/0
+      # SMTP for Mailpit on host
+      - SMTP_HOST=host.docker.internal
+      - SMTP_PORT=54325
+      # JWT secret (required by config)
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-local-jwt-secret-for-celery-worker}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis_data:
 

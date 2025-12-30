@@ -47,6 +47,19 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
+    # JWT Configuration (Auth Service)
+    JWT_SECRET_KEY: str = "dev-jwt-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    
+    # SMTP Configuration (Email Sending)
+    SMTP_HOST: str = "127.0.0.1"
+    SMTP_PORT: int = 54325  # Mailpit SMTP port
+    SMTP_FROM_EMAIL: str = "noreply@identity-api.local"
+    SMTP_FROM_NAME: str = "Identity Management System"
+    
+    # Frontend URL (for email links)
+    FRONTEND_URL: str = "http://localhost:3000"
+    
     # CORS Configuration
     ALLOWED_ORIGINS_STR: str = "http://localhost:3000,http://localhost:8000"
     
@@ -54,7 +67,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = False
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
     
-    REDIS_ENABLED: bool = False
+    REDIS_ENABLED: bool = True
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_TTL_SECONDS: int = 300
     
