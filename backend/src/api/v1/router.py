@@ -37,9 +37,12 @@ api_router.include_router(profiles.router, tags=["Profiles"])
 from src.api.v1.endpoints import contexts
 api_router.include_router(contexts.router, tags=["Contexts"])
 
+# Include auth endpoints
+from src.api.v1.endpoints import auth
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+
 # Future endpoint routers will be included here:
-# from src.api.v1.endpoints import auth, oauth, guardians, gdpr
-# api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+# from src.api.v1.endpoints import oauth, guardians, gdpr
 # api_router.include_router(oauth.router, prefix="/oauth", tags=["OAuth 2.0"])
 # api_router.include_router(guardians.router, prefix="/guardians", tags=["Guardians"])
 # api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
