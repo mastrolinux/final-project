@@ -721,6 +721,93 @@ paths:
 - Code examples in Python, JavaScript, cURL
 
 
+## Testing Integration
+
+### Postman Integration Tests (IMPLEMENTED)
+
+The system includes comprehensive Postman collections that mirror pytest integration tests, enabling manual testing, API exploration, and stakeholder demonstrations.
+
+**Location**: `postman/` directory
+
+**Collection Structure:**
+
+1. **Health Checks** - Basic connectivity and component health
+2. **Create Context Profile** - Context creation with validation and business rules
+3. **List User Contexts** - Retrieve all contexts for a user
+4. **Get Resolved Profile (CRITICAL)** - Inheritance engine validation
+5. **Update Context Profile** - Modify existing contexts
+6. **Delete Context Profile** - Remove contexts with soft delete
+7. **End-to-End Scenarios** - Full workflow demonstrating context collapse prevention
+
+**Key Features:**
+
+- **Pre-Request Scripts**: Generate unique identifiers to prevent conflicts
+- **Test Scripts**: Mirror pytest assertions with JavaScript `pm.test()` functions
+- **Environment Variables**: Seed data UUIDs from `backend/supabase/seed.sql`
+- **Sequential Testing**: Folder ordering ensures proper test flow
+- **Newman CLI Support**: Command-line execution for CI/CD pipelines
+
+**Critical Test: Inheritance Engine Validation**
+
+The most important test validates the profile inheritance algorithm:
+
+```javascript
+// Create context with only email override
+POST /api/v1/profiles/{user_id}/contexts
+{ "email_override": "work@example.com" }
+
+// Get resolved profile
+GET /api/v1/profiles/{user_id}/contexts/{context_id}/resolved
+
+// Test assertions
+pm.test("Email is overridden", function() {
+    pm.expect(jsonData.email).to.eql("work@example.com");
+});
+
+pm.test("Phone is inherited from base profile", function() {
+    // This validates the inheritance engine!
+    pm.expect(jsonData.phone).to.eql(basePhone);
+});
+```
+
+**Running Postman Tests:**
+
+```bash
+# Manual: Import collection and environment into Postman UI
+# OR
+# Command-line with Newman
+cd postman
+npm install -g newman
+newman run thesis-api.postman_collection.json \
+  -e thesis-local.postman_environment.json \
+  --reporters cli,json
+```
+
+**Comparison: pytest vs Postman**
+
+| Aspect | pytest | Postman |
+|--------|--------|---------|
+| Purpose | Automated CI/CD | Manual testing, demos |
+| Environment | Docker container | Any environment |
+| Test Data | Fixtures | Environment variables |
+| Best For | Development, TDD | Exploration, stakeholders |
+
+**Integration with CI/CD:**
+
+```yaml
+# GitHub Actions example
+- name: Run Postman Tests
+  run: |
+    cd postman
+    newman run thesis-api.postman_collection.json \
+      -e thesis-local.postman_environment.json \
+      --reporters cli,json \
+      --reporter-json-export newman-results.json
+```
+
+See `postman/README.md` for comprehensive documentation.
+
+
 ## External Service Integration
 
 ### Email Service
@@ -729,8 +816,9 @@ paths:
 
 - **Mailpit** (Supabase Inbucket replacement): Email testing server at http://127.0.0.1:54324
 - Captures all outgoing emails for testing without external delivery
-- Web UI for viewing captured emails
+- Web UI for viewing captured emails with search and filtering
 - No configuration required for local development
+- **Testing workflow**: Register user -> Check Mailpit UI -> Click verification link
 
 **Production (Future - SendGrid/Mailgun):**
 
