@@ -72,6 +72,14 @@ else
     echo -e "${YELLOW}FastAPI service status unknown${NC}"
 fi
 
+# Check if Mailpit is accessible
+echo ""
+if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54324 | grep -q "200"; then
+    echo -e "${GREEN}Mailpit (Email Testing) is running${NC}"
+else
+    echo -e "${YELLOW}Warning: Mailpit may not be accessible at http://127.0.0.1:54324${NC}"
+fi
+
 echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${GREEN}Services Started Successfully!${NC}"
@@ -81,7 +89,13 @@ echo -e "${BLUE}Access the services at:${NC}"
 echo -e "  ${GREEN}FastAPI Application:${NC}  http://localhost:8000"
 echo -e "  ${GREEN}API Documentation:${NC}    http://localhost:8000/docs"
 echo -e "  ${GREEN}Supabase Studio:${NC}      http://127.0.0.1:54323"
+echo -e "  ${GREEN}Mailpit (Email UI):${NC}   http://127.0.0.1:54324"
 echo -e "  ${GREEN}Database Direct:${NC}      postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+echo ""
+echo -e "${BLUE}Testing:${NC}"
+echo -e "  ${GREEN}Health Check:${NC}         curl http://localhost:8000/health"
+echo -e "  ${GREEN}Check Emails:${NC}         open http://127.0.0.1:54324"
+echo -e "  ${GREEN}Run Postman Tests:${NC}    cd ../postman && newman run thesis-api.postman_collection.json -e thesis-local.postman_environment.json"
 echo ""
 echo -e "${YELLOW}To view logs:${NC}      ./scripts/status.sh"
 echo -e "${YELLOW}To stop services:${NC}  ./scripts/stop.sh"

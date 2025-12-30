@@ -292,8 +292,38 @@ Both collection and environment files are version controlled. When making change
    git commit -m "Update Postman collection: add new test scenarios"
    ```
 
+## New Documentation
+
+### Step-by-Step Testing Guide (NEW)
+
+**File**: `TESTING-GUIDE.md`
+
+Comprehensive step-by-step manual testing guide including:
+- Detailed instructions for each test scenario
+- Expected requests and responses
+- Email verification testing with Mailpit
+- Database verification queries
+- Troubleshooting common issues
+
+**Perfect for**: Manual testing, thesis demonstrations, stakeholder presentations
+
+### Quick Test Commands (NEW)
+
+**File**: `QUICK-TEST-COMMANDS.md`
+
+Newman CLI reference for running tests from command line:
+- Individual folder execution
+- Complete test suite runs
+- Database verification commands
+- Mailpit API usage
+- CI/CD integration examples
+
+**Perfect for**: Automated testing, quick verification, CI/CD pipelines
+
 ## Further Reading
 
+- **`TESTING-GUIDE.md`** - Step-by-step manual testing with email verification
+- **`QUICK-TEST-COMMANDS.md`** - Newman CLI commands and automation
 - [Postman Documentation](https://learning.postman.com/docs/getting-started/introduction/)
 - [Writing Tests in Postman](https://learning.postman.com/docs/writing-scripts/test-scripts/)
 - [Newman CLI Documentation](https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/)

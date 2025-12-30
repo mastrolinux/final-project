@@ -176,6 +176,36 @@ Quantitative metrics establish technical quality. Code coverage must exceed 80% 
 
 Functional testing occurs at three levels. Unit tests verify services and repositories in isolation with mocked dependencies. Integration tests exercise API endpoints end-to-end against a test database. Security tests specifically target authentication bypass attempts, authorization boundary violations, and input validation through fuzzing.
 
+## Integration Testing (IMPLEMENTED)
+
+The system includes comprehensive integration testing at two levels:
+
+**Automated Testing (pytest)**:
+- Unit tests for services and repositories
+- Integration tests for API endpoints
+- 89% code coverage
+- Test data via fixtures in `backend/tests/conftest.py`
+
+**Manual Testing (Postman)**:
+- 20+ requests organized in 7 folders
+- Mirrors pytest test scenarios
+- Pre-request scripts for unique test data
+- Test scripts with JavaScript assertions
+- Newman CLI support for CI/CD integration
+
+**Key Test Scenarios**:
+1. Profile inheritance engine validation
+2. Context isolation (context collapse prevention)
+3. Business rule enforcement (pseudonymous restrictions)
+4. End-to-end workflows demonstrating thesis contributions
+
+**Email Testing Infrastructure**:
+- Mailpit at http://127.0.0.1:54324 captures all test emails
+- Web UI for viewing verification emails, password resets, notifications
+- No external email service required for local development
+
+See `postman/TESTING-GUIDE.md` for step-by-step manual testing instructions with email verification examples.
+
 ## User Evaluation
 
 Task-based usability testing with 5-10 participants validates the user experience. Participants complete defined tasks: creating a profile with multilingual name, creating a professional context profile, authorizing a third-party application with specific scopes, viewing and revoking OAuth access, and for guardian participants, approving an OAuth request for a minor.
