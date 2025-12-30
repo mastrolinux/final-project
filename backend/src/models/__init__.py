@@ -6,6 +6,7 @@ Defines database entities and their relationships.
 """
 
 from src.models.profile import BaseProfile, IdentityName
+from src.models.auth import AuthUser
 
-__all__ = ["BaseProfile", "IdentityName"]
+__all__ = ["BaseProfile", "IdentityName", "AuthUser"]
 
