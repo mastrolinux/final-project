@@ -794,6 +794,344 @@
           ]
         }
       ]
+    },
+    {
+      "name": "08 - Authentication",
+      "item": [
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\",\n  \"preferred_name\": \"Test User\",\n  \"account_type\": \"unverified\",\n  \"preferred_language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique email to prevent conflicts",
+                  "const timestamp = Date.now();",
+                  "const testEmail = `testuser${timestamp}@example.com`;",
+                  "",
+                  "pm.collectionVariables.set(\"test_email\", testEmail);",
+                  "pm.collectionVariables.set(\"test_password\", \"SecurePass123!\");",
+                  "",
+                  "console.log(`Registering user: ${testEmail}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has user_id\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"user_id\");",
+                  "    pm.collectionVariables.set(\"registered_user_id\", jsonData.user_id);",
+                  "    console.log(`Registered user ID: ${jsonData.user_id}`);",
+                  "});",
+                  "",
+                  "pm.test(\"Email is not verified yet\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.is_email_verified).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test(\"Response has verification message\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"verify\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Duplicate Email (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"DifferentPass123!\",\n  \"preferred_name\": \"Duplicate User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test(\"Error mentions already registered\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail.toLowerCase()).to.include(\"already\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login with Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has JWT tokens\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"access_token\");",
+                  "    pm.expect(jsonData).to.have.property(\"refresh_token\");",
+                  "    ",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    ",
+                  "    console.log(\"JWT tokens saved to collection variables\");",
+                  "});",
+                  "",
+                  "pm.test(\"Token type is bearer\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.token_type).to.eql(\"bearer\");",
+                  "});",
+                  "",
+                  "pm.test(\"Expires in 1 hour (3600s)\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.expires_in).to.eql(3600);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Invalid Credentials (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent@example.com\",\n  \"password\": \"WrongPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error mentions invalid credentials\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail.toLowerCase()).to.include(\"invalid\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/request-reset",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "request-reset"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success message\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"reset link\");",
+                  "});",
+                  "",
+                  "console.log(\"Check Mailpit at http://127.0.0.1:54324 for reset email\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/resend-verification",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "resend-verification"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success message\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"Verification email sent\");",
+                  "});",
+                  "",
+                  "console.log(\"Check Mailpit at http://127.0.0.1:54324 for verification email\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "refresh"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has new tokens\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"access_token\");",
+                  "    pm.expect(jsonData).to.have.property(\"refresh_token\");",
+                  "    ",
+                  "    // Update stored tokens",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    ",
+                  "    console.log(\"New tokens saved (old token invalidated)\");",
+                  "});",
+                  "",
+                  "pm.test(\"Token type is bearer\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.token_type).to.eql(\"bearer\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -839,6 +1177,34 @@
     },
     {
       "key": "social_bio",
+      "value": ""
+    },
+    {
+      "key": "test_email",
+      "value": ""
+    },
+    {
+      "key": "test_password",
+      "value": "SecurePass123!"
+    },
+    {
+      "key": "registered_user_id",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "verification_token",
+      "value": ""
+    },
+    {
+      "key": "reset_token",
       "value": ""
     }
   ]

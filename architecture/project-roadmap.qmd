@@ -117,21 +117,24 @@ gantt
 | auth_users Table + Migration | Dec 21 | Dec 29 | **COMPLETED** (Dec 29) | 8 days |
 | Auth Service Implementation | Dec 23 | Dec 29 | **COMPLETED** (Dec 30) | 6 days |
 | Auth Endpoints (register/login/logout) | Dec 27 | Dec 31 | **COMPLETED** (Dec 30) | 4 days |
+| Refresh Token Rotation | Dec 30 | Dec 30 | **COMPLETED** (Dec 30) | 1 day |
 | JWT Middleware | Dec 29 | Jan 1 | **IN PROGRESS** (50%) | 3 days |
-| Auth Tests (TDD) | Dec 19 | Jan 2 | **COMPLETED** (40 tests, 100% pass) | ongoing |
+| Auth Tests (TDD) | Dec 19 | Jan 2 | **COMPLETED** (71 tests, 100% pass) | ongoing |
 
 **Security Design Decisions:**
 
 - Password hashing: Argon2id (memory-hard, GPU-resistant)
-- JWT signing: RS256 for production, HS256 for development
-- Token lifecycle: Short-lived access tokens (15min), long-lived refresh tokens (7d)
+- JWT signing: HS256 for development, RS256 planned for production
+- Token lifecycle: Access tokens (1 hour), refresh tokens (30 days) with rotation
 - PKCE: Mandatory for all OAuth flows
+- Refresh token rotation: Redis-based blacklist with fail-closed security
 
 **Completed Implementations:**
 
 - **auth_users Table (Dec 29, 2025)**: Complete authentication credentials storage with 1:1 relationship to base_profiles. Includes email verification, login protection, password reset, and soft delete support. Tested with 5 sample users and Mailpit email testing integration.
-- **Auth Service (Dec 30, 2025)**: Full business logic for registration, login, email verification, password reset. Argon2id password hashing (NIST parameters), JWT HS256 tokens (1h access, 30d refresh), Celery async email queue, 40 tests with 100% pass rate.
-- **Auth Endpoints (Dec 30, 2025)**: 6 REST endpoints implemented (register, login, verify-email, request-reset, reset-password, resend-verification). Complete OpenAPI documentation, input validation, security best practices.
+- **Auth Service (Dec 30, 2025)**: Full business logic for registration, login, email verification, password reset, token refresh. Argon2id password hashing (NIST parameters), JWT HS256 tokens (1h access, 30d refresh), Celery async email queue, 71 tests with 100% pass rate.
+- **Auth Endpoints (Dec 30, 2025)**: 7 REST endpoints implemented (register, login, verify-email, request-reset, reset-password, resend-verification, refresh). Complete OpenAPI documentation, input validation, security best practices.
+- **Refresh Token Rotation (Dec 30, 2025)**: Redis-based token blacklist with fail-closed security. Old tokens blacklisted before new tokens issued. Account status validation on each refresh. 503 if Redis unavailable.
 
 ## Phase 2: Context Profiles (Jan 3 - Jan 12, 2026)
 

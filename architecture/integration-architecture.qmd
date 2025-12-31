@@ -89,9 +89,45 @@ grant_type=authorization_code
 **Compliance verification:**
 
 - PKCE enforcement for all clients
-- Refresh token rotation implemented
+- Refresh token rotation implemented with Redis blacklist (Dec 30, 2025)
 - Insecure grant types disabled
 - Security best practices from OAuth 2.1 draft implemented
+
+### User Authentication Endpoints (Custom JWT)
+
+**Implementation Status: COMPLETED (Dec 30, 2025)**
+
+The system provides dedicated authentication endpoints separate from OAuth authorization endpoints. These handle user registration, login, and token management.
+
+**Endpoints:**
+```
+POST /api/v1/auth/register         - Create new user account
+POST /api/v1/auth/login            - Authenticate and get JWT tokens
+POST /api/v1/auth/verify-email     - Verify email with token
+POST /api/v1/auth/request-reset    - Request password reset email
+POST /api/v1/auth/reset-password   - Reset password with token
+POST /api/v1/auth/resend-verification - Resend email verification
+POST /api/v1/auth/refresh          - Exchange refresh token for new tokens
+```
+
+**Token Refresh with Rotation:**
+
+The `/api/v1/auth/refresh` endpoint implements refresh token rotation as required by OAuth 2.1 best practices:
+
+1. Client sends current refresh token
+2. Server validates token signature and type
+3. Server checks JTI against Redis blacklist
+4. Server validates user account status (not locked/deleted)
+5. Server blacklists old refresh token JTI
+6. Server issues new access token (1 hour) and refresh token (30 days)
+7. Client receives new token pair
+
+**Security Model:**
+
+- **Fail-Closed**: If Redis is unavailable, returns 503 (not 401)
+- **Token Rotation**: Each refresh invalidates the previous token
+- **Theft Detection**: Reusing a rotated token indicates potential compromise
+- **Account Validation**: Locked/deleted accounts cannot refresh tokens
 
 
 ### OpenID Connect Core 1.0 - Substantial Compliance
