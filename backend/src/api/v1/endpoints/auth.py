@@ -17,8 +17,10 @@ from src.schemas.auth import (
     VerifyEmailRequest, VerifyEmailResponse,
     RequestPasswordResetRequest, RequestPasswordResetResponse,
     ResetPasswordRequest, ResetPasswordResponse,
-    ResendVerificationRequest, ResendVerificationResponse
+    ResendVerificationRequest, ResendVerificationResponse,
+    RefreshTokenRequest, RefreshTokenResponse
 )
+from src.core.redis_client import TokenBlacklist, get_blacklist
 
 
 router = APIRouter()
@@ -434,4 +436,112 @@ def resend_verification(
     )
 
 
+def get_token_blacklist() -> TokenBlacklist:
+    """
+    Dependency to get TokenBlacklist singleton instance.
+
+    Creates Redis connection on first call if Redis is enabled.
+
+    Returns:
+        TokenBlacklist singleton instance
+
+    Raises:
+        HTTPException 503: If Redis is unavailable or disabled
+    """
+    try:
+        return get_blacklist()
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Token refresh service temporarily unavailable"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Token refresh service temporarily unavailable"
+        )
+
+
+@router.post(
+    "/refresh",
+    response_model=RefreshTokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Refresh Access Token",
+    description="Exchange valid refresh token for new access and refresh tokens"
+)
+def refresh_token(
+    request: RefreshTokenRequest,
+    service: AuthService = Depends(get_auth_service),
+    blacklist: TokenBlacklist = Depends(get_token_blacklist)
+):
+    """
+    Refresh Access Token
+
+    Exchanges a valid refresh token for new access and refresh tokens.
+    Implements refresh token rotation: the old refresh token is invalidated.
+
+    **Process:**
+    1. Validates refresh token signature and expiry
+    2. Checks token has not been revoked (blacklisted)
+    3. Verifies user account is active (not locked or deleted)
+    4. Invalidates old refresh token (adds to blacklist)
+    5. Issues new access token (1 hour) and refresh token (30 days)
+
+    **Token Rotation:**
+    Each refresh operation invalidates the old refresh token and issues a new one.
+    This limits the damage from token theft: a stolen token can only be used once.
+
+    **Security:**
+    - Refresh tokens are single-use (rotation)
+    - Reusing an old refresh token indicates potential token theft
+    - Account status validated on each refresh
+    - Redis blacklist ensures immediate token invalidation
+
+    **Example Request:**
+    ```json
+    {
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+    ```
+
+    **Errors:**
+    - 401: Invalid, expired, or revoked token
+    - 403: Account locked or deleted
+    - 503: Token blacklist service unavailable
+    """
+    success, error_code, data = service.refresh_access_token(
+        refresh_token=request.refresh_token,
+        blacklist=blacklist
+    )
+
+    if not success:
+        # Map error codes to HTTP status codes
+        # Use generic messages for 401 to prevent token enumeration
+        if error_code in ("INVALID_TOKEN", "REVOKED_TOKEN", "USER_NOT_FOUND"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token"
+            )
+        elif error_code == "ACCOUNT_LOCKED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account temporarily locked"
+            )
+        elif error_code == "ACCOUNT_DELETED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account has been deactivated"
+            )
+        elif error_code == "SERVICE_UNAVAILABLE":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Token refresh service temporarily unavailable"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Token refresh failed"
+            )
+
+    return RefreshTokenResponse(**data)
 
