@@ -272,7 +272,7 @@ class ResendVerificationRequest(BaseModel):
 class ResendVerificationResponse(BaseModel):
     """Resend verification response."""
     message: str = Field(..., description="Success message")
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [{
@@ -282,4 +282,60 @@ class ResendVerificationResponse(BaseModel):
     )
 
 
+class RefreshTokenRequest(BaseModel):
+    """
+    Refresh token request schema.
+
+    Used to exchange a valid refresh token for new access and refresh tokens.
+    Implements refresh token rotation for enhanced security.
+    """
+    refresh_token: str = Field(
+        ...,
+        min_length=50,
+        description="JWT refresh token obtained from login or previous refresh"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ..."
+            }]
+        }
+    )
+
+
+class RefreshTokenResponse(BaseModel):
+    """
+    Refresh token response with new tokens.
+
+    Returns new access and refresh tokens. The old refresh token is
+    invalidated (blacklisted) to implement token rotation.
+    """
+    access_token: str = Field(
+        ...,
+        description="New JWT access token (1 hour expiry)"
+    )
+    refresh_token: str = Field(
+        ...,
+        description="New JWT refresh token (30 days expiry)"
+    )
+    token_type: str = Field(
+        default="bearer",
+        description="Token type (always 'bearer')"
+    )
+    expires_in: int = Field(
+        ...,
+        description="Access token expiry in seconds (3600 = 1 hour)"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ...",
+                "token_type": "bearer",
+                "expires_in": 3600
+            }]
+        }
+    )
 

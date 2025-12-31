@@ -31,6 +31,7 @@ def send_verification_email(self, email: str, token: str, user_name: str):
     """
     try:
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        api_verify_url = f"{settings.API_BASE_URL}/api/v1/auth/verify-email"
         
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Verify your email address"
@@ -45,6 +46,13 @@ def send_verification_email(self, email: str, token: str, user_name: str):
         {verification_url}
         
         This link expires in 24 hours.
+        
+        --- API Testing (Development) ---
+        Token: {token}
+        
+        curl -X POST {api_verify_url} \\
+          -H "Content-Type: application/json" \\
+          -d '{{"token": "{token}"}}'
         
         If you didn't create this account, please ignore this email.
         
@@ -73,7 +81,18 @@ def send_verification_email(self, email: str, token: str, user_name: str):
               <p style="color: #666; font-size: 14px;">
                 This link expires in 24 hours.
               </p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="color: #475569; font-size: 12px; margin: 0 0 10px 0;">
+                  <strong>API Testing (Development Only)</strong>
+                </p>
+                <p style="color: #64748b; font-size: 11px; margin: 0 0 5px 0;">
+                  Token: <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">{token}</code>
+                </p>
+                <p style="color: #64748b; font-size: 11px; margin: 0;">
+                  API: <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">{api_verify_url}</code>
+                </p>
+              </div>
               <p style="color: #999; font-size: 12px;">
                 If you didn't create this account, please ignore this email.
               </p>
@@ -115,6 +134,7 @@ def send_password_reset_email(self, email: str, token: str):
     """
     try:
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        api_reset_url = f"{settings.API_BASE_URL}/api/v1/auth/reset-password"
         
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Reset your password"
@@ -129,6 +149,13 @@ def send_password_reset_email(self, email: str, token: str):
         {reset_url}
         
         This link expires in 1 hour.
+        
+        --- API Testing (Development) ---
+        Token: {token}
+        
+        curl -X POST {api_reset_url} \\
+          -H "Content-Type: application/json" \\
+          -d '{{"token": "{token}", "new_password": "YourNewPassword123!"}}'
         
         If you didn't request this, please ignore this email. Your password will remain unchanged.
         
@@ -157,7 +184,18 @@ def send_password_reset_email(self, email: str, token: str):
               <p style="color: #666; font-size: 14px;">
                 This link expires in 1 hour.
               </p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="color: #991b1b; font-size: 12px; margin: 0 0 10px 0;">
+                  <strong>API Testing (Development Only)</strong>
+                </p>
+                <p style="color: #b91c1c; font-size: 11px; margin: 0 0 5px 0;">
+                  Token: <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{token}</code>
+                </p>
+                <p style="color: #b91c1c; font-size: 11px; margin: 0;">
+                  API: <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{api_reset_url}</code>
+                </p>
+              </div>
               <p style="color: #999; font-size: 12px;">
                 If you didn't request this, please ignore this email. Your password will remain unchanged.
               </p>
