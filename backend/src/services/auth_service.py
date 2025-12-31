@@ -12,11 +12,12 @@ import secrets
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.core.security import (
-    hash_password, 
-    verify_password, 
+    hash_password,
+    verify_password,
     validate_password_strength,
-    create_access_token, 
-    create_refresh_token
+    create_access_token,
+    create_refresh_token,
+    verify_token
 )
 from src.tasks.email_tasks import send_verification_email, send_password_reset_email
 
@@ -302,6 +303,99 @@ class AuthService:
         
         # Send verification email asynchronously
         send_verification_email.delay(email, verification_token, display_name)
-        
+
         return True, None
+
+    def refresh_access_token(
+        self,
+        refresh_token: str,
+        blacklist: "TokenBlacklist"
+    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        """
+        Exchange valid refresh token for new access and refresh tokens.
+
+        Implements refresh token rotation: the old refresh token is blacklisted
+        and new tokens are issued. This limits the impact of token theft.
+
+        Process:
+            1. Verify refresh token signature and type
+            2. Check JTI against Redis blacklist
+            3. Get user from database, validate account status
+            4. Blacklist old token JTI (before issuing new tokens)
+            5. Generate new access + refresh tokens
+
+        Args:
+            refresh_token: JWT refresh token from client
+            blacklist: TokenBlacklist instance for rotation
+
+        Returns:
+            Tuple of (success, error_code, token_data)
+            token_data contains: access_token, refresh_token, token_type, expires_in
+
+        Error codes:
+            INVALID_TOKEN: Signature invalid, expired, or wrong type
+            REVOKED_TOKEN: Token was previously used (blacklisted)
+            USER_NOT_FOUND: User ID from token not in database
+            ACCOUNT_LOCKED: Account temporarily locked
+            ACCOUNT_DELETED: Account soft deleted
+            SERVICE_UNAVAILABLE: Redis blacklist unavailable
+        """
+        from redis.exceptions import ConnectionError as RedisConnectionError
+
+        # Step 1: Verify refresh token signature and type
+        token_data = verify_token(refresh_token, token_type="refresh")
+        if token_data is None:
+            return False, "INVALID_TOKEN", None
+
+        # Step 2: Check if token is blacklisted (revoked)
+        try:
+            if blacklist.is_blacklisted(token_data.jti):
+                return False, "REVOKED_TOKEN", None
+        except RedisConnectionError:
+            return False, "SERVICE_UNAVAILABLE", None
+
+        # Step 3: Get user from database
+        auth_user = self.auth_repo.get_by_user_id(token_data.user_id)
+        if auth_user is None:
+            return False, "USER_NOT_FOUND", None
+
+        # Step 4: Validate account status
+        if auth_user.deleted_at is not None:
+            return False, "ACCOUNT_DELETED", None
+
+        if auth_user.is_locked():
+            return False, "ACCOUNT_LOCKED", None
+
+        # Step 5: Blacklist old token BEFORE issuing new tokens
+        # Calculate TTL: use remaining time until token expiry
+        now = datetime.now(timezone.utc)
+        token_exp = token_data.exp
+        if token_exp.tzinfo is None:
+            token_exp = token_exp.replace(tzinfo=timezone.utc)
+
+        remaining_ttl = int((token_exp - now).total_seconds())
+        if remaining_ttl > 0:
+            try:
+                blacklist.blacklist_token(token_data.jti, remaining_ttl)
+            except RedisConnectionError:
+                return False, "SERVICE_UNAVAILABLE", None
+
+        # Step 6: Get account type from base_profiles
+        base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
+        account_type = base_profile.account_type.value if base_profile else "unverified"
+
+        # Step 7: Generate new tokens
+        new_access_token = create_access_token(
+            str(auth_user.user_id),
+            auth_user.email,
+            account_type
+        )
+        new_refresh_token = create_refresh_token(str(auth_user.user_id))
+
+        return True, None, {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer",
+            "expires_in": 3600  # 1 hour
+        }
 

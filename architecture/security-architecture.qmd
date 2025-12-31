@@ -93,38 +93,61 @@ The system uses **custom JWT-based authentication** with full control over token
 **Implementation Status:**
 
 - **auth_users Table**: COMPLETED (Dec 29, 2025) - Database schema with 1:1 relationship to base_profiles
-- **Email Verification**: Infrastructure ready (Mailpit at http://127.0.0.1:54324 for local testing)
-- **Password Hashing**: Schema ready, Argon2id implementation pending in MAS-26 Auth Service
-- **JWT Tokens**: Pending implementation in MAS-27 Auth Endpoints
+- **Email Verification**: COMPLETED (Dec 30, 2025) - Celery async tasks with Mailpit integration
+- **Password Hashing**: COMPLETED (Dec 30, 2025) - Argon2id (m=65536, t=3, p=4) via passlib
+- **JWT Tokens**: COMPLETED (Dec 30, 2025) - Access tokens (1h) and refresh tokens (30d) with HS256
+- **Refresh Token Rotation**: COMPLETED (Dec 30, 2025) - Redis-based blacklist with fail-closed security
 
 ```
 User Authentication Flow (Password-Based):
    |
    |-> POST /api/v1/auth/login
-   |   |-> Validate credentials
-   |   |-> Verify password with Argon2id
-   |   |-> Check account status
+   |   |-> Validate credentials against auth_users table
+   |   |-> Verify password with Argon2id (constant-time)
+   |   |-> Check account status (locked? deleted?)
+   |   |-> Reset failed_login_attempts on success
    |
    |-> Custom Auth Service Issues JWT
-   |   |-> Access token (15 minutes expiry)
-   |   |-> Refresh token (7 days expiry)
-   |   |-> Store session in Redis
+   |   |-> Access token (1 hour expiry)
+   |   |-> Refresh token (30 days expiry)
+   |   |-> Tokens signed with HS256 algorithm
    |
    |-> Access Token Contains:
-   |   |-> sub (user_id from auth_users.id)
+   |   |-> sub (user_id from auth_users.user_id)
    |   |-> email
    |   |-> account_type (verified/unverified/pseudonymous)
-   |   |-> roles [] (for RBAC)
+   |   |-> type: "access"
    |   |-> iat (issued at)
    |   |-> exp (expiration)
-   |   |-> jti (unique token ID)
+   |   |-> jti (unique token ID for blacklist)
+   |
+   |-> Refresh Token Contains:
+   |   |-> sub (user_id)
+   |   |-> type: "refresh"
+   |   |-> iat, exp, jti
    |
    +-> API validates token on each request
-       |-> Verify signature (HS256 or RS256)
+       |-> Verify signature (HS256)
        |-> Check expiration
-       |-> Validate against session store (Redis)
        |-> Set PostgreSQL RLS context
        +-> Extract user context for authorization
+
+Token Refresh Flow (Rotation with Blacklist):
+   |
+   |-> POST /api/v1/auth/refresh
+   |   |-> Verify refresh token signature and type
+   |   |-> Check JTI against Redis blacklist
+   |   |-> Validate user account status
+   |
+   |-> If valid:
+   |   |-> Blacklist old refresh token JTI (TTL = remaining expiry)
+   |   |-> Issue new access token (1 hour)
+   |   |-> Issue new refresh token (30 days)
+   |
+   +-> Fail-Closed Security:
+       |-> Redis unavailable -> 503 Service Unavailable
+       |-> Revoked token -> 401 Unauthorized
+       +-> Account locked/deleted -> 403 Forbidden
 ```
 
 **auth_users Table Schema (IMPLEMENTED Dec 29, 2025):**

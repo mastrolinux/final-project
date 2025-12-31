@@ -147,12 +147,22 @@ checkPermission(guardianId, minorId, action) -> boolean
 
 ### Authentication Component
 
+**Implementation Status:**
+
+- User Registration: COMPLETED (Dec 30, 2025)
+- User Login: COMPLETED (Dec 30, 2025)
+- Email Verification: COMPLETED (Dec 30, 2025)
+- Password Reset: COMPLETED (Dec 30, 2025)
+- Refresh Token Rotation: COMPLETED (Dec 30, 2025)
+- Social OAuth Integration: PENDING
+- Multi-Factor Authentication: PENDING
+
 **Responsibilities:**
 
 - Custom JWT-based authentication
 - Password management (Argon2id hashing)
 - Social OAuth integration (hybrid with Supabase)
-- Session management (Redis)
+- Session management (Redis for token blacklist)
 - Multi-factor authentication (TOTP)
 - Account verification workflows
 
@@ -171,12 +181,12 @@ verifyMFA(userId, code) -> boolean
 
 **Internal Modules:**
 
-- **Password Manager**: Argon2id hashing and validation
-- **Token Manager**: JWT issuance and validation
-- **Session Store**: Redis-based session management
-- **Social Auth Handler**: Processes Supabase OAuth callbacks
-- **MFA Manager**: TOTP generation and verification
-- **Email Verification**: Token-based email confirmation
+- **Password Manager**: Argon2id hashing and validation (passlib)
+- **Token Manager**: JWT issuance and validation (python-jose)
+- **Token Blacklist**: Redis-based refresh token rotation
+- **Social Auth Handler**: Processes Supabase OAuth callbacks (pending)
+- **MFA Manager**: TOTP generation and verification (pending)
+- **Email Verification**: Token-based email confirmation (Celery async)
 
 
 ### Shared Services

@@ -57,8 +57,11 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "noreply@identity-api.local"
     SMTP_FROM_NAME: str = "Identity Management System"
     
-    # Frontend URL (for email links)
+    # Frontend URL (for email links to frontend app)
     FRONTEND_URL: str = "http://localhost:3000"
+    
+    # API Base URL (for direct API testing without frontend)
+    API_BASE_URL: str = "http://localhost:8000"
     
     # CORS Configuration
     ALLOWED_ORIGINS_STR: str = "http://localhost:3000,http://localhost:8000"
