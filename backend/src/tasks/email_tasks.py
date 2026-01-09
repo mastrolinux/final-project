@@ -2,15 +2,53 @@
 Email Tasks
 
 Celery tasks for sending emails asynchronously.
-Uses Mailpit (local dev) or SMTP (production) for email delivery.
+Uses Mailpit (local dev) or Mailgun SMTP (production) for email delivery.
+
+Local Development:
+    - SMTP_HOST: 127.0.0.1 (Mailpit via Supabase)
+    - SMTP_PORT: 54325
+    - SMTP_USE_TLS: false
+    - No authentication required
+
+Production (Mailgun):
+    - SMTP_HOST: smtp.mailgun.org (or smtp.eu.mailgun.org for EU)
+    - SMTP_PORT: 587
+    - SMTP_USE_TLS: true
+    - SMTP_USER: postmaster@yourdomain.mailgun.org
+    - SMTP_PASSWORD: Mailgun SMTP password
 """
 
 import smtplib
+from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from src.core.celery_app import celery_app
 from src.core.config import settings
+
+
+@contextmanager
+def get_smtp_connection():
+    """
+    Create SMTP connection based on environment configuration.
+    
+    Local development (Mailpit): No authentication, plain SMTP
+    Production (Mailgun): TLS + authentication
+    
+    Yields:
+        smtplib.SMTP: Configured SMTP connection
+    """
+    server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+    try:
+        if settings.SMTP_USE_TLS:
+            # Production: Use TLS (Mailgun, SendGrid, etc.)
+            server.starttls()
+            if settings.SMTP_USER and settings.SMTP_PASSWORD:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        # Local development: Mailpit (no auth needed)
+        yield server
+    finally:
+        server.quit()
 
 
 @celery_app.task(name="send_verification_email", bind=True, max_retries=3)
@@ -104,10 +142,8 @@ def send_verification_email(self, email: str, token: str, user_name: str):
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
         
-        # Send email via SMTP
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            # Note: Mailpit doesn't require authentication
-            # Production SMTP would need: server.login(user, password)
+        # Send email via SMTP (works for both Mailpit and Mailgun)
+        with get_smtp_connection() as server:
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
@@ -207,8 +243,8 @@ def send_password_reset_email(self, email: str, token: str):
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
         
-        # Send email via SMTP
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        # Send email via SMTP (works for both Mailpit and Mailgun)
+        with get_smtp_connection() as server:
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
@@ -258,7 +294,8 @@ def send_guardian_notification_email(self, email: str, minor_name: str, action: 
         
         msg.attach(MIMEText(html, "html"))
         
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        # Send email via SMTP (works for both Mailpit and Mailgun)
+        with get_smtp_connection() as server:
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
