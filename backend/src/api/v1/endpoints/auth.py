@@ -6,6 +6,7 @@ REST API endpoints for user authentication, registration, and email verification
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from src.core.database import get_db
 from src.repositories.auth_repository import AuthRepository
@@ -95,12 +96,19 @@ def register(
         profile_repo = ProfileRepository(db)
         
         # Step 1: Create base profile
-        base_profile = profile_repo.create_profile(
-            account_type=request.account_type,
-            primary_email=request.email,
-            preferred_language=request.preferred_language,
-            legal_name=request.preferred_name
-        )
+        try:
+            base_profile = profile_repo.create_profile(
+                account_type=request.account_type,
+                primary_email=request.email,
+                preferred_language=request.preferred_language,
+                legal_name=request.preferred_name
+            )
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered"
+            )
         
         # Step 2: Create auth user with auth service
         auth_repo = AuthRepository(db)

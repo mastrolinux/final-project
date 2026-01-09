@@ -253,7 +253,8 @@ backend/
 ├── Dockerfile               # Docker image definition
 ├── docker-compose.yml       # Docker services configuration
 ├── requirements.txt         # Python dependencies
-├── .env.example            # Environment variables template
+├── env.local.template      # Local development environment template
+├── env.production.template # Production environment template
 └── README.md               # This file
 ```
 

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     Application Settings
     
     All configuration values are loaded from environment variables.
-    See env.example for required variables.
+    See env.local.template (development) or env.production.template (production).
     
     Includes production safety validations to prevent insecure defaults.
     """
@@ -52,10 +52,15 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     
     # SMTP Configuration (Email Sending)
+    # Local: Mailpit via Supabase (no auth, plain SMTP)
+    # Production: Mailgun or other SMTP provider (TLS + auth)
     SMTP_HOST: str = "127.0.0.1"
-    SMTP_PORT: int = 54325  # Mailpit SMTP port
+    SMTP_PORT: int = 54325  # Mailpit: 54325, Mailgun: 587
     SMTP_FROM_EMAIL: str = "noreply@identity-api.local"
     SMTP_FROM_NAME: str = "Identity Management System"
+    SMTP_USER: Optional[str] = None  # Mailgun: postmaster@yourdomain.mailgun.org
+    SMTP_PASSWORD: Optional[str] = None  # Mailgun: SMTP password
+    SMTP_USE_TLS: bool = False  # True for production SMTP providers
     
     # Frontend URL (for email links to frontend app)
     FRONTEND_URL: str = "http://localhost:3000"

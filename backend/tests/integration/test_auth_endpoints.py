@@ -2,6 +2,10 @@
 Integration Tests for Authentication Endpoints
 
 Tests complete HTTP request/response cycles for auth endpoints.
+
+Note: Tests that need to access the database directly (e.g., to retrieve
+verification tokens) must use the shared db_session fixture from conftest.py
+to ensure they use the same database session as the test client.
 """
 
 import pytest
@@ -9,12 +13,6 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.main import app
-
-
-@pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
 
 
 class TestRegisterEndpoint:
@@ -40,14 +38,18 @@ class TestRegisterEndpoint:
         mock_send_email.delay.assert_called_once()
     
     @patch('src.services.auth_service.send_verification_email')
-    def test_register_duplicate_email(self, mock_send_email, client):
+    def test_register_duplicate_email(self, mock_send_email, client, db_session):
         """Test registration fails with duplicate email."""
         # Register first user
-        client.post("/api/v1/auth/register", json={
+        response1 = client.post("/api/v1/auth/register", json={
             "email": "duplicate@example.com",
             "password": "SecurePass123!",
             "preferred_name": "First User"
         })
+        assert response1.status_code == 201, f"First registration failed: {response1.json()}"
+        
+        # Commit the first registration to ensure it's visible
+        db_session.commit()
         
         # Try to register again with same email
         response = client.post("/api/v1/auth/register", json={
@@ -56,7 +58,7 @@ class TestRegisterEndpoint:
             "preferred_name": "Second User"
         })
         
-        assert response.status_code == 409
+        assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.json()}"
         assert "already registered" in response.json()["detail"].lower()
     
     def test_register_weak_password(self, client):
@@ -148,13 +150,19 @@ class TestVerifyEmailEndpoint:
             "password": "SecurePass123!",
             "preferred_name": "Verify User"
         })
+        assert response.status_code == 201, f"Registration failed: {response.json()}"
         user_id = response.json()["user_id"]
+        
+        # Refresh the session to see committed changes from the API
+        db_session.expire_all()
         
         # Get verification token from database
         from src.repositories.auth_repository import AuthRepository
         auth_repo = AuthRepository(db_session)
         auth_user = auth_repo.get_by_user_id(user_id)
+        assert auth_user is not None, f"Auth user not found for user_id: {user_id}"
         token = auth_user.verification_token
+        assert token is not None, "Verification token is None"
         
         # Verify email
         response = client.post("/api/v1/auth/verify-email", json={
@@ -187,7 +195,7 @@ class TestPasswordResetEndpoints:
             "password": "OldPassword123!",
             "preferred_name": "Reset User"
         })
-        assert response.status_code == 201
+        assert response.status_code == 201, f"Registration failed: {response.json()}"
         
         # Request password reset
         response = client.post("/api/v1/auth/request-reset", json={
@@ -196,11 +204,16 @@ class TestPasswordResetEndpoints:
         assert response.status_code == 200
         assert "reset link" in response.json()["message"].lower()
         
+        # Refresh the session to see committed changes from the API
+        db_session.expire_all()
+        
         # Get reset token from database
         from src.repositories.auth_repository import AuthRepository
         auth_repo = AuthRepository(db_session)
         auth_user = auth_repo.get_by_email("resetuser@example.com")
+        assert auth_user is not None, "Auth user not found"
         reset_token = auth_user.reset_token
+        assert reset_token is not None, "Reset token is None"
         
         # Reset password with token
         response = client.post("/api/v1/auth/reset-password", json={
