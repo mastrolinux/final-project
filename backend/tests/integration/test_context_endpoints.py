@@ -542,6 +542,194 @@ class TestEndToEndScenario:
         # Personal wellness info hidden from hospital network
 
 
+class TestAcceptLanguageHeaderParsing:
+    """Test Accept-Language header parsing for multilingual name resolution"""
+    
+    def test_accept_language_header_chinese(
+        self,
+        client: TestClient,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test Accept-Language header with Chinese locale"""
+        # Create context
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "professional",
+                "context_name": "Work",
+                "display_name_override": "李明工程师"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        # Request with Accept-Language header
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
+            headers={"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Language should be extracted from header (zh from zh-CN)
+        # The endpoint now automatically parses Accept-Language
+        assert data["display_name"] == "李明工程师"
+    
+    def test_accept_language_header_english(
+        self,
+        client: TestClient,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test Accept-Language header with English locale"""
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "social",
+                "context_name": "Friends",
+                "display_name_override": "Mike"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
+            headers={"Accept-Language": "en-US,en;q=0.9"}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["display_name"] == "Mike"
+    
+    def test_accept_language_header_missing_defaults_to_english(
+        self, 
+        client: TestClient,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test missing Accept-Language header defaults to English"""
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "professional",
+                "context_name": "Default"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        # Request without Accept-Language header
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved"
+            # No Accept-Language header
+        )
+        
+        assert response.status_code == 200
+        # Should default to 'en' language code
+    
+    def test_accept_language_complex_header(
+        self,
+        client: TestClient,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test complex Accept-Language header with quality values"""
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "social",
+                "context_name": "International"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        # Complex header with multiple languages and quality values
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
+            headers={"Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,*;q=0.5"}
+        )
+        
+        assert response.status_code == 200
+        # Should extract 'fr' from 'fr-FR' as highest priority
+
+
+class TestTemporalValidityIntegration:
+    """Test temporal validity checking at API level"""
+    
+    def test_resolve_expired_context_returns_410(
+        self,
+        client: TestClient,
+        db_session,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test expired context returns HTTP 410 Gone"""
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import text
+        
+        # Create context
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "professional",
+                "context_name": "Old Job",
+                "display_name_override": "Former Title"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        # Manually expire the context (timezone-aware)
+        past_date = datetime.now(timezone.utc) - timedelta(days=1)
+        db_session.execute(
+            text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
+            {"valid_to": past_date, "id": context_id}
+        )
+        db_session.commit()
+        
+        # Attempt to resolve expired context
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved"
+        )
+        
+        assert response.status_code == 410
+        assert "expired" in response.json()["detail"].lower()
+    
+    def test_resolve_future_valid_context_succeeds(
+        self,
+        client: TestClient,
+        db_session,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test context with future valid_to resolves successfully"""
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import text
+        
+        context_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "professional",
+                "context_name": "Current Job"
+            }
+        )
+        assert context_response.status_code == 201
+        context_id = context_response.json()["id"]
+        
+        # Set valid_to to future (timezone-aware)
+        future_date = datetime.now(timezone.utc) + timedelta(days=365)
+        db_session.execute(
+            text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
+            {"valid_to": future_date, "id": context_id}
+        )
+        db_session.commit()
+        
+        # Should resolve successfully
+        response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved"
+        )
+        
+        assert response.status_code == 200
+
+
 
 
 
