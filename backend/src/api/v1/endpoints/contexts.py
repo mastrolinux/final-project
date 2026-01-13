@@ -5,9 +5,9 @@ REST API endpoints for context profile management.
 Implements multi-context identity presentation based on Goffman's dramaturgical theory.
 """
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
@@ -30,6 +30,45 @@ def get_context_service(db: Session = Depends(get_db)) -> ContextService:
     context_repo = ContextRepository(db)
     profile_repo = ProfileRepository(db)
     return ContextService(context_repo, profile_repo)
+
+
+def parse_accept_language(
+    accept_language: Optional[str] = Header(None, alias="Accept-Language")
+) -> str:
+    """
+    Parse Accept-Language header to extract primary language code.
+    
+    Implements W3C content negotiation (RFC 7231) for multilingual name resolution.
+    
+    Examples:
+        "zh-CN,zh;q=0.9,en;q=0.8" -> "zh"
+        "en-US,en;q=0.9" -> "en"
+        "fr-FR,fr;q=0.9,en;q=0.5" -> "fr"
+        None -> "en" (default)
+    
+    Args:
+        accept_language: Accept-Language header value from HTTP request
+        
+    Returns:
+        Primary language code (ISO 639-1) or 'en' as default
+    """
+    if not accept_language:
+        return "en"
+    
+    # Split by comma to get languages with quality values
+    languages = accept_language.split(',')
+    
+    if languages:
+        # Take first language (highest priority, q=1.0 implied)
+        primary = languages[0].strip()
+        
+        # Extract language code (before '-' for region or ';' for quality)
+        # Example: "zh-CN" -> "zh", "en;q=0.9" -> "en"
+        lang_code = primary.split('-')[0].split(';')[0].strip()
+        
+        return lang_code if lang_code else "en"
+    
+    return "en"
 
 
 @router.post(
@@ -159,14 +198,11 @@ def get_context_profile(
 def get_resolved_context_profile(
     user_id: UUID,
     context_id: UUID,
-    language: str = Query(
-        default="en",
-        description="Language code for name resolution (ISO 639-1)"
-    ),
     include_deprecated: bool = Query(
         default=False,
         description="Include deprecated names in results"
     ),
+    language: str = Depends(parse_accept_language),
     service: ContextService = Depends(get_context_service)
 ):
     """
@@ -221,7 +257,16 @@ def get_resolved_context_profile(
             ]
         )
     except ContextServiceError as e:
-        if "not found" in str(e).lower():
+        # Use explicit status code from exception if available
+        status_code = getattr(e, 'status_code', None)
+        
+        if status_code:
+            # Exception specifies exact status code (e.g., 410 for expired)
+            raise HTTPException(
+                status_code=status_code,
+                detail=str(e)
+            )
+        elif "not found" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e)
@@ -243,14 +288,11 @@ def get_resolved_context_profile(
 )
 def get_resolved_base_profile(
     user_id: UUID,
-    language: str = Query(
-        default="en",
-        description="Language code for name resolution (ISO 639-1)"
-    ),
     include_deprecated: bool = Query(
         default=False,
         description="Include deprecated names in results"
     ),
+    language: str = Depends(parse_accept_language),
     service: ContextService = Depends(get_context_service)
 ):
     """

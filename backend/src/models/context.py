@@ -25,6 +25,8 @@ class ContextType(str, enum.Enum):
     social = "social"
     legal = "legal"
     healthcare = "healthcare"
+    family = "family"
+    custom = "custom"
 
 
 class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
