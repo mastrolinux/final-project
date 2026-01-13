@@ -3,8 +3,14 @@
 -- Part of Identity and Profile Management API - Academic Thesis Project
 
 -- Clear existing data (for reset)
--- Note: auth_users must be truncated first due to FK constraint to base_profiles
+-- Note: Tables must be truncated in dependency order (children first)
+TRUNCATE TABLE oauth_consents CASCADE;
+TRUNCATE TABLE oauth_refresh_tokens CASCADE;
+TRUNCATE TABLE oauth_access_tokens CASCADE;
+TRUNCATE TABLE oauth_authorization_codes CASCADE;
+TRUNCATE TABLE oauth_clients CASCADE;
 TRUNCATE TABLE auth_users CASCADE;
+TRUNCATE TABLE context_profiles CASCADE;
 TRUNCATE TABLE identity_names CASCADE;
 TRUNCATE TABLE base_profiles CASCADE;
 
@@ -353,12 +359,260 @@ INSERT INTO auth_users (
     );
 
 -- ============================================================================
+-- OAUTH CLIENTS - Third-Party Application Registrations
+-- ============================================================================
+-- Sample OAuth clients for testing OAuth 2.1 flows
+
+-- Client 1: First-party web application (confidential, skips consent)
+INSERT INTO oauth_clients (
+    client_id,
+    client_secret_hash,
+    client_name,
+    client_description,
+    client_uri,
+    logo_uri,
+    redirect_uris,
+    allowed_scopes,
+    default_context_type,
+    is_confidential,
+    is_active,
+    is_first_party,
+    token_endpoint_auth_method
+) VALUES (
+    'thesis-web-app',
+    '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_CLIENT1$FAKE_SECRET_HASH',
+    'Thesis Identity Portal',
+    'First-party web application for identity management',
+    'http://localhost:3000',
+    NULL,
+    ARRAY['http://localhost:3000/callback', 'http://localhost:3000/auth/callback'],
+    ARRAY['openid', 'profile:read:basic', 'profile:read:full', 'profile:write', 'contexts:read', 'offline_access'],
+    NULL,
+    true,  -- Confidential client
+    true,
+    true,  -- First-party, skip consent
+    'client_secret_post'
+);
+
+-- Client 2: Third-party professional networking app (confidential, requires consent)
+INSERT INTO oauth_clients (
+    client_id,
+    client_secret_hash,
+    client_name,
+    client_description,
+    client_uri,
+    logo_uri,
+    redirect_uris,
+    allowed_scopes,
+    default_context_type,
+    is_confidential,
+    is_active,
+    is_first_party,
+    token_endpoint_auth_method
+) VALUES (
+    'linkedin-demo',
+    '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_CLIENT2$FAKE_SECRET_HASH',
+    'LinkedIn Demo Integration',
+    'Professional networking integration demonstrating context-aware identity',
+    'https://linkedin-demo.example.com',
+    'https://linkedin-demo.example.com/logo.png',
+    ARRAY['https://linkedin-demo.example.com/callback'],
+    ARRAY['openid', 'profile:read:basic', 'profile:read:email', 'contexts:professional:read'],
+    'professional',  -- Default to professional context
+    true,
+    true,
+    false,  -- Third-party, requires consent
+    'client_secret_basic'
+);
+
+-- Client 3: Mobile fitness app (public client, PKCE-only)
+INSERT INTO oauth_clients (
+    client_id,
+    client_secret_hash,
+    client_name,
+    client_description,
+    client_uri,
+    logo_uri,
+    redirect_uris,
+    allowed_scopes,
+    default_context_type,
+    is_confidential,
+    is_active,
+    is_first_party,
+    token_endpoint_auth_method
+) VALUES (
+    'fitness-app-mobile',
+    NULL,  -- Public client, no secret
+    'FitTrack Mobile',
+    'Mobile fitness tracking app requesting social context profile',
+    'https://fittrack.example.com',
+    'https://fittrack.example.com/icon.png',
+    ARRAY['fittrack://callback', 'https://fittrack.example.com/oauth/callback'],
+    ARRAY['openid', 'profile:read:basic', 'contexts:social:read'],
+    'social',  -- Default to social context
+    false,  -- Public client
+    true,
+    false,  -- Third-party
+    'none'  -- No client authentication, PKCE only
+);
+
+-- Client 4: Healthcare portal (confidential, requires verification and consent)
+INSERT INTO oauth_clients (
+    client_id,
+    client_secret_hash,
+    client_name,
+    client_description,
+    client_uri,
+    logo_uri,
+    redirect_uris,
+    allowed_scopes,
+    default_context_type,
+    is_confidential,
+    is_active,
+    is_first_party,
+    token_endpoint_auth_method
+) VALUES (
+    'healthcare-portal',
+    '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_CLIENT4$FAKE_SECRET_HASH',
+    'SecureHealth Portal',
+    'Healthcare provider portal requiring verified identity and healthcare context',
+    'https://securehealth.example.com',
+    'https://securehealth.example.com/logo.png',
+    ARRAY['https://securehealth.example.com/oauth/callback'],
+    ARRAY['openid', 'profile:read:full', 'contexts:healthcare:read', 'offline_access'],
+    'healthcare',  -- Healthcare context
+    true,
+    true,
+    false,
+    'client_secret_post'
+);
+
+-- Client 5: Inactive/deactivated client (for testing inactive client handling)
+INSERT INTO oauth_clients (
+    client_id,
+    client_secret_hash,
+    client_name,
+    client_description,
+    client_uri,
+    logo_uri,
+    redirect_uris,
+    allowed_scopes,
+    default_context_type,
+    is_confidential,
+    is_active,
+    is_first_party,
+    token_endpoint_auth_method
+) VALUES (
+    'deactivated-client',
+    '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_INACTIVE$FAKE_SECRET_HASH',
+    'Deprecated Application',
+    'This client has been deactivated for testing',
+    'https://deprecated.example.com',
+    NULL,
+    ARRAY['https://deprecated.example.com/callback'],
+    ARRAY['profile:read:basic'],
+    NULL,
+    true,
+    false,  -- INACTIVE
+    false,
+    'client_secret_post'
+);
+
+-- ============================================================================
+-- OAUTH CONSENTS - Sample User Consent Records
+-- ============================================================================
+-- Pre-granted consents for testing token flows
+
+-- Sarah Chen has granted consent to LinkedIn Demo for professional context
+INSERT INTO oauth_consents (
+    id,
+    user_id,
+    client_id,
+    granted_scopes,
+    context_profile_id,
+    granted_at,
+    expires_at,
+    withdrawn_at,
+    consent_method,
+    ip_address,
+    user_agent
+) VALUES (
+    '40000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',  -- Sarah Chen
+    'linkedin-demo',
+    ARRAY['openid', 'profile:read:basic', 'profile:read:email', 'contexts:professional:read'],
+    '20000000-0000-0000-0000-000000000001',  -- Sarah's professional context
+    '2026-01-10 10:00:00+00',
+    NULL,  -- No expiry
+    NULL,  -- Not withdrawn
+    'explicit',
+    '192.168.1.100',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+);
+
+-- Sarah Chen has granted consent to FitTrack for social context
+INSERT INTO oauth_consents (
+    id,
+    user_id,
+    client_id,
+    granted_scopes,
+    context_profile_id,
+    granted_at,
+    expires_at,
+    withdrawn_at,
+    consent_method,
+    ip_address,
+    user_agent
+) VALUES (
+    '40000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000001',  -- Sarah Chen
+    'fitness-app-mobile',
+    ARRAY['openid', 'profile:read:basic', 'contexts:social:read'],
+    '20000000-0000-0000-0000-000000000002',  -- Sarah's social context
+    '2026-01-11 14:30:00+00',
+    NULL,
+    NULL,
+    'explicit',
+    '10.0.0.1',
+    'FitTrack/2.0 (iOS; iPhone14,2)'
+);
+
+-- Jordan has withdrawn consent from a client (for testing withdrawal)
+INSERT INTO oauth_consents (
+    id,
+    user_id,
+    client_id,
+    granted_scopes,
+    context_profile_id,
+    granted_at,
+    expires_at,
+    withdrawn_at,
+    consent_method,
+    ip_address,
+    user_agent
+) VALUES (
+    '40000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000005',  -- Jordan
+    'linkedin-demo',
+    ARRAY['openid', 'profile:read:basic'],
+    NULL,
+    '2025-12-01 09:00:00+00',
+    NULL,
+    '2025-12-15 11:30:00+00',  -- Consent withdrawn
+    'explicit',
+    '192.168.1.200',
+    'Mozilla/5.0'
+);
+
+-- ============================================================================
 -- Verification queries (useful for checking seed data loaded correctly)
 -- ============================================================================
 -- SELECT COUNT(*) FROM base_profiles;      -- Should return 5
 -- SELECT COUNT(*) FROM identity_names;     -- Should return 12
 -- SELECT COUNT(*) FROM context_profiles;   -- Should return 5
 -- SELECT COUNT(*) FROM auth_users;         -- Should return 5
+-- SELECT COUNT(*) FROM oauth_clients;      -- Should return 5
+-- SELECT COUNT(*) FROM oauth_consents;     -- Should return 3
 
 -- Test auth_users to base_profiles relationship:
 -- SELECT 
