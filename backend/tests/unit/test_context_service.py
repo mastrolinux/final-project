@@ -501,6 +501,339 @@ class TestResolvedProfileOutput:
         assert isinstance(data["identity_names"], list)
 
 
+class TestNewContextTypes:
+    """Test new 'family' and 'custom' context types"""
+    
+    def test_create_family_context(
+        self,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test creating family context for guardian use cases"""
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.family,
+            context_name="Family Photos",
+            display_name_override="Mom",
+            bio="Family memories and updates"
+        )
+        
+        assert context.context_type == ContextType.family
+        assert context.context_name == "Family Photos"
+        assert context.display_name_override == "Mom"
+        assert context.bio == "Family memories and updates"
+    
+    def test_create_custom_context(
+        self,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test creating custom context for flexible use cases"""
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.custom,
+            context_name="Freelance Consulting",
+            display_name_override="Sarah Chen, Consultant",
+            email_override="consulting@example.com",
+            bio="Healthcare IT consultant"
+        )
+        
+        assert context.context_type == ContextType.custom
+        assert context.context_name == "Freelance Consulting"
+        assert context.display_name_override == "Sarah Chen, Consultant"
+
+
+class TestMultilingualNameResolution:
+    """Test multilingual name resolution with fallback chain"""
+    
+    def test_resolve_exact_language_match(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test resolving name when exact language match available"""
+        # Create multilingual name: Chinese and English
+        multilingual_name = IdentityName(
+            identity_id=sample_verified_profile.user_id,
+            name_type=NameType.full_name,
+            name_value={"zh": "李明", "en": "Li Ming"},
+            is_primary=True,
+            is_deprecated=False,
+            visibility_level=VisibilityLevel.public
+        )
+        db_session.add(multilingual_name)
+        db_session.commit()
+        
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work"
+        )
+        
+        # Resolve with Chinese language
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id,
+            language="zh"
+        )
+        
+        # Verify Chinese name is resolved (test internal method works)
+        assert len(resolved.identity_names) == 1
+        name = resolved.identity_names[0]
+        
+        # Test the multilingual resolution method directly
+        resolved_value = context_service._resolve_multilingual_name(
+            name, 
+            requested_language="zh",
+            preferred_language="en"
+        )
+        assert resolved_value == "李明"
+    
+    def test_fallback_to_preferred_language(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test fallback to user's preferred language when requested unavailable"""
+        # Create name with Chinese and English, no French
+        multilingual_name = IdentityName(
+            identity_id=sample_verified_profile.user_id,
+            name_type=NameType.full_name,
+            name_value={"zh": "李明", "en": "Li Ming"},
+            is_primary=True,
+            is_deprecated=False,
+            visibility_level=VisibilityLevel.public
+        )
+        db_session.add(multilingual_name)
+        
+        # Set user's preferred language to Chinese
+        sample_verified_profile.preferred_language = "zh"
+        db_session.commit()
+        
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.social,
+            context_name="Social"
+        )
+        
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id,
+            language="fr"  # Request French (not available)
+        )
+        
+        # Test fallback to preferred language (zh)
+        name = resolved.identity_names[0]
+        resolved_value = context_service._resolve_multilingual_name(
+            name,
+            requested_language="fr",
+            preferred_language="zh"
+        )
+        assert resolved_value == "李明"  # Falls back to preferred language
+    
+    def test_fallback_to_english_default(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test fallback to English when requested and preferred unavailable"""
+        multilingual_name = IdentityName(
+            identity_id=sample_verified_profile.user_id,
+            name_type=NameType.full_name,
+            name_value={"en": "Li Ming", "es": "Li Ming"},
+            is_primary=True,
+            is_deprecated=False,
+            visibility_level=VisibilityLevel.public
+        )
+        db_session.add(multilingual_name)
+        
+        # Preferred language not in name_value
+        sample_verified_profile.preferred_language = "de"
+        db_session.commit()
+        
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work"
+        )
+        
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id,
+            language="fr"  # Not available
+        )
+        
+        # Test fallback to English default
+        name = resolved.identity_names[0]
+        resolved_value = context_service._resolve_multilingual_name(
+            name,
+            requested_language="fr",  # Not available
+            preferred_language="de"   # Not available
+        )
+        assert resolved_value == "Li Ming"  # Falls back to English
+    
+    def test_fallback_to_first_available(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test fallback to first available language when all else fails"""
+        multilingual_name = IdentityName(
+            identity_id=sample_verified_profile.user_id,
+            name_type=NameType.full_name,
+            name_value={"zh": "李明", "ja": "リメイ"},  # No English
+            is_primary=True,
+            is_deprecated=False,
+            visibility_level=VisibilityLevel.public
+        )
+        db_session.add(multilingual_name)
+        
+        sample_verified_profile.preferred_language = "fr"
+        db_session.commit()
+        
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.social,
+            context_name="Social"
+        )
+        
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id,
+            language="de"
+        )
+        
+        # Test fallback to first available (alphabetically: 'ja' before 'zh')
+        name = resolved.identity_names[0]
+        resolved_value = context_service._resolve_multilingual_name(
+            name,
+            requested_language="de",
+            preferred_language="fr"
+        )
+        assert resolved_value == "リメイ"  # First alphabetically (ja)
+    
+    def test_empty_name_value_returns_empty_string(
+        self,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test graceful handling of empty JSONB name_value"""
+        from src.models.profile import IdentityName
+        
+        # Create name with empty JSONB
+        empty_name = IdentityName(
+            identity_id=sample_verified_profile.user_id,
+            name_type=NameType.full_name,
+            name_value={},  # Empty JSONB
+            is_primary=False,
+            is_deprecated=False,
+            visibility_level=VisibilityLevel.public
+        )
+        
+        # Test method handles empty dict gracefully
+        resolved_value = context_service._resolve_multilingual_name(
+            empty_name,
+            requested_language="en",
+            preferred_language="en"
+        )
+        assert resolved_value == ""
+
+
+class TestTemporalValidity:
+    """Test temporal validity checking for expired contexts"""
+    
+    def test_resolve_expired_context_raises_410(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test resolving expired context raises HTTP 410 Gone"""
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import text
+        
+        # Create context that expired yesterday
+        expired_context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Old Job"
+        )
+        
+        # Manually set valid_to to past date (timezone-aware)
+        past_date = datetime.now(timezone.utc) - timedelta(days=1)
+        db_session.execute(
+            text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
+            {"valid_to": past_date, "id": str(expired_context.id)}
+        )
+        db_session.commit()
+        
+        # Attempt to resolve expired context
+        with pytest.raises(ContextServiceError) as exc_info:
+            context_service.resolve_context_profile(
+                user_id=sample_verified_profile.user_id,
+                context_id=expired_context.id
+            )
+        
+        assert exc_info.value.status_code == 410
+        assert "expired" in str(exc_info.value).lower()
+    
+    def test_resolve_valid_context_succeeds(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test resolving context with future valid_to succeeds"""
+        from datetime import datetime, timezone, timedelta
+        from sqlalchemy import text
+        
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Current Job"
+        )
+        
+        # Set valid_to to future date (timezone-aware)
+        future_date = datetime.now(timezone.utc) + timedelta(days=30)
+        db_session.execute(
+            text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
+            {"valid_to": future_date, "id": str(context.id)}
+        )
+        db_session.commit()
+        
+        # Should resolve successfully
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id
+        )
+        
+        assert resolved.context_type == ContextType.professional
+    
+    def test_resolve_context_with_null_valid_to_succeeds(
+        self,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """Test resolving context with null valid_to (ongoing) succeeds"""
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.social,
+            context_name="Social"
+        )
+        
+        # valid_to is None by default (ongoing)
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id
+        )
+        
+        assert resolved.context_type == ContextType.social
+
+
 
 
 
