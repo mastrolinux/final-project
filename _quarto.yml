@@ -23,7 +23,9 @@ book:
         - architecture/deployment-operations.qmd
         - architecture/decisions-future.qmd
 
-bibliography: references.bib
+bibliography:
+  - references.bib
+  - identity-management-background.bib
 csl: quarto_files/ieee.csl
 
 mermaid:
