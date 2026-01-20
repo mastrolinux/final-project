@@ -1,57 +1,38 @@
-# Frontend - Identity Management UI
+# identity-frontend
 
-Frontend application for the Identity and Profile Management API.
+This template should help get you started developing with Vue 3 in Vite.
 
-## Status
+## Recommended IDE Setup
 
-Placeholder - to be implemented
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
-## Planned Stack
+## Recommended Browser Setup
 
-- Framework: Vue.js 3 or React
-- Build: Vite
-- Language: TypeScript
-- State: Pinia or Redux
-- Deployment: Render.com
+- Chromium-based browsers (Chrome, Edge, Brave, etc.):
+  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
+- Firefox:
+  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
+  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
 
-## Quick Start
+## Customize configuration
 
-(To be added when implemented)
+See [Vite Configuration Reference](https://vite.dev/config/).
 
-## Development
+## Project Setup
 
-```bash
-# Install dependencies
+```sh
 npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
 ```
 
-## Architecture
+### Compile and Hot-Reload for Development
 
-The frontend will demonstrate:
-- Multi-context profile management
-- Guardian-minor relationships
-- OAuth integration flows
-- Privacy features (inspired by GDPR)
+```sh
+npm run dev
+```
 
-## Documentation
+### Compile and Minify for Production
 
-Detailed design documentation is available in the `docs/` directory:
-
-- **[Name Input UX Design](./docs/name-input-ux-design.md)** - Comprehensive guide to culturally-sensitive name input flows, pattern detection, and metadata field management
-
-### Key UX Principles
-
-1. **Never force complexity** - Simple names stay simple
-2. **Detect, don't assume** - Smart suggestions, not requirements
-3. **Progressive enhancement** - Start basic, add details if needed
-4. **Cultural humility** - Don't require users to know formal naming terminology
-5. **Easy escape hatches** - "Use as-is" button always visible
-6. **Visual examples** - Show, don't tell
-7. **Locale awareness** - Use user's system locale as detection hint
-
+```sh
+npm run build
+```
