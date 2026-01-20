@@ -1,0 +1,292 @@
+{
+  "app": {
+    "name": "Identity Management",
+    "tagline": "Multi-context, privacy-oriented identity system"
+  },
+  "nav": {
+    "home": "Home",
+    "profile": "Profile",
+    "contexts": "Contexts",
+    "settings": "Settings",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "home": {
+    "title": "Identity Management System",
+    "subtitle": "Secure, privacy-first identity management across multiple contexts",
+    "cta": {
+      "getStarted": "Get Started",
+      "learnMore": "Learn More"
+    },
+    "features": {
+      "title": "Why Choose Us",
+      "privacy": {
+        "title": "Privacy by Design",
+        "description": "Built with GDPR-inspired principles for maximum data protection"
+      },
+      "contexts": {
+        "title": "Multi-Context Identity",
+        "description": "Manage different personas for professional, social, and personal use"
+      },
+      "security": {
+        "title": "Enterprise Security",
+        "description": "Industry-standard encryption and authentication protocols"
+      }
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email address",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "preferredName": "Preferred name",
+    "preferredNamePlaceholder": "How should we address you?",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signUp": "Sign up",
+    "loggingIn": "Logging in...",
+    "registering": "Creating account...",
+    "loginSuccess": "Welcome back!",
+    "registerSuccess": "Account created successfully",
+    "verifyEmail": "Verify your email",
+    "verifyYourEmail": "Verify Your Email",
+    "verifyEmailMessage": "Please check your inbox and click the verification link we sent you.",
+    "verifyEmailSent": "We've sent a verification link to {email}",
+    "verifyingEmail": "Verifying your email...",
+    "emailVerified": "Email Verified",
+    "emailVerifiedMessage": "Your email has been verified successfully. You can now access all features.",
+    "verificationFailed": "Verification Failed",
+    "verificationEmailSent": "A new verification email has been sent.",
+    "resendVerification": "Resend verification email",
+    "goToProfile": "Go to Profile",
+    "goToLogin": "Go to Login",
+    "tryAgain": "Try Again",
+    "backToLogin": "Back to Login",
+    "forgotPasswordMessage": "Enter your email and we'll send you instructions to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "checkYourEmail": "Check Your Email",
+    "resetEmailSent": "If an account exists with that email, you'll receive password reset instructions.",
+    "resetPassword": "Reset Password",
+    "resetPasswordMessage": "Enter your new password below.",
+    "newPassword": "New password",
+    "passwordReset": "Password Reset",
+    "passwordResetSuccess": "Your password has been reset successfully. You can now login with your new password.",
+    "invalidLink": "Invalid Link",
+    "invalidResetToken": "This password reset link is invalid or has expired.",
+    "requestNewLink": "Request New Link",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "accountType": {
+      "label": "Account type",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "pseudonymous": "Pseudonymous",
+      "verifiedDescription": "Full access with email verification",
+      "unverifiedDescription": "Limited access until email is verified",
+      "pseudonymousDescription": "Anonymous account with some restrictions"
+    }
+  },
+  "account": {
+    "types": {
+      "verified": "Verified Account",
+      "unverified": "Unverified Account",
+      "pseudonymous": "Pseudonymous Account"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "description": "Manage your base profile information",
+    "baseProfile": "Base Profile",
+    "legalName": "Legal name",
+    "primaryEmail": "Primary email",
+    "primaryPhone": "Primary phone",
+    "preferredLanguage": "Preferred language",
+    "createdAt": "Member since",
+    "editProfile": "Edit profile",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "viewContexts": "View Contexts"
+  },
+  "context": {
+    "title": "Identity Contexts",
+    "description": "Manage different identity contexts for various aspects of your life",
+    "create": "Create Context",
+    "createNew": "Create New Context",
+    "createDescription": "Create a new identity context for a specific purpose or domain",
+    "createSuccess": "Context created successfully",
+    "edit": "Edit Context",
+    "delete": "Delete Context",
+    "deleteSuccess": "Context deleted successfully",
+    "deleteConfirmTitle": "Delete Context?",
+    "deleteConfirmMessage": "Are you sure you want to delete this context? This action cannot be undone.",
+    "updateSuccess": "Context updated successfully",
+    "switch": "Switch Context",
+    "active": "Active",
+    "inactive": "Inactive",
+    "name": "Context Name",
+    "namePlaceholder": "e.g., Work Profile, Gaming Persona",
+    "nameHint": "A descriptive name to identify this context",
+    "type": "Context Type",
+    "displayName": "Display Name",
+    "displayNameOverride": "Display Name (Override)",
+    "emailOverride": "Email (Override)",
+    "phoneOverride": "Phone (Override)",
+    "bio": "Bio",
+    "bioPlaceholder": "A brief description for this context",
+    "isActive": "Context is active",
+    "isActiveHint": "Inactive contexts won't be visible to third-party applications",
+    "inheritFromProfile": "Leave empty to inherit from base profile",
+    "overrides": "Profile Overrides",
+    "overridesDescription": "These values will override your base profile when using this context. Leave empty to use your base profile values.",
+    "pseudonymousRestriction": "Note: Pseudonymous accounts cannot create legal or healthcare contexts.",
+    "types": {
+      "professional": "Professional",
+      "social": "Social",
+      "legal": "Legal",
+      "healthcare": "Healthcare",
+      "family": "Family",
+      "custom": "Custom"
+    },
+    "typeDescriptions": {
+      "professional": "Work, business, and career-related identity",
+      "social": "Social media and online communities",
+      "legal": "Official documents and legal matters",
+      "healthcare": "Medical records and healthcare providers",
+      "family": "Family and personal relationships",
+      "custom": "Custom context for specific needs"
+    },
+    "fields": {
+      "contextName": "Context name",
+      "contextType": "Context type",
+      "displayName": "Display name",
+      "email": "Email",
+      "phone": "Phone",
+      "bio": "Bio"
+    },
+    "inheritance": {
+      "inherited": "Inherited from base profile",
+      "overridden": "Custom value for this context"
+    },
+    "restrictions": {
+      "pseudonymousLegal": "Pseudonymous accounts cannot create legal contexts",
+      "pseudonymousHealthcare": "Pseudonymous accounts cannot create healthcare contexts"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account settings and preferences",
+    "appearance": "Appearance",
+    "language": "Language",
+    "languageDescription": "Choose your preferred display language",
+    "languageChanged": "Language updated",
+    "theme": "Theme",
+    "themeDescription": "Choose your preferred color scheme",
+    "themeSystem": "System default",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeChanged": "Theme updated",
+    "security": "Security",
+    "changePassword": "Change Password",
+    "changePasswordDescription": "Update your account password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "updatePassword": "Update Password",
+    "passwordChanged": "Password updated successfully",
+    "account": "Account Information",
+    "accountType": "Account Type",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountWarning": "Once deleted, your account and all associated data will be permanently removed.",
+    "deleteAccountConfirmTitle": "Delete Your Account?",
+    "deleteAccountConfirmMessage": "This action is irreversible. All your data, contexts, and profile information will be permanently deleted.",
+    "typeDeleteToConfirm": "Type DELETE to confirm",
+    "permanentlyDelete": "Permanently Delete Account"
+  },
+  "oauth": {
+    "processing": "Processing...",
+    "processingMessage": "Please wait while we complete your authentication.",
+    "authenticationFailed": "Authentication Failed",
+    "errors": {
+      "missingCode": "Authorization code is missing",
+      "stateMismatch": "Security validation failed. Please try again.",
+      "access_denied": "Access was denied",
+      "invalid_request": "Invalid authorization request",
+      "unauthorized_client": "Client is not authorized",
+      "server_error": "Server error occurred"
+    }
+  },
+  "nameInput": {
+    "title": "What should we call you?",
+    "placeholder": "Enter your full name",
+    "continue": "Continue",
+    "detection": {
+      "title": "We detected: {pattern}",
+      "confirm": "Yes, that's correct",
+      "chooseDifferent": "No, let me choose a different format",
+      "keepSimple": "Keep it simple - use as entered"
+    },
+    "patterns": {
+      "chinese": "East Asian Name",
+      "arabic": "Arabic Name",
+      "spanish": "Spanish/Portuguese Name",
+      "tamil": "South Indian Name",
+      "mononym": "Single Name",
+      "western": "Western/Standard Name"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "edit": "Edit",
+    "create": "Create",
+    "creating": "Creating...",
+    "back": "Back",
+    "backToHome": "Back to Home",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "status": "Status",
+    "email": "Email",
+    "phone": "Phone",
+    "created": "Created",
+    "sending": "Sending..."
+  },
+  "errors": {
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "Please login to continue.",
+    "forbidden": "You do not have permission for this action.",
+    "notFound": "The requested resource was not found.",
+    "expired": "This content has expired.",
+    "validation": "Please check your input.",
+    "generic": "An unexpected error occurred. Please try again.",
+    "pageNotFound": "Page Not Found",
+    "pageNotFoundMessage": "The page you're looking for doesn't exist or has been moved."
+  },
+  "notifications": {
+    "profileUpdated": "Profile updated successfully",
+    "contextCreated": "Context created successfully",
+    "contextUpdated": "Context updated successfully",
+    "contextDeleted": "Context deleted successfully",
+    "loggedOut": "You have been logged out"
+  }
+}
