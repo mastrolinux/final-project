@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "Gestion de Identidad",
+    "tagline": "Sistema de identidad multi-contexto orientado a la privacidad"
+  },
+  "nav": {
+    "home": "Inicio",
+    "profile": "Perfil",
+    "contexts": "Contextos",
+    "settings": "Configuracion",
+    "login": "Iniciar sesion",
+    "register": "Registrarse",
+    "logout": "Cerrar sesion"
+  },
+  "auth": {
+    "login": "Iniciar sesion",
+    "register": "Registrarse",
+    "logout": "Cerrar sesion",
+    "email": "Correo electronico",
+    "password": "Contrasena",
+    "confirmPassword": "Confirmar contrasena",
+    "preferredName": "Nombre preferido",
+    "forgotPassword": "Olvidaste tu contrasena?",
+    "noAccount": "No tienes una cuenta?",
+    "hasAccount": "Ya tienes una cuenta?",
+    "createAccount": "Crear cuenta",
+    "signIn": "Entrar",
+    "signOut": "Salir"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "back": "Atras",
+    "next": "Siguiente",
+    "submit": "Enviar"
+  },
+  "errors": {
+    "network": "Error de red. Por favor verifica tu conexion.",
+    "unauthorized": "Por favor inicia sesion para continuar.",
+    "forbidden": "No tienes permiso para esta accion.",
+    "notFound": "El recurso solicitado no fue encontrado.",
+    "generic": "Ocurrio un error inesperado. Por favor intenta de nuevo."
+  }
+}
