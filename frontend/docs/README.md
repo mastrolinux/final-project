@@ -4,10 +4,58 @@ This directory contains design documentation for the Identity Management fronten
 
 ## Design Documents
 
-### User Experience (UX)
+### Core UX Documentation
 
-- **[Name Input UX Design](./name-input-ux-design.md)** - Comprehensive guide to culturally-sensitive name input
-  - Progressive disclosure flow (simple → detection → enhancement)
+- **[Red Routes](./red-routes.md)** - Critical user journeys with Mermaid flowcharts
+  - Registration flow (landing to dashboard)
+  - Login flow with error recovery
+  - Profile edit flow with inheritance
+  - OAuth consent flow with context selection
+  - Guardian management flow
+  - API endpoint mapping for each step
+
+- **[Design System](./design-system.md)** - Visual design tokens and component patterns
+  - Color palette (primary, semantic, context types)
+  - Typography scale and font families
+  - Spacing and border radius scales
+  - Component patterns (buttons, forms, cards, modals)
+  - Feedback patterns (toasts, alerts, validation)
+  - Loading states and context indicators
+  - Dark mode support
+
+- **[Accessibility Guidelines](./accessibility.md)** - WCAG 2.1 AA compliance standards
+  - Comprehensive compliance checklist
+  - Color contrast requirements
+  - Keyboard navigation patterns
+  - ARIA labels and roles specification
+  - Screen reader considerations
+  - Focus management strategy
+  - Testing checklist
+
+- **[Responsive Design](./responsive-design.md)** - Mobile-first responsive strategy
+  - Breakpoint definitions (mobile to desktop XL)
+  - Layout patterns (container, grid, stack)
+  - Navigation patterns per device size
+  - Component adaptations (cards, forms, tables, modals)
+  - Touch target sizes (minimum 44x44px)
+  - Typography scaling
+  - Performance considerations
+
+### Wireframes & Visual Design
+
+- **[Wireframes](./wireframes.md)** - Detailed screen specifications with layouts
+  - 17 screen wireframes (mobile and desktop layouts)
+  - Authentication screens (login, register, verification, password reset)
+  - Profile management screens (view, edit, contexts)
+  - OAuth consent flow with scope selection
+  - Guardian dashboard and approval queue
+  - Component library summary
+  - Figma design file: [Identity Management API](https://www.figma.com/design/lqr70RAUSLDuI9KPKCYcGb/Identity-Management-API)
+
+### Feature-Specific Documentation
+
+- **[Name Input UX Design](./name-input-ux-design.md)** - Culturally-sensitive name input
+  - Progressive disclosure flow (simple -> detection -> enhancement)
   - Smart pattern detection algorithm
   - Metadata field management (display_order, display_preference, etc.)
   - UI components and interactions
@@ -16,14 +64,12 @@ This directory contains design documentation for the Identity Management fronten
 
 ### Planned Documentation
 
-- **Component Architecture** - Reusable component library and design system
 - **API Integration** - How frontend connects to backend REST API
-- **State Management** - Global state patterns using Pinia/Zustand
+- **State Management** - Global state patterns using Pinia
 - **Context Management** - Switching between professional, social, family contexts
 - **Guardian Workflows** - UI flows for guardian-minor relationship management
 - **OAuth Integration** - Third-party app authorization consent screens
 - **GDPR Compliance UI** - Data export, deletion, and consent management interfaces
-- **Accessibility Guidelines** - WCAG 2.1 AA compliance standards
 - **Localization Guide** - i18n implementation and translation workflows
 - **Testing Strategy** - Unit, integration, and e2e testing approaches
 
