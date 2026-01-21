@@ -59,6 +59,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresGuest: true, title: 'Reset Password' }
   },
   {
+    path: '/profile/edit',
+    name: 'profile-edit',
+    component: () => import('@/views/ProfileEditView.vue'),
+    meta: { requiresAuth: true, title: 'Edit Profile' }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/ProfileView.vue'),
