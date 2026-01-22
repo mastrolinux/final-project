@@ -89,6 +89,16 @@ class Settings(BaseSettings):
     FEATURE_GUARDIAN_RELATIONSHIPS_ENABLED: bool = False
     FEATURE_CONTEXT_PROFILES_ENABLED: bool = False
     
+    # Admin Configuration
+    # Comma-separated list of admin user emails for bootstrap
+    # These users have admin access even if is_admin=false in DB
+    ADMIN_USER_EMAILS: str = ""
+    
+    @property
+    def admin_emails(self) -> List[str]:
+        """Parse admin emails from comma-separated string"""
+        return [e.strip().lower() for e in self.ADMIN_USER_EMAILS.split(",") if e.strip()]
+    
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:
         """Parse CORS origins from comma-separated string"""

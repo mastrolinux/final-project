@@ -95,6 +95,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'Settings' }
   },
   {
+    path: '/oauth/authorize',
+    name: 'oauth-consent',
+    component: () => import('@/views/OAuthConsentView.vue'),
+    meta: { requiresAuth: true, title: 'Authorization Request' }
+  },
+  {
     path: '/oauth/callback',
     name: 'oauth-callback',
     component: () => import('@/views/OAuthCallbackView.vue'),

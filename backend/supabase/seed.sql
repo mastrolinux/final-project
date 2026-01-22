@@ -295,19 +295,22 @@ INSERT INTO auth_users (
     email_verified_at,
     verification_token,
     verification_token_expires_at,
-    password_changed_at
+    password_changed_at,
+    is_admin
 ) VALUES
-    -- 1. Sarah Chen - Email verified, verified account
+    -- 1. Sarah Chen - Email verified, verified account, ADMIN
+    -- Password: SecurePass123! (real hash for Postman testing)
     (
         '30000000-0000-0000-0000-000000000001',
         '00000000-0000-0000-0000-000000000001',
         'sarah.chen@example.com',
-        '$argon2id$v=19$m=65536,t=3,p=4$FAKE_SALT_SARAH$FAKE_HASH_PLACEHOLDER',
+        '$argon2id$v=19$m=65536,t=3,p=4$3Fur1ZpTCoGQktLa29v7Pw$D1hdsnORIBpEEjq+SNTrDBiny0oz4H2+MqH0B9MSWCs',
         true,  -- Email verified
         '2024-10-15 10:00:00+00',  -- Verified timestamp
         NULL,  -- No token needed (already verified)
         NULL,
-        '2024-10-15 09:00:00+00'
+        '2024-10-15 09:00:00+00',
+        true   -- Admin user for testing
     ),
     -- 2. Li Ming - Email NOT verified, unverified account with stub token
     (
@@ -319,7 +322,8 @@ INSERT INTO auth_users (
         NULL,
         'stub-verification-token-li-ming-001',  -- Stub token for testing
         '2026-12-31 23:59:59+00',  -- Far-future expiry for testing
-        '2024-11-01 12:00:00+00'
+        '2024-11-01 12:00:00+00',
+        false
     ),
     -- 3. Alex - Email verified, pseudonymous account
     (
@@ -331,7 +335,8 @@ INSERT INTO auth_users (
         '2024-09-20 14:30:00+00',
         NULL,
         NULL,
-        '2024-09-20 14:00:00+00'
+        '2024-09-20 14:00:00+00',
+        false
     ),
     -- 4. Sukarno - Email verified, verified account
     (
@@ -343,7 +348,8 @@ INSERT INTO auth_users (
         '2024-08-10 08:00:00+00',
         NULL,
         NULL,
-        '2024-08-10 07:30:00+00'
+        '2024-08-10 07:30:00+00',
+        false
     ),
     -- 5. Jordan Smith - Email verified, verified account
     (
@@ -355,7 +361,8 @@ INSERT INTO auth_users (
         '2024-07-15 16:45:00+00',
         NULL,
         NULL,
-        '2024-07-15 16:00:00+00'
+        '2024-07-15 16:00:00+00',
+        false
     );
 
 -- ============================================================================
