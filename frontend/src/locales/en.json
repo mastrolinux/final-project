@@ -215,6 +215,14 @@
     "permanentlyDelete": "Permanently Delete Account"
   },
   "oauth": {
+    "title": "Authorization Request",
+    "authorize": "Authorize",
+    "deny": "Deny",
+    "allow": "Allow Access",
+    "clientWantsAccess": "{client} wants to access your account",
+    "selectContext": "Select Identity Context",
+    "selectContextDescription": "Choose which identity profile you want to share with this application.",
+    "scopes": "Requested Permissions",
     "processing": "Processing...",
     "processingMessage": "Please wait while we complete your authentication.",
     "authenticationFailed": "Authentication Failed",
@@ -224,7 +232,9 @@
       "access_denied": "Access was denied",
       "invalid_request": "Invalid authorization request",
       "unauthorized_client": "Client is not authorized",
-      "server_error": "Server error occurred"
+      "server_error": "Server error occurred",
+      "invalid_client": "Invalid client application",
+      "invalid_grant": "Invalid grant"
     }
   },
   "nameInput": {
