@@ -84,11 +84,6 @@ class Settings(BaseSettings):
     APM_ENABLED: bool = False
     APM_SERVICE_NAME: str = "identity-api"
     
-    # Feature Flags
-    FEATURE_OAUTH_ENABLED: bool = False
-    FEATURE_GUARDIAN_RELATIONSHIPS_ENABLED: bool = False
-    FEATURE_CONTEXT_PROFILES_ENABLED: bool = False
-    
     # Admin Configuration
     # Comma-separated list of admin user emails for bootstrap
     # These users have admin access even if is_admin=false in DB
