@@ -521,8 +521,65 @@ class OAuthClientCreate(BaseModel):
     )
 
 
+class OAuthClientUpdate(BaseModel):
+    """Schema for updating an OAuth client"""
+    
+    client_name: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Display name for consent screen"
+    )
+    client_description: Optional[str] = None
+    client_uri: Optional[str] = None
+    logo_uri: Optional[str] = None
+    redirect_uris: Optional[List[str]] = Field(
+        default=None,
+        min_length=1,
+        description="Allowed redirect URIs"
+    )
+    allowed_scopes: Optional[List[str]] = Field(
+        default=None,
+        description="Scopes this client can request"
+    )
+    default_context_type: Optional[ContextType] = None
+    is_active: Optional[bool] = None
+    is_first_party: Optional[bool] = None
+    
+    # Allow setting a new secret (will be hashed)
+    client_secret: Optional[str] = Field(
+        default=None,
+        description="New client secret (only for confidential clients)"
+    )
+
+
 class OAuthClientResponse(BaseModel):
-    """Schema for OAuth client response"""
+    """Schema for OAuth client response (does NOT include secret)"""
+    
+    client_id: str
+    client_name: str
+    client_description: Optional[str] = None
+    client_uri: Optional[str] = None
+    logo_uri: Optional[str] = None
+    redirect_uris: List[str]
+    allowed_scopes: List[str]
+    default_context_type: Optional[ContextType] = None
+    is_confidential: bool
+    is_active: bool
+    is_first_party: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OAuthClientCreateResponse(BaseModel):
+    """
+    Schema for OAuth client creation response.
+    
+    Includes the plain text client_secret - this is the ONLY time
+    the secret is returned. It cannot be retrieved later.
+    """
     
     client_id: str
     client_name: str
@@ -537,7 +594,22 @@ class OAuthClientResponse(BaseModel):
     is_first_party: bool
     created_at: datetime
     
+    # Secret shown only on creation
+    client_secret: Optional[str] = Field(
+        default=None,
+        description="Client secret (shown only once, store securely)"
+    )
+    
     model_config = ConfigDict(from_attributes=True)
+
+
+class OAuthClientListResponse(BaseModel):
+    """Schema for paginated list of OAuth clients"""
+    
+    clients: List[OAuthClientResponse]
+    total: int
+    page: int = 1
+    page_size: int = 20
 
 
 # =============================================================================

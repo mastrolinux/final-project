@@ -89,6 +89,9 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
     reset_token = Column(String, nullable=True, index=True)
     reset_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     
+    # Admin flag - grants access to admin endpoints
+    is_admin = Column(Boolean, nullable=False, default=False)
+    
     # Relationship to base profile
     # base_profile = relationship("BaseProfile", back_populates="auth_user")
     

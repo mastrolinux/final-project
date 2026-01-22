@@ -98,9 +98,55 @@ class OAuthRepository:
         client = self.get_client(client_id)
         if client:
             client.deleted_at = datetime.now(timezone.utc)
+            client.is_active = False
             self.db.commit()
             return True
         return False
+    
+    def list_all_clients(
+        self,
+        include_inactive: bool = False,
+        offset: int = 0,
+        limit: int = 20
+    ) -> List[OAuthClient]:
+        """
+        List all OAuth clients with pagination.
+        
+        Args:
+            include_inactive: If True, include inactive clients
+            offset: Number of records to skip
+            limit: Maximum number of records to return
+            
+        Returns:
+            List of OAuthClient objects
+        """
+        query = self.db.query(OAuthClient).filter(
+            OAuthClient.deleted_at.is_(None)
+        )
+        
+        if not include_inactive:
+            query = query.filter(OAuthClient.is_active == True)
+        
+        return query.order_by(OAuthClient.created_at.desc()).offset(offset).limit(limit).all()
+    
+    def count_clients(self, include_inactive: bool = False) -> int:
+        """
+        Count total number of clients.
+        
+        Args:
+            include_inactive: If True, count inactive clients too
+            
+        Returns:
+            Total count of clients
+        """
+        query = self.db.query(OAuthClient).filter(
+            OAuthClient.deleted_at.is_(None)
+        )
+        
+        if not include_inactive:
+            query = query.filter(OAuthClient.is_active == True)
+        
+        return query.count()
     
     # =========================================================================
     # Authorization Code Operations

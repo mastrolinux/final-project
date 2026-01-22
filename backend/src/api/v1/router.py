@@ -45,6 +45,10 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 from src.api.v1.endpoints import oauth
 api_router.include_router(oauth.router, prefix="/oauth", tags=["OAuth 2.1"])
 
+# Include Admin endpoints (requires admin privileges)
+from src.api.v1.endpoints import admin_oauth
+api_router.include_router(admin_oauth.router, prefix="/admin/oauth", tags=["Admin - OAuth"])
+
 # Future endpoint routers will be included here:
 # from src.api.v1.endpoints import guardians, privacy
 # api_router.include_router(guardians.router, prefix="/guardians", tags=["Guardians"])
