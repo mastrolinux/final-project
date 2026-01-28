@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { authService, getErrorMessage } from '@/services'
 import { useUiStore } from '@/stores'
@@ -8,6 +8,7 @@ import type { AccountType } from '@/types'
 const { t } = useI18n()
 const uiStore = useUiStore()
 
+const preferredNameInput = ref<HTMLInputElement | null>(null)
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -16,6 +17,10 @@ const accountType = ref<AccountType>('unverified')
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const success = ref(false)
+
+onMounted(() => {
+  preferredNameInput.value?.focus()
+})
 
 async function handleSubmit() {
   error.value = null
@@ -71,6 +76,7 @@ async function handleSubmit() {
             <label for="preferredName">{{ t('auth.preferredName') }}</label>
             <input
               id="preferredName"
+              ref="preferredNameInput"
               v-model="preferredName"
               type="text"
               required
@@ -136,7 +142,7 @@ async function handleSubmit() {
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="isLoading">
+          <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
             <span v-if="isLoading" class="spinner spinner-sm"></span>
             {{ t('auth.createAccount') }}
           </button>
@@ -156,11 +162,15 @@ async function handleSubmit() {
 <style scoped>
 .auth-header {
   text-align: center;
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .auth-header h1 {
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .auth-footer {
@@ -181,9 +191,22 @@ async function handleSubmit() {
   cursor: pointer;
   font-weight: var(--font-weight-normal);
   margin-bottom: 0;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.radio-label:hover {
+  background-color: var(--bg-secondary);
+}
+
+.radio-label:focus-within {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -2px;
 }
 
 .radio-label input[type='radio'] {
   width: auto;
+  accent-color: var(--color-primary-600);
 }
 </style>

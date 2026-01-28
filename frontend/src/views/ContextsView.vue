@@ -81,7 +81,12 @@ const navigateToDetail = (id: string) => {
           v-for="context in profileStore.contexts"
           :key="context.id"
           class="context-card-wrapper"
+          role="button"
+          tabindex="0"
+          :aria-label="t('context.viewContext', { name: context.context_name })"
           @click="navigateToDetail(context.id)"
+          @keydown.enter="navigateToDetail(context.id)"
+          @keydown.space.prevent="navigateToDetail(context.id)"
         >
           <BaseCard class="h-full hover:shadow-md transition-shadow cursor-pointer border-l-4" :style="{ borderLeftColor: `var(--color-${CONTEXT_TYPE_META[context.context_type].color}-500)` }">
             <div class="flex justify-between items-start mb-4">
@@ -144,11 +149,11 @@ const navigateToDetail = (id: string) => {
 .font-bold { font-weight: 700; }
 .font-semibold { font-weight: 600; }
 .font-medium { font-weight: 500; }
-.text-gray-900 { color: var(--color-gray-900); }
-.text-gray-600 { color: var(--color-gray-600); }
-.text-gray-500 { color: var(--color-gray-500); }
-.text-gray-400 { color: var(--color-gray-400); }
-.bg-gray-100 { background-color: var(--color-gray-100); }
+.text-gray-900 { color: var(--text-primary); }
+.text-gray-600 { color: var(--text-secondary); }
+.text-gray-500 { color: var(--text-secondary); }
+.text-gray-400 { color: var(--text-tertiary); }
+.bg-gray-100 { background-color: var(--bg-tertiary); }
 .rounded-full { border-radius: 9999px; }
 .w-16 { width: 4rem; }
 .h-16 { height: 4rem; }
@@ -165,6 +170,14 @@ const navigateToDetail = (id: string) => {
 .hover\:shadow-md:hover { box-shadow: var(--shadow-md); }
 .transition-shadow { transition: box-shadow 0.3s ease; }
 .cursor-pointer { cursor: pointer; }
+
+/* Keyboard accessibility */
+.context-card-wrapper:focus-visible {
+  outline: none;
+}
+.context-card-wrapper:focus-visible > :deep(.card) {
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary-500);
+}
 
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
