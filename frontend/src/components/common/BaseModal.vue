@@ -152,7 +152,7 @@ const handleClose = () => {
 }
 
 .bg-white {
-  background-color: white;
+  background-color: var(--bg-secondary);
 }
 
 .text-left {
@@ -170,7 +170,7 @@ const handleClose = () => {
 }
 
 .bg-gray-50 {
-  background-color: var(--color-gray-50);
+  background-color: var(--bg-tertiary);
 }
 
 .px-4 {
@@ -216,7 +216,7 @@ const handleClose = () => {
 }
 
 .text-gray-900 {
-  color: var(--color-gray-900);
+  color: var(--text-primary);
 }
 
 .w-full {

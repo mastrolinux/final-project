@@ -22,17 +22,22 @@ defineProps<{
 
 <style scoped>
 .card {
-  background-color: white;
+  background-color: var(--bg-primary);
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+}
+
+:global(.dark) .card {
+  border-color: var(--color-gray-700);
 }
 
 .card-header {
   padding: var(--spacing-4) var(--spacing-6);
-  border-bottom: 1px solid var(--color-gray-200);
-  background-color: var(--color-gray-50);
+  border-bottom: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
   font-weight: var(--font-weight-medium);
 }
 
@@ -46,7 +51,7 @@ defineProps<{
 
 .card-footer {
   padding: var(--spacing-4) var(--spacing-6);
-  border-top: 1px solid var(--color-gray-200);
-  background-color: var(--color-gray-50);
+  border-top: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
 }
 </style>

@@ -38,13 +38,13 @@ const classes = computed(() => {
 
 /* Sizes */
 .badge-sm {
-  padding: 2px 6px;
-  font-size: 10px;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: 11px;
 }
 
 .badge-md {
-  padding: 2px 8px;
-  font-size: 12px;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: 13px;
 }
 
 /* Variants */

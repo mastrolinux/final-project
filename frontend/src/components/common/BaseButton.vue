@@ -25,7 +25,11 @@ const classes = computed(() => {
     'btn',
     `btn-${props.variant}`,
     `btn-${props.size}`,
-    { 'w-full': props.block, 'opacity-50 cursor-not-allowed': props.disabled || props.loading }
+    {
+      'w-full': props.block,
+      'is-loading': props.loading,
+      'is-disabled': props.disabled || props.loading
+    }
   ]
 })
 </script>
@@ -44,14 +48,24 @@ const classes = computed(() => {
   justify-content: center;
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-medium);
-  transition: all var(--transition-fast);
+  transition: all var(--transition-normal);
   cursor: pointer;
   border: 1px solid transparent;
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--color-primary-500);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary-500);
+}
+
+.btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.is-loading {
+  opacity: 0.85;
+  cursor: wait;
 }
 
 /* Variants */
@@ -61,15 +75,17 @@ const classes = computed(() => {
 }
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-primary-700);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background-color: white;
-  color: var(--color-gray-700);
-  border-color: var(--color-gray-300);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-gray-50);
+  background-color: var(--bg-tertiary);
 }
 
 .btn-danger {
@@ -78,14 +94,20 @@ const classes = computed(() => {
 }
 .btn-danger:hover:not(:disabled) {
   background-color: var(--color-error-700);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+.btn-danger:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-error-500);
 }
 
 .btn-ghost {
   background-color: transparent;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 .btn-ghost:hover:not(:disabled) {
-  background-color: var(--color-gray-100);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 /* Sizes */
