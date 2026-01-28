@@ -233,7 +233,7 @@ const navigateToCreateContext = () => {
 
 .field-value {
   font-size: var(--font-size-base);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
 }
 
 /* Utility classes that might be missing if Tailwind isn't fully set up */
@@ -256,9 +256,9 @@ const navigateToCreateContext = () => {
 .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
 .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
 .text-xs { font-size: 0.75rem; line-height: 1rem; }
-.text-gray-900 { color: var(--color-gray-900); }
-.text-gray-500 { color: var(--color-gray-500); }
-.text-gray-400 { color: var(--color-gray-400); }
+.text-gray-900 { color: var(--text-primary); }
+.text-gray-500 { color: var(--text-secondary); }
+.text-gray-400 { color: var(--text-tertiary); }
 .bg-primary-100 { background-color: var(--color-primary-100); }
 .text-primary-700 { color: var(--color-primary-700); }
 .rounded-full { border-radius: 9999px; }
@@ -273,11 +273,11 @@ const navigateToCreateContext = () => {
 .mr-1 { margin-right: 0.25rem; }
 .p-4 { padding: 1rem; }
 .border { border-width: 1px; }
-.border-gray-200 { border-color: var(--color-gray-200); }
-.border-gray-100 { border-color: var(--color-gray-100); }
+.border-gray-200 { border-color: var(--border-primary); }
+.border-gray-100 { border-color: var(--border-primary); }
 .border-b { border-bottom-width: 1px; }
 .rounded-lg { border-radius: 0.5rem; }
-.bg-white { background-color: white; }
+.bg-white { background-color: var(--bg-secondary); }
 .cursor-pointer { cursor: pointer; }
 .line-clamp-2 {
   display: -webkit-box;
