@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useProfileStore } from '@/stores'
 import { authService } from '@/services'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -40,6 +41,7 @@ async function handleLogout() {
     </nav>
 
     <div class="header-right">
+      <ThemeToggle />
       <template v-if="isAuthenticated">
         <div class="user-menu">
           <span class="user-name">{{ displayName }}</span>
