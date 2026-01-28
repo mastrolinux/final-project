@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useAuthStore, useUiStore } from '@/stores'
 import { authService } from '@/services'
 import AppHeader from '@/components/layout/AppHeader.vue'
@@ -10,10 +10,20 @@ const uiStore = useUiStore()
 
 const isLoading = computed(() => !authStore.isInitialized)
 
-onMounted(async () => {
-  // Apply theme class on mount
-  document.documentElement.classList.add(uiStore.effectiveTheme)
+// Reactively update theme class when effectiveTheme changes
+watch(
+  () => uiStore.effectiveTheme,
+  (newTheme, oldTheme) => {
+    const root = document.documentElement
+    if (oldTheme) {
+      root.classList.remove(oldTheme)
+    }
+    root.classList.add(newTheme)
+  },
+  { immediate: true }
+)
 
+onMounted(async () => {
   // Initialize authentication state
   if (authStore.hasStoredSession()) {
     await authService.initializeAuth()
