@@ -98,29 +98,23 @@ const handleCancel = () => {
                   <div
                     v-for="contextType in availableContextTypes"
                     :key="contextType"
-                    class="relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none"
-                    :class="[
-                      form.context_type === contextType 
-                        ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50' 
-                        : 'border-gray-300 bg-white hover:bg-gray-50'
-                    ]"
+                    class="context-type-card"
+                    :class="{ 'is-selected': form.context_type === contextType }"
                     @click="form.context_type = contextType"
                   >
-                    <div class="flex w-full items-center justify-between">
-                      <div class="flex items-center">
-                        <div class="text-sm">
-                          <div class="font-medium text-gray-900 flex items-center gap-2">
-                            {{ t(`context.types.${contextType}`) }}
-                            <BaseBadge :variant="contextType" size="sm" class="ml-1">
-                              {{ CONTEXT_TYPE_META[contextType].label }}
-                            </BaseBadge>
-                          </div>
-                          <div class="text-gray-500 mt-1 text-xs">
-                            {{ t(`context.typeDescriptions.${contextType}`) }}
-                          </div>
+                    <div class="card-content">
+                      <div class="card-info">
+                        <div class="card-title">
+                          {{ t(`context.types.${contextType}`) }}
+                          <BaseBadge :variant="contextType" size="sm">
+                            {{ CONTEXT_TYPE_META[contextType].label }}
+                          </BaseBadge>
+                        </div>
+                        <div class="card-description">
+                          {{ t(`context.typeDescriptions.${contextType}`) }}
                         </div>
                       </div>
-                      <div v-if="form.context_type === contextType" class="text-primary-600">
+                      <div v-if="form.context_type === contextType" class="card-check">
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
@@ -233,6 +227,74 @@ const handleCancel = () => {
   padding: var(--spacing-8) 0;
 }
 
+/* Context Type Selection Cards */
+.context-type-card {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+  padding: var(--spacing-4);
+  background-color: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.context-type-card:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-primary);
+}
+
+.context-type-card.is-selected {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-500);
+  background-color: var(--color-primary-600);
+}
+
+.context-type-card .card-content {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.context-type-card .card-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.context-type-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.context-type-card .card-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.context-type-card .card-check {
+  color: var(--color-primary-600);
+}
+
+/* Selected state overrides - high contrast */
+.context-type-card.is-selected .card-title {
+  color: white;
+}
+
+.context-type-card.is-selected .card-description {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.context-type-card.is-selected .card-check {
+  color: white;
+}
+
 /* Tailwind-like utilities */
 .grid { display: grid; }
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
@@ -268,22 +330,42 @@ const handleCancel = () => {
 .rounded { border-radius: 0.25rem; }
 .border { border-width: 1px; }
 .border-t { border-top-width: 1px; }
-.border-gray-200 { border-color: var(--color-gray-200); }
-.border-gray-300 { border-color: var(--color-gray-300); }
+.border-gray-200 { border-color: var(--border-primary); }
+.border-gray-300 { border-color: var(--border-secondary); }
 .border-primary-500 { border-color: var(--color-primary-500); }
-.border-blue-100 { border-color: #dbeafe; }
-.bg-white { background-color: white; }
-.bg-gray-50 { background-color: var(--color-gray-50); }
-.bg-gray-100 { background-color: var(--color-gray-100); }
+.ring-2 { box-shadow: 0 0 0 2px var(--ring-color, var(--color-primary-500)); }
+.ring-primary-500 { --ring-color: var(--color-primary-500); }
+.border-blue-100 { border-color: var(--color-primary-200); }
+.bg-white { background-color: var(--bg-secondary); }
+.bg-gray-50 { background-color: var(--bg-secondary); }
+.bg-gray-100 { background-color: var(--bg-tertiary); }
 .bg-primary-50 { background-color: var(--color-primary-50); }
-.bg-blue-50 { background-color: #eff6ff; }
-.text-gray-900 { color: var(--color-gray-900); }
-.text-gray-700 { color: var(--color-gray-700); }
-.text-gray-500 { color: var(--color-gray-500); }
+.bg-blue-50 { background-color: var(--color-primary-50); }
+.text-gray-900 { color: var(--text-primary); }
+.text-gray-700 { color: var(--text-secondary); }
+.text-gray-500 { color: var(--text-secondary); }
 .text-primary-600 { color: var(--color-primary-600); }
 .text-warning-600 { color: var(--color-warning-600); }
-.text-blue-900 { color: #1e3a8a; }
-.text-blue-800 { color: #1e40af; }
+.text-blue-900 { color: var(--color-primary-700); }
+.text-blue-800 { color: var(--color-primary-600); }
+.hover\:bg-gray-50:hover { background-color: var(--bg-tertiary); }
+
+/* Dark mode overrides for selection cards */
+:global(.dark) .bg-primary-50 {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+:global(.dark) .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+:global(.dark) .border-blue-100 {
+  border-color: var(--color-primary-700);
+}
+:global(.dark) .text-blue-900 {
+  color: var(--color-primary-300);
+}
+:global(.dark) .text-blue-800 {
+  color: var(--color-primary-400);
+}
 .font-bold { font-weight: 700; }
 .font-medium { font-weight: 500; }
 .text-2xl { font-size: 1.5rem; line-height: 2rem; }

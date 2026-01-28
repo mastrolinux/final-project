@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { authService, getErrorMessage } from '@/services'
@@ -8,10 +8,15 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
+const emailInput = ref<HTMLInputElement | null>(null)
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+onMounted(() => {
+  emailInput.value?.focus()
+})
 
 async function handleSubmit() {
   error.value = null
@@ -49,6 +54,7 @@ async function handleSubmit() {
             <label for="email">{{ t('auth.email') }}</label>
             <input
               id="email"
+              ref="emailInput"
               v-model="email"
               type="email"
               required
@@ -69,16 +75,16 @@ async function handleSubmit() {
             />
           </div>
 
-          <div class="form-group">
-            <router-link to="/forgot-password" class="text-sm">
-              {{ t('auth.forgotPassword') }}
-            </router-link>
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="isLoading">
+          <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
             <span v-if="isLoading" class="spinner spinner-sm"></span>
             {{ t('auth.signIn') }}
           </button>
+
+          <div class="form-help-link">
+            <router-link to="/forgot-password" class="text-sm text-secondary">
+              {{ t('auth.forgotPassword') }}
+            </router-link>
+          </div>
         </form>
 
         <div class="auth-footer">
@@ -95,11 +101,24 @@ async function handleSubmit() {
 <style scoped>
 .auth-header {
   text-align: center;
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .auth-header h1 {
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.form-help-link {
+  text-align: center;
+  margin-top: var(--spacing-4);
+}
+
+.form-help-link a:hover {
+  color: var(--color-primary-600);
 }
 
 .auth-footer {
