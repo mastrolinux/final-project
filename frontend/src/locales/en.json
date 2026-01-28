@@ -122,6 +122,7 @@
   "context": {
     "title": "Identity Contexts",
     "description": "Manage different identity contexts for various aspects of your life",
+    "viewContext": "View context: {name}",
     "create": "Create Context",
     "createNew": "Create New Context",
     "createDescription": "Create a new identity context for a specific purpose or domain",
