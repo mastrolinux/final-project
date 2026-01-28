@@ -77,7 +77,7 @@ const describedBy = computed(() => {
   display: block;
   margin-bottom: var(--spacing-1);
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -87,10 +87,10 @@ const describedBy = computed(() => {
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-base);
   line-height: 1.5;
-  color: var(--color-gray-900);
-  background-color: white;
+  color: var(--text-primary);
+  background-color: var(--input-bg);
   background-clip: padding-box;
-  border: 1px solid var(--color-gray-300);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -102,8 +102,8 @@ const describedBy = computed(() => {
 }
 
 .form-input:disabled {
-  background-color: var(--color-gray-50);
-  opacity: 1;
+  background-color: var(--bg-tertiary);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -124,7 +124,7 @@ const describedBy = computed(() => {
 .form-hint {
   margin-top: var(--spacing-1);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-tertiary);
 }
 
 .text-error {
