@@ -97,7 +97,7 @@ const describedBy = computed(() => {
   display: block;
   margin-bottom: var(--spacing-1);
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -112,9 +112,9 @@ const describedBy = computed(() => {
   padding-right: var(--spacing-8); /* Space for arrow */
   font-size: var(--font-size-base);
   line-height: 1.5;
-  color: var(--color-gray-900);
-  background-color: white;
-  border: 1px solid var(--color-gray-300);
+  color: var(--text-primary);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
   appearance: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -127,7 +127,8 @@ const describedBy = computed(() => {
 }
 
 .form-select:disabled {
-  background-color: var(--color-gray-50);
+  background-color: var(--bg-tertiary);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -153,7 +154,7 @@ const describedBy = computed(() => {
 .select-arrow svg {
   height: 20px;
   width: 20px;
-  color: var(--color-gray-400);
+  color: var(--text-tertiary);
 }
 
 .form-error {
@@ -165,7 +166,7 @@ const describedBy = computed(() => {
 .form-hint {
   margin-top: var(--spacing-1);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-tertiary);
 }
 
 .text-error {
