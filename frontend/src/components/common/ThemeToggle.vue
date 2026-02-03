@@ -5,7 +5,6 @@ import { useUiStore, type Theme } from '@/stores'
 const uiStore = useUiStore()
 
 const currentTheme = computed(() => uiStore.theme)
-const isDark = computed(() => uiStore.effectiveTheme === 'dark')
 
 function cycleTheme() {
   const themes: Theme[] = ['light', 'dark', 'system']

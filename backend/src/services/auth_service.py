@@ -11,6 +11,7 @@ import secrets
 
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.core.config import settings
 from src.core.security import (
     hash_password,
     verify_password,
@@ -148,6 +149,11 @@ class AuthService:
         )
         refresh_token = create_refresh_token(str(auth_user.user_id))
         
+        # Check admin status from database OR environment config
+        is_admin = auth_user.is_admin or (
+            auth_user.email.lower() in settings.admin_emails
+        )
+
         return True, None, {
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -156,7 +162,8 @@ class AuthService:
             "user_id": str(auth_user.user_id),
             "email": auth_user.email,
             "is_email_verified": auth_user.is_email_verified,
-            "account_type": account_type
+            "account_type": account_type,
+            "is_admin": is_admin
         }
     
     def verify_email(self, token: str) -> Tuple[bool, Optional[str]]:

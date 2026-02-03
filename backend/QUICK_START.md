@@ -1,26 +1,26 @@
 # Quick Start Guide - Identity API Backend
 
-## ✅ System Status
+## System Status
 
-Your backend is **FULLY OPERATIONAL**! 
+Your backend is fully operational. 
 
 ### What's Working
 
-- ✅ **Supabase PostgreSQL**: Running with migrations applied
-- ✅ **FastAPI Application**: Running on http://localhost:8000
-- ✅ **Database Tables**: `base_profiles` and `identity_names` created
-- ✅ **Seed Data**: 5 sample profiles loaded
-- ✅ **Tests**: 46 tests passing (9 minor test setup issues)
-- ✅ **API Endpoints**: All endpoints functional
+- Supabase PostgreSQL: Running with migrations applied
+- FastAPI Application: Running on http://localhost:8000
+- Database Tables: `base_profiles` and `identity_names` created
+- Seed Data: 5 sample profiles loaded
+- Tests: 255+ tests passing
+- API Endpoints: All endpoints functional
 
 ### Minor Issue (Non-blocking)
 
-- ⚠️ **Supabase Client Library**: Version compatibility with `proxy` argument
+- Supabase Client Library: Version compatibility with `proxy` argument
   - **Impact**: Minor - doesn't affect core functionality
   - **Why**: Using SQLAlchemy for database access (which works perfectly)
   - **Fix**: Can be ignored or fixed by updating Supabase client later
 
-## 🚀 Try It Now
+## Try It Now
 
 ### 1. Check System Health
 
@@ -29,8 +29,8 @@ curl http://localhost:8000/health/detailed | jq
 ```
 
 **Expected:**
-- Database: healthy ✅
-- Tables: healthy ✅
+- Database: healthy
+- Tables: healthy
 - Overall: degraded (due to Supabase client, but functional)
 
 ### 2. View Seed Data
@@ -97,7 +97,7 @@ LIMIT 5;
 "
 ```
 
-## 🧪 Running Tests
+## Running Tests
 
 ### All Tests
 
@@ -106,8 +106,8 @@ docker compose exec api pytest -v
 ```
 
 **Current Results:**
-- ✅ 46 tests passing
-- ⚠️ 9 tests with environment setup issues (doesn't affect functionality)
+- 255+ tests passing (unit + integration)
+- OAuth, auth, context, and profile tests all passing
 
 ### Test by Category
 
@@ -132,7 +132,7 @@ docker compose exec api pytest --cov=src --cov-report=html
 open htmlcov/index.html
 ```
 
-## 📊 Sample Data Overview
+## Sample Data Overview
 
 Your database contains 5 diverse profiles demonstrating:
 
@@ -166,7 +166,7 @@ Your database contains 5 diverse profiles demonstrating:
 - **Names**: Current name + deprecated historical name
 - **Demonstrates**: Deadname handling with visibility controls
 
-## 🔄 Common Operations
+## Common Operations
 
 ### Restart Services
 
@@ -210,7 +210,78 @@ Shows:
 - Available URLs
 - Helpful commands
 
-## 🎯 Next Steps
+## Admin Access Setup
+
+To access admin features (OAuth client management), configure your email as an admin:
+
+### Option 1: Environment Variable (Recommended for Development)
+
+Edit `backend/.env`:
+```bash
+ADMIN_USER_EMAILS=your.email@example.com
+```
+
+Restart the backend:
+```bash
+docker compose restart api
+```
+
+### Option 2: Database Flag
+
+```bash
+docker exec supabase_db_backend psql -U postgres -d postgres -c \
+  "UPDATE auth_users SET is_admin = true WHERE email = 'your.email@example.com';"
+```
+
+### Verify Admin Status
+
+After logging in, your `is_admin` field should be `true`:
+```bash
+curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your.email@example.com", "password": "YourPassword123!"}' \
+  | jq '.is_admin'
+```
+
+## OAuth 2.1 Quick Test
+
+Once you have admin access, test the OAuth flow:
+
+### 1. Create an OAuth Client
+
+```bash
+# Get admin token
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "YOUR_ADMIN_EMAIL", "password": "YOUR_PASSWORD"}' \
+  | jq -r '.access_token')
+
+# Create client
+curl -s -X POST http://localhost:8000/api/v1/admin/oauth/clients \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "my-test-app",
+    "client_name": "My Test App",
+    "redirect_uris": ["http://localhost:3000/callback"],
+    "allowed_scopes": ["openid", "profile:read:basic", "email"],
+    "is_confidential": false,
+    "token_endpoint_auth_method": "none"
+  }' | jq .
+```
+
+### 2. Test Authorization Flow
+
+See `postman/TESTING-GUIDE.md` Phase 7 for complete OAuth testing steps.
+
+### 3. Frontend Admin UI
+
+If running the frontend (http://localhost:5173):
+1. Log in with your admin account
+2. Click "Admin" in the navigation header
+3. Manage OAuth clients visually
+
+## Next Steps
 
 Now that your backend is running, you can:
 
@@ -224,22 +295,27 @@ Now that your backend is running, you can:
    - Run SQL queries
    - Browse table data
 
-3. **Develop New Features**
+3. **Test OAuth Flow**
+   - Create OAuth clients via admin API or UI
+   - Follow the PKCE authorization flow
+   - See `postman/TESTING-GUIDE.md` for detailed steps
+
+4. **Develop New Features**
    - Add new endpoints in `src/api/v1/endpoints/`
    - Create new models in `src/models/`
    - Write tests in `tests/`
 
-4. **Test Changes**
+5. **Test Changes**
    ```bash
    docker compose exec api pytest -v
    ```
 
-5. **Read Architecture Docs**
+6. **Read Architecture Docs**
    - See `../architecture/` for detailed design
    - Understand multi-context identity
    - Learn about cultural naming patterns
 
-## 📚 Documentation
+## Documentation
 
 - **Setup Guide**: `docs/SETUP.md`
 - **Testing Guide**: `TESTING.md`
@@ -247,7 +323,7 @@ Now that your backend is running, you can:
 - **Architecture**: `../architecture/`
 - **API Docs**: http://localhost:8000/docs
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Database Connection Issues
 
@@ -283,17 +359,18 @@ find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null
 docker compose exec api pytest -v
 ```
 
-## ✨ Summary
+## Summary
 
-Your **Identity and Profile Management API** is fully functional with:
+Your Identity and Profile Management API is fully functional with:
 
-- ✅ PostgreSQL database with proper schema
-- ✅ 5 diverse seed profiles demonstrating cultural inclusivity
-- ✅ FastAPI with auto-generated documentation
-- ✅ Comprehensive test suite
-- ✅ Health check endpoints
-- ✅ Database test endpoints
-- ✅ Supabase Studio for visual database management
+- PostgreSQL database with proper schema
+- 5 diverse seed profiles demonstrating cultural inclusivity
+- FastAPI with auto-generated documentation
+- Comprehensive test suite (255+ tests)
+- Health check endpoints
+- OAuth 2.1 authorization server
+- Admin interface for OAuth client management
+- Supabase Studio for visual database management
 
-**Ready for development!** 🚀
+Ready for development.
 

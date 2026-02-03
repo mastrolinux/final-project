@@ -583,6 +583,285 @@ pm.test("Response has JWT tokens", function() {
 5. **Email Infrastructure**: Mailpit captures emails for testing
 6. **Token Rotation**: Refresh tokens are single-use (blacklisted after use)
 
+## Phase 7: OAuth 2.1 Authorization Server Testing
+
+This section covers testing the OAuth 2.1 implementation with mandatory PKCE.
+
+### OAuth 2.1 Flow Overview
+
+The implementation follows RFC 6749 (OAuth 2.0) with mandatory PKCE (RFC 7636) as required by OAuth 2.1:
+
+1. **Client Registration** - Admin creates OAuth client via API or UI
+2. **Authorization Request** - Client redirects user with PKCE challenge
+3. **User Consent** - User approves requested scopes
+4. **Token Exchange** - Client exchanges code + verifier for tokens
+5. **Resource Access** - Client uses token to access protected APIs
+
+### Prerequisites: Admin Access
+
+To create OAuth clients, you need admin access. Admin status is granted if:
+- Your email is in `ADMIN_USER_EMAILS` environment variable, OR
+- Your `auth_users.is_admin` database column is `true`
+
+### Test 15: Create OAuth Client (Admin API)
+
+```bash
+# Login as admin user
+ACCESS_TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "YOUR_ADMIN_EMAIL", "password": "YOUR_PASSWORD"}' \
+  | jq -r '.access_token')
+
+# Verify admin status
+echo "Admin token acquired: ${ACCESS_TOKEN:0:20}..."
+
+# Create a public OAuth client (for SPAs/mobile apps)
+curl -s -X POST http://localhost:8000/api/v1/admin/oauth/clients \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -d '{
+    "client_id": "test-oauth-app",
+    "client_name": "Test OAuth Application",
+    "client_description": "Demo client for OAuth flow testing",
+    "redirect_uris": ["http://localhost:3000/callback", "http://127.0.0.1:3000/callback"],
+    "allowed_scopes": ["openid", "profile:read:basic", "profile:read:email", "email", "offline_access"],
+    "is_confidential": false,
+    "is_first_party": false,
+    "token_endpoint_auth_method": "none"
+  }' | jq .
+```
+
+**Expected Response (201 Created):**
+```json
+{
+  "client_id": "test-oauth-app",
+  "client_name": "Test OAuth Application",
+  "client_secret": null,
+  "is_active": true
+}
+```
+
+Note: Public clients (`is_confidential: false`) do not receive a client_secret.
+
+### Test 16: Generate PKCE Parameters
+
+PKCE (Proof Key for Code Exchange) prevents authorization code interception:
+
+```bash
+# Generate code_verifier (43-128 URL-safe characters)
+CODE_VERIFIER=$(openssl rand -base64 32 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+echo "code_verifier: $CODE_VERIFIER"
+
+# Generate code_challenge (SHA-256 of verifier, base64url encoded)
+CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl dgst -sha256 -binary | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+echo "code_challenge: $CODE_CHALLENGE"
+
+# Generate state for CSRF protection
+STATE=$(openssl rand -hex 16)
+echo "state: $STATE"
+```
+
+### Test 17: Initiate Authorization Request
+
+```bash
+curl -s "http://localhost:8000/api/v1/oauth/authorize?\
+response_type=code&\
+client_id=test-oauth-app&\
+redirect_uri=http://localhost:3000/callback&\
+scope=openid%20profile:read:basic%20email&\
+state=$STATE&\
+code_challenge=$CODE_CHALLENGE&\
+code_challenge_method=S256" | jq .
+```
+
+**Expected Response:**
+```json
+{
+  "message": "Authorization request valid - user consent required",
+  "client_id": "test-oauth-app",
+  "client_name": "Test OAuth Application",
+  "redirect_uri": "http://localhost:3000/callback",
+  "scope": "openid profile:read:basic email",
+  "state": "...",
+  "requires_consent": true,
+  "consent_endpoint": "/oauth/consent"
+}
+```
+
+### Test 18: Submit User Consent
+
+Use a seed user (Sarah Chen) to simulate consent approval:
+
+```bash
+USER_ID="00000000-0000-0000-0000-000000000001"
+
+# Submit consent - will redirect with authorization code
+curl -s -X POST "http://localhost:8000/api/v1/oauth/consent?\
+user_id=$USER_ID&\
+client_id=test-oauth-app&\
+redirect_uri=http://localhost:3000/callback&\
+scope=openid%20profile:read:basic%20email&\
+state=$STATE&\
+code_challenge=$CODE_CHALLENGE&\
+code_challenge_method=S256&\
+approved=true" \
+  -H "Content-Type: application/json" \
+  -w "\n%{redirect_url}" 2>&1
+```
+
+The response is a 302 redirect. Extract the authorization code from the Location header:
+```
+Location: http://localhost:3000/callback?code=AUTH_CODE&state=...
+```
+
+### Test 19: Exchange Code for Tokens
+
+```bash
+AUTH_CODE="<paste_code_from_redirect>"
+
+curl -s -X POST http://localhost:8000/api/v1/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code" \
+  -d "code=$AUTH_CODE" \
+  -d "redirect_uri=http://localhost:3000/callback" \
+  -d "client_id=test-oauth-app" \
+  -d "code_verifier=$CODE_VERIFIER" | jq .
+```
+
+**Expected Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "scope": "openid profile:read:basic email"
+}
+```
+
+### Test 20: Access UserInfo Endpoint
+
+```bash
+OAUTH_TOKEN="<access_token_from_previous_step>"
+
+curl -s http://localhost:8000/api/v1/oauth/userinfo \
+  -H "Authorization: Bearer $OAUTH_TOKEN" | jq .
+```
+
+**Expected Response:**
+```json
+{
+  "sub": "00000000-0000-0000-0000-000000000001",
+  "name": "Dr. Sarah Chen",
+  "email": "sarah.chen@example.com",
+  "email_verified": true
+}
+```
+
+### Test 21: Token Introspection
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/oauth/introspect \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "token=$OAUTH_TOKEN" | jq .
+```
+
+**Expected Response:**
+```json
+{
+  "active": true,
+  "client_id": "test-oauth-app",
+  "username": "sarah.chen@example.com",
+  "scope": "openid profile:read:basic email",
+  "exp": 1704067200,
+  "iat": 1704063600,
+  "sub": "00000000-0000-0000-0000-000000000001",
+  "token_type": "Bearer"
+}
+```
+
+### Test 22: Token Revocation
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/oauth/revoke \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "token=$OAUTH_TOKEN" \
+  -d "client_id=test-oauth-app"
+```
+
+**Expected Response:** 200 OK with empty body
+
+### Test 23: Refresh Token Flow
+
+```bash
+REFRESH_TOKEN="<refresh_token_from_token_response>"
+
+curl -s -X POST http://localhost:8000/api/v1/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=$REFRESH_TOKEN" \
+  -d "client_id=test-oauth-app" | jq .
+```
+
+Note: Refresh tokens are single-use (rotation). The old refresh token is invalidated.
+
+### Test 24: PKCE Validation (Negative Test)
+
+Attempt token exchange with wrong code_verifier:
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code" \
+  -d "code=$AUTH_CODE" \
+  -d "redirect_uri=http://localhost:3000/callback" \
+  -d "client_id=test-oauth-app" \
+  -d "code_verifier=wrong_verifier_value" | jq .
+```
+
+**Expected Response (400 Bad Request):**
+```json
+{
+  "error": "invalid_grant",
+  "error_description": "Invalid code verifier"
+}
+```
+
+### OAuth Admin UI
+
+The frontend includes an admin interface at `/admin/oauth/clients` (requires admin login):
+
+- **List Clients**: View all registered OAuth clients
+- **Create Client**: Register new third-party applications
+- **Edit Client**: Update client configuration
+- **Delete Client**: Soft-delete (deactivate) clients
+
+### OAuth Endpoints Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/.well-known/oauth-authorization-server` | GET | Server metadata (RFC 8414) |
+| `/oauth/authorize` | GET | Authorization request |
+| `/oauth/consent` | POST | Submit user consent |
+| `/oauth/token` | POST | Token exchange |
+| `/oauth/introspect` | POST | Token introspection (RFC 7662) |
+| `/oauth/revoke` | POST | Token revocation (RFC 7009) |
+| `/oauth/userinfo` | GET | OIDC UserInfo endpoint |
+| `/oauth/consents` | GET | List user's active consents |
+| `/oauth/consents/{client_id}` | DELETE | Withdraw consent (GDPR Art. 7(3)) |
+| `/oauth/scopes` | GET | List available scopes |
+
+### OAuth Admin Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/admin/oauth/clients` | GET | List all clients (paginated) |
+| `/admin/oauth/clients` | POST | Create new client |
+| `/admin/oauth/clients/{id}` | GET | Get client details |
+| `/admin/oauth/clients/{id}` | PATCH | Update client |
+| `/admin/oauth/clients/{id}` | DELETE | Soft-delete client |
+| `/admin/oauth/clients/{id}/purge` | DELETE | Hard-delete client (permanent) |
+
 ## Resources
 
 - **Postman Collection**: `postman/thesis-api.postman_collection.json`
@@ -593,5 +872,8 @@ pm.test("Response has JWT tokens", function() {
 - **API Docs**: http://localhost:8000/docs
 - **Auth Schemas**: `backend/src/schemas/auth.py`
 - **Auth Endpoints**: `backend/src/api/v1/endpoints/auth.py`
+- **OAuth Endpoints**: `backend/src/api/v1/endpoints/oauth.py`
+- **Admin OAuth Endpoints**: `backend/src/api/v1/endpoints/admin_oauth.py`
+- **Frontend Admin UI**: http://localhost:5173/admin/oauth/clients
 
 For questions or issues, refer to `CLAUDE.md` and `backend/TESTING.md`.

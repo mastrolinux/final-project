@@ -123,7 +123,8 @@ class LoginResponse(BaseModel):
     email: str = Field(..., description="User email")
     is_email_verified: bool = Field(..., description="Email verification status")
     account_type: str = Field(..., description="Account type (verified/unverified/pseudonymous)")
-    
+    is_admin: bool = Field(..., description="Admin status")
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [{
@@ -134,7 +135,8 @@ class LoginResponse(BaseModel):
                 "user_id": "123e4567-e89b-12d3-a456-426614174000",
                 "email": "user@example.com",
                 "is_email_verified": True,
-                "account_type": "verified"
+                "account_type": "verified",
+                "is_admin": False
             }]
         }
     )

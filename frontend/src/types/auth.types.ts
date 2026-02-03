@@ -34,6 +34,7 @@ export interface LoginResponse {
   email: string
   is_email_verified: boolean
   account_type: AccountType
+  is_admin: boolean
 }
 
 export interface RefreshTokenRequest {
@@ -65,4 +66,5 @@ export interface AuthUser {
   email: string
   is_email_verified: boolean
   account_type: AccountType
+  is_admin: boolean
 }
