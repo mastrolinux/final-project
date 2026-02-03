@@ -177,7 +177,11 @@ title: "Decisions & Future Considerations"
 - [+] Audit trail preserved
 - [+] Grace period for GDPR
 - [-] Requires filtering `deleted_at IS NULL` in queries
-- [-] Eventual hard delete still needed
+- [-] ~~Eventual hard delete still needed~~ Addressed: purge endpoints added (Jan 2026)
+
+**Implementation Note (Jan 2026):**
+
+Hard delete capability has been implemented for OAuth clients via the `/admin/oauth/clients/{id}/purge` endpoint. This administrative endpoint enables permanent removal of soft-deleted records when necessary (testing cleanup, client_id reuse, compliance with data erasure requests after retention period). The purge operation cascades to related tokens and consents. This pattern may be extended to other entities as needed while maintaining soft delete as the default behavior.
 
 **Alternatives Considered**:
 

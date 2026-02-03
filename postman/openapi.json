@@ -1,1 +1,5103 @@
-{"openapi":"3.1.0","info":{"title":"Identity and Profile Management API","description":"Identity and Profile Management API - Multi-context, privacy oriented identity system","version":"1.0.0"},"paths":{"/api/v1/health":{"get":{"summary":"Api Health","description":"API v1 health check endpoint\n\nReturns API-specific health information.","operationId":"api_health_api_v1_health_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}},"/api/v1/database/test":{"get":{"tags":["Database Testing"],"summary":"Test Database Connection","description":"Test database connection and query sample data\n\nPerforms simple database queries to verify:\n- Database connectivity\n- Table existence\n- Sample data access\n\nReturns count of profiles and sample profile data.","operationId":"test_database_connection_api_v1_database_test_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"type":"object","title":"Response Test Database Connection Api V1 Database Test Get"}}}}}}},"/api/v1/database/profiles/count":{"get":{"tags":["Database Testing"],"summary":"Get Profile Counts","description":"Get profile counts by account type\n\nReturns breakdown of profile counts by account type\n(verified, unverified, pseudonymous).","operationId":"get_profile_counts_api_v1_database_profiles_count_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"type":"object","title":"Response Get Profile Counts Api V1 Database Profiles Count Get"}}}}}}},"/api/v1/database/profiles/{user_id}":{"get":{"tags":["Database Testing"],"summary":"Get Profile With Names","description":"Get a specific profile with all associated names\n\nRetrieves profile and all identity names for testing.","operationId":"get_profile_with_names_api_v1_database_profiles__user_id__get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","title":"User Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"type":"object","title":"Response Get Profile With Names Api V1 Database Profiles  User Id  Get"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles":{"post":{"tags":["Profiles"],"summary":"Create Profile","description":"Create a new profile\n\n- **account_type**: verified, unverified, or pseudonymous\n- **legal_name**: Required for verified accounts\n- **primary_email**: Must be unique","operationId":"create_profile_api_v1_profiles_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfileCreate"}}},"required":true},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}":{"get":{"tags":["Profiles"],"summary":"Get Profile","description":"Get profile by ID\n\nReturns profile details excluding soft-deleted profiles.","operationId":"get_profile_api_v1_profiles__user_id__get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"patch":{"tags":["Profiles"],"summary":"Update Profile","description":"Update profile fields\n\nValidates business rules:\n- Verified accounts require legal_name\n- Cannot downgrade from verified account type\n- Email must be unique","operationId":"update_profile_api_v1_profiles__user_id__patch","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfileUpdate"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["Profiles"],"summary":"Delete Profile","description":"Soft delete a profile\n\nSets deleted_at timestamp. Profile will no longer appear in queries.","operationId":"delete_profile_api_v1_profiles__user_id__delete","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"responses":{"204":{"description":"Successful Response"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}/names":{"post":{"tags":["Profiles"],"summary":"Add Identity Name","description":"Add an identity name to a profile\n\nSupports multilingual names with JSONB storage.","operationId":"add_identity_name_api_v1_profiles__user_id__names_post","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/IdentityNameCreate"}}}},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/IdentityNameResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"get":{"tags":["Profiles"],"summary":"Get Identity Names","description":"Get all identity names for a profile\n\nReturns list of identity names, excluding deprecated names by default.","operationId":"get_identity_names_api_v1_profiles__user_id__names_get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/IdentityNameResponse"},"title":"Response Get Identity Names Api V1 Profiles  User Id  Names Get"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}/contexts":{"post":{"tags":["Contexts"],"summary":"Create Context Profile","description":"Create a new context profile for a user\n\nEnables users to present different identity aspects in different social contexts.\n\n- **context_type**: professional, social, legal, or healthcare\n- **context_name**: User-defined label (e.g., \"LinkedIn\", \"Family Photos\")\n- **display_name_override**: Optional override for display name\n- **email_override**: Optional override for email\n- **phone_override**: Optional override for phone\n- **bio**: Optional context-specific biography\n\n**Business Rules:**\n- Pseudonymous accounts cannot create legal or healthcare contexts\n- Context (user_id, context_type, context_name) must be unique\n\n**Example Use Case:**\nPrivacy-focused professional creates professional context with work credentials\nwhile keeping personal information private from career platforms.","operationId":"create_context_profile_api_v1_profiles__user_id__contexts_post","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContextProfileCreate"}}}},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContextProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"get":{"tags":["Contexts"],"summary":"List User Contexts","description":"List all context profiles for a user\n\nReturns raw context profiles showing only overrides.\nUse the resolved endpoint to see the full merged profile.\n\n- **include_inactive**: Whether to include inactive contexts","operationId":"list_user_contexts_api_v1_profiles__user_id__contexts_get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"include_inactive","in":"query","required":false,"schema":{"type":"boolean","description":"Include inactive contexts in results","default":false,"title":"Include Inactive"},"description":"Include inactive contexts in results"}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/ContextProfileResponse"},"title":"Response List User Contexts Api V1 Profiles  User Id  Contexts Get"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}/contexts/{context_id}":{"get":{"tags":["Contexts"],"summary":"Get Context Profile","description":"Get a specific context profile (raw overrides only)\n\nReturns the context profile showing only override fields.\nUse the /resolved endpoint to see the full merged profile.","operationId":"get_context_profile_api_v1_profiles__user_id__contexts__context_id__get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"context_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"Context Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContextProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"patch":{"tags":["Contexts"],"summary":"Update Context Profile","description":"Update a context profile\n\nAllows partial updates to context overrides.\nSetting a field to null removes the override (inherits from base profile).","operationId":"update_context_profile_api_v1_profiles__user_id__contexts__context_id__patch","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"context_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"Context Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContextProfileUpdate"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ContextProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["Contexts"],"summary":"Delete Context Profile","description":"Delete a context profile (soft delete)\n\nMarks the context as deleted without physically removing it.\nThe context can be recovered within the retention period.","operationId":"delete_context_profile_api_v1_profiles__user_id__contexts__context_id__delete","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"context_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"Context Id"}}],"responses":{"204":{"description":"Successful Response"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}/contexts/{context_id}/resolved":{"get":{"tags":["Contexts"],"summary":"Get Resolved Context Profile","description":"Get fully resolved profile with context inheritance applied\n\n**CRITICAL ENDPOINT: Demonstrates the inheritance engine**\n\nThis endpoint implements Goffman's dramaturgical theory by merging:\n1. Base profile fields\n2. Context-specific overrides\n3. Multilingual name resolution\n\nThe resolved profile is what third-party applications receive via OAuth.\n\n**Inheritance Rules:**\n- Start with base profile values\n- Apply context overrides (null overrides inherit from base)\n- Filter deprecated names unless explicitly requested\n- Resolve multilingual names using language preference\n\n**Example:**\n- Base profile: email=personal@example.com, phone=+1-555-1234\n- Professional context: email_override=work@company.com, phone_override=None\n- Resolved: email=work@company.com, phone=+1-555-1234 (inherited)","operationId":"get_resolved_context_profile_api_v1_profiles__user_id__contexts__context_id__resolved_get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"context_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"Context Id"}},{"name":"language","in":"query","required":false,"schema":{"type":"string","description":"Language code for name resolution (ISO 639-1)","default":"en","title":"Language"},"description":"Language code for name resolution (ISO 639-1)"},{"name":"include_deprecated","in":"query","required":false,"schema":{"type":"boolean","description":"Include deprecated names in results","default":false,"title":"Include Deprecated"},"description":"Include deprecated names in results"}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResolvedProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/profiles/{user_id}/resolved":{"get":{"tags":["Contexts"],"summary":"Get Resolved Base Profile","description":"Get resolved base profile without context overrides\n\nReturns the user's default identity presentation without any context-specific overrides.\nUseful for displaying the user's primary profile.","operationId":"get_resolved_base_profile_api_v1_profiles__user_id__resolved_get","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid","title":"User Id"}},{"name":"language","in":"query","required":false,"schema":{"type":"string","description":"Language code for name resolution (ISO 639-1)","default":"en","title":"Language"},"description":"Language code for name resolution (ISO 639-1)"},{"name":"include_deprecated","in":"query","required":false,"schema":{"type":"boolean","description":"Include deprecated names in results","default":false,"title":"Include Deprecated"},"description":"Include deprecated names in results"}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResolvedProfileResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/health":{"get":{"summary":"Health Check","description":"Basic health check endpoint\n\nReturns basic service status information.\nFor detailed health information, use /health/detailed","operationId":"health_check_health_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}},"/health/detailed":{"get":{"summary":"Detailed Health Check","description":"Detailed health check endpoint\n\nChecks the health of all system components:\n- Application status\n- Database connection (PostgreSQL via SQLAlchemy)\n- Supabase connection and configuration\n- Database tables existence\n\nReturns comprehensive status for monitoring and debugging.","operationId":"detailed_health_check_health_detailed_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}},"/":{"get":{"summary":"Root","description":"Root endpoint\n\nProvides basic API information and navigation.","operationId":"root__get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}}},"components":{"schemas":{"AccountType":{"type":"string","enum":["verified","unverified","pseudonymous"],"title":"AccountType","description":"Account type enumeration"},"ContextProfileCreate":{"properties":{"context_type":{"allOf":[{"$ref":"#/components/schemas/ContextType"}],"description":"Type of context: professional, social, legal, or healthcare"},"context_name":{"type":"string","maxLength":100,"minLength":1,"title":"Context Name","description":"User-defined context name (e.g., 'Work', 'LinkedIn', 'Family')"},"display_name_override":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}],"title":"Display Name Override","description":"Override display name for this context"},"email_override":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}],"title":"Email Override","description":"Override email for this context"},"phone_override":{"anyOf":[{"type":"string","maxLength":50},{"type":"null"}],"title":"Phone Override","description":"Override phone number for this context"},"bio":{"anyOf":[{"type":"string","maxLength":1000},{"type":"null"}],"title":"Bio","description":"Context-specific biography or description"}},"type":"object","required":["context_type","context_name"],"title":"ContextProfileCreate","description":"Schema for creating a new context profile","examples":[{"bio":"Board-certified psychiatrist specializing in trauma and PTSD","context_name":"LinkedIn","context_type":"professional","display_name_override":"Dr. Sarah Chen, MD, PhD","email_override":"s.chen@hospital.org"}]},"ContextProfileResponse":{"properties":{"id":{"type":"string","format":"uuid","title":"Id"},"user_id":{"type":"string","format":"uuid","title":"User Id"},"context_type":{"$ref":"#/components/schemas/ContextType"},"context_name":{"type":"string","title":"Context Name"},"display_name_override":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Display Name Override"},"email_override":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Email Override"},"phone_override":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Phone Override"},"bio":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bio"},"is_active":{"type":"boolean","title":"Is Active"},"created_at":{"type":"string","format":"date-time","title":"Created At"},"updated_at":{"type":"string","format":"date-time","title":"Updated At"},"deleted_at":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}],"title":"Deleted At"},"valid_from":{"type":"string","format":"date-time","title":"Valid From"},"valid_to":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}],"title":"Valid To"}},"type":"object","required":["id","user_id","context_type","context_name","is_active","created_at","updated_at","valid_from"],"title":"ContextProfileResponse","description":"Schema for context profile response (raw context with overrides only)","examples":[{"bio":"Board-certified psychiatrist","context_name":"LinkedIn","context_type":"professional","created_at":"2025-01-01T00:00:00Z","display_name_override":"Dr. Sarah Chen, MD, PhD","email_override":"s.chen@hospital.org","id":"123e4567-e89b-12d3-a456-426614174000","is_active":true,"updated_at":"2025-01-01T00:00:00Z","user_id":"123e4567-e89b-12d3-a456-426614174001","valid_from":"2025-01-01T00:00:00Z"}]},"ContextProfileUpdate":{"properties":{"context_name":{"anyOf":[{"type":"string","maxLength":100,"minLength":1},{"type":"null"}],"title":"Context Name"},"display_name_override":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}],"title":"Display Name Override"},"email_override":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}],"title":"Email Override"},"phone_override":{"anyOf":[{"type":"string","maxLength":50},{"type":"null"}],"title":"Phone Override"},"bio":{"anyOf":[{"type":"string","maxLength":1000},{"type":"null"}],"title":"Bio"},"is_active":{"anyOf":[{"type":"boolean"},{"type":"null"}],"title":"Is Active"}},"type":"object","title":"ContextProfileUpdate","description":"Schema for updating an existing context profile","examples":[{"bio":"Updated professional biography","is_active":true}]},"ContextType":{"type":"string","enum":["professional","social","legal","healthcare"],"title":"ContextType","description":"Context type enumeration for different social contexts"},"HTTPValidationError":{"properties":{"detail":{"items":{"$ref":"#/components/schemas/ValidationError"},"type":"array","title":"Detail"}},"type":"object","title":"HTTPValidationError"},"IdentityNameCreate":{"properties":{"name_type":{"allOf":[{"$ref":"#/components/schemas/NameType"}],"description":"Type of name: given, family, preferred, legal, etc."},"name_value":{"additionalProperties":{"type":"string"},"type":"object","title":"Name Value","description":"Multilingual name values (language code: name)"},"is_primary":{"type":"boolean","title":"Is Primary","description":"Whether this is the primary name of this type","default":false},"is_deprecated":{"type":"boolean","title":"Is Deprecated","description":"Whether this name is deprecated (e.g., deadname)","default":false},"visibility_level":{"allOf":[{"$ref":"#/components/schemas/VisibilityLevel"}],"description":"Visibility level: public, private, or historical_suppressed","default":"public"},"context_id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}],"title":"Context Id","description":"Optional context ID if this name is context-specific"}},"type":"object","required":["name_type","name_value"],"title":"IdentityNameCreate","description":"Schema for creating a new identity name","examples":[{"is_primary":true,"name_type":"full_name","name_value":{"en":"Dr. Sarah Chen","zh":"陈莎拉博士"},"visibility_level":"public"}]},"IdentityNameInResolved":{"properties":{"name_type":{"$ref":"#/components/schemas/NameType"},"name_value":{"additionalProperties":{"type":"string"},"type":"object","title":"Name Value"},"is_primary":{"type":"boolean","title":"Is Primary"}},"type":"object","required":["name_type","name_value","is_primary"],"title":"IdentityNameInResolved","description":"Schema for identity name in resolved profile","examples":[{"is_primary":true,"name_type":"full_name","name_value":{"en":"Dr. Sarah Chen","zh":"陈莎拉博士"}}]},"IdentityNameResponse":{"properties":{"id":{"type":"string","format":"uuid","title":"Id"},"identity_id":{"type":"string","format":"uuid","title":"Identity Id"},"name_type":{"$ref":"#/components/schemas/NameType"},"name_value":{"additionalProperties":{"type":"string"},"type":"object","title":"Name Value"},"is_primary":{"type":"boolean","title":"Is Primary"},"is_deprecated":{"type":"boolean","title":"Is Deprecated"},"visibility_level":{"$ref":"#/components/schemas/VisibilityLevel"},"context_id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}],"title":"Context Id"},"created_at":{"type":"string","format":"date-time","title":"Created At"},"updated_at":{"type":"string","format":"date-time","title":"Updated At"},"valid_from":{"type":"string","format":"date-time","title":"Valid From"},"valid_to":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}],"title":"Valid To"}},"type":"object","required":["id","identity_id","name_type","name_value","is_primary","is_deprecated","visibility_level","created_at","updated_at","valid_from"],"title":"IdentityNameResponse","description":"Schema for identity name response","examples":[{"created_at":"2025-01-01T00:00:00Z","id":"123e4567-e89b-12d3-a456-426614174001","identity_id":"123e4567-e89b-12d3-a456-426614174000","is_deprecated":false,"is_primary":true,"name_type":"full_name","name_value":{"en":"Dr. Sarah Chen"},"updated_at":"2025-01-01T00:00:00Z","valid_from":"2025-01-01T00:00:00Z","visibility_level":"public"}]},"NameType":{"type":"string","enum":["given","family","preferred","legal","patronymic","full_name","custom"],"title":"NameType","description":"Name type enumeration"},"ProfileCreate":{"properties":{"account_type":{"allOf":[{"$ref":"#/components/schemas/AccountType"}],"description":"Account type: verified, unverified, or pseudonymous","default":"unverified"},"legal_name":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}],"title":"Legal Name","description":"Legal name (required for verified accounts)"},"primary_email":{"type":"string","format":"email","title":"Primary Email","description":"Primary email address (required, must be unique)"},"primary_phone":{"anyOf":[{"type":"string","maxLength":50},{"type":"null"}],"title":"Primary Phone","description":"Primary phone number"},"preferred_language":{"type":"string","maxLength":10,"title":"Preferred Language","description":"Preferred language code (ISO 639-1)","default":"en"}},"type":"object","required":["primary_email"],"title":"ProfileCreate","description":"Schema for creating a new profile","examples":[{"account_type":"verified","legal_name":"Sarah Elizabeth Chen","preferred_language":"en","primary_email":"sarah.chen@example.com","primary_phone":"+1-555-0101"}]},"ProfileResponse":{"properties":{"user_id":{"type":"string","format":"uuid","title":"User Id"},"account_type":{"$ref":"#/components/schemas/AccountType"},"legal_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Legal Name"},"primary_email":{"type":"string","title":"Primary Email"},"primary_phone":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Primary Phone"},"preferred_language":{"type":"string","title":"Preferred Language"},"created_at":{"type":"string","format":"date-time","title":"Created At"},"updated_at":{"type":"string","format":"date-time","title":"Updated At"},"deleted_at":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}],"title":"Deleted At"},"valid_from":{"type":"string","format":"date-time","title":"Valid From"},"valid_to":{"anyOf":[{"type":"string","format":"date-time"},{"type":"null"}],"title":"Valid To"}},"type":"object","required":["user_id","account_type","primary_email","preferred_language","created_at","updated_at","valid_from"],"title":"ProfileResponse","description":"Schema for profile response","examples":[{"account_type":"verified","created_at":"2025-01-01T00:00:00Z","legal_name":"Sarah Elizabeth Chen","preferred_language":"en","primary_email":"sarah.chen@example.com","primary_phone":"+1-555-0101","updated_at":"2025-01-01T00:00:00Z","user_id":"123e4567-e89b-12d3-a456-426614174000","valid_from":"2025-01-01T00:00:00Z"}]},"ProfileUpdate":{"properties":{"account_type":{"anyOf":[{"$ref":"#/components/schemas/AccountType"},{"type":"null"}]},"legal_name":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}],"title":"Legal Name"},"primary_email":{"anyOf":[{"type":"string","format":"email"},{"type":"null"}],"title":"Primary Email"},"primary_phone":{"anyOf":[{"type":"string","maxLength":50},{"type":"null"}],"title":"Primary Phone"},"preferred_language":{"anyOf":[{"type":"string","maxLength":10},{"type":"null"}],"title":"Preferred Language"}},"type":"object","title":"ProfileUpdate","description":"Schema for updating an existing profile","examples":[{"preferred_language":"es","primary_phone":"+1-555-9999"}]},"ResolvedProfileResponse":{"properties":{"user_id":{"type":"string","format":"uuid","title":"User Id"},"account_type":{"$ref":"#/components/schemas/AccountType"},"display_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Display Name","description":"Display name (from context override or None if not overridden)"},"email":{"type":"string","title":"Email","description":"Email address (from context override or base profile)"},"phone":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Phone","description":"Phone number (from context override or base profile)"},"preferred_language":{"type":"string","title":"Preferred Language"},"bio":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Bio","description":"Biography (context-specific if available)"},"context_type":{"anyOf":[{"$ref":"#/components/schemas/ContextType"},{"type":"null"}],"description":"Context type this profile is resolved for"},"context_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Context Name","description":"Context name this profile is resolved for"},"identity_names":{"items":{"$ref":"#/components/schemas/IdentityNameInResolved"},"type":"array","title":"Identity Names","description":"Identity names (filtered for deprecated if applicable)"}},"type":"object","required":["user_id","account_type","email","preferred_language"],"title":"ResolvedProfileResponse","description":"Schema for fully resolved profile (base + context overrides applied)\n\nThis is the unified view third-party applications receive via OAuth.\nDemonstrates the inheritance engine merging base profile + context overrides.","examples":[{"account_type":"verified","bio":"Board-certified psychiatrist specializing in trauma and PTSD","context_name":"LinkedIn","context_type":"professional","display_name":"Dr. Sarah Chen, MD, PhD","email":"s.chen@hospital.org","identity_names":[{"is_primary":true,"name_type":"full_name","name_value":{"en":"Dr. Sarah Chen"}}],"phone":"+1-555-0101","preferred_language":"en","user_id":"123e4567-e89b-12d3-a456-426614174001"}]},"ValidationError":{"properties":{"loc":{"items":{"anyOf":[{"type":"string"},{"type":"integer"}]},"type":"array","title":"Location"},"msg":{"type":"string","title":"Message"},"type":{"type":"string","title":"Error Type"}},"type":"object","required":["loc","msg","type"],"title":"ValidationError"},"VisibilityLevel":{"type":"string","enum":["public","private","historical_suppressed"],"title":"VisibilityLevel","description":"Visibility level enumeration"}}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Identity and Profile Management API",
+    "description": "Identity and Profile Management API - Multi-context, privacy oriented identity system",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Api Health",
+        "description": "API v1 health check endpoint\n\nReturns API-specific health information.",
+        "operationId": "api_health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/database/test": {
+      "get": {
+        "tags": [
+          "Database Testing"
+        ],
+        "summary": "Test Database Connection",
+        "description": "Test database connection and query sample data\n\nPerforms simple database queries to verify:\n- Database connectivity\n- Table existence\n- Sample data access\n\nReturns count of profiles and sample profile data.",
+        "operationId": "test_database_connection_api_v1_database_test_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Test Database Connection Api V1 Database Test Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/database/profiles/count": {
+      "get": {
+        "tags": [
+          "Database Testing"
+        ],
+        "summary": "Get Profile Counts",
+        "description": "Get profile counts by account type\n\nReturns breakdown of profile counts by account type\n(verified, unverified, pseudonymous).",
+        "operationId": "get_profile_counts_api_v1_database_profiles_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Profile Counts Api V1 Database Profiles Count Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/database/profiles/{user_id}": {
+      "get": {
+        "tags": [
+          "Database Testing"
+        ],
+        "summary": "Get Profile With Names",
+        "description": "Get a specific profile with all associated names\n\nRetrieves profile and all identity names for testing.",
+        "operationId": "get_profile_with_names_api_v1_database_profiles__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Profile With Names Api V1 Database Profiles  User Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles": {
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Create Profile",
+        "description": "Create a new profile\n\n- **account_type**: verified, unverified, or pseudonymous\n- **legal_name**: Required for verified accounts\n- **primary_email**: Must be unique",
+        "operationId": "create_profile_api_v1_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get Profile",
+        "description": "Get profile by ID\n\nReturns profile details excluding soft-deleted profiles.",
+        "operationId": "get_profile_api_v1_profiles__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update Profile",
+        "description": "Update profile fields\n\nValidates business rules:\n- Verified accounts require legal_name\n- Cannot downgrade from verified account type\n- Email must be unique",
+        "operationId": "update_profile_api_v1_profiles__user_id__patch",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete Profile",
+        "description": "Soft delete a profile\n\nSets deleted_at timestamp. Profile will no longer appear in queries.",
+        "operationId": "delete_profile_api_v1_profiles__user_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}/names": {
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Add Identity Name",
+        "description": "Add an identity name to a profile\n\nSupports multilingual names with JSONB storage.",
+        "operationId": "add_identity_name_api_v1_profiles__user_id__names_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityNameCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityNameResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get Identity Names",
+        "description": "Get all identity names for a profile\n\nReturns list of identity names, excluding deprecated names by default.",
+        "operationId": "get_identity_names_api_v1_profiles__user_id__names_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IdentityNameResponse"
+                  },
+                  "title": "Response Get Identity Names Api V1 Profiles  User Id  Names Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}/contexts": {
+      "post": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Create Context Profile",
+        "description": "Create a new context profile for a user\n\nEnables users to present different identity aspects in different social contexts.\n\n- **context_type**: professional, social, legal, or healthcare\n- **context_name**: User-defined label (e.g., \"LinkedIn\", \"Family Photos\")\n- **display_name_override**: Optional override for display name\n- **email_override**: Optional override for email\n- **phone_override**: Optional override for phone\n- **bio**: Optional context-specific biography\n\n**Business Rules:**\n- Pseudonymous accounts cannot create legal or healthcare contexts\n- Context (user_id, context_type, context_name) must be unique\n\n**Example Use Case:**\nPrivacy-focused professional creates professional context with work credentials\nwhile keeping personal information private from career platforms.",
+        "operationId": "create_context_profile_api_v1_profiles__user_id__contexts_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextProfileCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "List User Contexts",
+        "description": "List all context profiles for a user\n\nReturns raw context profiles showing only overrides.\nUse the resolved endpoint to see the full merged profile.\n\n- **include_inactive**: Whether to include inactive contexts",
+        "operationId": "list_user_contexts_api_v1_profiles__user_id__contexts_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include inactive contexts in results",
+              "default": false,
+              "title": "Include Inactive"
+            },
+            "description": "Include inactive contexts in results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContextProfileResponse"
+                  },
+                  "title": "Response List User Contexts Api V1 Profiles  User Id  Contexts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}/contexts/{context_id}": {
+      "get": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Get Context Profile",
+        "description": "Get a specific context profile (raw overrides only)\n\nReturns the context profile showing only override fields.\nUse the /resolved endpoint to see the full merged profile.",
+        "operationId": "get_context_profile_api_v1_profiles__user_id__contexts__context_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Context Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Update Context Profile",
+        "description": "Update a context profile\n\nAllows partial updates to context overrides.\nSetting a field to null removes the override (inherits from base profile).",
+        "operationId": "update_context_profile_api_v1_profiles__user_id__contexts__context_id__patch",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Context Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Delete Context Profile",
+        "description": "Delete a context profile (soft delete)\n\nMarks the context as deleted without physically removing it.\nThe context can be recovered within the retention period.",
+        "operationId": "delete_context_profile_api_v1_profiles__user_id__contexts__context_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Context Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}/contexts/{context_id}/resolved": {
+      "get": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Get Resolved Context Profile",
+        "description": "Get fully resolved profile with context inheritance applied\n\n**CRITICAL ENDPOINT: Demonstrates the inheritance engine**\n\nThis endpoint implements Goffman's dramaturgical theory by merging:\n1. Base profile fields\n2. Context-specific overrides\n3. Multilingual name resolution\n\nThe resolved profile is what third-party applications receive via OAuth.\n\n**Inheritance Rules:**\n- Start with base profile values\n- Apply context overrides (null overrides inherit from base)\n- Filter deprecated names unless explicitly requested\n- Resolve multilingual names using language preference\n\n**Example:**\n- Base profile: email=personal@example.com, phone=+1-555-1234\n- Professional context: email_override=work@company.com, phone_override=None\n- Resolved: email=work@company.com, phone=+1-555-1234 (inherited)",
+        "operationId": "get_resolved_context_profile_api_v1_profiles__user_id__contexts__context_id__resolved_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "context_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Context Id"
+            }
+          },
+          {
+            "name": "include_deprecated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include deprecated names in results",
+              "default": false,
+              "title": "Include Deprecated"
+            },
+            "description": "Include deprecated names in results"
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{user_id}/resolved": {
+      "get": {
+        "tags": [
+          "Contexts"
+        ],
+        "summary": "Get Resolved Base Profile",
+        "description": "Get resolved base profile without context overrides\n\nReturns the user's default identity presentation without any context-specific overrides.\nUseful for displaying the user's primary profile.",
+        "operationId": "get_resolved_base_profile_api_v1_profiles__user_id__resolved_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "include_deprecated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include deprecated names in results",
+              "default": false,
+              "title": "Include Deprecated"
+            },
+            "description": "Include deprecated names in results"
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register New User",
+        "description": "Register a new user account with email and password authentication",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "User Login",
+        "description": "Authenticate user and return JWT tokens",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify Email",
+        "description": "Verify email address with token from email",
+        "operationId": "verify_email_api_v1_auth_verify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyEmailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/request-reset": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Request Password Reset",
+        "description": "Request password reset email",
+        "operationId": "request_password_reset_api_v1_auth_request_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPasswordResetResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Reset Password",
+        "description": "Reset password with token from email",
+        "operationId": "reset_password_api_v1_auth_reset_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Resend Verification Email",
+        "description": "Resend email verification link",
+        "operationId": "resend_verification_api_v1_auth_resend_verification_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendVerificationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh Access Token",
+        "description": "Exchange valid refresh token for new access and refresh tokens",
+        "operationId": "refresh_token_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/.well-known/oauth-authorization-server": {
+      "get": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "OAuth Server Metadata",
+        "description": "Returns OAuth 2.0 Authorization Server Metadata (RFC 8414)",
+        "operationId": "get_oauth_metadata_api_v1_oauth__well_known_oauth_authorization_server_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthServerMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/authorize": {
+      "get": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Authorization Request",
+        "description": "OAuth 2.1 Authorization Endpoint - initiates authorization flow",
+        "operationId": "authorization_request_api_v1_oauth_authorize_get",
+        "parameters": [
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Must be 'code'",
+              "title": "Response Type"
+            },
+            "description": "Must be 'code'"
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client identifier",
+              "title": "Client Id"
+            },
+            "description": "Client identifier"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Callback URL",
+              "title": "Redirect Uri"
+            },
+            "description": "Callback URL"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Space-separated scopes",
+              "default": "profile:read:basic",
+              "title": "Scope"
+            },
+            "description": "Space-separated scopes"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Client state for CSRF",
+              "title": "State"
+            },
+            "description": "Client state for CSRF"
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "PKCE code challenge",
+              "title": "Code Challenge"
+            },
+            "description": "PKCE code challenge"
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Must be 'S256'",
+              "default": "S256",
+              "title": "Code Challenge Method"
+            },
+            "description": "Must be 'S256'"
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OIDC nonce",
+              "title": "Nonce"
+            },
+            "description": "OIDC nonce"
+          },
+          {
+            "name": "context_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Requested context type",
+              "title": "Context Type"
+            },
+            "description": "Requested context type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/consent": {
+      "post": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Submit Consent Decision",
+        "description": "Submit user's consent decision for an authorization request",
+        "operationId": "submit_consent_api_v1_oauth_consent_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Authenticated user ID",
+              "title": "User Id"
+            },
+            "description": "Authenticated user ID"
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client requesting authorization",
+              "title": "Client Id"
+            },
+            "description": "Client requesting authorization"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Client callback URL",
+              "title": "Redirect Uri"
+            },
+            "description": "Client callback URL"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Requested scopes",
+              "title": "Scope"
+            },
+            "description": "Requested scopes"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Client state",
+              "title": "State"
+            },
+            "description": "Client state"
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "PKCE challenge",
+              "title": "Code Challenge"
+            },
+            "description": "PKCE challenge"
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "PKCE method",
+              "default": "S256",
+              "title": "Code Challenge Method"
+            },
+            "description": "PKCE method"
+          },
+          {
+            "name": "approved",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether user approved",
+              "title": "Approved"
+            },
+            "description": "Whether user approved"
+          },
+          {
+            "name": "granted_scopes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Approved scopes (subset)",
+              "title": "Granted Scopes"
+            },
+            "description": "Approved scopes (subset)"
+          },
+          {
+            "name": "context_profile_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Context to bind",
+              "title": "Context Profile Id"
+            },
+            "description": "Context to bind"
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OIDC nonce",
+              "title": "Nonce"
+            },
+            "description": "OIDC nonce"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/token": {
+      "post": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Token Request",
+        "description": "OAuth 2.1 Token Endpoint - exchange code or refresh token for access token",
+        "operationId": "token_request_api_v1_oauth_token_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_token_request_api_v1_oauth_token_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/introspect": {
+      "post": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Token Introspection",
+        "description": "Validate and get metadata about a token (RFC 7662)",
+        "operationId": "introspect_token_api_v1_oauth_introspect_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_introspect_token_api_v1_oauth_introspect_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntrospectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/revoke": {
+      "post": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Token Revocation",
+        "description": "Revoke an access or refresh token (RFC 7009)",
+        "operationId": "revoke_token_api_v1_oauth_revoke_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_revoke_token_api_v1_oauth_revoke_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/userinfo": {
+      "get": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "UserInfo",
+        "description": "Get user profile information based on access token scopes",
+        "operationId": "get_userinfo_api_v1_oauth_userinfo_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Bearer token",
+              "title": "Authorization"
+            },
+            "description": "Bearer token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/consents": {
+      "get": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "List User Consents",
+        "description": "List all active OAuth consents for a user",
+        "operationId": "list_user_consents_api_v1_oauth_consents_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/consents/{client_id}": {
+      "delete": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "Withdraw Consent",
+        "description": "Withdraw consent for a specific client",
+        "operationId": "withdraw_consent_api_v1_oauth_consents__client_id__delete",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/scopes": {
+      "get": {
+        "tags": [
+          "OAuth 2.1"
+        ],
+        "summary": "List Available Scopes",
+        "description": "List all available OAuth scopes",
+        "operationId": "list_scopes_api_v1_oauth_scopes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/oauth/clients": {
+      "post": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "Create OAuth Client",
+        "description": "Register a new OAuth client. Requires admin privileges.",
+        "operationId": "create_oauth_client_api_v1_admin_oauth_clients_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthClientCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthClientCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "List OAuth Clients",
+        "description": "List all registered OAuth clients. Requires admin privileges.",
+        "operationId": "list_oauth_clients_api_v1_admin_oauth_clients_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include inactive clients",
+              "default": false,
+              "title": "Include Inactive"
+            },
+            "description": "Include inactive clients"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthClientListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/oauth/clients/{client_id}": {
+      "get": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "Get OAuth Client",
+        "description": "Get details of a specific OAuth client. Requires admin privileges.",
+        "operationId": "get_oauth_client_api_v1_admin_oauth_clients__client_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "Update OAuth Client",
+        "description": "Update an OAuth client. Requires admin privileges.",
+        "operationId": "update_oauth_client_api_v1_admin_oauth_clients__client_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthClientUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthClientResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "Delete OAuth Client",
+        "description": "Soft-delete an OAuth client. Requires admin privileges.",
+        "operationId": "delete_oauth_client_api_v1_admin_oauth_clients__client_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/oauth/clients/{client_id}/purge": {
+      "delete": {
+        "tags": [
+          "Admin - OAuth"
+        ],
+        "summary": "Permanently Delete OAuth Client",
+        "description": "Hard-delete an OAuth client and all related records. Requires admin privileges.",
+        "operationId": "purge_oauth_client_api_v1_admin_oauth_clients__client_id__purge_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Basic health check endpoint\n\nReturns basic service status information.\nFor detailed health information, use /health/detailed",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/detailed": {
+      "get": {
+        "summary": "Detailed Health Check",
+        "description": "Detailed health check endpoint\n\nChecks the health of all system components:\n- Application status\n- Database connection (PostgreSQL via SQLAlchemy)\n- Supabase connection and configuration\n- Database tables existence\n\nReturns comprehensive status for monitoring and debugging.",
+        "operationId": "detailed_health_check_health_detailed_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Root endpoint\n\nProvides basic API information and navigation.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountType": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "unverified",
+          "pseudonymous"
+        ],
+        "title": "AccountType",
+        "description": "Account type enumeration"
+      },
+      "Body_introspect_token_api_v1_oauth_introspect_post": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Token to introspect"
+          },
+          "token_type_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Type Hint",
+            "description": "Token type hint"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id",
+            "description": "Client ID"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Body_introspect_token_api_v1_oauth_introspect_post"
+      },
+      "Body_revoke_token_api_v1_oauth_revoke_post": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Token to revoke"
+          },
+          "token_type_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Type Hint",
+            "description": "Token type hint"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id",
+            "description": "Client ID"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Body_revoke_token_api_v1_oauth_revoke_post"
+      },
+      "Body_token_request_api_v1_oauth_token_post": {
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "title": "Grant Type",
+            "description": "Grant type"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "Authorization code"
+          },
+          "redirect_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redirect Uri",
+            "description": "Redirect URI"
+          },
+          "code_verifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Verifier",
+            "description": "PKCE verifier"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token",
+            "description": "Refresh token"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id",
+            "description": "Client ID"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope",
+            "description": "Reduced scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grant_type"
+        ],
+        "title": "Body_token_request_api_v1_oauth_token_post"
+      },
+      "ConsentListResponse": {
+        "properties": {
+          "consents": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentResponse"
+            },
+            "type": "array",
+            "title": "Consents"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "consents",
+          "total"
+        ],
+        "title": "ConsentListResponse",
+        "description": "Schema for list of user consents"
+      },
+      "ConsentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "granted_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Granted Scopes"
+          },
+          "context_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Profile Id"
+          },
+          "granted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Granted At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "client_id",
+          "client_name",
+          "granted_scopes",
+          "granted_at",
+          "is_active"
+        ],
+        "title": "ConsentResponse",
+        "description": "Schema for consent record response"
+      },
+      "ContextProfileCreate": {
+        "properties": {
+          "context_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              }
+            ],
+            "description": "Type of context: professional, social, legal, or healthcare"
+          },
+          "context_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Context Name",
+            "description": "User-defined context name (e.g., 'Work', 'LinkedIn', 'Family')"
+          },
+          "display_name_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name Override",
+            "description": "Override display name for this context"
+          },
+          "email_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Override",
+            "description": "Override email for this context"
+          },
+          "phone_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Override",
+            "description": "Override phone number for this context"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio",
+            "description": "Context-specific biography or description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context_type",
+          "context_name"
+        ],
+        "title": "ContextProfileCreate",
+        "description": "Schema for creating a new context profile",
+        "examples": [
+          {
+            "bio": "Board-certified psychiatrist specializing in trauma and PTSD",
+            "context_name": "LinkedIn",
+            "context_type": "professional",
+            "display_name_override": "Dr. Sarah Chen, MD, PhD",
+            "email_override": "s.chen@hospital.org"
+          }
+        ]
+      },
+      "ContextProfileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "context_type": {
+            "$ref": "#/components/schemas/ContextType"
+          },
+          "context_name": {
+            "type": "string",
+            "title": "Context Name"
+          },
+          "display_name_override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name Override"
+          },
+          "email_override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Override"
+          },
+          "phone_override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Override"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "context_type",
+          "context_name",
+          "is_active",
+          "created_at",
+          "updated_at",
+          "valid_from"
+        ],
+        "title": "ContextProfileResponse",
+        "description": "Schema for context profile response (raw context with overrides only)",
+        "examples": [
+          {
+            "bio": "Board-certified psychiatrist",
+            "context_name": "LinkedIn",
+            "context_type": "professional",
+            "created_at": "2025-01-01T00:00:00Z",
+            "display_name_override": "Dr. Sarah Chen, MD, PhD",
+            "email_override": "s.chen@hospital.org",
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "is_active": true,
+            "updated_at": "2025-01-01T00:00:00Z",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001",
+            "valid_from": "2025-01-01T00:00:00Z"
+          }
+        ]
+      },
+      "ContextProfileUpdate": {
+        "properties": {
+          "context_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Name"
+          },
+          "display_name_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name Override"
+          },
+          "email_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Override"
+          },
+          "phone_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Override"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "ContextProfileUpdate",
+        "description": "Schema for updating an existing context profile",
+        "examples": [
+          {
+            "bio": "Updated professional biography",
+            "is_active": true
+          }
+        ]
+      },
+      "ContextType": {
+        "type": "string",
+        "enum": [
+          "professional",
+          "social",
+          "legal",
+          "healthcare",
+          "family",
+          "custom"
+        ],
+        "title": "ContextType",
+        "description": "Context type enumeration for different social contexts"
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "invalid_request",
+          "unauthorized_client",
+          "access_denied",
+          "unsupported_response_type",
+          "invalid_scope",
+          "server_error",
+          "temporarily_unavailable",
+          "invalid_grant",
+          "invalid_client",
+          "unsupported_grant_type"
+        ],
+        "title": "ErrorCode",
+        "description": "OAuth 2.1 error codes (RFC 6749 Section 4.1.2.1)"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentityNameCreate": {
+        "properties": {
+          "name_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NameType"
+              }
+            ],
+            "description": "Type of name: given, family, preferred, legal, etc."
+          },
+          "name_value": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Name Value",
+            "description": "Multilingual name values (language code: name)"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary",
+            "description": "Whether this is the primary name of this type",
+            "default": false
+          },
+          "is_deprecated": {
+            "type": "boolean",
+            "title": "Is Deprecated",
+            "description": "Whether this name is deprecated (e.g., deadname)",
+            "default": false
+          },
+          "visibility_level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VisibilityLevel"
+              }
+            ],
+            "description": "Visibility level: public, private, or historical_suppressed",
+            "default": "public"
+          },
+          "context_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Id",
+            "description": "Optional context ID if this name is context-specific"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name_type",
+          "name_value"
+        ],
+        "title": "IdentityNameCreate",
+        "description": "Schema for creating a new identity name",
+        "examples": [
+          {
+            "is_primary": true,
+            "name_type": "full_name",
+            "name_value": {
+              "en": "Dr. Sarah Chen",
+              "zh": "\u9648\u838e\u62c9\u535a\u58eb"
+            },
+            "visibility_level": "public"
+          }
+        ]
+      },
+      "IdentityNameInResolved": {
+        "properties": {
+          "name_type": {
+            "$ref": "#/components/schemas/NameType"
+          },
+          "name_value": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Name Value"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name_type",
+          "name_value",
+          "is_primary"
+        ],
+        "title": "IdentityNameInResolved",
+        "description": "Schema for identity name in resolved profile",
+        "examples": [
+          {
+            "is_primary": true,
+            "name_type": "full_name",
+            "name_value": {
+              "en": "Dr. Sarah Chen",
+              "zh": "\u9648\u838e\u62c9\u535a\u58eb"
+            }
+          }
+        ]
+      },
+      "IdentityNameResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "identity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Identity Id"
+          },
+          "name_type": {
+            "$ref": "#/components/schemas/NameType"
+          },
+          "name_value": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Name Value"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary"
+          },
+          "is_deprecated": {
+            "type": "boolean",
+            "title": "Is Deprecated"
+          },
+          "visibility_level": {
+            "$ref": "#/components/schemas/VisibilityLevel"
+          },
+          "context_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "identity_id",
+          "name_type",
+          "name_value",
+          "is_primary",
+          "is_deprecated",
+          "visibility_level",
+          "created_at",
+          "updated_at",
+          "valid_from"
+        ],
+        "title": "IdentityNameResponse",
+        "description": "Schema for identity name response",
+        "examples": [
+          {
+            "created_at": "2025-01-01T00:00:00Z",
+            "id": "123e4567-e89b-12d3-a456-426614174001",
+            "identity_id": "123e4567-e89b-12d3-a456-426614174000",
+            "is_deprecated": false,
+            "is_primary": true,
+            "name_type": "full_name",
+            "name_value": {
+              "en": "Dr. Sarah Chen"
+            },
+            "updated_at": "2025-01-01T00:00:00Z",
+            "valid_from": "2025-01-01T00:00:00Z",
+            "visibility_level": "public"
+          }
+        ]
+      },
+      "IntrospectionResponse": {
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "description": "Whether token is currently active"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "token_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Type"
+          },
+          "exp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exp",
+            "description": "Expiration timestamp (Unix epoch)"
+          },
+          "iat": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iat",
+            "description": "Issued at timestamp (Unix epoch)"
+          },
+          "nbf": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nbf",
+            "description": "Not before timestamp (Unix epoch)"
+          },
+          "sub": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub",
+            "description": "Subject (user ID)"
+          },
+          "aud": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aud",
+            "description": "Audience (client ID)"
+          },
+          "iss": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iss",
+            "description": "Issuer URL"
+          },
+          "jti": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jti",
+            "description": "Token identifier"
+          },
+          "context_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Profile Id"
+          },
+          "context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "active"
+        ],
+        "title": "IntrospectionResponse",
+        "description": "Token Introspection Response (RFC 7662)\n\nReturns token metadata if active, minimal response if inactive."
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "User email address"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "User password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "User login request schema.",
+        "examples": [
+          {
+            "email": "user@example.com",
+            "password": "SecurePass123!"
+          }
+        ]
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "JWT access token (1 hour expiry)"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token",
+            "description": "JWT refresh token (30 days expiry)"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "description": "Token type (always 'bearer')",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Access token expiry in seconds"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "User email"
+          },
+          "is_email_verified": {
+            "type": "boolean",
+            "title": "Is Email Verified",
+            "description": "Email verification status"
+          },
+          "account_type": {
+            "type": "string",
+            "title": "Account Type",
+            "description": "Account type (verified/unverified/pseudonymous)"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "description": "Admin status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in",
+          "user_id",
+          "email",
+          "is_email_verified",
+          "account_type",
+          "is_admin"
+        ],
+        "title": "LoginResponse",
+        "description": "User login response with JWT tokens.",
+        "examples": [
+          {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "account_type": "verified",
+            "email": "user@example.com",
+            "expires_in": 3600,
+            "is_admin": false,
+            "is_email_verified": true,
+            "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "token_type": "bearer",
+            "user_id": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ]
+      },
+      "NameType": {
+        "type": "string",
+        "enum": [
+          "given",
+          "family",
+          "preferred",
+          "legal",
+          "patronymic",
+          "full_name",
+          "custom"
+        ],
+        "title": "NameType",
+        "description": "Name type enumeration"
+      },
+      "OAuthClientCreate": {
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Client Id",
+            "description": "Unique client identifier"
+          },
+          "client_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Client Name",
+            "description": "Display name for consent screen"
+          },
+          "client_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Description"
+          },
+          "client_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uri"
+          },
+          "logo_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Uri"
+          },
+          "redirect_uris": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Redirect Uris",
+            "description": "Allowed redirect URIs (exact match required)"
+          },
+          "allowed_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Scopes",
+            "description": "Scopes this client can request",
+            "default": [
+              "profile:read:basic"
+            ]
+          },
+          "default_context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_confidential": {
+            "type": "boolean",
+            "title": "Is Confidential",
+            "description": "Whether client can securely store secrets",
+            "default": false
+          },
+          "is_first_party": {
+            "type": "boolean",
+            "title": "Is First Party",
+            "description": "First-party apps can skip consent",
+            "default": false
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret (required for confidential clients)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_id",
+          "client_name",
+          "redirect_uris"
+        ],
+        "title": "OAuthClientCreate",
+        "description": "Schema for registering a new OAuth client"
+      },
+      "OAuthClientCreateResponse": {
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "client_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Description"
+          },
+          "client_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uri"
+          },
+          "logo_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Uri"
+          },
+          "redirect_uris": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Redirect Uris"
+          },
+          "allowed_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Scopes"
+          },
+          "default_context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_confidential": {
+            "type": "boolean",
+            "title": "Is Confidential"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "is_first_party": {
+            "type": "boolean",
+            "title": "Is First Party"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret (shown only once, store securely)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_id",
+          "client_name",
+          "redirect_uris",
+          "allowed_scopes",
+          "is_confidential",
+          "is_active",
+          "is_first_party",
+          "created_at"
+        ],
+        "title": "OAuthClientCreateResponse",
+        "description": "Schema for OAuth client creation response.\n\nIncludes the plain text client_secret - this is the ONLY time\nthe secret is returned. It cannot be retrieved later."
+      },
+      "OAuthClientListResponse": {
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/OAuthClientResponse"
+            },
+            "type": "array",
+            "title": "Clients"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "default": 20
+          }
+        },
+        "type": "object",
+        "required": [
+          "clients",
+          "total"
+        ],
+        "title": "OAuthClientListResponse",
+        "description": "Schema for paginated list of OAuth clients"
+      },
+      "OAuthClientResponse": {
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "client_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Description"
+          },
+          "client_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uri"
+          },
+          "logo_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Uri"
+          },
+          "redirect_uris": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Redirect Uris"
+          },
+          "allowed_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Scopes"
+          },
+          "default_context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_confidential": {
+            "type": "boolean",
+            "title": "Is Confidential"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "is_first_party": {
+            "type": "boolean",
+            "title": "Is First Party"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_id",
+          "client_name",
+          "redirect_uris",
+          "allowed_scopes",
+          "is_confidential",
+          "is_active",
+          "is_first_party",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OAuthClientResponse",
+        "description": "Schema for OAuth client response (does NOT include secret)"
+      },
+      "OAuthClientUpdate": {
+        "properties": {
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name",
+            "description": "Display name for consent screen"
+          },
+          "client_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Description"
+          },
+          "client_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Uri"
+          },
+          "logo_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Uri"
+          },
+          "redirect_uris": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redirect Uris",
+            "description": "Allowed redirect URIs"
+          },
+          "allowed_scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Scopes",
+            "description": "Scopes this client can request"
+          },
+          "default_context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "is_first_party": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is First Party"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "New client secret (only for confidential clients)"
+          }
+        },
+        "type": "object",
+        "title": "OAuthClientUpdate",
+        "description": "Schema for updating an OAuth client"
+      },
+      "OAuthServerMetadata": {
+        "properties": {
+          "issuer": {
+            "type": "string",
+            "title": "Issuer"
+          },
+          "authorization_endpoint": {
+            "type": "string",
+            "title": "Authorization Endpoint"
+          },
+          "token_endpoint": {
+            "type": "string",
+            "title": "Token Endpoint"
+          },
+          "userinfo_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userinfo Endpoint"
+          },
+          "introspection_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introspection Endpoint"
+          },
+          "revocation_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Endpoint"
+          },
+          "jwks_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jwks Uri"
+          },
+          "scopes_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes Supported"
+          },
+          "response_types_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Response Types Supported",
+            "default": [
+              "code"
+            ]
+          },
+          "response_modes_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Response Modes Supported",
+            "default": [
+              "query"
+            ]
+          },
+          "grant_types_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Grant Types Supported",
+            "default": [
+              "authorization_code",
+              "refresh_token"
+            ]
+          },
+          "token_endpoint_auth_methods_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Token Endpoint Auth Methods Supported",
+            "default": [
+              "none",
+              "client_secret_post",
+              "client_secret_basic"
+            ]
+          },
+          "code_challenge_methods_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Code Challenge Methods Supported",
+            "default": [
+              "S256"
+            ]
+          },
+          "subject_types_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Subject Types Supported",
+            "default": [
+              "public"
+            ]
+          },
+          "id_token_signing_alg_values_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Id Token Signing Alg Values Supported",
+            "default": [
+              "RS256",
+              "HS256"
+            ]
+          },
+          "claims_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Claims Supported",
+            "default": [
+              "sub",
+              "name",
+              "given_name",
+              "family_name",
+              "preferred_username",
+              "email",
+              "email_verified",
+              "phone_number",
+              "phone_number_verified",
+              "picture",
+              "locale"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "issuer",
+          "authorization_endpoint",
+          "token_endpoint",
+          "scopes_supported"
+        ],
+        "title": "OAuthServerMetadata",
+        "description": "OAuth 2.0 Authorization Server Metadata (RFC 8414)\n\nReturned at /.well-known/oauth-authorization-server"
+      },
+      "ProfileCreate": {
+        "properties": {
+          "account_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountType"
+              }
+            ],
+            "description": "Account type: verified, unverified, or pseudonymous",
+            "default": "unverified"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name",
+            "description": "Legal name (required for verified accounts)"
+          },
+          "primary_email": {
+            "type": "string",
+            "format": "email",
+            "title": "Primary Email",
+            "description": "Primary email address (required, must be unique)"
+          },
+          "primary_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Phone",
+            "description": "Primary phone number"
+          },
+          "preferred_language": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Preferred Language",
+            "description": "Preferred language code (ISO 639-1)",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primary_email"
+        ],
+        "title": "ProfileCreate",
+        "description": "Schema for creating a new profile",
+        "examples": [
+          {
+            "account_type": "verified",
+            "legal_name": "Sarah Elizabeth Chen",
+            "preferred_language": "en",
+            "primary_email": "sarah.chen@example.com",
+            "primary_phone": "+1-555-0101"
+          }
+        ]
+      },
+      "ProfileResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "primary_email": {
+            "type": "string",
+            "title": "Primary Email"
+          },
+          "primary_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Phone"
+          },
+          "preferred_language": {
+            "type": "string",
+            "title": "Preferred Language"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "account_type",
+          "primary_email",
+          "preferred_language",
+          "created_at",
+          "updated_at",
+          "valid_from"
+        ],
+        "title": "ProfileResponse",
+        "description": "Schema for profile response",
+        "examples": [
+          {
+            "account_type": "verified",
+            "created_at": "2025-01-01T00:00:00Z",
+            "legal_name": "Sarah Elizabeth Chen",
+            "preferred_language": "en",
+            "primary_email": "sarah.chen@example.com",
+            "primary_phone": "+1-555-0101",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            "valid_from": "2025-01-01T00:00:00Z"
+          }
+        ]
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "account_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "primary_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Email"
+          },
+          "primary_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Phone"
+          },
+          "preferred_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Language"
+          }
+        },
+        "type": "object",
+        "title": "ProfileUpdate",
+        "description": "Schema for updating an existing profile",
+        "examples": [
+          {
+            "preferred_language": "es",
+            "primary_phone": "+1-555-9999"
+          }
+        ]
+      },
+      "RefreshTokenRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "minLength": 50,
+            "title": "Refresh Token",
+            "description": "JWT refresh token obtained from login or previous refresh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshTokenRequest",
+        "description": "Refresh token request schema.\n\nUsed to exchange a valid refresh token for new access and refresh tokens.\nImplements refresh token rotation for enhanced security.",
+        "examples": [
+          {
+            "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ..."
+          }
+        ]
+      },
+      "RefreshTokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "New JWT access token (1 hour expiry)"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token",
+            "description": "New JWT refresh token (30 days expiry)"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "description": "Token type (always 'bearer')",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Access token expiry in seconds (3600 = 1 hour)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in"
+        ],
+        "title": "RefreshTokenResponse",
+        "description": "Refresh token response with new tokens.\n\nReturns new access and refresh tokens. The old refresh token is\ninvalidated (blacklisted) to implement token rotation.",
+        "examples": [
+          {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9...",
+            "expires_in": 3600,
+            "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ...",
+            "token_type": "bearer"
+          }
+        ]
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "User email address (must be unique)"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password",
+            "description": "Password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+          },
+          "preferred_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Preferred Name",
+            "description": "User's preferred display name"
+          },
+          "account_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountType"
+              }
+            ],
+            "description": "Account type: verified, unverified, or pseudonymous",
+            "default": "unverified"
+          },
+          "preferred_language": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Preferred Language",
+            "description": "Preferred language code (ISO 639-1)",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "preferred_name"
+        ],
+        "title": "RegisterRequest",
+        "description": "User registration request schema.\n\nCreates new user with email/password authentication.",
+        "examples": [
+          {
+            "account_type": "unverified",
+            "email": "user@example.com",
+            "password": "SecurePass123!",
+            "preferred_language": "en",
+            "preferred_name": "John Doe"
+          }
+        ]
+      },
+      "RegisterResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Created user ID"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Registered email address"
+          },
+          "is_email_verified": {
+            "type": "boolean",
+            "title": "Is Email Verified",
+            "description": "Email verification status (false for new users)"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Registration success message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "is_email_verified",
+          "message"
+        ],
+        "title": "RegisterResponse",
+        "description": "User registration response.",
+        "examples": [
+          {
+            "email": "user@example.com",
+            "is_email_verified": false,
+            "message": "Registration successful. Please check your email to verify your account.",
+            "user_id": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ]
+      },
+      "RequestPasswordResetRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "User email address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "RequestPasswordResetRequest",
+        "description": "Password reset request schema.",
+        "examples": [
+          {
+            "email": "user@example.com"
+          }
+        ]
+      },
+      "RequestPasswordResetResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Success message (always returned, even if email doesn't exist)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "RequestPasswordResetResponse",
+        "description": "Password reset request response.",
+        "examples": [
+          {
+            "message": "If the email exists, a password reset link has been sent."
+          }
+        ]
+      },
+      "ResendVerificationRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "User email address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ResendVerificationRequest",
+        "description": "Resend verification email request schema.",
+        "examples": [
+          {
+            "email": "user@example.com"
+          }
+        ]
+      },
+      "ResendVerificationResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Success message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ResendVerificationResponse",
+        "description": "Resend verification response.",
+        "examples": [
+          {
+            "message": "Verification email sent. Please check your inbox."
+          }
+        ]
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Token",
+            "description": "Password reset token from email"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "New Password",
+            "description": "New password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "ResetPasswordRequest",
+        "description": "Password reset with token schema.",
+        "examples": [
+          {
+            "new_password": "NewSecurePass123!",
+            "token": "abc123def456ghi789jkl012mno345pqr"
+          }
+        ]
+      },
+      "ResetPasswordResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Success message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ResetPasswordResponse",
+        "description": "Password reset response.",
+        "examples": [
+          {
+            "message": "Password reset successfully. You can now login with your new password."
+          }
+        ]
+      },
+      "ResolvedProfileResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "Display name (from context override or None if not overridden)"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Email address (from context override or base profile)"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "description": "Phone number (from context override or base profile)"
+          },
+          "preferred_language": {
+            "type": "string",
+            "title": "Preferred Language"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio",
+            "description": "Biography (context-specific if available)"
+          },
+          "context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Context type this profile is resolved for"
+          },
+          "context_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Name",
+            "description": "Context name this profile is resolved for"
+          },
+          "identity_names": {
+            "items": {
+              "$ref": "#/components/schemas/IdentityNameInResolved"
+            },
+            "type": "array",
+            "title": "Identity Names",
+            "description": "Identity names (filtered for deprecated if applicable)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "account_type",
+          "email",
+          "preferred_language"
+        ],
+        "title": "ResolvedProfileResponse",
+        "description": "Schema for fully resolved profile (base + context overrides applied)\n\nThis is the unified view third-party applications receive via OAuth.\nDemonstrates the inheritance engine merging base profile + context overrides.",
+        "examples": [
+          {
+            "account_type": "verified",
+            "bio": "Board-certified psychiatrist specializing in trauma and PTSD",
+            "context_name": "LinkedIn",
+            "context_type": "professional",
+            "display_name": "Dr. Sarah Chen, MD, PhD",
+            "email": "s.chen@hospital.org",
+            "identity_names": [
+              {
+                "is_primary": true,
+                "name_type": "full_name",
+                "name_value": {
+                  "en": "Dr. Sarah Chen"
+                }
+              }
+            ],
+            "phone": "+1-555-0101",
+            "preferred_language": "en",
+            "user_id": "123e4567-e89b-12d3-a456-426614174001"
+          }
+        ]
+      },
+      "ScopeInfo": {
+        "properties": {
+          "scope_name": {
+            "type": "string",
+            "title": "Scope Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "required_context_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_sensitive": {
+            "type": "boolean",
+            "title": "Is Sensitive"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scope_name",
+          "description",
+          "is_sensitive"
+        ],
+        "title": "ScopeInfo",
+        "description": "Schema for scope information display"
+      },
+      "ScopeListResponse": {
+        "properties": {
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeInfo"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scopes"
+        ],
+        "title": "ScopeListResponse",
+        "description": "Schema for list of available scopes"
+      },
+      "TokenErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "error_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Description"
+          },
+          "error_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "TokenErrorResponse",
+        "description": "OAuth 2.1 Token Error Response\n\nReturned when token request fails."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "Access token for API authorization"
+          },
+          "token_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TokenType"
+              }
+            ],
+            "description": "Token type (always 'Bearer')",
+            "default": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Access token lifetime in seconds"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token",
+            "description": "Refresh token (if offline_access scope granted)"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "description": "Granted scopes (may differ from requested)"
+          },
+          "id_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Token",
+            "description": "ID token (if openid scope included)"
+          },
+          "context_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Profile Id",
+            "description": "Context profile ID (if context-specific authorization)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in",
+          "scope"
+        ],
+        "title": "TokenResponse",
+        "description": "OAuth 2.1 Token Response\n\nReturned after successful token request.",
+        "examples": [
+          {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "context_profile_id": "20000000-0000-0000-0000-000000000001",
+            "expires_in": 3600,
+            "refresh_token": "tGzv3JOkF0XG5Qx2TlKWIA",
+            "scope": "openid profile:read:basic profile:read:email",
+            "token_type": "Bearer"
+          }
+        ]
+      },
+      "TokenType": {
+        "type": "string",
+        "const": "Bearer",
+        "title": "TokenType",
+        "description": "OAuth token types"
+      },
+      "UserInfoResponse": {
+        "properties": {
+          "sub": {
+            "type": "string",
+            "title": "Sub",
+            "description": "Subject identifier (user_id)"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Full name"
+          },
+          "given_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given Name"
+          },
+          "family_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Name"
+          },
+          "preferred_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Username"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "email_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Verified"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          },
+          "phone_number_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number Verified"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context",
+            "description": "Current context type (professional, social, etc.)"
+          },
+          "context_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Name",
+            "description": "Context name"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Type",
+            "description": "Account verification level"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sub"
+        ],
+        "title": "UserInfoResponse",
+        "description": "OIDC UserInfo Response\n\nStandard OIDC claims plus custom extensions for context awareness.\nFields filtered based on granted scopes.",
+        "examples": [
+          {
+            "account_type": "verified",
+            "bio": "Board-certified psychiatrist",
+            "context": "professional",
+            "context_name": "Hospital Network",
+            "email": "s.chen@hospital.org",
+            "email_verified": true,
+            "family_name": "Chen",
+            "given_name": "Sarah",
+            "locale": "en",
+            "name": "Dr. Sarah Chen, MD, PhD",
+            "preferred_username": "Dr. Sarah Chen",
+            "sub": "00000000-0000-0000-0000-000000000001"
+          }
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerifyEmailRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Token",
+            "description": "Email verification token from email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "VerifyEmailRequest",
+        "description": "Email verification request schema.",
+        "examples": [
+          {
+            "token": "abc123def456ghi789jkl012mno345pqr"
+          }
+        ]
+      },
+      "VerifyEmailResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Success message"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Verified email address"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "email",
+          "user_id"
+        ],
+        "title": "VerifyEmailResponse",
+        "description": "Email verification response.",
+        "examples": [
+          {
+            "email": "user@example.com",
+            "message": "Email verified successfully",
+            "user_id": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ]
+      },
+      "VisibilityLevel": {
+        "type": "string",
+        "enum": [
+          "public",
+          "private",
+          "historical_suppressed"
+        ],
+        "title": "VisibilityLevel",
+        "description": "Visibility level enumeration"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

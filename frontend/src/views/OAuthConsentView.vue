@@ -131,9 +131,9 @@ async function handleDecision(decision: 'allow' | 'deny') {
             {{ t('oauth.clientWantsAccess', { client: client.client_name }) }}
           </h1>
           
-          <div v-if="client.is_verified" class="badge badge-success inline-flex items-center gap-1">
+          <div v-if="client.is_first_party" class="badge badge-success inline-flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-green-500"></span>
-            {{ t('auth.verified') }}
+            {{ t('oauth.firstParty') }}
           </div>
         </div>
 
@@ -172,10 +172,8 @@ async function handleDecision(decision: 'allow' | 'deny') {
         </div>
         
         <div class="text-center mt-6 text-xs text-secondary">
-          <p v-if="client.policy_uri || client.tos_uri">
-            <a v-if="client.policy_uri" :href="client.policy_uri" target="_blank" class="link">Privacy Policy</a>
-            <span v-if="client.policy_uri && client.tos_uri"> &bull; </span>
-            <a v-if="client.tos_uri" :href="client.tos_uri" target="_blank" class="link">Terms of Service</a>
+          <p v-if="client.client_uri">
+            <a :href="client.client_uri" target="_blank" class="link">{{ t('oauth.visitClientWebsite') }}</a>
           </p>
         </div>
       </div>

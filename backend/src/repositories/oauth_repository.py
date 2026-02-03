@@ -68,6 +68,15 @@ class OAuthRepository:
             OAuthClient.is_active == True,
             OAuthClient.deleted_at.is_(None)
         ).first()
+
+    def client_id_exists(self, client_id: str) -> bool:
+        """Check if a client_id exists (including soft-deleted clients).
+        
+        Used before creating a new client to prevent primary key violations.
+        """
+        return self.db.query(OAuthClient).filter(
+            OAuthClient.client_id == client_id
+        ).first() is not None
     
     def create_client(self, client: OAuthClient) -> OAuthClient:
         """Create a new OAuth client"""
@@ -99,6 +108,26 @@ class OAuthRepository:
         if client:
             client.deleted_at = datetime.now(timezone.utc)
             client.is_active = False
+            self.db.commit()
+            return True
+        return False
+
+    def purge_client(self, client_id: str) -> bool:
+        """Permanently delete a client and all related records.
+        
+        This performs a hard delete, removing the client from the database.
+        Related records (tokens, consents, authorization codes) are automatically
+        deleted via CASCADE constraints.
+        
+        Use this for testing cleanup or when a client_id needs to be reused.
+        """
+        # Find the client (including soft-deleted ones)
+        client = self.db.query(OAuthClient).filter(
+            OAuthClient.client_id == client_id
+        ).first()
+        
+        if client:
+            self.db.delete(client)
             self.db.commit()
             return True
         return False

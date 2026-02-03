@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OAuthScope } from '@/types'
-import { CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 
 defineProps<{
   scopes: OAuthScope[]
@@ -9,16 +9,17 @@ defineProps<{
 
 <template>
   <div class="scope-list">
-    <div v-for="scope in scopes" :key="scope.id" class="scope-item">
+    <div v-for="scope in scopes" :key="scope.scope_name" class="scope-item">
       <div class="scope-icon">
-        <CheckCircleIcon class="icon text-success" />
+        <ExclamationTriangleIcon v-if="scope.is_sensitive" class="icon text-warning" />
+        <CheckCircleIcon v-else class="icon text-success" />
       </div>
       <div class="scope-content">
-        <h4 class="scope-name">{{ scope.name }}</h4>
+        <h4 class="scope-name">{{ scope.scope_name }}</h4>
         <p class="scope-description">{{ scope.description }}</p>
       </div>
-      <div v-if="scope.is_required" class="scope-badge">
-        <span class="badge badge-sm">Required</span>
+      <div v-if="scope.is_sensitive" class="scope-badge">
+        <span class="badge badge-warning">Sensitive</span>
       </div>
     </div>
   </div>
@@ -55,6 +56,10 @@ defineProps<{
   color: var(--color-success-600);
 }
 
+.text-warning {
+  color: var(--color-warning-600);
+}
+
 .scope-content {
   flex: 1;
 }
@@ -82,5 +87,10 @@ defineProps<{
   font-weight: 500;
   background-color: var(--color-gray-100);
   color: var(--color-gray-700);
+}
+
+.badge-warning {
+  background-color: var(--color-warning-100);
+  color: var(--color-warning-700);
 }
 </style>

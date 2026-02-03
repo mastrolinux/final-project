@@ -43,9 +43,18 @@ from src.schemas.oauth import (
     ScopeInfo,
     ScopeListResponse,
     TokenErrorResponse,
-    GrantType
+    GrantType,
+    # Consent flow schemas
+    ConsentClientInfo,
+    ConsentScopeInfo,
+    ConsentRequestInfo,
+    AuthorizationConsentResponse,
+    ConsentDecisionRequestBody,
+    ConsentDecisionResponseBody
 )
 from src.models.context import ContextType
+from src.models.auth import AuthUser
+from src.api.dependencies.auth import get_current_user
 
 
 router = APIRouter()
@@ -124,7 +133,8 @@ def get_oauth_metadata(request: Request):
 @router.get(
     "/authorize",
     summary="Authorization Request",
-    description="OAuth 2.1 Authorization Endpoint - initiates authorization flow"
+    description="OAuth 2.1 Authorization Endpoint - initiates authorization flow",
+    response_model=AuthorizationConsentResponse
 )
 def authorization_request(
     response_type: str = Query(..., description="Must be 'code'"),
@@ -141,16 +151,14 @@ def authorization_request(
     """
     OAuth 2.1 Authorization Endpoint.
     
-    This endpoint initiates the authorization flow. In a real implementation,
-    this would redirect to a login/consent page. For API testing, we return
-    the authorization request parameters for processing.
+    Returns authorization request details for the consent screen.
+    The frontend renders the consent UI and submits the user's decision
+    to the /oauth/consent endpoint.
     
-    The actual consent flow would be:
-    1. User is redirected here
-    2. System shows login page (if not authenticated)
-    3. System shows consent page (if consent not yet granted)
-    4. User approves/denies
-    5. System redirects to redirect_uri with code (or error)
+    Response includes:
+    - Client information (name, logo, description)
+    - Scope details with human-readable descriptions
+    - Request parameters for consent form submission
     """
     # Validate response_type
     if response_type != "code":
@@ -181,6 +189,9 @@ def authorization_request(
         scope_list = scope.split()
         oauth_service.validate_scopes(client, scope_list)
         
+        # Fetch scope details for display
+        scope_details = oauth_service.get_scope_details(scope_list)
+        
     except InvalidClientError as e:
         return _authorization_error_response(
             redirect_uri=redirect_uri,
@@ -203,21 +214,44 @@ def authorization_request(
             state=state
         )
     
-    # For API testing: Return authorization request info
-    # In production, this would render a consent page
-    return {
-        "message": "Authorization request valid - user consent required",
-        "client_id": client_id,
-        "client_name": client.client_name,
-        "redirect_uri": redirect_uri,
-        "scope": scope,
-        "state": state,
-        "code_challenge": code_challenge,
-        "code_challenge_method": code_challenge_method,
-        "context_type": context_type,
-        "requires_consent": not client.is_first_party,
-        "consent_endpoint": "/oauth/consent"
-    }
+    # Build structured response for consent screen
+    client_info = ConsentClientInfo(
+        client_id=client.client_id,
+        client_name=client.client_name,
+        client_description=client.client_description,
+        client_uri=client.client_uri,
+        logo_uri=client.logo_uri,
+        is_first_party=client.is_first_party
+    )
+    
+    scope_infos = [
+        ConsentScopeInfo(
+            scope_name=s.scope_name,
+            description=s.description,
+            is_sensitive=s.is_sensitive,
+            required_context_type=s.required_context_type
+        )
+        for s in scope_details
+    ]
+    
+    request_info = ConsentRequestInfo(
+        client_id=client_id,
+        response_type=response_type,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state,
+        code_challenge=code_challenge,
+        code_challenge_method=code_challenge_method,
+        nonce=nonce,
+        context_type=context_type
+    )
+    
+    return AuthorizationConsentResponse(
+        client=client_info,
+        scopes=scope_infos,
+        request=request_info,
+        requires_consent=not client.is_first_party
+    )
 
 
 def _authorization_error_response(
@@ -256,85 +290,87 @@ def _authorization_error_response(
 @router.post(
     "/consent",
     summary="Submit Consent Decision",
-    description="Submit user's consent decision for an authorization request"
+    description="Submit user's consent decision for an authorization request",
+    response_model=ConsentDecisionResponseBody
 )
-def submit_consent(
-    user_id: UUID = Query(..., description="Authenticated user ID"),
-    client_id: str = Query(..., description="Client requesting authorization"),
-    redirect_uri: str = Query(..., description="Client callback URL"),
-    scope: str = Query(..., description="Requested scopes"),
-    state: Optional[str] = Query(None, description="Client state"),
-    code_challenge: str = Query(..., description="PKCE challenge"),
-    code_challenge_method: str = Query("S256", description="PKCE method"),
-    approved: bool = Query(..., description="Whether user approved"),
-    granted_scopes: Optional[str] = Query(None, description="Approved scopes (subset)"),
-    context_profile_id: Optional[UUID] = Query(None, description="Context to bind"),
-    nonce: Optional[str] = Query(None, description="OIDC nonce"),
-    request: Request = None,
+async def submit_consent(
+    consent_data: ConsentDecisionRequestBody,
+    request: Request,
+    current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Process user consent decision.
     
-    If approved, creates authorization code and redirects to client.
-    If denied, redirects with access_denied error.
+    Accepts JSON body with the consent decision from the frontend.
+    User identity is obtained from JWT authentication token.
+    
+    If approved, creates authorization code and returns redirect URL.
+    If denied, returns redirect URL with access_denied error.
+    
+    Returns:
+        ConsentDecisionResponseBody with redirect_to URL
     """
     oauth_service = OAuthService(OAuthRepository(db))
     
-    if not approved:
-        return _authorization_error_response(
-            redirect_uri=redirect_uri,
-            error="access_denied",
-            error_description="User denied the authorization request",
-            state=state
-        )
+    # Handle denial
+    if consent_data.decision == 'deny':
+        from urllib.parse import urlencode
+        params = {
+            "error": "access_denied",
+            "error_description": "User denied the authorization request"
+        }
+        if consent_data.state:
+            params["state"] = consent_data.state
+        redirect_url = f"{consent_data.redirect_uri}?{urlencode(params)}"
+        return ConsentDecisionResponseBody(redirect_to=redirect_url)
     
     try:
-        # Use granted scopes if provided, otherwise use requested scopes
-        final_scope = granted_scopes if granted_scopes else scope
-        
         # Record consent
-        ip_address = request.client.host if request else None
-        user_agent = request.headers.get("user-agent") if request else None
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
         
         oauth_service.record_consent(
-            user_id=user_id,
-            client_id=client_id,
-            granted_scopes=final_scope.split(),
-            context_profile_id=context_profile_id,
+            user_id=current_user.user_id,
+            client_id=consent_data.client_id,
+            granted_scopes=consent_data.scope.split(),
+            context_profile_id=consent_data.context_id,
             ip_address=ip_address,
             user_agent=user_agent
         )
         
         # Create authorization code
         auth_code = oauth_service.create_authorization_code(
-            client_id=client_id,
-            user_id=user_id,
-            redirect_uri=redirect_uri,
-            scope=final_scope,
-            code_challenge=code_challenge,
-            code_challenge_method=code_challenge_method,
-            state=state,
-            context_profile_id=context_profile_id,
-            nonce=nonce
+            client_id=consent_data.client_id,
+            user_id=current_user.user_id,
+            redirect_uri=consent_data.redirect_uri,
+            scope=consent_data.scope,
+            code_challenge=consent_data.code_challenge,
+            code_challenge_method=consent_data.code_challenge_method,
+            state=consent_data.state,
+            context_profile_id=consent_data.context_id,
+            nonce=consent_data.nonce
         )
         
-        # Redirect with code
+        # Build redirect URL with authorization code
         from urllib.parse import urlencode
         params = {"code": auth_code.code}
-        if state:
-            params["state"] = state
+        if consent_data.state:
+            params["state"] = consent_data.state
         
-        redirect_url = f"{redirect_uri}?{urlencode(params)}"
-        return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+        redirect_url = f"{consent_data.redirect_uri}?{urlencode(params)}"
+        return ConsentDecisionResponseBody(redirect_to=redirect_url)
         
     except OAuthServiceError as e:
-        return _authorization_error_response(
-            redirect_uri=redirect_uri,
-            error=e.error,
-            error_description=e.error_description,
-            state=state
-        )
+        from urllib.parse import urlencode
+        params = {
+            "error": e.error,
+            "error_description": e.error_description
+        }
+        if consent_data.state:
+            params["state"] = consent_data.state
+        redirect_url = f"{consent_data.redirect_uri}?{urlencode(params)}"
+        return ConsentDecisionResponseBody(redirect_to=redirect_url)
 
 
 # =============================================================================
