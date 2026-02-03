@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref } from 'vue'
 import { useProfileStore } from '@/stores'
 import { profileService, getErrorMessage } from '@/services'
 import type { IdentityName, NameType } from '@/types'
@@ -10,7 +9,6 @@ import BaseSelect from '@/components/common/BaseSelect.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 
-const { t } = useI18n()
 const profileStore = useProfileStore()
 
 const isAdding = ref(false)

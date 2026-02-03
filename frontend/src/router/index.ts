@@ -17,6 +17,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     requiresGuest?: boolean
     requiresVerified?: boolean
+    requiresAdmin?: boolean
     title?: string
   }
 }
@@ -106,6 +107,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/OAuthCallbackView.vue'),
     meta: { title: 'Authorization' }
   },
+  // Admin routes
+  {
+    path: '/admin/oauth/clients',
+    name: 'admin-oauth-clients',
+    component: () => import('@/views/admin/AdminOAuthClientsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'OAuth Clients' }
+  },
+  {
+    path: '/admin/oauth/clients/new',
+    name: 'admin-oauth-client-create',
+    component: () => import('@/views/admin/AdminOAuthClientCreateView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Create OAuth Client' }
+  },
+  {
+    path: '/admin/oauth/clients/:clientId/edit',
+    name: 'admin-oauth-client-edit',
+    component: () => import('@/views/admin/AdminOAuthClientEditView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Edit OAuth Client' }
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -139,6 +159,7 @@ router.beforeEach(async (to, _from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const requiresGuest = to.matched.some((record) => record.meta.requiresGuest)
   const requiresVerified = to.matched.some((record) => record.meta.requiresVerified)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
 
   // Update document title
   const appName = 'Identity Management'
@@ -148,6 +169,12 @@ router.beforeEach(async (to, _from, next) => {
   if (requiresAuth && !authStore.isAuthenticated) {
     // Store intended destination for redirect after login
     next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // Check admin requirement
+  if (requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'home' })
     return
   }
 

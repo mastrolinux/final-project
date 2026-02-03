@@ -1442,6 +1442,38 @@
               }
             }
           ]
+        },
+        {
+          "name": "Purge OAuth Client (Admin) - Hard Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/admin/oauth/clients/postman-test-client/purge",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "admin", "oauth", "clients", "postman-test-client", "purge"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "console.log(\"Client permanently deleted - can now re-run tests\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         }
       ]
     }
