@@ -57,12 +57,11 @@ def create_oauth_client(
     
     For public clients (is_confidential=False), no secret is needed.
     """
-    # Check if client_id already exists
-    existing = oauth_repo.get_client(client_data.client_id)
-    if existing:
+    # Check if client_id already exists (including soft-deleted)
+    if oauth_repo.client_id_exists(client_data.client_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Client with ID '{client_data.client_id}' already exists"
+            detail=f"Client with ID '{client_data.client_id}' already exists or was previously deleted"
         )
     
     # Handle client secret for confidential clients
@@ -301,5 +300,46 @@ def delete_oauth_client(
     
     # Soft delete (sets deleted_at and is_active=false)
     oauth_repo.delete_client(client_id)
+    
+    return None
+
+
+@router.delete(
+    "/clients/{client_id}/purge",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently Delete OAuth Client",
+    description="Hard-delete an OAuth client and all related records. Requires admin privileges."
+)
+def purge_oauth_client(
+    client_id: str,
+    admin: AuthUser = Depends(require_admin),
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+):
+    """
+    Permanently delete an OAuth client from the database.
+    
+    WARNING: This is a destructive operation that cannot be undone.
+    
+    This endpoint:
+    - Removes the client record permanently (hard delete)
+    - Cascades deletion to all related tokens, consents, and authorization codes
+    - Allows the client_id to be reused for a new client
+    
+    Use this for:
+    - Testing cleanup when you need to recreate clients with the same ID
+    - Removing test data
+    - Cases where soft-delete is insufficient
+    
+    For normal operations, use DELETE /clients/{client_id} (soft delete) instead.
+    """
+    # Check if client exists (including soft-deleted)
+    if not oauth_repo.client_id_exists(client_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client '{client_id}' not found"
+        )
+    
+    # Permanently delete the client
+    oauth_repo.purge_client(client_id)
     
     return None

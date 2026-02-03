@@ -314,6 +314,49 @@ class OAuthService:
             raise InvalidScopeError("At least one valid scope required")
         
         return validated_scopes
+
+    def get_scope_details(self, scope_names: List[str]) -> List["OAuthScope"]:
+        """
+        Get full scope information for consent screen display.
+        
+        Retrieves scope objects with descriptions, sensitivity flags,
+        and context type requirements for informed user consent.
+        
+        Args:
+            scope_names: List of scope name strings
+            
+        Returns:
+            List of OAuthScope objects with full details
+        """
+        # Handle special scopes that may not be in database
+        db_scope_names = [
+            s for s in scope_names 
+            if s not in ['openid', 'offline_access']
+        ]
+        
+        scopes = self.oauth_repo.get_scopes(db_scope_names)
+        
+        # Add placeholder info for special scopes
+        from src.models.oauth import OAuthScope as OAuthScopeModel
+        
+        for scope_name in scope_names:
+            if scope_name == 'openid':
+                # Create transient scope object for openid
+                openid_scope = OAuthScopeModel(
+                    scope_name='openid',
+                    description='Access your user identifier',
+                    is_sensitive=False
+                )
+                scopes.append(openid_scope)
+            elif scope_name == 'offline_access':
+                offline_scope = OAuthScopeModel(
+                    scope_name='offline_access',
+                    description='Maintain access when you are not actively using the application',
+                    is_sensitive=False
+                )
+                scopes.append(offline_scope)
+        
+        return scopes
     
     def filter_profile_fields_by_scopes(
         self,

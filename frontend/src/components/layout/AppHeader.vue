@@ -12,6 +12,7 @@ const authStore = useAuthStore()
 const profileStore = useProfileStore()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdmin = computed(() => authStore.isAdmin)
 const displayName = computed(() => profileStore.displayName || authStore.user?.email || '')
 
 async function handleLogout() {
@@ -37,6 +38,9 @@ async function handleLogout() {
       </router-link>
       <router-link to="/settings" class="nav-link">
         {{ t('nav.settings') }}
+      </router-link>
+      <router-link v-if="isAdmin" to="/admin/oauth/clients" class="nav-link nav-link-admin">
+        Admin
       </router-link>
     </nav>
 
@@ -111,6 +115,21 @@ async function handleLogout() {
 .nav-link.router-link-active {
   color: var(--color-primary-600);
   background-color: var(--color-primary-50);
+}
+
+.nav-link-admin {
+  color: var(--color-warning-700);
+  font-weight: var(--font-weight-medium);
+}
+
+.nav-link-admin:hover {
+  color: var(--color-warning-800);
+  background-color: var(--color-warning-50);
+}
+
+.nav-link-admin.router-link-active {
+  color: var(--color-warning-800);
+  background-color: var(--color-warning-100);
 }
 
 .header-right {

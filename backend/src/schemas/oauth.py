@@ -5,7 +5,7 @@ Pydantic models for OAuth 2.1 request/response validation.
 Implements OAuth 2.1 specification with PKCE support.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, ConfigDict, HttpUrl
@@ -660,6 +660,150 @@ class ConsentListResponse(BaseModel):
     
     consents: List[ConsentResponse]
     total: int
+
+
+# =============================================================================
+# Authorization Consent Flow Schemas (Frontend API Contract)
+# =============================================================================
+
+class ConsentClientInfo(BaseModel):
+    """
+    Client information for consent screen display.
+    
+    Provides rich client metadata for informed user consent.
+    """
+    
+    client_id: str = Field(..., description="Client identifier")
+    client_name: str = Field(..., description="Human-readable client name")
+    client_description: Optional[str] = Field(
+        default=None,
+        description="Client description"
+    )
+    client_uri: Optional[str] = Field(
+        default=None,
+        description="Client homepage URL"
+    )
+    logo_uri: Optional[str] = Field(
+        default=None,
+        description="Client logo URL for consent screen"
+    )
+    is_first_party: bool = Field(
+        ...,
+        description="Whether client is operated by the identity provider"
+    )
+
+
+class ConsentScopeInfo(BaseModel):
+    """
+    Scope information for consent screen display.
+    
+    Includes human-readable descriptions for informed consent.
+    """
+    
+    scope_name: str = Field(..., description="Scope identifier")
+    description: str = Field(..., description="Human-readable scope description")
+    is_sensitive: bool = Field(
+        ...,
+        description="Whether scope grants access to sensitive data"
+    )
+    required_context_type: Optional[ContextType] = Field(
+        default=None,
+        description="Context type required for this scope"
+    )
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConsentRequestInfo(BaseModel):
+    """
+    Authorization request parameters echoed back for consent flow.
+    
+    Contains all parameters needed to complete the authorization after consent.
+    """
+    
+    client_id: str = Field(..., description="Client identifier")
+    response_type: str = Field(..., description="OAuth response type")
+    redirect_uri: str = Field(..., description="Client callback URL")
+    scope: str = Field(..., description="Space-separated requested scopes")
+    state: Optional[str] = Field(default=None, description="Client state for CSRF")
+    code_challenge: str = Field(..., description="PKCE code challenge")
+    code_challenge_method: str = Field(..., description="PKCE challenge method")
+    nonce: Optional[str] = Field(default=None, description="OIDC nonce")
+    context_type: Optional[str] = Field(
+        default=None,
+        description="Requested context type"
+    )
+
+
+class AuthorizationConsentResponse(BaseModel):
+    """
+    Response for authorization consent screen.
+    
+    Provides all information needed to render a consent UI:
+    - Client details for trust assessment
+    - Scope descriptions for informed consent
+    - Request parameters for form submission
+    """
+    
+    client: ConsentClientInfo = Field(
+        ...,
+        description="Client information for display"
+    )
+    scopes: List[ConsentScopeInfo] = Field(
+        ...,
+        description="Requested scopes with descriptions"
+    )
+    request: ConsentRequestInfo = Field(
+        ...,
+        description="Authorization request parameters"
+    )
+    requires_consent: bool = Field(
+        ...,
+        description="Whether explicit consent is required"
+    )
+
+
+class ConsentDecisionRequestBody(BaseModel):
+    """
+    Request body for consent decision submission.
+    
+    Sent by frontend when user approves or denies authorization.
+    Uses JSON body instead of query parameters for security.
+    """
+    
+    client_id: str = Field(..., description="Client identifier")
+    scope: str = Field(..., description="Requested scopes")
+    state: Optional[str] = Field(default=None, description="Client state")
+    redirect_uri: str = Field(..., description="Client callback URL")
+    response_type: str = Field(..., description="OAuth response type")
+    code_challenge: str = Field(..., description="PKCE code challenge")
+    code_challenge_method: str = Field(
+        default="S256",
+        description="PKCE challenge method"
+    )
+    nonce: Optional[str] = Field(default=None, description="OIDC nonce")
+    decision: Literal['allow', 'deny'] = Field(
+        ...,
+        description="User's consent decision"
+    )
+    context_id: Optional[UUID] = Field(
+        default=None,
+        description="Context profile to bind to authorization"
+    )
+
+
+class ConsentDecisionResponseBody(BaseModel):
+    """
+    Response after consent decision processing.
+    
+    Returns redirect URL for frontend to navigate to,
+    giving the SPA control over the redirect behavior.
+    """
+    
+    redirect_to: str = Field(
+        ...,
+        description="URL to redirect user to after consent"
+    )
 
 
 # =============================================================================

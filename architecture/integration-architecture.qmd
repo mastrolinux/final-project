@@ -93,6 +93,44 @@ grant_type=authorization_code
 - Insecure grant types disabled
 - Security best practices from OAuth 2.1 draft implemented
 
+### OAuth Admin Endpoints
+
+**Implementation Status: COMPLETED (Jan 2026)**
+
+Administrative endpoints for managing OAuth clients. These endpoints require admin privileges, verified either through the `ADMIN_USER_EMAILS` environment variable or the `is_admin` database flag.
+
+**Endpoints:**
+```
+GET    /api/v1/admin/oauth/clients              - List all OAuth clients (paginated)
+POST   /api/v1/admin/oauth/clients              - Register new OAuth client
+GET    /api/v1/admin/oauth/clients/{id}         - Get client details
+PATCH  /api/v1/admin/oauth/clients/{id}         - Update client configuration
+DELETE /api/v1/admin/oauth/clients/{id}         - Soft-delete client (sets deleted_at)
+DELETE /api/v1/admin/oauth/clients/{id}/purge   - Hard-delete client (permanent)
+```
+
+**Soft Delete vs Hard Delete:**
+
+The system implements a two-tier deletion strategy for OAuth clients:
+
+- **Soft Delete** (`DELETE /clients/{id}`): Sets `deleted_at` timestamp while preserving the record. Client becomes inactive but database integrity maintained. Supports 30-day recovery period per GDPR-inspired retention policy.
+
+- **Hard Delete / Purge** (`DELETE /clients/{id}/purge`): Permanent physical removal from database. Related records (tokens, authorization codes, consents) are automatically deleted via CASCADE constraints. Use cases include testing cleanup and client_id reuse scenarios.
+
+**Duplicate Client ID Handling:**
+
+When creating a new client, the system checks for existing client_id values including soft-deleted records. This prevents primary key violations and provides clear feedback:
+
+- If client_id exists (active or soft-deleted): Returns 409 Conflict
+- Admin must purge the soft-deleted client before reusing the client_id
+
+**Security Considerations:**
+
+- Purge operation is admin-only (same as other admin endpoints)
+- Purge is intentionally NOT exposed in the frontend UI
+- All admin operations are audit-logged
+- Purge should be used sparingly (testing, compliance requests)
+
 ### User Authentication Endpoints (Custom JWT)
 
 **Implementation Status: COMPLETED (Dec 30, 2025)**
@@ -436,6 +474,61 @@ Use this as a foundation, not as production-ready compliance.
 - Test authorization code flow
 - Validate redirect URI strict matching
 - Security best practices compliance
+
+### OAuth 2.1 Authorization Flow Validation (COMPLETED Feb 2026)
+
+The OAuth 2.1 authorization code flow with PKCE was validated using black-box integration testing methodology, simulating a real-world client application requesting authorization from the Identity Management system. This approach verified the complete authorization flow from the perspective of an external application, ensuring compliance with OAuth 2.1 and OpenID Connect specifications.
+
+**Testing Tools:**
+
+- **OAuth 2.0 Debugger** (oauthdebugger.com): An open-source debugging tool created by Nate Barbettini that facilitates testing OAuth 2.0 flows. This tool provides a controlled environment for constructing authorization requests, supports PKCE (Proof Key for Code Exchange), and offers clear visualization of both the request parameters and the authorization server's response. Source code available at https://github.com/nbarbettini/oidc-debugger under MIT License.
+
+**Test Flow Screenshots:**
+
+The following screenshots document the OAuth 2.1 authorization flow validation process.
+
+![OAuth Debugger: Authorization request configuration with PKCE parameters, client ID, scopes, and response type settings.](images/oaut-debug-1.jpg){#fig-oauth-debug-config width=80%}
+
+![Consent Screen: The authorization server presents scope descriptions with sensitive scope indicators and approve/deny options.](images/oauth-debug-2-consent-screen.jpg){#fig-oauth-consent-screen width=80%}
+
+![Authorization Response: Successful authorization code generation with state parameter validation confirming CSRF protection.](images/oauth-debug-3-confirmation.jpg){#fig-oauth-confirmation width=80%}
+
+**Test Configuration:**
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization URI | http://localhost:3000/oauth/authorize |
+| Token URI | http://localhost:3000/oauth/token |
+| Client ID | thesis-web-app |
+| Redirect URI | https://oauthdebugger.com/debug |
+| Response Type | code |
+| Response Mode | form_post |
+| Scopes | openid, profile:read:basic, profile:read:email |
+| PKCE | Enabled (SHA-256) |
+
+**Validation Results:**
+
+| Test Criterion | Status | Details |
+|----------------|--------|---------|
+| Authorization endpoint accessibility | Pass | Server responded correctly to authorization requests |
+| Scope display accuracy | Pass | All requested scopes displayed with appropriate descriptions |
+| Sensitive scope indication | Pass | Email scope marked as "Sensitive" in consent UI |
+| State parameter validation | Pass | Returned state matched original value (CSRF protection) |
+| Authorization code generation | Pass | Valid authorization code returned (76-character opaque string) |
+| PKCE support | Pass | Code challenge accepted with S256 method |
+| Response mode compliance | Pass | form_post response mode handled correctly |
+
+**Consent Screen Verification:**
+
+The authorization server presented a consent screen displaying the application name ("Thesis Identity Portal wants to access your account") and the requested permissions with appropriate descriptions. Sensitive scopes (email access) were clearly indicated, and the interface provided "Deny" and "Authorize" options following OAuth 2.0 best practices for informed user consent.
+
+**Available Scopes (14 total):**
+
+- Profile Scopes: profile:read:basic, profile:read:email, profile:read:phone, profile:read:full, profile:write
+- Context Scopes: contexts:read, contexts:professional:read, contexts:social:read, contexts:legal:read, contexts:healthcare:read
+- OpenID Connect Scopes: openid, email, phone, offline_access
+
+Several scopes are appropriately marked as sensitive, including email, phone, profile:write, and context scopes requiring verification (legal and healthcare).
 
 **OIDC Compliance:**
 
