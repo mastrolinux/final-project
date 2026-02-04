@@ -425,8 +425,72 @@ class TestUpdateContextProfile:
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/00000000-0000-0000-0000-000000000999",
             json={"bio": "New bio"}
         )
-        
+
         assert response.status_code == 404
+
+    def test_clear_override_by_setting_null(
+        self,
+        client: TestClient,
+        sample_verified_profile: BaseProfile
+    ):
+        """
+        Test clearing an override by explicitly setting it to null.
+
+        This tests the sentinel value pattern: setting a field to null should
+        clear the override (allowing inheritance from base profile), while
+        omitting the field should keep the existing value.
+        """
+        # Create context with overrides
+        create_response = client.post(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
+            json={
+                "context_type": "healthcare",
+                "context_name": "Hospital",
+                "phone_override": "+1-555-0100",
+                "email_override": "hospital@example.com",
+                "bio": "Medical professional"
+            }
+        )
+        assert create_response.status_code == 201
+        context_id = create_response.json()["id"]
+
+        # Verify overrides are set
+        get_response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}"
+        )
+        assert get_response.json()["phone_override"] == "+1-555-0100"
+        assert get_response.json()["email_override"] == "hospital@example.com"
+        assert get_response.json()["bio"] == "Medical professional"
+
+        # Clear phone_override by setting to null, keep email_override unchanged
+        update_response = client.patch(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}",
+            json={
+                "phone_override": None,  # Explicitly clear
+                "bio": "Updated bio"  # Update with new value
+                # email_override not provided - should remain unchanged
+            }
+        )
+
+        assert update_response.status_code == 200
+        data = update_response.json()
+        # phone_override should be cleared (null)
+        assert data["phone_override"] is None
+        # email_override should remain unchanged (not provided in request)
+        assert data["email_override"] == "hospital@example.com"
+        # bio should be updated
+        assert data["bio"] == "Updated bio"
+
+        # Verify resolved profile inherits phone from base
+        resolved_response = client.get(
+            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved"
+        )
+        assert resolved_response.status_code == 200
+        resolved_data = resolved_response.json()
+        # Phone should now come from base profile (inheritance)
+        assert resolved_data["phone"] == sample_verified_profile.primary_phone
+        # Email should still use the override
+        assert resolved_data["email"] == "hospital@example.com"
 
 
 class TestDeleteContextProfile:
