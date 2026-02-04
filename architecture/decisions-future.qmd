@@ -36,32 +36,35 @@ title: "Decisions & Future Considerations"
 
 **Status**: [ACCEPTED]
 
-**Context**: Need managed database with authentication capabilities.
+**Context**: Need managed PostgreSQL database with minimal operational overhead.
 
-**Decision**: Use Supabase for database and authentication services.
+**Decision**: Use Supabase as a managed PostgreSQL platform. Authentication is implemented separately using custom JWT-based auth with Argon2id password hashing.
 
 **Rationale**:
 
-- Built-in Row-Level Security (critical for this project)
-- Managed authentication reduces development time
-- Automatic backups and replication
-- Simplified operations for academic project timeline
+- Built-in Row-Level Security support (critical for multi-tenant security model)
+- Simplified operational burden and setup for academic project timeline
+- Local development stack includes Mailpit integration for email testing
+- Automatic backups and replication in production
 - Good free tier for initial development
+- Standard PostgreSQL, enabling migration if needed
+
+**Note**: We deliberately chose NOT to use Supabase Auth. The project implements a custom authentication system (Argon2id hashing, JWT tokens, Redis sessions) to demonstrate understanding of security fundamentals and maintain full control over the auth flow.
 
 **Consequences**:
 
-- [+] Faster development (auth built-in)
+- [+] Reduced operational burden (managed infrastructure)
 - [+] RLS support crucial for security model
-- [+] Reduced operational burden
-- [-] Vendor lock-in
-- [-] Less control over infrastructure
-- [-] Potential migration complexity if needed
+- [+] Mailpit integration simplifies email testing during development
+- [+] Standard PostgreSQL means no database-level vendor lock-in
+- [-] Some vendor coupling at infrastructure layer
+- [-] Less control over database server configuration
 
 **Alternatives Considered**:
 
-- Self-hosted PostgreSQL: More control but more ops
-- AWS RDS: Good but more complex setup
-- MongoDB: Document model doesn't fit relational needs
+- Self-hosted PostgreSQL: More control but significantly more ops work
+- AWS RDS: Good capabilities but more complex setup and configuration
+- MongoDB: Document model does not fit the relational data requirements
 
 
 ### ADR-003: Profile Inheritance over Duplication
@@ -258,6 +261,7 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 ### Flexibility vs Complexity
 
 **Decision**: Use JSONB for extensibility
+
 - **Gained**: Easy to add new fields and languages
 - **Lost**: Some type safety and query optimization
 - **Worth it**: Yes, flexibility more valuable than type safety here
@@ -265,6 +269,7 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 ### Security vs Performance
 
 **Decision**: Multiple authorization layers (RBAC + ABAC + RLS + Scopes)
+
 - **Gained**: Defense in depth, robust security
 - **Lost**: Some query performance (authorization checks)
 - **Worth it**: Yes, security critical for identity system
@@ -272,6 +277,7 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 ### Development Speed vs Control
 
 **Decision**: Use Supabase instead of self-hosted
+
 - **Gained**: Faster development, managed services
 - **Lost**: Some infrastructure control, vendor lock-in
 - **Worth it**: Yes for academic timeline, can migrate later
@@ -279,6 +285,7 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 ### Normalization vs Query Performance
 
 **Decision**: Hybrid normalized + JSONB approach
+
 - **Gained**: Best of both worlds
 - **Lost**: Some simplicity (need to manage both)
 - **Worth it**: Yes, appropriate for use case
@@ -314,12 +321,6 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 
 
 ### Phase 3: Advanced Access Control
-
-**Hierarchical Guardians**
-
-- Guardian of guardian relationships
-- Multi-level approval chains
-- Complex family structures
 
 **Temporary Access Delegation**
 
@@ -430,7 +431,6 @@ Add Queue System:
 Monolith -> Microservices:
    |-> Identity Service
    |-> OAuth Service
-   |-> Guardian Service
    |-> Audit Service
    +-> API Gateway
 

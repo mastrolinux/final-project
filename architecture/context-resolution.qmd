@@ -168,73 +168,7 @@ Authorization: Bearer <token>
 ```
 
 
-### Example 3: Guardian Managing Minor Profile
-
-**Scenario**: Sarah (guardian) manages her 12-year-old son Tommy's profile.
-
-#### Minor's Base Profile
-```json
-{
-  "user_id": "usr_minor_456",
-  "preferred_name": "Tommy Williams",
-  "date_of_birth": "2012-06-15",
-  "is_minor": true,
-  "email": "tommy@email.com",
-  "guardian_managed": true
-}
-```
-
-#### Guardian Relationship
-```json
-{
-  "guardian_user_id": "usr_guardian_789",
-  "minor_user_id": "usr_minor_456",
-  "relationship_type": "parent",
-  "permissions": {
-    "can_view_profile": true,
-    "can_edit_profile": true,
-    "can_manage_contexts": true,
-    "can_view_audit_log": true,
-    "can_delete_profile": false
-  },
-  "verified": true
-}
-```
-
-#### Guardian Creates School Context
-```http
-POST /api/v1/users/usr_minor_456/profiles
-Authorization: Bearer <guardian_token>
-Content-Type: application/json
-
-{
-  "context_type": "school",
-  "overrides": {
-    "display_name": "Thomas Williams",
-    "preferred_name": "Tommy",
-    "emergency_contact": "Sarah Williams (Mother): +1-555-0188",
-    "visibility": "restricted"
-  }
-}
-```
-
-**Audit Log Entry**:
-```json
-{
-  "event_type": "context_profile.created",
-  "user_id": "usr_minor_456",
-  "actor_id": "usr_guardian_789",
-  "actor_role": "guardian",
-  "timestamp": "2025-10-16T10:30:00Z",
-  "changes": {
-    "context_type": "school",
-    "overrides": {"display_name": "Thomas Williams"}
-  }
-}
-```
-
-
-### Example 4: Third-Party OAuth Integration
+### Example 3: Third-Party OAuth Integration
 
 **Scenario**: LinkedIn requests user profile data with limited scope.
 

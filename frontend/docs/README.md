@@ -11,7 +11,6 @@ This directory contains design documentation for the Identity Management fronten
   - Login flow with error recovery
   - Profile edit flow with inheritance
   - OAuth consent flow with context selection
-  - Guardian management flow
   - API endpoint mapping for each step
 
 - **[Design System](./design-system.md)** - Visual design tokens and component patterns
@@ -44,11 +43,10 @@ This directory contains design documentation for the Identity Management fronten
 ### Wireframes & Visual Design
 
 - **[Wireframes](./wireframes.md)** - Detailed screen specifications with layouts
-  - 17 screen wireframes (mobile and desktop layouts)
+  - 14 screen wireframes (mobile and desktop layouts)
   - Authentication screens (login, register, verification, password reset)
   - Profile management screens (view, edit, contexts)
   - OAuth consent flow with scope selection
-  - Guardian dashboard and approval queue
   - Component library summary
   - Figma design file: [Identity Management API](https://www.figma.com/design/lqr70RAUSLDuI9KPKCYcGb/Identity-Management-API)
 
@@ -67,7 +65,6 @@ This directory contains design documentation for the Identity Management fronten
 - **API Integration** - How frontend connects to backend REST API
 - **State Management** - Global state patterns using Pinia
 - **Context Management** - Switching between professional, social, family contexts
-- **Guardian Workflows** - UI flows for guardian-minor relationship management
 - **OAuth Integration** - Third-party app authorization consent screens
 - **GDPR Compliance UI** - Data export, deletion, and consent management interfaces
 - **Localization Guide** - i18n implementation and translation workflows
