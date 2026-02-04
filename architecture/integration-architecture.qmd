@@ -266,7 +266,6 @@ The `/api/v1/auth/refresh` endpoint implements refresh token rotation as require
 
 - Context profiles (not in SCIM spec)
 - Multilingual attribute support
-- Guardian relationships
 - Temporal versioning
 
 **Why not full SCIM compliance:**
@@ -600,8 +599,7 @@ Social Providers <---------------> Hybrid Auth Handler
 Email Service  <-----------------> Event-Driven (async)
 (SendGrid)                          |
                                     |-> Verification emails
-                                    |-> Consent notifications
-                                    +-> Guardian alerts
+                                    +-> Consent notifications
 
 Logging Service <----------------> Filesystem
                         |
@@ -620,7 +618,6 @@ Logging Service <----------------> Filesystem
 /api/v1/users/{userId}/profile
 /api/v1/users/{userId}/profiles/{contextType}
 /api/v1/oauth/authorize
-/api/v1/guardians/{guardianId}/minors
 ```
 
 **2. HTTP Verbs Semantics**
@@ -959,7 +956,6 @@ See `postman/README.md` for comprehensive documentation.
 
 - Email verification (infrastructure ready, email sending pending in MAS-26)
 - Password reset
-- Guardian verification
 - Consent notifications
 - Data export ready
 
