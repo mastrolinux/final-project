@@ -34,7 +34,6 @@ Unlike traditional identity systems that assume Western naming conventions and s
 
 - Treats identity as **multifaceted and context-dependent** rather than singular and fixed
 - Separates **legal identity from preferred identity**, supporting pseudonymous accounts
-- Supports **guardian-managed identities** for minors with graduated autonomy
 - Enables **third-party selective disclosure** through OAuth scopes
 - Implements **temporal versioning** for identity evolution and auditability
 - Provides **multilingual identity representation** with locale-specific formatting
@@ -136,7 +135,6 @@ This approach aligns with GDPR data minimization principles: collect only what i
 - Role-based access control (RBAC)
 - Attribute-based access control (ABAC)
 - Row-level security (RLS)
-- Guardian-minor relationships
 - Permission management
 
 **OAuth 2.1 Authorization:**
@@ -160,17 +158,9 @@ This approach aligns with GDPR data minimization principles: collect only what i
 
 This project implements **GDPR-inspired principles** as architectural best practices, but does NOT claim full legal compliance with GDPR, CCPA, or HIPAA. True regulatory compliance requires legal counsel, Data Protection Impact Assessments, formal breach notification processes, and organizational governance beyond an academic thesis scope.
 
-**What IS implemented**: Privacy-by-design, user control, data export, data deletion, basic audit trails  
+**What IS implemented**: Privacy-by-design, user control, data export, data deletion, basic audit trails
 **What IS NOT implemented**: Legal compliance certification, DPIAs, 72-hour breach notification, full regulatory documentation
 :::
-
-
-**Guardian Features:**
-
-- Guardian-minor relationship management
-- Age verification
-- Permission hierarchies
-- Guardian action auditing
 
 ## Explicit Scope Exclusions [NO]
 
@@ -203,7 +193,7 @@ Research documents the 2024 NHI security crisis where non-human identities outnu
 
 **Why NHI is out of scope for this project:**
 
-1. **Academic Project Boundaries**: This thesis focuses on human identity complexity (cultural naming, context-based presentation, guardian relationships). Adding NHI would dilute the focus.
+1. **Academic Project Boundaries**: This thesis focuses on human identity complexity (cultural naming, context-based presentation). Adding NHI would dilute the focus.
 
 2. **Different Problem Domain**: NHI management requires certificate lifecycle management, service account rotation, machine-to-machine authentication, privileged access management, and secret rotation—fundamentally different from human identity concerns.
 
@@ -216,8 +206,7 @@ In production enterprise environments, this system would need to integrate with 
 
 **What IS in scope:**
 
-- Human users (adults and minors)
-- Guardian-managed minor accounts
+- Human users
 - Verified, unverified, and pseudonymous human accounts
 - Human-to-service OAuth integrations (humans authorizing apps)
 
@@ -252,7 +241,6 @@ In production enterprise environments, this system would need to integrate with 
 - Intuitive profile management
 - Clear consent mechanisms
 - Transparent data usage
-- Easy guardian-minor management
 - Accessible interface (WCAG 2.1 AA)
 
 
@@ -278,12 +266,6 @@ Multilingual Support
 |-- Resolve based on Accept-Language header
 |-- Fallback to preferred language
 +-- Support multiple writing systems
-
-Guardian Management
-|-- Establish guardian-minor relationships
-|-- Verify relationships
-|-- Manage permissions (view, edit, delete)
-+-- Audit guardian actions
 
 Third-Party Integration
 |-- OAuth 2.1 authorization server (with mandatory PKCE)
@@ -317,7 +299,6 @@ Privacy & Compliance
 | Active Users | Growth tracking |
 | OAuth Integrations | Ecosystem health |
 | Profile Completeness | User engagement |
-| Guardian Relationships | Minor safety |
 | Data Export Requests | GDPR compliance |
 | Consent Withdrawals | User trust |
 
@@ -434,71 +415,7 @@ Accept-Language: en-US,zh;q=0.9
 - User's preferred default language
 
 
-## Use Case 3: Guardian Managing Minor Profile
-
-**Scenario**: Jessica Williams is the mother of 13-year-old Emma. Jessica manages Emma's digital identity while teaching her about online safety.
-
-**Guardian Permissions**:
-```json
-{
-  "relationship_type": "parent",
-  "permissions": {
-    "can_view_profile": true,
-    "can_edit_profile": true,
-    "can_create_contexts": true,
-    "can_manage_oauth": true,
-    "can_view_audit_log": true,
-    "can_delete_profile": false
-  },
-  "verified": true,
-  "verification_method": "document_verification"
-}
-```
-
-**Use Case Flow**:
-
-1. **School Registration**: Jessica creates a "school" context for Emma
-   - Display Name: "Emma Williams"
-   - Emergency Contact: Jessica's phone
-   - Visibility: Restricted to school platform only
-   - Limited information shared
-
-2. **Social Media Request**: Teen social app requests OAuth access
-   - Jessica receives notification
-   - Reviews requested scopes: profile:read:basic, profile:read:email
-   - Sees exactly what data will be shared
-   - Can approve or deny on Emma's behalf
-   - Action logged in audit trail
-
-3. **Audit Trail**: Emma (and Jessica) can view:
-   ```json
-   {
-     "event": "context_profile.created",
-     "actor": "guardian:jessica_williams",
-     "target": "minor:emma_williams",
-     "timestamp": "2025-10-16T14:30:00Z",
-     "context": "school",
-     "changes": {"display_name": "Emma Williams"}
-   }
-   ```
-
-4. **Graduated Autonomy**: When Emma turns 16:
-   - Notification sent to both guardian and minor
-   - Permissions automatically adjusted
-   - Emma gains view access to all contexts
-   - Emma can request permission to manage own contexts
-   - Full transition at age 18 (automatic)
-
-**Safety Features**:
-
-- All guardian actions are logged and visible
-- Minor receives age-appropriate notifications
-- Graduated permissions as minor matures
-- Cannot delete profile (prevents abuse)
-- Two-factor verification for sensitive changes
-
-
-## Use Case 4: Third-Party OAuth App Requesting Profile with Scopes
+## Use Case 3: Third-Party OAuth App Requesting Profile with Scopes
 
 **Scenario**: HealthTrack, a healthcare coordination platform, wants to integrate with the identity system to streamline patient onboarding.
 
@@ -606,7 +523,7 @@ Accept-Language: en-US,zh;q=0.9
 - Download audit log of third-party access
 
 
-## Use Case 5: Career Transition - Name and Context Evolution
+## Use Case 4: Career Transition - Name and Context Evolution
 
 **Scenario**: Alex Taylor transitions from academia to industry, requiring a new professional context while preserving academic history.
 

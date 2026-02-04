@@ -49,21 +49,19 @@ The project implements a culturally-sensitive, privacy-respecting identity manag
 
 The implementation follows the Web API Development template, focusing on RESTful API design, secure authentication and authorization systems, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
 
-The scope includes multi-context identity profile management, an OAuth 2.1 authorization server with mandatory PKCE, guardian-minor relationship management, GDPR-inspired privacy features including data export and deletion, multilingual name support across cultures, and comprehensive audit logging. Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management, blockchain-based decentralized identity, and biometric authentication.
+The scope includes multi-context identity profile management, an OAuth 2.1 authorization server with mandatory PKCE, GDPR-inspired privacy features including data export and deletion, multilingual name support across cultures, and comprehensive audit logging. Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management, blockchain-based decentralized identity, and biometric authentication.
 
 # Domain and Users
 
 ## Domain Description
 
-The project operates in the identity management domain, specifically addressing the challenge of managing multiple identity presentations across different life contexts. The W3C Internationalization Activity [@w3c2023personal] documents how global naming conventions cannot be accurately represented in systems assuming Western structure, affecting billions of users whose names do not fit "first name, last name" fields. This domain encompasses professional contexts where work-appropriate identity is presented to career platforms, social contexts for personal identity in social applications, legal contexts for official identity in government and healthcare systems, and guardian-managed contexts where parents manage minor identities.
+The project operates in the identity management domain, specifically addressing the challenge of managing multiple identity presentations across different life contexts. The W3C Internationalization Activity [@w3c2023personal] documents how global naming conventions cannot be accurately represented in systems assuming Western structure, affecting billions of users whose names do not fit "first name, last name" fields. This domain encompasses professional contexts where work-appropriate identity is presented to career platforms, social contexts for personal identity in social applications, and legal contexts for official identity in government and healthcare systems.
 
 ## User Personas and Requirements
 
 Four personas inform requirements. A privacy-focused professional (psychiatrist) requires different identity presentations for different applications: credentials for healthcare platforms while concealing professional information from fitness apps. The solution enables context-specific OAuth tokens bound to identity contexts.
 
 A multilingual user (Chinese engineer) requires culturally-appropriate name display: "Li Ming" in Western contexts, Chinese characters in Chinese contexts. The W3C [@w3c2023personal] documents failures of Western-structured systems. The solution stores names as JSONB with language keys, resolving via Accept-Language headers.
-
-A guardian managing a minor requires oversight of third-party requests with visibility into shared data. The solution implements guardian relationships with granular permissions and audit logging.
 
 A vulnerable population member (transgender individual) requires preferred name usage without exposing deprecated names. Research [@trevorproject2021] correlates proper name support with reduced suicide attempts. The solution provides pseudonymous accounts with automatic suppression of deprecated names.
 
@@ -98,8 +96,6 @@ The architecture recreates bounded contexts through context profiles inheriting 
 
 Multilingual name storage using JSONB derives from W3C [@w3c2023personal] and Unicode [@unicode2024personnames] guidance documenting challenges including Chinese family-first ordering, Arabic multi-component names, Spanish double surnames, Tamil patronymic initials, and Indonesian mononyms. The system stores name values keyed by language code with type indicators, accommodating cultural diversity without Western structural assumptions.
 
-Guardian management provides granular permissions (view, edit, manage contexts, OAuth), verification requirements, audit logging visible to minors, and automatic transition at age of majority, balancing parental oversight with developing autonomy.
-
 Deadname protection implements privacy rights (GDPR Article 16 [@gdpr2016]) and human dignity requirements [@haimson2016authenticself]. Deprecated names use `is_deprecated` and `visibility_level` flags, automatically suppressing in user-facing contexts while maintaining administrative records.
 
 ## Security Design Rationale
@@ -116,7 +112,7 @@ The system follows five-layer architecture: presentation (FastAPI REST endpoints
 
 ## Domain Model
 
-The domain model comprises six aggregates: BaseProfile (account type, contact, language), IdentityNames (multilingual JSONB with type, deprecation, visibility), ContextProfiles (context-specific overrides inheriting from base), GuardianRelationships (permissions, verification), OAuthClients and OAuthGrants (registration, authorizations, scopes), and AuditLog (immutable operation records). All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention.
+The domain model comprises five aggregates: BaseProfile (account type, contact, language), IdentityNames (multilingual JSONB with type, deprecation, visibility), ContextProfiles (context-specific overrides inheriting from base), OAuthClients and OAuthGrants (registration, authorizations, scopes), and AuditLog (immutable operation records). All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention.
 
 ## Data Flow
 
@@ -154,9 +150,9 @@ Phase 2 (Jan 3-12): Context profiles (context_profiles migration, inheritance en
 
 Phase 3 (Jan 13-26): OAuth 2.1 (client registration, authorization code flow with PKCE, token issuance, scope filtering, consent management).
 
-Phase 4 (Jan 27 - Feb 9): Guardian management and privacy (guardian_relationships table, permissions, audit logging, data export/deletion).
+Phase 4 (Jan 27 - Feb 9): Privacy features (audit logging, data export/deletion).
 
-Phase 5 (Feb 10-23): Frontend demonstration (Vue.js setup, profile management, OAuth visualization, guardian dashboard).
+Phase 5 (Feb 10-23): Frontend demonstration (Vue.js setup, profile management, OAuth visualization).
 
 Phases 6-8 (Feb 24 - Mar 16): Deployment (Render.com, Supabase), security testing (OWASP Top 10), user testing (5-10 participants), and refinement (code freeze March 9).
 
@@ -208,13 +204,13 @@ See `postman/TESTING-GUIDE.md` for step-by-step manual testing instructions with
 
 ## User Evaluation
 
-Task-based usability testing with 5-10 participants validates the user experience. Participants complete defined tasks: creating a profile with multilingual name, creating a professional context profile, authorizing a third-party application with specific scopes, viewing and revoking OAuth access, and for guardian participants, approving an OAuth request for a minor.
+Task-based usability testing with 5-10 participants validates the user experience. Participants complete defined tasks: creating a profile with multilingual name, creating a professional context profile, authorizing a third-party application with specific scopes, and viewing and revoking OAuth access.
 
 Measured outcomes include task completion rate, time to complete each task, error count during task execution, and System Usability Scale score. A SUS score of 70 or above indicates "good" usability suitable for the target user population.
 
 ## Success Criteria
 
-The project succeeds if core features (profiles, contexts, OAuth, guardians) are implemented and tested, security testing identifies zero critical vulnerabilities, 95th percentile response time remains under 200ms, SUS score reaches 70 or above, and the production system remains accessible and stable.
+The project succeeds if core features (profiles, contexts, OAuth) are implemented and tested, security testing identifies zero critical vulnerabilities, 95th percentile response time remains under 200ms, SUS score reaches 70 or above, and the production system remains accessible and stable.
 
 The evaluation explicitly does not constitute legal compliance certification, penetration testing by external security professionals, long-term scalability validation, or accessibility audit for WCAG compliance. These limitations are documented as future work in the final report.
 
@@ -238,7 +234,7 @@ gantt
     Authentication + Security   :phase1, 2025-12-19, 2026-01-02
     Context Profiles            :phase2, 2026-01-03, 2026-01-12
     OAuth 2.1 Authorization     :phase3, 2026-01-13, 2026-01-26
-    Guardian + Privacy          :phase4, 2026-01-27, 2026-02-09
+    Privacy Features            :phase4, 2026-01-27, 2026-02-09
     
     section Frontend
     Frontend Demo               :phase5, 2026-02-10, 2026-02-23
@@ -267,20 +263,16 @@ gantt
 flowchart TB
     subgraph users["Users"]
         user["User<br>(Individual managing identity)"]
-        guardian["Guardian<br>(Parent managing minor)"]
-        minor["Minor<br>(User under supervision)"]
     end
-    
+
     api[["Identity Management API<br>(Multi-context identity with OAuth 2.1)"]]
-    
+
     subgraph external["External Systems"]
         thirdparty["Third-Party Apps<br>(OAuth clients)"]
         social["Social Auth Providers<br>(Google, GitHub, Apple)"]
     end
-    
+
     user -->|"Manages profiles"| api
-    guardian -->|"Manages minor profiles"| api
-    minor -->|"Views own profile"| api
     thirdparty -->|"Requests identity via OAuth"| api
     api -->|"Delegates authentication"| social
 ```
@@ -294,17 +286,15 @@ flowchart TB
 erDiagram
     BaseProfile ||--o{ IdentityNames : has
     BaseProfile ||--o{ ContextProfiles : has
-    BaseProfile ||--o{ GuardianRelationships : "guardian_for"
-    BaseProfile ||--o{ GuardianRelationships : "minor_of"
     BaseProfile ||--o{ OAuthGrants : authorizes
-    
+
     BaseProfile {
         uuid user_id PK
         enum account_type
         string primary_email
         string preferred_language
     }
-    
+
     IdentityNames {
         uuid id PK
         uuid identity_id FK
@@ -313,7 +303,7 @@ erDiagram
         boolean is_deprecated
         enum visibility_level
     }
-    
+
     ContextProfiles {
         uuid id PK
         uuid user_id FK
@@ -321,15 +311,7 @@ erDiagram
         jsonb overrides
         array allowed_scopes
     }
-    
-    GuardianRelationships {
-        uuid id PK
-        uuid guardian_user_id FK
-        uuid minor_user_id FK
-        jsonb permissions
-        boolean verified
-    }
-    
+
     OAuthGrants {
         uuid id PK
         uuid user_id FK
@@ -405,18 +387,6 @@ The system uses PostgreSQL JSONB fields to support flexible, culturally-sensitiv
   "email": "s.chen@hospital.org",
   "bio": "Board-certified psychiatrist",
   "credentials": ["MD", "PhD", "Board Certified"]
-}
-```
-
-**Guardian Permissions (GuardianRelationships.permissions):**
-
-```json
-{
-  "can_view_profile": true,
-  "can_edit_profile": true,
-  "can_create_contexts": true,
-  "can_manage_oauth": true,
-  "can_delete_profile": false
 }
 ```
 
