@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
+from src.core.types import UNSET
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.services.context_service import ContextService, ContextServiceError
@@ -345,10 +346,21 @@ def update_context_profile(
     service: ContextService = Depends(get_context_service)
 ):
     """
-    Update a context profile
-    
+    Update a context profile.
+
     Allows partial updates to context overrides.
     Setting a field to null removes the override (inherits from base profile).
+    Omitting a field keeps the existing value.
+
+    Override fields (support null to clear):
+    - display_name_override
+    - email_override
+    - phone_override
+    - bio
+
+    Non-nullable fields (null is ignored):
+    - context_name
+    - is_active
     """
     try:
         # Verify context belongs to user first
@@ -358,17 +370,32 @@ def update_context_profile(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Context {context_id} does not belong to user {user_id}"
             )
-        
-        # Update context
+
+        # Use model_fields_set to distinguish "not provided" from "explicitly null"
+        # Fields not in model_fields_set were not in the request body
+        provided_fields = update_data.model_fields_set
+
+        # Update context - pass UNSET for fields not provided in request
         updated = service.update_context_profile(
             context_id=context_id,
-            display_name_override=update_data.display_name_override,
-            email_override=update_data.email_override,
-            phone_override=update_data.phone_override,
-            bio=update_data.bio,
-            is_active=update_data.is_active
+            context_name=(
+                update_data.context_name if 'context_name' in provided_fields else UNSET
+            ),
+            display_name_override=(
+                update_data.display_name_override
+                if 'display_name_override' in provided_fields
+                else UNSET
+            ),
+            email_override=(
+                update_data.email_override if 'email_override' in provided_fields else UNSET
+            ),
+            phone_override=(
+                update_data.phone_override if 'phone_override' in provided_fields else UNSET
+            ),
+            bio=update_data.bio if 'bio' in provided_fields else UNSET,
+            is_active=update_data.is_active if 'is_active' in provided_fields else UNSET
         )
-        
+
         return updated
     except ContextServiceError as e:
         if "not found" in str(e).lower():
