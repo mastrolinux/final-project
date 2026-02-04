@@ -4,13 +4,12 @@ Red routes are the critical paths through the application that users must comple
 
 ## Overview
 
-This document defines the five critical user journeys for the Identity Management application:
+This document defines the four critical user journeys for the Identity Management application:
 
 1. [Registration Flow](#1-registration-flow) - New user account creation
 2. [Login Flow](#2-login-flow) - Returning user authentication
 3. [Profile Edit Flow](#3-profile-edit-flow) - Managing identity information
 4. [OAuth Consent Flow](#4-oauth-consent-flow) - Third-party authorization
-5. [Guardian Management Flow](#5-guardian-management-flow) - Minor account oversight
 
 Each flow includes:
 
@@ -26,7 +25,7 @@ Each flow includes:
 
 **Goal**: New user creates an account and sets up their identity profile.
 
-**Personas**: All users (Dr. Sarah Chen, Li Ming, Guardians, Vulnerable populations)
+**Personas**: All users (Dr. Sarah Chen, Li Ming, vulnerable populations)
 
 ### Flow Diagram
 
@@ -374,116 +373,6 @@ flowchart TD
 
 ---
 
-## 5. Guardian Management Flow
-
-**Goal**: Guardian manages a minor's identity profile and authorizations.
-
-**Personas**: Parents/guardians managing minor accounts
-
-### Flow Diagram
-
-```mermaid
-flowchart TD
-    Start([Guardian on Dashboard]) --> ClickGuardian[Click Guardian in nav]
-    ClickGuardian --> GuardianDash[Guardian Dashboard]
-    
-    GuardianDash --> ViewWards[View list of wards]
-    ViewWards --> HasWards{Has existing wards?}
-    
-    HasWards -->|No| AddWardPrompt[Show Add Ward prompt]
-    HasWards -->|Yes| WardList[Show ward cards]
-    
-    AddWardPrompt --> ClickAdd[Click Add Ward]
-    WardList --> ClickAdd
-    
-    ClickAdd --> AddWardWizard[Add Ward Wizard]
-    AddWardWizard --> EnterWardInfo[Enter ward email/ID]
-    EnterWardInfo --> SearchWard[Search for account]
-    
-    SearchWard --> WardFound{Ward found?}
-    WardFound -->|No| ErrorNotFound[Show not found error]
-    ErrorNotFound --> EnterWardInfo
-    
-    WardFound -->|Yes| SelectRelation[Select relationship type]
-    SelectRelation --> SendVerification[Send verification to ward]
-    SendVerification --> WaitVerify[Wait for ward confirmation]
-    
-    WaitVerify --> WardConfirms{Ward confirms?}
-    WardConfirms -->|No/Timeout| VerifyFailed[Verification failed]
-    VerifyFailed --> AddWardWizard
-    
-    WardConfirms -->|Yes| SetPermissions[Set initial permissions]
-    SetPermissions --> ConfirmRelation[Confirm relationship]
-    ConfirmRelation --> RelationCreated[Relationship created]
-    RelationCreated --> GuardianDash
-    
-    WardList --> SelectWard[Select a ward]
-    SelectWard --> WardProfile[Ward Profile View]
-    
-    WardProfile --> ViewPending{Has pending approvals?}
-    ViewPending -->|Yes| ShowBadge[Show notification badge]
-    
-    ShowBadge --> ClickApprovals[Click Pending Approvals]
-    ClickApprovals --> ApprovalQueue[Approval Queue]
-    
-    ApprovalQueue --> ReviewRequest[Review OAuth request]
-    ReviewRequest --> ApprovalDecision{Approve or Deny?}
-    
-    ApprovalDecision -->|Approve| ApproveRequest[Approve with optional note]
-    ApprovalDecision -->|Deny| DenyRequest[Deny with reason]
-    
-    ApproveRequest --> NotifyWard[Notify ward]
-    DenyRequest --> NotifyWard
-    NotifyWard --> ApprovalComplete([Approval processed])
-    
-    WardProfile --> ManagePermissions[Click Manage Permissions]
-    ManagePermissions --> PermissionSettings[Permission Settings]
-    PermissionSettings --> AdjustPerms[Adjust permission levels]
-    AdjustPerms --> SavePerms[Save permissions]
-    SavePerms --> PermsSaved([Permissions updated])
-    
-    style Start fill:#e1f5fe
-    style ApprovalComplete fill:#c8e6c9
-    style PermsSaved fill:#c8e6c9
-    style RelationCreated fill:#c8e6c9
-    style ErrorNotFound fill:#ffcdd2
-    style VerifyFailed fill:#ffcdd2
-```
-
-### Step-by-Step Description
-
-| Step | Page/Component | User Action | System Response | API Endpoint |
-|------|----------------|-------------|-----------------|--------------|
-| 1 | Dashboard | Click "Guardian" | Navigate to guardian dashboard | `GET /api/v1/guardian/wards` |
-| 2 | GuardianDash | Click "Add Ward" | Start add ward wizard | - |
-| 3 | AddWardWizard | Enter ward email | Search for account | `GET /api/v1/users/search` |
-| 4 | AddWardWizard | Select relationship type | Show verification options | - |
-| 5 | AddWardWizard | Confirm | Send verification request | `POST /api/v1/guardian/relationships` |
-| 6 | - | Ward confirms | Relationship established | - |
-| 7 | GuardianDash | Select ward | View ward profile | `GET /api/v1/guardian/wards/{id}` |
-| 8 | WardProfile | Click "Pending Approvals" | View approval queue | `GET /api/v1/guardian/approvals` |
-| 9 | ApprovalQueue | Review and decide | Process approval | `POST /api/v1/guardian/approvals/{id}/approve` |
-| 10 | WardProfile | Click "Manage Permissions" | View permission settings | `GET /api/v1/guardian/wards/{id}/permissions` |
-| 11 | PermissionSettings | Adjust and save | Update permissions | `PATCH /api/v1/guardian/wards/{id}/permissions` |
-
-### Error States
-
-| Error | Trigger | User Message | Recovery Action |
-|-------|---------|--------------|-----------------|
-| Ward not found | Invalid email/ID | "No account found with this email" | Suggest checking spelling |
-| Already guardian | Duplicate relationship | "You are already a guardian for this account" | Show existing relationship |
-| Verification timeout | Ward doesn't confirm | "Verification request expired" | Offer to resend |
-| Permission denied | Insufficient permissions | "You don't have permission for this action" | Contact support |
-
-### Success Criteria
-
-- Ward addition completes within verification period
-- Pending approvals clearly visible
-- Permission changes take effect immediately
-- Activity log shows all guardian actions
-
----
-
 ## API Endpoint Summary
 
 ### Authentication Endpoints
@@ -525,21 +414,6 @@ flowchart TD
 | `/api/v1/oauth/userinfo` | GET | Get user info |
 | `/api/v1/oauth/consents` | GET | List user consents |
 | `/api/v1/oauth/consents/{client_id}` | DELETE | Revoke consent |
-
-### Guardian Endpoints (Phase 4)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/guardian/wards` | GET | List wards |
-| `/api/v1/guardian/wards/{id}` | GET | Get ward details |
-| `/api/v1/guardian/wards/{id}` | PATCH | Update ward profile |
-| `/api/v1/guardian/relationships` | POST | Create relationship |
-| `/api/v1/guardian/relationships/{id}` | DELETE | Remove relationship |
-| `/api/v1/guardian/approvals` | GET | List pending approvals |
-| `/api/v1/guardian/approvals/{id}/approve` | POST | Approve request |
-| `/api/v1/guardian/approvals/{id}/deny` | POST | Deny request |
-| `/api/v1/guardian/wards/{id}/permissions` | GET | Get permissions |
-| `/api/v1/guardian/wards/{id}/permissions` | PATCH | Update permissions |
 
 ---
 
