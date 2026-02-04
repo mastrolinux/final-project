@@ -3,40 +3,33 @@ title: "System Context & Scope"
 ## System Context Diagram
 
 ```{mermaid}
-
-
 graph TB
     subgraph External["External Actors"]
-        EndUsers[End Users<br/>Web/Mobile Apps]
-        ThirdParty[Third-Party Apps<br/>LinkedIn, Healthcare]
-        Guardians[Guardian Users<br/>Parents/Legal Guardians]
+        EndUsers[End Users]
+        ThirdParty[Third-Party Apps]
     end
-    
-    subgraph System["Identity & Profile Management API<br/>This System"]
-        APIGateway[API Gateway<br/>REST Endpoints]
-        OAuth[OAuth 2.1 Server<br/>Authorization + PKCE]
-        Guardian[Guardian Management<br/>Relationships & Permissions]
+
+    subgraph System["API System"]
+        APIGateway[API Gateway]
+        OAuth[OAuth 2.1 Server]
     end
-    
+
     subgraph Infrastructure["Infrastructure Services"]
-        Supabase[(Supabase<br/>PostgreSQL + Auth)]
-        Email[Email Service<br/>Transactional Emails]
-        Logging[Logging Service<br/>Monitoring & Audit]
+        Supabase[(Supabase PostgreSQL)]
+        Email[Email Service]
+        Logging[Logging Service]
     end
-    
+
     EndUsers -->|Manage Profiles| APIGateway
     ThirdParty -->|OAuth Flow| OAuth
-    Guardians -->|Manage Minors| Guardian
-    
+
     APIGateway --> Supabase
     OAuth --> Supabase
-    Guardian --> Supabase
-    
+
     APIGateway --> Email
     APIGateway --> Logging
     OAuth --> Logging
-    Guardian --> Logging
-    
+
     style External fill:#e3f2fd
     style System fill:#fff3e0
     style Infrastructure fill:#f3e5f5
@@ -60,7 +53,6 @@ graph TB
 - Role-based access control (RBAC)
 - Attribute-based access control (ABAC)
 - Row-level security (RLS)
-- Guardian-minor relationships
 - Permission management
 
 **OAuth 2.1 Authorization:**
@@ -78,13 +70,6 @@ graph TB
 - Consent tracking and withdrawal
 - Audit logging
 - Data retention policies
-
-**Guardian Features:**
-
-- Guardian-minor relationship management
-- Age verification
-- Permission hierarchies
-- Guardian action auditing
 
 ### Out of Scope [NO]
 
@@ -115,7 +100,6 @@ graph TB
 |------------|----------|----------|----------|
 | **End Users** | Manage identity securely | Privacy, ease of use, control | High |
 | **Third-Party Apps** | Access user data with consent | API reliability, clear scopes | Low |
-| **Guardians** | Manage minor profiles safely | Safety, appropriate controls | Mid |
 | **System Admins** | Monitor and maintain system | Observability, security | Medium |
 | **Compliance Reviewers (simulated)** | Regulatory compliance | GDPR adherence, audit trails | Low |
 | **Developer (Myself)** | Build and maintain system | Code quality, documentation | Medium |
@@ -265,7 +249,6 @@ graph TB
 | Constraint | Description | Impact |
 |-----------|-------------|--------|
 | **GDPR (EU)** | Data protection regulation | Data subject rights implementation required |
-| **Minor protection laws** | Guardian consent for under-18 | Age verification and parental controls needed |
 | **Data residency requirements** | GDPR requires EU data storage | Database region selection critical |
 
 
@@ -284,16 +267,14 @@ graph TB
 1. **Users have internet access**: System requires connectivity
 2. **Users understand English or Spanish**: Initial language support
 3. **Users have email addresses**: Required for account creation
-4. **Minor users have guardian oversight**: Legal requirement assumption
-5. **Third-party apps will integrate via OAuth**: No proprietary protocols
+4. **Third-party apps will integrate via OAuth**: No proprietary protocols
 
 ### User Assumptions
 
 1. **Users want privacy control**: Privacy features will be used
 2. **Users manage multiple contexts**: Context profiles will be valuable
 3. **Users trust the platform**: Will provide accurate information
-4. **Guardians act in minor's interest**: No abuse of guardian permissions
-5. **Users can navigate web interfaces**: Basic digital literacy
+4. **Users can navigate web interfaces**: Basic digital literacy
 
 
 ## Dependencies

@@ -30,7 +30,7 @@ gantt
     Phase 1: Auth + Security    :phase1, 2025-12-19, 2026-01-02
     Phase 2: Context Profiles   :phase2, 2026-01-03, 2026-01-12
     Phase 3: OAuth 2.1          :phase3, 2026-01-13, 2026-01-26
-    Phase 4: Guardian + Privacy :phase4, 2026-01-27, 2026-02-09
+    Phase 4: Privacy Features   :phase4, 2026-01-27, 2026-02-09
     
     section Frontend
     Phase 5: Frontend           :phase5, 2026-02-10, 2026-02-23
@@ -98,7 +98,7 @@ gantt
 
 **Deliverables for Dec 18 (COMPLETED):**
 
-- Personas: Individual users (privacy-focused, professionals, minors) vs Organization use
+- Personas: Individual users (privacy-focused, professionals) vs Organization use
 - User Stories: 10-15 key stories with acceptance criteria
 - Pain Points to Gains Matrix: What problems exist, how we solve them
 - Comparison Matrix: Why Auth0, Okta, Keycloak fail to solve this problem
@@ -182,20 +182,17 @@ gantt
 - Consent tracking with revocation support
 - Refresh token rotation
 
-## Phase 4: Guardian + Privacy + Audit (Jan 27 - Feb 9, 2026)
+## Phase 4: Privacy Features + Audit (Jan 27 - Feb 9, 2026)
 
 | Task | Start | End | Duration |
 |------|-------|-----|----------|
-| guardian_relationships Table | Jan 27 | Jan 29 | 3 days |
-| Guardian Permission System | Jan 29 | Feb 2 | 4 days |
-| Audit Logging (immutable) | Feb 2 | Feb 5 | 4 days |
-| Data Export (GDPR Art. 15) | Feb 5 | Feb 7 | 3 days |
-| Soft Deletion + Retention | Feb 7 | Feb 9 | 3 days |
+| Audit Logging (immutable) | Jan 27 | Feb 2 | 6 days |
+| Data Export (GDPR Art. 15) | Feb 2 | Feb 5 | 4 days |
+| Soft Deletion + Retention | Feb 5 | Feb 9 | 4 days |
 | Privacy Tests (TDD) | Jan 27 | Feb 9 | ongoing |
 
 **Privacy-by-Design Features:**
 
-- Guardian-minor relationship management with permission hierarchies
 - Immutable audit logging for all identity operations
 - Data export capability (Right of Access)
 - Soft deletion with configurable retention period (Right to Erasure)
@@ -210,7 +207,6 @@ gantt
 | Vue App Setup | Feb 13 | Feb 15 | 3 days |
 | Profile Management UI | Feb 15 | Feb 18 | 4 days |
 | OAuth Consent Flow UI | Feb 17 | Feb 20 | 4 days |
-| Guardian Dashboard | Feb 19 | Feb 22 | 4 days |
 | Frontend Tests | Feb 20 | Feb 23 | 4 days |
 
 **UI/UX Considerations:**

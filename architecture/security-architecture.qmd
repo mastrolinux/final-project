@@ -305,7 +305,6 @@ Request with Token
 |---------|----------|---------|
 | **Resource Owner** | User accesses own data | `user_id == current_user.id` |
 | **Role-Based** | Admin access | `'admin' IN current_user.roles` |
-| **Relationship-Based** | Guardian access | `guardian_of(current_user, target_user)` |
 | **Scope-Based** | OAuth client access | `required_scope IN token.scopes` |
 | **Context-Based** | Profile visibility | `profile.is_public OR user_authorized` |
 
@@ -459,25 +458,7 @@ PATCH /api/v1/users/usr_123/profile
 }
 ```
 
-#### 5. Guardian Name Change Permissions
-
-Guardian relationships include specific permission for name changes on minor accounts:
-
-```json
-{
-  "guardian_permissions": {
-    "can_view_profile": true,
-    "can_edit_profile": true,
-    "can_change_name": false,  // Separate permission for name changes
-    "can_change_legal_name": false,  // Even more restricted
-    "can_view_name_history": false  // Cannot see deprecated names
-  }
-}
-```
-
-**Rationale**: Name changes for minors require additional scrutiny to prevent abuse. Minor must consent to name changes (if above consent age), or require two guardians to approve.
-
-#### 6. Legal Name Field Protection
+#### 5. Legal Name Field Protection
 
 The `legal_name` field has additional protections:
 
@@ -557,7 +538,6 @@ Authorization: Bearer <user_token>
 
 - [x] Filter deprecated names in all profile resolution logic
 - [x] Redact deprecated names in user-visible audit logs
-- [x] Implement separate guardian permission for name changes
 - [x] Add legal_name encryption/decryption in repository layer
 
 **API Layer:**
@@ -582,7 +562,6 @@ Authorization: Bearer <user_token>
 | User views own audit log | Deprecated names shown as "[suppressed]" |
 | Admin views audit log | Deprecated names visible (with access logging) |
 | OAuth app requests profile | Deprecated names NEVER included |
-| Guardian views minor profile | Cannot see deprecated names |
 | Point-in-time historical query | Deprecated names excluded |
 | GDPR erasure request | Deprecated names physically deleted |
 | Legal/compliance query | Metadata retained, name pseudonymized |

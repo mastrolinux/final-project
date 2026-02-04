@@ -52,15 +52,13 @@ My approach: A centralized API with OAuth 2.0 that gives users fine-grained cont
 
 The project template asks for "a Web API to manage names and identities securely and flexibly." I'm interpreting this not as a simple CRUD API, but as a **complete identity management platform** that addresses the fundamental mismatch between how humans use identity and how systems model it.
 
-My system is different in four key ways:
+My system is different in three key ways:
 
 **First: Multi-context identity as core architecture.** The data model is built around contexts from day one. Professional, social, legal, healthcare contexts each with inheritance from your base profile, scope-based filtering for OAuth apps, and full user control over what's revealed where.
 
 **Second: Cultural neutrality through flexible data structures.** No assumptions. JSONB storage following Unicode PersonNames standards. Chinese names work as well as Icelandic patronymics work as well as single-name Indonesian identities. The system adapts to your culture, not the reverse.
 
-**Third: Guardian relationships with graduated autonomy.** Not just "admin access" - fine-grained permissions, age-appropriate transitions, immutable audit trails. When your child turns 18, the system automatically grants full autonomy. This goes beyond the template's basic requirement to address real-world family structures.
-
-**Fourth: GDPR compliance as a design principle, not a checkbox.** All data subject rights implemented - access, rectification, erasure, portability. Every operation records its legal basis. Deadname protection built into the audit system. This is identity management that respects human dignity.
+**Third: GDPR compliance as a design principle, not a checkbox.** All data subject rights implemented - access, rectification, erasure, portability. Every operation records its legal basis. Deadname protection built into the audit system. This is identity management that respects human dignity.
 
 ---
 
@@ -101,7 +99,7 @@ The architecture documentation includes:
 
 - **Component architecture** with 5-layer design and sequence diagrams for OAuth flows
 - **Security architecture** with 7 layers of defense-in-depth, including specific deadname protection mechanisms
-- **Data model** supporting temporal versioning, multilingual JSONB storage, and guardian relationships
+- **Data model** supporting temporal versioning, multilingual JSONB storage, and context profiles
 - **Deployment strategy** with 99.9% uptime targets, monitoring, and disaster recovery
 
 ---

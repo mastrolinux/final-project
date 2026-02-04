@@ -6,7 +6,6 @@ A sophisticated identity and profile management system designed to handle comple
 
 - Multi-context identity management (professional, social, legal contexts)
 - Cultural neutrality (no assumptions about naming conventions)
-- Guardian-managed identities for minors
 - GDPR Article 15-22 compliance (privacy-by-design)
 - OAuth 2.0 authorization server with scope-based access control
 

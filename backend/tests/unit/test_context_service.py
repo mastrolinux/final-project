@@ -509,7 +509,7 @@ class TestNewContextTypes:
         context_service: ContextService,
         sample_verified_profile: BaseProfile
     ):
-        """Test creating family context for guardian use cases"""
+        """Test creating family context for family sharing use cases"""
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.family,
