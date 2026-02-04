@@ -5,10 +5,11 @@ Business logic layer for context profile management.
 Implements the inheritance engine for profile resolution.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from uuid import UUID
 from datetime import datetime, timezone
 
+from src.core.types import UNSET, _Unset
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.models.context import ContextProfile, ContextType
@@ -270,26 +271,33 @@ class ContextService:
     def update_context_profile(
         self,
         context_id: UUID,
-        display_name_override: Optional[str] = None,
-        email_override: Optional[str] = None,
-        phone_override: Optional[str] = None,
-        bio: Optional[str] = None,
-        is_active: Optional[bool] = None
+        display_name_override: Union[str, None, _Unset] = UNSET,
+        email_override: Union[str, None, _Unset] = UNSET,
+        phone_override: Union[str, None, _Unset] = UNSET,
+        bio: Union[str, None, _Unset] = UNSET,
+        is_active: Union[bool, None, _Unset] = UNSET,
+        context_name: Union[str, None, _Unset] = UNSET
     ) -> ContextProfile:
         """
-        Update context profile with validation
-        
+        Update context profile with validation.
+
+        Uses UNSET sentinel to distinguish between:
+        - Field not provided (UNSET): keep existing value
+        - Field explicitly null (None): clear override, inherit from base profile
+        - Field has value (str): set new override value
+
         Args:
             context_id: Context profile ID
-            display_name_override: Optional display name override
-            email_override: Optional email override
-            phone_override: Optional phone override
-            bio: Optional biography
-            is_active: Optional active status
-            
+            display_name_override: Display name override (None clears, UNSET keeps)
+            email_override: Email override (None clears, UNSET keeps)
+            phone_override: Phone override (None clears, UNSET keeps)
+            bio: Biography (None clears, UNSET keeps)
+            is_active: Active status (None keeps existing, UNSET keeps)
+            context_name: Context name (None keeps existing, UNSET keeps)
+
         Returns:
             Updated context profile
-            
+
         Raises:
             ContextServiceError: If validation fails
         """
@@ -297,28 +305,32 @@ class ContextService:
         context = self.context_repo.get_context_profile_by_id(context_id)
         if not context:
             raise ContextServiceError(f"Context profile {context_id} not found")
-        
-        # Validate email override format if provided
-        if email_override is not None:
+
+        # Validate email override format if provided and not null
+        if email_override is not UNSET and email_override is not None:
             if "@" not in email_override or "." not in email_override:
                 raise ContextServiceError("Invalid email override format")
-        
-        # Build update dict
+
+        # Build update dict - include field if it was explicitly provided (even if None)
         updates = {}
-        if display_name_override is not None:
+        if display_name_override is not UNSET:
             updates['display_name_override'] = display_name_override
-        if email_override is not None:
+        if email_override is not UNSET:
             updates['email_override'] = email_override
-        if phone_override is not None:
+        if phone_override is not UNSET:
             updates['phone_override'] = phone_override
-        if bio is not None:
+        if bio is not UNSET:
             updates['bio'] = bio
-        if is_active is not None:
+        if is_active is not UNSET and is_active is not None:
+            # is_active should not be cleared to None (always bool)
             updates['is_active'] = is_active
-        
+        if context_name is not UNSET and context_name is not None:
+            # context_name should not be cleared to None (always required)
+            updates['context_name'] = context_name
+
         # Update context
         updated_context = self.context_repo.update_context_profile(context_id, **updates)
-        
+
         return updated_context
     
     def delete_context_profile(self, context_id: UUID) -> bool:
