@@ -30,7 +30,6 @@ The core of this work presents a comprehensive architectural design for an ident
 - **Respects Cultural Diversity**: No assumptions about Western naming conventions or single-identity models
 - **Prioritizes Privacy**: Privacy-by-design architecture with comprehensive audit trails
 - **Enables Context-Awareness**: Different identity presentations for professional, social, family, and other contexts
-- **Supports Guardianship**: Complete framework for parents managing minor profiles with graduated autonomy
 - **Integrates via Standards**: OAuth 2.0 authorization server for controlled third-party access
 
 ## Key Contributions
@@ -40,7 +39,6 @@ This work makes several significant contributions to the field of digital identi
 1. **Context-Dependent Identity Model**: A novel approach to managing multiple identity presentations with inheritance and override mechanisms
 2. **Culturally-Neutral Design**: A data model that respects diverse naming conventions and identity expressions globally
 3. **Privacy-First Architecture**: Multi-layer security with defense-in-depth principles and GDPR Article 15-22 considerations
-4. **Guardian Management Framework**: Comprehensive system for managing minor identities with age-appropriate graduated autonomy
 
 
 ## Academic Context

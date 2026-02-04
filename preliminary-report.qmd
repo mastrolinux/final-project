@@ -68,7 +68,7 @@ The measurable impact is substantial. 90% of enterprises experienced identity-re
 
 ## Project Scope
 
-The scope includes multi-context identity profile management, an OAuth 2.1 authorization server with mandatory PKCE, guardian-minor relationship management for parental oversight, GDPR-inspired privacy features including data export and deletion, multilingual name support accommodating global conventions, and comprehensive audit logging for transparency and accountability.
+The scope includes multi-context identity profile management, an OAuth 2.1 authorization server with mandatory PKCE, GDPR-inspired privacy features including data export and deletion, multilingual name support accommodating global conventions, and comprehensive audit logging for transparency and accountability.
 
 Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management for service accounts and API keys, blockchain-based decentralized identity solutions, and biometric authentication mechanisms.
 
@@ -204,21 +204,17 @@ Four personas inform requirements. A privacy-focused professional (psychiatrist)
 
 A multilingual user (Chinese engineer) requires culturally-appropriate name display: "Li Ming" in Western contexts, Chinese characters in Chinese contexts. The solution stores names as JSONB with language keys, resolving via Accept-Language headers.
 
-A guardian managing a minor requires oversight of third-party requests with visibility into shared data. The solution implements guardian relationships with granular permissions and audit logging.
-
 A vulnerable population member (transgender individual) requires preferred name usage without exposing deprecated names. Research [@trevorproject2021] correlates proper name support with reduced suicide attempts. The solution provides pseudonymous accounts with automatic suppression of deprecated names.
 
 ## System Architecture
 
 The system follows five-layer architecture: presentation (FastAPI REST endpoints), application (business logic services), domain (models and aggregates), data access (repository pattern), and infrastructure (PostgreSQL, Redis, external services). This enables independent layer testing, downward dependency flow, and domain-infrastructure separation.
 
-The domain model comprises six aggregates. BaseProfile contains account type, contact information, and language preferences. IdentityNames stores multilingual JSONB with type indicators, deprecation flags, and visibility controls. ContextProfiles enable context-specific overrides inheriting from base profiles. GuardianRelationships manage permissions and verification for parental oversight. OAuthClients and OAuthGrants handle registration, authorizations, and scopes. AuditLog provides immutable operation records. All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention periods.
+The domain model comprises five aggregates. BaseProfile contains account type, contact information, and language preferences. IdentityNames stores multilingual JSONB with type indicators, deprecation flags, and visibility controls. ContextProfiles enable context-specific overrides inheriting from base profiles. OAuthClients and OAuthGrants handle registration, authorizations, and scopes. AuditLog provides immutable operation records. All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention periods.
 
 ## Feature Design and Justification
 
 Multilingual name storage using JSONB derives from W3C [@w3c2023personal] and Unicode [@unicode2024personnames] guidance documenting challenges including Chinese family-first ordering, Arabic multi-component names, Spanish double surnames, Tamil patronymic initials, and Indonesian mononyms. The system stores name values keyed by language code with type indicators, accommodating cultural diversity without Western structural assumptions.
-
-Guardian management provides granular permissions (view, edit, manage contexts, OAuth), verification requirements, audit logging visible to minors, and automatic transition at age of majority, balancing parental oversight with developing autonomy.
 
 Deadname protection implements privacy rights (GDPR Article 16 [@gdpr2016]) and human dignity requirements [@haimson2016authenticself]. Deprecated names use `is_deprecated` and `visibility_level` flags, automatically suppressing in user-facing contexts while maintaining administrative records.
 
@@ -257,7 +253,7 @@ No existing solution combines user-controlled context-dependent identity present
 
 ## System Context
 
-Figure 1 illustrates the system context, showing primary actors and their relationships to the Identity Management API. Users manage their own profiles, guardians oversee minor profiles, and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
+Figure 1 illustrates the system context, showing primary actors and their relationships to the Identity Management API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
 
 ```{mermaid}
 %%| label: fig-context
@@ -266,20 +262,16 @@ Figure 1 illustrates the system context, showing primary actors and their relati
 flowchart TB
     subgraph users["Users"]
         user["User<br>(Individual managing identity)"]
-        guardian["Guardian<br>(Parent managing minor)"]
-        minor["Minor<br>(User under supervision)"]
     end
-    
+
     api[["Identity Management API<br>(Multi-context identity with OAuth 2.1)"]]
-    
+
     subgraph external["External Systems"]
         thirdparty["Third-Party Apps<br>(OAuth clients)"]
         social["Social Auth Providers<br>(Google, GitHub, Apple)"]
     end
-    
+
     user -->|"Manages profiles"| api
-    guardian -->|"Manages minor profiles"| api
-    minor -->|"Views own profile"| api
     thirdparty -->|"Requests identity via OAuth"| api
     api -->|"Delegates authentication"| social
 ```
@@ -307,7 +299,7 @@ gantt
     Authentication + Security   :phase1, 2025-12-19, 2026-01-02
     Context Profiles            :phase2, 2026-01-03, 2026-01-12
     OAuth 2.1 Authorization     :phase3, 2026-01-13, 2026-01-26
-    Guardian + Privacy          :phase4, 2026-01-27, 2026-02-09
+    Privacy Features            :phase4, 2026-01-27, 2026-02-09
     
     section Frontend
     Frontend Demo               :phase5, 2026-02-10, 2026-02-23
@@ -333,9 +325,9 @@ The project spans 24 weeks from October 2025 to March 2026, with backend develop
 
 ### Development Phases
 
-Development proceeds through eight phases with defined deliverables. Phase 1 (December 19 - January 2) implements authentication and security, including Argon2id password hashing per NIST recommendations, JWT token generation with RS256 signing, registration and login endpoints, and Redis session management. Phase 2 (January 3-12) implements context profiles with the inheritance engine, multilingual name fallback, and temporal versioning. Phase 3 (January 13-26) builds the OAuth 2.1 authorization server with client registration, authorization code flow with mandatory PKCE, token issuance with scope and context binding, and consent management. Phase 4 (January 27 - February 9) adds guardian relationships, audit logging, and privacy features including data export and deletion with 30-day grace period.
+Development proceeds through eight phases with defined deliverables. Phase 1 (December 19 - January 2) implements authentication and security, including Argon2id password hashing per NIST recommendations, JWT token generation with RS256 signing, registration and login endpoints, and Redis session management. Phase 2 (January 3-12) implements context profiles with the inheritance engine, multilingual name fallback, and temporal versioning. Phase 3 (January 13-26) builds the OAuth 2.1 authorization server with client registration, authorization code flow with mandatory PKCE, token issuance with scope and context binding, and consent management. Phase 4 (January 27 - February 9) adds audit logging and privacy features including data export and deletion with 30-day grace period.
 
-Phase 5 (February 10-23) develops the frontend demonstration using Vue.js, implementing profile management with multilingual names, context switching, OAuth visualization, and guardian dashboard. Phases 6-8 (February 24 - March 16) handle production deployment to Render.com and Supabase (Phase 6), testing including security scanning, load testing, and user testing with 5-10 participants measuring System Usability Scale scores (Phase 7), and refinement with code freeze on March 9 (Phase 8).
+Phase 5 (February 10-23) develops the frontend demonstration using Vue.js, implementing profile management with multilingual names, context switching, and OAuth visualization. Phases 6-8 (February 24 - March 16) handle production deployment to Render.com and Supabase (Phase 6), testing including security scanning, load testing, and user testing with 5-10 participants measuring System Usability Scale scores (Phase 7), and refinement with code freeze on March 9 (Phase 8).
 
 ### Development Methodology
 
@@ -343,7 +335,7 @@ Test-driven development structures implementation, with tests written before cod
 
 ### Risk Management and Feasibility
 
-Timeline slippage is mitigated through buffer time in the refinement phase and feature prioritization ensuring core functionality completes before enhancements. Technical complexity is addressed through test-driven development, spike solutions for uncertain areas (guardian relationships, PKCE validation), and comprehensive documentation. Production issues are mitigated through staging environment testing, rollback capability, health checks, and gradual rollout. User testing delays are addressed through early participant recruitment and clearly defined minimum viable scope.
+Timeline slippage is mitigated through buffer time in the refinement phase and feature prioritization ensuring core functionality completes before enhancements. Technical complexity is addressed through test-driven development, spike solutions for uncertain areas (PKCE validation, context inheritance), and comprehensive documentation. Production issues are mitigated through staging environment testing, rollback capability, health checks, and gradual rollout. User testing delays are addressed through early participant recruitment and clearly defined minimum viable scope.
 
 The project is feasible given completed foundational work: implemented database schema, established five-layer architecture, and 89% test coverage for profile operations. The technology stack (FastAPI, PostgreSQL, Redis) is proven and well-documented. Development environments enable rapid iteration. The most significant technical risk is OAuth 2.1 implementation complexity, mitigated by mid-project scheduling after authentication is proven, allocating 2 weeks, and planning spike solutions to validate PKCE implementation before full development.
 
@@ -479,7 +471,7 @@ The Context-Dependent Identity prototype successfully demonstrates feasibility o
 
 ## Entity Relationship Diagram
 
-Figure 3 presents the domain model as an entity-relationship diagram showing the six core aggregates and their relationships. BaseProfile serves as the root aggregate with one-to-many relationships to IdentityNames, ContextProfiles, GuardianRelationships (as both guardian and minor), and OAuthGrants.
+Figure 3 presents the domain model as an entity-relationship diagram showing the four core aggregates and their relationships. BaseProfile serves as the root aggregate with one-to-many relationships to IdentityNames, ContextProfiles, and OAuthGrants.
 
 ```{mermaid}
 %%| label: fig-datamodel
@@ -488,17 +480,15 @@ Figure 3 presents the domain model as an entity-relationship diagram showing the
 erDiagram
     BaseProfile ||--o{ IdentityNames : has
     BaseProfile ||--o{ ContextProfiles : has
-    BaseProfile ||--o{ GuardianRelationships : "guardian_for"
-    BaseProfile ||--o{ GuardianRelationships : "minor_of"
     BaseProfile ||--o{ OAuthGrants : authorizes
-    
+
     BaseProfile {
         uuid user_id PK
         enum account_type
         string primary_email
         string preferred_language
     }
-    
+
     IdentityNames {
         uuid id PK
         uuid identity_id FK
@@ -507,7 +497,7 @@ erDiagram
         boolean is_deprecated
         enum visibility_level
     }
-    
+
     ContextProfiles {
         uuid id PK
         uuid user_id FK
@@ -515,15 +505,7 @@ erDiagram
         jsonb overrides
         array allowed_scopes
     }
-    
-    GuardianRelationships {
-        uuid id PK
-        uuid guardian_user_id FK
-        uuid minor_user_id FK
-        jsonb permissions
-        boolean verified
-    }
-    
+
     OAuthGrants {
         uuid id PK
         uuid user_id FK
@@ -599,18 +581,6 @@ The system uses PostgreSQL JSONB fields to support flexible, culturally-sensitiv
   "email": "s.chen@hospital.org",
   "bio": "Board-certified psychiatrist",
   "credentials": ["MD", "PhD", "Board Certified"]
-}
-```
-
-**Guardian Permissions (GuardianRelationships.permissions):**
-
-```json
-{
-  "can_view_profile": true,
-  "can_edit_profile": true,
-  "can_create_contexts": true,
-  "can_manage_oauth": true,
-  "can_delete_profile": false
 }
 ```
 

@@ -121,7 +121,6 @@ quarto render --to html
 
 - **Multi-Context Identity**: Professional, social, family, healthcare contexts
 - **Cultural Neutrality**: No assumptions about Western naming conventions
-- **Guardian Management**: Parents manage minor profiles with graduated autonomy
 - **GDPR Consideration**: attempt to respect Article 15-22 data subject rights
 - **OAuth 2.0**: Third-party integration with scope-based access control
 - **Multilingual**: Store and present names in multiple languages

@@ -1,8 +1,8 @@
 -- Add 'family' and 'custom' to context_type enum
--- Supports guardian use cases (family contexts) and flexible custom contexts
+-- Supports family sharing and flexible custom contexts
 -- Part of Phase 2: Context Profiles enhancement
 
--- Add 'family' context type for guardian-managed family contexts
+-- Add 'family' context type for family-specific identity contexts
 ALTER TYPE context_type ADD VALUE IF NOT EXISTS 'family';
 
 -- Add 'custom' context type for user-defined contexts beyond standard types

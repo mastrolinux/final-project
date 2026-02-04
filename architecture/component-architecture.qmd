@@ -7,47 +7,42 @@ title: "Component Architecture"
 The system adopts a **Layered Architecture** with **RESTful API** principles:
 
 ```{mermaid}
-
-
 graph TD
-    subgraph PL["Presentation Layer<br/>REST API Endpoints"]
+    subgraph PL["Presentation Layer"]
         IE[Identity Endpoints]
         OE[OAuth Endpoints]
-        GE[Guardian Endpoints]
     end
-    
-    subgraph AL["Application Layer<br/>Business Logic & Use Cases"]
+
+    subgraph AL["Application Layer"]
         PS[Profile Service]
         OS[OAuth Service]
-        GS[Guardian Service]
         CS[Context Service]
         GDPRS[GDPR Service]
         AS[Audit Service]
     end
-    
-    subgraph DL["Domain Layer<br/>Domain Models"]
+
+    subgraph DL["Domain Layer"]
         IA[Identity Aggregate]
         CA[Context Aggregate]
-        GR[Guardian Relationship]
     end
-    
-    subgraph DAL["Data Access Layer<br/>Repositories"]
+
+    subgraph DAL["Data Access Layer"]
         PR[Profile Repository]
         OR[OAuth Repository]
         AR[Audit Repository]
     end
-    
+
     subgraph IL["Infrastructure Layer"]
         DB[(Supabase PostgreSQL)]
         CACHE[(Redis Cache)]
         LOG[Logging Service]
     end
-    
+
     PL --> AL
     AL --> DL
     DL --> DAL
     DAL --> IL
-    
+
     style PL fill:#e3f2fd
     style AL fill:#fff3e0
     style DL fill:#f3e5f5
@@ -115,34 +110,6 @@ recordConsent(userId, clientId, scopes) -> ConsentRecord
 - **Scope Engine**: Defines and enforces scopes
 - **Consent Manager**: Tracks user authorizations
 - **Authorization Flow Handler**: Implements OAuth flows
-
-
-### Guardian Management Component
-
-**Responsibilities:**
-
-- Manage guardian-minor relationships
-- Enforce parental control permissions
-- Verify age and guardian status
-- Handle guardian actions on behalf of minors
-- Support guardian permission hierarchies
-
-**Key Interfaces:**
-```
-createRelationship(guardianId, minorId, type) -> Relationship
-verifyRelationship(relationshipId, method) -> void
-updatePermissions(relationshipId, permissions) -> Relationship
-getGuardedMinors(guardianId) -> List<User>
-getGuardians(minorId) -> List<Guardian>
-checkPermission(guardianId, minorId, action) -> boolean
-```
-
-**Internal Modules:**
-
-- **Relationship Repository**: Data access for relationships
-- **Age Verification Service**: Determines minor status
-- **Permission Evaluator**: Checks guardian permissions
-- **Notification Service**: Alerts for guardian actions
 
 
 ### Authentication Component
@@ -297,49 +264,6 @@ sequenceDiagram
     API-->>ThirdParty: 200 OK<br/>(name, photo only)
 ```
 
-### Flow 3: Guardian Updates Minor Profile
-
-```{mermaid}
-
-
-sequenceDiagram
-    actor Guardian
-    participant API as API Gateway
-    participant Auth as Authorization
-    participant GS as Guardian Service
-    participant PS as Profile Service
-    participant PR as Profile Repository
-    participant DB as Supabase PostgreSQL
-    participant History as Version History
-    participant Audit as Audit Log Service
-    participant Notify as Notification Service
-    
-    Guardian->>API: PATCH /users/minor_123/profile
-    API->>Auth: Validate Guardian Token
-    Auth-->>API: Token Valid (guardian_id)
-    API->>GS: checkRelationship<br/>(guardian_id, minor_id)
-    GS->>DB: Query guardian_relationships
-    DB-->>GS: Relationship Found
-    GS->>GS: Verify Permission<br/>(can_edit_profile=true)
-    GS-->>API: Permission Granted
-    API->>PS: updateProfile<br/>(minor_id, updates, actor=guardian_id)
-    PS->>PR: getProfile(minor_id)
-    PR-->>PS: Current Profile (for history)
-    PS->>History: saveVersion<br/>(old_profile, actor=guardian)
-    History-->>PS: Version Saved
-    PS->>PR: update<br/>(minor_id, new_data)
-    PR->>DB: UPDATE profiles
-    DB-->>PR: Updated
-    PR-->>PS: Updated Profile
-    PS->>Audit: log<br/>(guardian_action, actor=guardian_id)
-    Audit-->>PS: Logged
-    PS->>Notify: notifyMinor<br/>(profile_updated_by_guardian)
-    Notify-->>PS: Notification Queued
-    PS-->>API: Success Response
-    API-->>Guardian: 200 OK<br/>(Updated Profile)
-```
-
-
 ## Cross-Cutting Concerns
 
 These concerns span all layers:
@@ -412,31 +336,26 @@ backend/
 |   |       |   |-- profiles.py   # Profile management
 |   |       |   |-- contexts.py   # Context profiles
 |   |       |   |-- oauth.py      # OAuth endpoints
-|   |       |   |-- guardians.py  # Guardian management
 |   |       |   +-- gdpr.py       # GDPR compliance
 |   |       +-- deps.py           # Shared dependencies
 |   |-- models/
 |   |   |-- profile.py            # Domain models
 |   |   |-- context.py
-|   |   |-- oauth.py
-|   |   +-- guardian.py
+|   |   +-- oauth.py
 |   |-- schemas/
 |   |   |-- profile.py            # Pydantic schemas
 |   |   |-- context.py
-|   |   |-- oauth.py
-|   |   +-- guardian.py
+|   |   +-- oauth.py
 |   |-- services/
 |   |   |-- profile_service.py    # Business logic
 |   |   |-- context_service.py
 |   |   |-- oauth_service.py
-|   |   |-- guardian_service.py
 |   |   |-- auth_service.py
 |   |   |-- audit_service.py
 |   |   +-- gdpr_service.py
 |   +-- repositories/
 |       |-- profile_repository.py  # Data access
 |       |-- oauth_repository.py
-|       |-- guardian_repository.py
 |       +-- audit_repository.py
 |-- tests/
 |   |-- unit/
