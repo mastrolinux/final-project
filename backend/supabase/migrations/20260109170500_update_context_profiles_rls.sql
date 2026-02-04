@@ -41,26 +41,12 @@ CREATE POLICY "Users can delete own contexts"
 
 -- Admin override policy for support and audit purposes
 -- Allows users with 'admin' role to access all context profiles
-CREATE POLICY "Admins can access all contexts" 
-    ON context_profiles 
-    FOR ALL 
+CREATE POLICY "Admins can access all contexts"
+    ON context_profiles
+    FOR ALL
     USING (
         current_setting('request.jwt.claims', true)::jsonb->'roles' @> '"admin"'::jsonb
     );
-
--- Guardian policy (Phase 4 preparation)
--- Will be enhanced when guardian relationships are implemented
--- CREATE POLICY "Guardians can view ward contexts" 
---     ON context_profiles 
---     FOR SELECT 
---     USING (
---         EXISTS (
---             SELECT 1 FROM guardian_relationships
---             WHERE guardian_id = current_setting('request.jwt.claims', true)::json->>'sub'
---             AND ward_id = context_profiles.user_id
---             AND permissions->>'can_view_profile' = 'true'
---         )
---     );
 
 COMMENT ON POLICY "Users can view own contexts" ON context_profiles IS 'RLS: Users can only SELECT their own context profiles';
 COMMENT ON POLICY "Users can create own contexts" ON context_profiles IS 'RLS: Users can only INSERT contexts for themselves';

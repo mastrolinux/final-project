@@ -50,7 +50,6 @@ from src.api.v1.endpoints import admin_oauth
 api_router.include_router(admin_oauth.router, prefix="/admin/oauth", tags=["Admin - OAuth"])
 
 # Future endpoint routers will be included here:
-# from src.api.v1.endpoints import guardians, privacy
-# api_router.include_router(guardians.router, prefix="/guardians", tags=["Guardians"])
+# from src.api.v1.endpoints import privacy
 # api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
 
