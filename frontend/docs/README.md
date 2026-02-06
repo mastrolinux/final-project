@@ -95,7 +95,7 @@ All frontend designs follow these core principles:
 ### UI Components
 - **Headless UI** for accessible primitives
 - **Custom component library** following design system
-- **Tailwind CSS** for styling
+- **Custom CSS** for styling
 
 ### State Management
 - **Pinia** for global state

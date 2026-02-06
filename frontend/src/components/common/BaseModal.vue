@@ -70,12 +70,6 @@ const handleClose = () => {
 </template>
 
 <style scoped>
-/* Tailwind classes are used here assuming Tailwind is configured.
-   If not, we would need to replace them with custom CSS.
-   Given the project structure, it seems we are using custom CSS variables.
-   I will replace Tailwind classes with custom CSS in a subsequent step if needed,
-   but for now I'll stick to the Headless UI example structure and adapt it.
-*/
 
 .z-modal {
   z-index: var(--z-modal);
