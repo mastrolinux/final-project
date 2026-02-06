@@ -58,12 +58,7 @@ final-project/
 
 ```bash
 cd backend
-
-# Start Supabase locally
-supabase start
-
-# Start API with Docker
-docker compose up
+./script/start.sh
 
 # Access:
 # - API: http://localhost:8000
@@ -77,10 +72,8 @@ docker compose up
 
 ```bash
 cd frontend
-
-# To be implemented
-# npm install
-# npm run dev
+npm install
+npm run dev
 ```
 
 **Details**: See [frontend/README.md](frontend/README.md)
@@ -122,7 +115,7 @@ quarto render --to html
 - **Multi-Context Identity**: Professional, social, family, healthcare contexts
 - **Cultural Neutrality**: No assumptions about Western naming conventions
 - **GDPR Consideration**: attempt to respect Article 15-22 data subject rights
-- **OAuth 2.0**: Third-party integration with scope-based access control
+- **OAuth 2.1**: Third-party integration with scope-based access control
 - **Multilingual**: Store and present names in multiple languages
 
 ## Technology Stack
@@ -304,6 +297,7 @@ quarto preview
 # 4. Access services
 # Backend API: http://localhost:8000/docs
 # Supabase: http://127.0.0.1:54323
+# Mailpit: http://127.0.0.1:54324/
 ```
 
 **Note**: This is a monorepo. Backend, frontend, and thesis documentation are all in this single repository for version coherence and easier academic review.
