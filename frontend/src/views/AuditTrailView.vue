@@ -92,7 +92,7 @@ onMounted(loadEntries)
 
 <template>
   <div class="audit-trail-view">
-    <div class="container">
+    <div class="container container-lg">
       <div class="page-header">
         <div>
           <h1 class="page-title">{{ t('audit.title') }}</h1>
@@ -104,18 +104,20 @@ onMounted(loadEntries)
       <div class="filters-bar">
         <div class="filter-group">
           <BaseSelect
+            id="event_type_filter"
             :model-value="eventTypeFilter"
             :options="eventTypeOptions"
             :label="t('audit.filters.eventType')"
-            @update:model-value="(val: string) => { eventTypeFilter = val; applyFilters() }"
+            @update:model-value="(val: string | number) => { eventTypeFilter = String(val); applyFilters() }"
           />
         </div>
         <div class="filter-group">
           <BaseSelect
+            id="resource_type_filter"
             :model-value="resourceTypeFilter"
             :options="resourceTypeOptions"
             :label="t('audit.filters.resourceType')"
-            @update:model-value="(val: string) => { resourceTypeFilter = val; applyFilters() }"
+            @update:model-value="(val: string | number) => { resourceTypeFilter = String(val); applyFilters() }"
           />
         </div>
       </div>
@@ -180,23 +182,6 @@ onMounted(loadEntries)
 <style scoped>
 .audit-trail-view {
   padding: var(--spacing-8) 0;
-}
-
-.page-header {
-  margin-bottom: var(--spacing-6);
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-1);
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin: 0;
 }
 
 .filters-bar {

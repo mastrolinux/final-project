@@ -106,7 +106,7 @@ async function handleDeleteAccount() {
 
 <template>
   <div class="settings-view">
-    <div class="container container-md">
+    <div class="container container-lg">
       <div class="page-header">
         <h1 class="page-title">{{ t('settings.title') }}</h1>
         <p class="page-description">{{ t('settings.description') }}</p>
@@ -303,7 +303,7 @@ async function handleDeleteAccount() {
 
 <style scoped>
 .settings-view {
-  padding: var(--spacing-6) 0;
+  padding: var(--spacing-8) 0;
 }
 
 .settings-section {

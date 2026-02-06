@@ -52,7 +52,7 @@ function goBack() {
 
 <template>
   <div class="admin-audit-verify-view">
-    <div class="container container-md">
+    <div class="container container-lg">
       <button type="button" class="back-link" @click="goBack">
         <ArrowLeftIcon class="back-icon" />
         {{ t('audit.verify.backToAdmin') }}
@@ -69,6 +69,7 @@ function goBack() {
           <div class="control-row">
             <BaseInput
               v-model="verifyLimit"
+              id="verify_limit"
               type="number"
               :label="t('audit.verify.entriesLabel')"
               :hint="t('audit.verify.entriesHint')"
@@ -129,10 +130,6 @@ function goBack() {
   padding: var(--spacing-8) 0;
 }
 
-.container-md {
-  max-width: 720px;
-}
-
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -154,23 +151,6 @@ function goBack() {
 .back-icon {
   width: 16px;
   height: 16px;
-}
-
-.page-header {
-  margin-bottom: var(--spacing-6);
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-1);
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin: 0;
 }
 
 .verify-controls {

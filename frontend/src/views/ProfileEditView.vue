@@ -47,11 +47,11 @@ onMounted(async () => {
     // Ensure we have the latest profile data
     const profile = await profileService.get(authStore.userId)
     profileStore.setProfile(profile)
-    
+
     // Also fetch identity names for the manager
     const names = await profileService.getNames(authStore.userId)
     profileStore.setIdentityNames(names)
-    
+
     // Populate form
     form.legal_name = profile.legal_name || ''
     form.primary_email = profile.primary_email
@@ -66,7 +66,7 @@ onMounted(async () => {
 
 const handleSave = async () => {
   if (!authStore.userId) return
-  
+
   isSaving.value = true
   error.value = null
 
@@ -80,7 +80,7 @@ const handleSave = async () => {
 
     const updatedProfile = await profileService.update(authStore.userId, updates)
     profileStore.setProfile(updatedProfile)
-    
+
     router.back()
   } catch (err) {
     error.value = getErrorMessage(err)
@@ -95,27 +95,27 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <div class="profile-edit-view">
-    <div class="container container-sm">
-      <div class="page-header mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">{{ t('profile.editProfile') }}</h1>
+  <div class="page-view">
+    <div class="container container-lg">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('profile.editProfile') }}</h1>
       </div>
 
-      <div v-if="isLoading" class="loading-state text-center py-12">
-        <div class="spinner spinner-lg mx-auto"></div>
-        <p class="mt-4 text-gray-500">{{ t('common.loading') }}</p>
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner spinner-lg"></div>
+        <p class="loading-text">{{ t('common.loading') }}</p>
       </div>
 
-      <div v-else class="edit-content space-y-6">
-        <div v-if="error" class="alert alert-error mb-6">
+      <div v-else class="edit-content">
+        <div v-if="error" class="alert alert-error edit-error">
           {{ error }}
         </div>
 
         <BaseCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Base Information</h2>
+            <h2 class="card-heading">Base Information</h2>
           </template>
-          
+
           <form @submit.prevent="handleSave">
             <BaseInput
               v-model="form.legal_name"
@@ -148,7 +148,7 @@ const handleCancel = () => {
               :options="languageOptions"
             />
 
-            <div class="form-actions mt-8 flex justify-end gap-4">
+            <div class="form-actions">
               <BaseButton variant="ghost" @click="handleCancel" :disabled="isSaving">
                 {{ t('common.cancel') }}
               </BaseButton>
@@ -168,19 +168,39 @@ const handleCancel = () => {
 </template>
 
 <style scoped>
-.profile-edit-view {
-  padding: var(--spacing-8) 0;
+/* Header */
+/* Loading */
+.loading-container {
+  text-align: center;
+  padding: var(--spacing-12) 0;
 }
 
-.container-sm {
-  max-width: 640px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: var(--spacing-4);
-  padding-right: var(--spacing-4);
+.loading-text {
+  margin-top: var(--spacing-4);
+  color: var(--text-secondary);
 }
 
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
+/* Content */
+.edit-content > * + * {
+  margin-top: var(--spacing-6);
+}
+
+.edit-error {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Card heading */
+.card-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  margin-top: 2rem;
 }
 </style>
