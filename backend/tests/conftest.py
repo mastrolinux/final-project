@@ -16,7 +16,9 @@ from src.main import app
 from src.core.database import Base, get_db
 from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.audit_repository import AuditRepository
 from src.services.profile_service import ProfileService
+from src.services.audit_service import AuditService
 
 
 # Use in-memory SQLite database for testing
@@ -280,4 +282,16 @@ def profile_repository(db_session: Session) -> ProfileRepository:
 def profile_service(profile_repository: ProfileRepository) -> ProfileService:
     """Create ProfileService instance for testing"""
     return ProfileService(profile_repository)
+
+
+@pytest.fixture
+def audit_repository(db_session: Session) -> AuditRepository:
+    """Create AuditRepository instance for testing"""
+    return AuditRepository(db_session)
+
+
+@pytest.fixture
+def audit_service(audit_repository: AuditRepository) -> AuditService:
+    """Create AuditService instance for testing"""
+    return AuditService(audit_repository)
 

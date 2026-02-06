@@ -5,7 +5,7 @@ Business logic layer for context profile management.
 Implements the inheritance engine for profile resolution.
 """
 
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
 from uuid import UUID
 from datetime import datetime, timezone
 
@@ -14,6 +14,10 @@ from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.models.context import ContextProfile, ContextType
 from src.models.profile import BaseProfile, IdentityName, AccountType
+from src.models.audit import AuditEventType, AuditOperation
+
+if TYPE_CHECKING:
+    from src.services.audit_service import AuditService
 
 
 class ContextServiceError(Exception):
@@ -93,17 +97,20 @@ class ContextService:
     def __init__(
         self,
         context_repository: ContextRepository,
-        profile_repository: ProfileRepository
+        profile_repository: ProfileRepository,
+        audit_service: Optional["AuditService"] = None
     ):
         """
         Initialize service with repositories
-        
+
         Args:
             context_repository: ContextRepository instance
             profile_repository: ProfileRepository instance
+            audit_service: Optional audit service for event logging
         """
         self.context_repo = context_repository
         self.profile_repo = profile_repository
+        self.audit_service = audit_service
     
     def _resolve_multilingual_name(
         self,
@@ -225,7 +232,23 @@ class ContextService:
             phone_override=phone_override,
             bio=bio
         )
-        
+
+        # Audit: context creation
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.context_create,
+                user_id=user_id,
+                actor_id=user_id,
+                resource_type="context",
+                resource_id=str(context.id),
+                operation=AuditOperation.create,
+                changes={
+                    "context_type": context_type.value,
+                    "context_name": context_name,
+                },
+                legal_basis="contract"
+            )
+
         return context
     
     def get_context_profile(self, context_id: UUID) -> ContextProfile:
@@ -331,6 +354,19 @@ class ContextService:
         # Update context
         updated_context = self.context_repo.update_context_profile(context_id, **updates)
 
+        # Audit: context update
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.context_update,
+                user_id=context.user_id,
+                actor_id=context.user_id,
+                resource_type="context",
+                resource_id=str(context_id),
+                operation=AuditOperation.update,
+                changes={"fields_updated": list(updates.keys())},
+                legal_basis="contract"
+            )
+
         return updated_context
     
     def delete_context_profile(self, context_id: UUID) -> bool:
@@ -346,11 +382,26 @@ class ContextService:
         Raises:
             ContextServiceError: If context not found
         """
+        # Get context before deletion for audit user_id
+        context = self.context_repo.get_context_profile_by_id(context_id)
+
         result = self.context_repo.soft_delete_context_profile(context_id)
-        
+
         if not result:
             raise ContextServiceError(f"Context profile {context_id} not found")
-        
+
+        # Audit: context deletion (soft delete)
+        if self.audit_service and context:
+            self.audit_service.log_event(
+                event_type=AuditEventType.context_delete,
+                user_id=context.user_id,
+                actor_id=context.user_id,
+                resource_type="context",
+                resource_id=str(context_id),
+                operation=AuditOperation.delete,
+                legal_basis="contract"
+            )
+
         return result
     
     def resolve_context_profile(

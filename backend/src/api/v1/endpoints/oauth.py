@@ -19,6 +19,8 @@ from src.core.database import get_db
 from src.repositories.oauth_repository import OAuthRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.repositories.context_repository import ContextRepository
+from src.repositories.audit_repository import AuditRepository
+from src.services.audit_service import AuditService
 from src.services.oauth_service import (
     OAuthService,
     OAuthServiceError,
@@ -61,11 +63,13 @@ router = APIRouter()
 
 
 def get_oauth_service(db: Session = Depends(get_db)) -> OAuthService:
-    """Dependency to get OAuthService instance"""
+    """Dependency to get OAuthService instance with audit logging."""
     oauth_repo = OAuthRepository(db)
     profile_repo = ProfileRepository(db)
     context_repo = ContextRepository(db)
-    return OAuthService(oauth_repo, profile_repo, context_repo)
+    audit_repo = AuditRepository(db)
+    audit_service = AuditService(audit_repo)
+    return OAuthService(oauth_repo, profile_repo, context_repo, audit_service=audit_service)
 
 
 # =============================================================================
@@ -311,8 +315,10 @@ async def submit_consent(
     Returns:
         ConsentDecisionResponseBody with redirect_to URL
     """
-    oauth_service = OAuthService(OAuthRepository(db))
-    
+    audit_repo = AuditRepository(db)
+    audit_svc = AuditService(audit_repo)
+    oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
+
     # Handle denial
     if consent_data.decision == 'deny':
         from urllib.parse import urlencode
@@ -410,8 +416,10 @@ def token_request(
     - Public clients: client_id in body, no secret
     - Confidential clients: client_secret_post or client_secret_basic
     """
-    oauth_service = OAuthService(OAuthRepository(db))
-    
+    audit_repo = AuditRepository(db)
+    audit_svc = AuditService(audit_repo)
+    oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
+
     # Extract client credentials from Authorization header if present
     if authorization and authorization.startswith("Basic "):
         import base64
@@ -547,8 +555,10 @@ def revoke_token(
     
     Per RFC 7009, always returns 200 OK (even if token unknown).
     """
-    oauth_service = OAuthService(OAuthRepository(db))
-    
+    audit_repo = AuditRepository(db)
+    audit_svc = AuditService(audit_repo)
+    oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
+
     oauth_service.revoke_token(token, token_type_hint, client_id)
     
     return Response(status_code=status.HTTP_200_OK)

@@ -177,7 +177,7 @@ class TestAuthService:
         # Setup mocks
         mock_auth_repo.get_by_email.return_value = None
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_repo.create.return_value = mock_auth_user
         
@@ -185,7 +185,7 @@ class TestAuthService:
         success, error, data = auth_service.register_user(
             email="test@example.com",
             password="SecurePass123!",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             display_name="Test User"
         )
         
@@ -212,7 +212,7 @@ class TestAuthService:
         success, error, data = auth_service.register_user(
             email="existing@example.com",
             password="SecurePass123!",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             display_name="Test User"
         )
         
@@ -227,7 +227,7 @@ class TestAuthService:
         success, error, data = auth_service.register_user(
             email="test@example.com",
             password="weak",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             display_name="Test User"
         )
         
@@ -239,7 +239,7 @@ class TestAuthService:
         """Test successful login returns JWT tokens."""
         # Setup mocks
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.password_hash = hash_password("SecurePass123!")
         mock_auth_user.is_email_verified = True
@@ -266,7 +266,7 @@ class TestAuthService:
         assert "access_token" in data
         assert "refresh_token" in data
         assert data["token_type"] == "bearer"
-        assert data["user_id"] == "user-123"
+        assert data["user_id"] == "00000000-0000-0000-0000-000000000123"
         
         # Verify repository calls
         mock_auth_repo.reset_failed_login.assert_called_once()
@@ -287,7 +287,7 @@ class TestAuthService:
     def test_login_wrong_password(self, auth_service, mock_auth_repo):
         """Test login fails with wrong password."""
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.password_hash = hash_password("CorrectPass123!")
         mock_auth_user.is_locked.return_value = False
         
@@ -323,7 +323,7 @@ class TestAuthService:
     def test_verify_email_success(self, auth_service, mock_auth_repo):
         """Test successful email verification."""
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.is_verification_token_valid.return_value = True
         
         mock_auth_repo.get_by_verification_token.return_value = mock_auth_user
@@ -347,7 +347,7 @@ class TestAuthService:
     def test_request_password_reset_success(self, mock_send_email, auth_service, mock_auth_repo):
         """Test password reset request sends email."""
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_repo.get_by_email.return_value = mock_auth_user
         
         success, error = auth_service.request_password_reset("test@example.com")
@@ -370,7 +370,7 @@ class TestAuthService:
     def test_reset_password_success(self, auth_service, mock_auth_repo):
         """Test successful password reset."""
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.is_reset_token_valid.return_value = True
         
         mock_auth_repo.get_by_reset_token.return_value = mock_auth_user
@@ -411,7 +411,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             locked_until=datetime.now(timezone.utc) + timedelta(minutes=10)
         )
         
@@ -422,7 +422,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             locked_until=None
         )
         
@@ -433,7 +433,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             locked_until=datetime.now(timezone.utc) - timedelta(minutes=10)
         )
         
@@ -445,7 +445,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             verification_token=token,
             verification_token_expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
         )
@@ -458,7 +458,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             verification_token=token,
             verification_token_expires_at=datetime.now(timezone.utc) - timedelta(hours=1)
         )
@@ -471,7 +471,7 @@ class TestAuthUserModel:
         auth_user = AuthUser(
             email="test@example.com",
             password_hash="hash",
-            user_id="user-123",
+            user_id="00000000-0000-0000-0000-000000000123",
             reset_token=token,
             reset_token_expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
         )
@@ -508,18 +508,18 @@ class TestRefreshAccessToken:
     @pytest.fixture
     def valid_refresh_token(self):
         """Create a valid refresh token for testing."""
-        return create_refresh_token("user-123")
+        return create_refresh_token("00000000-0000-0000-0000-000000000123")
 
     def test_refresh_success_returns_new_tokens(
         self, auth_service, mock_auth_repo, mock_profile_repo, mock_blacklist
     ):
         """Test successful refresh returns new access and refresh tokens."""
         # Create valid refresh token
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Setup mock auth user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
         mock_auth_user.is_locked.return_value = False
@@ -594,7 +594,7 @@ class TestRefreshAccessToken:
     ):
         """Test refresh fails when access token is used instead of refresh token."""
         # Create an access token (wrong type)
-        access_token = create_access_token("user-123", "test@example.com", "verified")
+        access_token = create_access_token("00000000-0000-0000-0000-000000000123", "test@example.com", "verified")
 
         success, error_code, data = auth_service.refresh_access_token(
             refresh_token=access_token,
@@ -609,7 +609,7 @@ class TestRefreshAccessToken:
         self, auth_service, mock_auth_repo, mock_blacklist
     ):
         """Test refresh fails when token JTI is in blacklist (revoked)."""
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Configure blacklist to return True (token is revoked)
         mock_blacklist.is_blacklisted.return_value = True
@@ -648,11 +648,11 @@ class TestRefreshAccessToken:
         self, auth_service, mock_auth_repo, mock_blacklist
     ):
         """Test refresh fails when account is temporarily locked."""
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Setup locked user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.deleted_at = None
         mock_auth_user.is_locked.return_value = True
         mock_auth_repo.get_by_user_id.return_value = mock_auth_user
@@ -670,11 +670,11 @@ class TestRefreshAccessToken:
         self, auth_service, mock_auth_repo, mock_blacklist
     ):
         """Test refresh fails when account has been soft deleted."""
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Setup deleted user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.deleted_at = datetime.now(timezone.utc)  # Soft deleted
         mock_auth_repo.get_by_user_id.return_value = mock_auth_user
 
@@ -693,7 +693,7 @@ class TestRefreshAccessToken:
         """Test refresh fails with SERVICE_UNAVAILABLE when Redis is down during blacklist check."""
         from redis.exceptions import ConnectionError as RedisConnectionError
 
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Simulate Redis connection failure on blacklist check
         mock_blacklist.is_blacklisted.side_effect = RedisConnectionError("Connection refused")
@@ -713,11 +713,11 @@ class TestRefreshAccessToken:
         """Test refresh fails with SERVICE_UNAVAILABLE when Redis fails during token blacklisting."""
         from redis.exceptions import ConnectionError as RedisConnectionError
 
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Setup valid user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
         mock_auth_user.is_locked.return_value = False
@@ -746,7 +746,7 @@ class TestRefreshAccessToken:
         self, auth_service, mock_auth_repo, mock_profile_repo, mock_blacklist
     ):
         """Test that old refresh token is blacklisted before new tokens are issued."""
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Get JTI from original token for verification
         original_token_data = verify_token(refresh_token, token_type="refresh")
@@ -754,7 +754,7 @@ class TestRefreshAccessToken:
 
         # Setup valid user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
         mock_auth_user.is_locked.return_value = False
@@ -784,11 +784,11 @@ class TestRefreshAccessToken:
         self, auth_service, mock_auth_repo, mock_profile_repo, mock_blacklist
     ):
         """Test that newly issued tokens are valid and can be verified."""
-        refresh_token = create_refresh_token("user-123")
+        refresh_token = create_refresh_token("00000000-0000-0000-0000-000000000123")
 
         # Setup valid user
         mock_auth_user = Mock()
-        mock_auth_user.user_id = "user-123"
+        mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
         mock_auth_user.is_locked.return_value = False
@@ -810,12 +810,12 @@ class TestRefreshAccessToken:
         # Verify new access token is valid
         new_access_data = verify_token(data["access_token"], token_type="access")
         assert new_access_data is not None
-        assert new_access_data.user_id == "user-123"
+        assert new_access_data.user_id == "00000000-0000-0000-0000-000000000123"
         assert new_access_data.email == "test@example.com"
         assert new_access_data.account_type == "verified"
 
         # Verify new refresh token is valid
         new_refresh_data = verify_token(data["refresh_token"], token_type="refresh")
         assert new_refresh_data is not None
-        assert new_refresh_data.user_id == "user-123"
+        assert new_refresh_data.user_id == "00000000-0000-0000-0000-000000000123"
 
