@@ -8,6 +8,10 @@
     "profile": "Profile",
     "contexts": "Contexts",
     "settings": "Settings",
+    "audit": "Audit Trail",
+    "admin": "Admin",
+    "adminOAuthClients": "OAuth Clients",
+    "adminAuditVerify": "Audit Integrity",
     "login": "Login",
     "register": "Register",
     "logout": "Logout"
@@ -255,6 +259,69 @@
       "tamil": "South Indian Name",
       "mononym": "Single Name",
       "western": "Western/Standard Name"
+    }
+  },
+  "audit": {
+    "title": "Audit Trail",
+    "description": "Review the history of actions performed on your account",
+    "filters": {
+      "eventType": "Event type",
+      "resourceType": "Resource type",
+      "allEvents": "All events",
+      "allResources": "All resources"
+    },
+    "events": {
+      "loginSuccess": "Login (success)",
+      "loginFailure": "Login (failure)",
+      "logout": "Logout",
+      "register": "Registration",
+      "emailVerification": "Email verification",
+      "passwordChange": "Password change",
+      "passwordResetRequest": "Password reset request",
+      "passwordReset": "Password reset",
+      "profileCreate": "Profile created",
+      "profileUpdate": "Profile updated",
+      "profileDelete": "Profile deleted",
+      "contextCreate": "Context created",
+      "contextUpdate": "Context updated",
+      "contextDelete": "Context deleted",
+      "consentGrant": "Consent granted",
+      "consentWithdraw": "Consent withdrawn",
+      "tokenRevoke": "Token revoked"
+    },
+    "resources": {
+      "authUser": "Authentication",
+      "profile": "Profile",
+      "context": "Context",
+      "oauthConsent": "OAuth consent",
+      "oauthToken": "OAuth token",
+      "oauthClient": "OAuth client"
+    },
+    "empty": {
+      "title": "No audit entries",
+      "description": "There are no audit log entries matching your filters."
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {current} of {total}",
+      "showing": "Showing {count} of {total} entries"
+    },
+    "verify": {
+      "title": "Audit Log Integrity",
+      "description": "Verify the cryptographic hash chain of audit log entries to detect tampering",
+      "backToAdmin": "Back to Admin",
+      "entriesLabel": "Entries to verify",
+      "entriesHint": "Number of recent entries to check (1 - 10,000)",
+      "runButton": "Verify Integrity",
+      "verifying": "Verifying...",
+      "limitError": "Enter a number between 1 and 10,000",
+      "chainValid": "Hash Chain Valid",
+      "chainInvalid": "Tampering Detected",
+      "entriesVerified": "Entries verified",
+      "errorDetails": "Error details",
+      "validExplanation": "All {count} audit log entries have valid hash chain linkage. No tampering detected.",
+      "invalidExplanation": "The hash chain verification failed, indicating possible tampering with audit log entries."
     }
   },
   "common": {
