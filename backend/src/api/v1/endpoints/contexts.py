@@ -14,7 +14,9 @@ from src.core.database import get_db
 from src.core.types import UNSET
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.audit_repository import AuditRepository
 from src.services.context_service import ContextService, ContextServiceError
+from src.services.audit_service import AuditService
 from src.schemas.context import (
     ContextProfileCreate,
     ContextProfileUpdate,
@@ -27,10 +29,12 @@ router = APIRouter()
 
 
 def get_context_service(db: Session = Depends(get_db)) -> ContextService:
-    """Dependency to get ContextService instance"""
+    """Dependency to get ContextService instance with audit logging."""
     context_repo = ContextRepository(db)
     profile_repo = ProfileRepository(db)
-    return ContextService(context_repo, profile_repo)
+    audit_repo = AuditRepository(db)
+    audit_service = AuditService(audit_repo)
+    return ContextService(context_repo, profile_repo, audit_service=audit_service)
 
 
 def parse_accept_language(
