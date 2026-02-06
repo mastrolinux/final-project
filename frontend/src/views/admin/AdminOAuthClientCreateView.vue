@@ -46,7 +46,7 @@ function goBack(): void {
 
 <template>
   <div class="admin-oauth-client-create-view">
-    <div class="container container-md">
+    <div class="container container-lg">
       <button type="button" class="back-link" @click="goBack">
         <ArrowLeftIcon class="back-icon" />
         Back to OAuth Clients
@@ -87,10 +87,6 @@ function goBack(): void {
   padding: var(--spacing-8) 0;
 }
 
-.container-md {
-  max-width: 640px;
-}
-
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -113,22 +109,6 @@ function goBack(): void {
 .back-icon {
   width: 16px;
   height: 16px;
-}
-
-.page-header {
-  margin-bottom: var(--spacing-6);
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-1) 0;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  margin: 0;
 }
 
 .alert-error {
