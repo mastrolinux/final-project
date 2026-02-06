@@ -18,7 +18,7 @@ const handleClose = () => {
 
 <template>
   <TransitionRoot as="template" :show="isOpen">
-    <Dialog as="div" class="relative z-modal" @close="handleClose">
+    <Dialog as="div" class="modal-dialog" @close="handleClose">
       <TransitionChild
         as="template"
         enter="ease-out duration-300"
@@ -28,11 +28,11 @@ const handleClose = () => {
         leave-from="opacity-100"
         leave-to="opacity-0"
       >
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        <div class="modal-backdrop" />
       </TransitionChild>
 
-      <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div class="modal-scroll-container">
+        <div class="modal-layout">
           <TransitionChild
             as="template"
             enter="ease-out duration-300"
@@ -43,22 +43,22 @@ const handleClose = () => {
             leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
             <DialogPanel
-              class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full"
-              :class="maxWidth || 'sm:max-w-lg'"
+              class="modal-panel"
+              :class="maxWidth || 'modal-panel-default'"
             >
-              <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                <div class="sm:flex sm:items-start">
-                  <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                    <DialogTitle v-if="title" as="h3" class="text-base font-semibold leading-6 text-gray-900 mb-4">
+              <div class="modal-header">
+                <div class="modal-header-layout">
+                  <div class="modal-content">
+                    <DialogTitle v-if="title" as="h3" class="modal-title">
                       {{ title }}
                     </DialogTitle>
-                    <div class="mt-2">
+                    <div class="modal-body">
                       <slot />
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="$slots.footer" class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+              <div v-if="$slots.footer" class="modal-footer">
                 <slot name="footer" />
               </div>
             </DialogPanel>
@@ -70,194 +70,123 @@ const handleClose = () => {
 </template>
 
 <style scoped>
-
-.z-modal {
+.modal-dialog {
+  position: relative;
   z-index: var(--z-modal);
 }
 
-.fixed {
+.modal-backdrop {
   position: fixed;
-}
-
-.inset-0 {
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
-}
-
-.bg-gray-500 {
   background-color: var(--color-gray-500);
-}
-
-.bg-opacity-75 {
   opacity: 0.75;
-}
-
-.transition-opacity {
   transition-property: opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
 
-.overflow-y-auto {
+.modal-scroll-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
   overflow-y: auto;
 }
 
-.flex {
+.modal-layout {
   display: flex;
-}
-
-.min-h-full {
   min-height: 100%;
-}
-
-.items-end {
   align-items: flex-end;
-}
-
-.justify-center {
   justify-content: center;
-}
-
-.p-4 {
   padding: var(--spacing-4);
-}
-
-.text-center {
   text-align: center;
 }
 
-.relative {
+.modal-panel {
   position: relative;
-}
-
-.transform {
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-
-.overflow-hidden {
   overflow: hidden;
-}
-
-.rounded-lg {
   border-radius: var(--radius-lg);
-}
-
-.bg-white {
   background-color: var(--bg-secondary);
-}
-
-.text-left {
   text-align: left;
-}
-
-.shadow-xl {
   box-shadow: var(--shadow-xl);
-}
-
-.transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
 
-.bg-gray-50 {
-  background-color: var(--bg-tertiary);
+.modal-header {
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-5) var(--spacing-4) var(--spacing-4);
 }
 
-.px-4 {
-  padding-left: var(--spacing-4);
-  padding-right: var(--spacing-4);
+.modal-header-layout {
+  /* Stacked on mobile, flex on sm+ */
 }
 
-.py-3 {
-  padding-top: var(--spacing-3);
-  padding-bottom: var(--spacing-3);
-}
-
-.pb-4 {
-  padding-bottom: var(--spacing-4);
-}
-
-.pt-5 {
-  padding-top: var(--spacing-5);
-}
-
-.mt-3 {
+.modal-content {
   margin-top: var(--spacing-3);
-}
-
-.mt-2 {
-  margin-top: var(--spacing-2);
-}
-
-.mb-4 {
-  margin-bottom: var(--spacing-4);
-}
-
-.text-base {
-  font-size: var(--font-size-base);
-}
-
-.font-semibold {
-  font-weight: var(--font-weight-semibold);
-}
-
-.leading-6 {
-  line-height: 1.5rem;
-}
-
-.text-gray-900 {
-  color: var(--text-primary);
-}
-
-.w-full {
+  text-align: center;
   width: 100%;
 }
 
+.modal-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-body {
+  margin-top: var(--spacing-2);
+}
+
+.modal-footer {
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+/* Responsive: sm (640px+) */
 @media (min-width: 640px) {
-  .sm\:items-center {
+  .modal-layout {
     align-items: center;
-  }
-  .sm\:p-0 {
     padding: 0;
   }
-  .sm\:my-8 {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-  }
-  .sm\:w-full {
+
+  .modal-panel {
+    margin-top: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
     width: 100%;
   }
-  .sm\:max-w-lg {
+
+  .modal-panel-default {
     max-width: 32rem;
   }
-  .sm\:p-6 {
+
+  .modal-header {
     padding: var(--spacing-6);
-  }
-  .sm\:pb-4 {
     padding-bottom: var(--spacing-4);
   }
-  .sm\:flex {
+
+  .modal-header-layout {
     display: flex;
-  }
-  .sm\:items-start {
     align-items: flex-start;
   }
-  .sm\:ml-4 {
+
+  .modal-content {
     margin-left: var(--spacing-4);
-  }
-  .sm\:mt-0 {
     margin-top: 0;
-  }
-  .sm\:text-left {
     text-align: left;
   }
-  .sm\:flex-row-reverse {
+
+  .modal-footer {
+    display: flex;
     flex-direction: row-reverse;
-  }
-  .sm\:px-6 {
     padding-left: var(--spacing-6);
     padding-right: var(--spacing-6);
   }

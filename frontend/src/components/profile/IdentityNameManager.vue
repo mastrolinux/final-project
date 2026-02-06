@@ -20,11 +20,13 @@ const showDeleteConfirm = ref(false)
 const deleteId = ref<string | null>(null)
 
 const nameTypes: { label: string; value: NameType }[] = [
+  { label: 'Full Name', value: 'full_name' },
   { label: 'Given Name', value: 'given' },
   { label: 'Family Name', value: 'family' },
   { label: 'Preferred Name', value: 'preferred' },
   { label: 'Legal Name', value: 'legal' },
-  { label: 'Nickname', value: 'custom' } // Mapping custom to nickname for UI simplicity if needed, or keep custom
+  { label: 'Patronymic', value: 'patronymic' },
+  { label: 'Nickname', value: 'custom' }
 ]
 
 const languageOptions = [
@@ -60,7 +62,7 @@ function startAdding() {
 function startEditing(name: IdentityName) {
   const lang = Object.keys(name.name_value)[0] || 'en'
   const val = Object.values(name.name_value)[0] || ''
-  
+
   form.value = {
     name_type: name.name_type,
     language: lang,
@@ -84,7 +86,7 @@ async function saveName() {
 
   try {
     const nameValue = { [form.value.language]: form.value.value }
-    
+
     if (editingId.value) {
       // Update
       const updated = await profileService.updateName(profileStore.profile.user_id, editingId.value, {
@@ -125,7 +127,7 @@ async function deleteName() {
   if (!profileStore.profile || !deleteId.value) return
 
   isDeleting.value = true
-  
+
   try {
     await profileService.deleteName(profileStore.profile.user_id, deleteId.value)
     // Refresh names from server to ensure sync, or filter local state
@@ -144,50 +146,50 @@ async function deleteName() {
 
 <template>
   <div class="identity-name-manager">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-medium text-gray-900">Identity Names</h3>
+    <div class="manager-header">
+      <h3 class="manager-title">Identity Names</h3>
       <BaseButton variant="secondary" size="sm" @click="startAdding" v-if="!isAdding">
         + Add Name
       </BaseButton>
     </div>
 
     <!-- Auto-primary hint -->
-    <div v-if="profileStore.autoPromotedPrimary" class="auto-primary-hint mb-3">
-      <p class="text-xs text-gray-600">
+    <div v-if="profileStore.autoPromotedPrimary" class="auto-primary-hint">
+      <p class="hint-text">
         No name was marked as primary, so the first name was selected automatically.
         Edit any name and check "Set as primary display name" to choose a different one.
       </p>
     </div>
 
     <!-- List -->
-    <div v-if="!isAdding" class="space-y-3">
-      <div v-if="profileStore.identityNames.length === 0" class="text-sm text-gray-500 italic">
+    <div v-if="!isAdding" class="names-list">
+      <div v-if="profileStore.identityNames.length === 0" class="empty-names">
         No additional names defined.
       </div>
-      
+
       <div
         v-for="name in profileStore.identityNames"
         :key="name.id"
-        class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white"
+        class="name-card"
       >
         <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="font-medium text-gray-900">
+          <div class="name-info">
+            <span class="name-display">
               {{ Object.values(name.name_value)[0] }}
             </span>
             <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
             <BaseBadge v-if="name.is_primary" variant="success" size="sm">Primary</BaseBadge>
           </div>
-          <div class="text-xs text-gray-500 uppercase">
+          <div class="name-lang">
             {{ Object.keys(name.name_value)[0] }}
           </div>
         </div>
-        <div class="flex gap-2">
-          <button class="text-gray-400 hover:text-primary-600" @click="startEditing(name)">
+        <div class="name-actions">
+          <button class="action-edit" @click="startEditing(name)">
             <span class="sr-only">Edit</span>
             ✏️
           </button>
-          <button class="text-gray-400 hover:text-red-600" @click="confirmDelete(name.id)">
+          <button class="action-delete" @click="confirmDelete(name.id)">
             <span class="sr-only">Delete</span>
             🗑️
           </button>
@@ -196,12 +198,12 @@ async function deleteName() {
     </div>
 
     <!-- Add/Edit Form -->
-    <div v-else class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <h4 class="text-sm font-medium text-gray-900 mb-3">
+    <div v-else class="name-form">
+      <h4 class="name-form-title">
         {{ editingId ? 'Edit Name' : 'Add New Name' }}
       </h4>
-      
-      <form @submit.prevent="saveName" class="space-y-3">
+
+      <form @submit.prevent="saveName" class="name-form-fields">
         <BaseSelect
           v-model="form.name_type"
           id="name_type"
@@ -209,9 +211,9 @@ async function deleteName() {
           :options="nameTypes"
           required
         />
-        
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-1">
+
+        <div class="form-grid">
+          <div class="form-col-narrow">
             <BaseSelect
               v-model="form.language"
               id="name_lang"
@@ -220,7 +222,7 @@ async function deleteName() {
               required
             />
           </div>
-          <div class="col-span-2">
+          <div class="form-col-wide">
             <BaseInput
               v-model="form.value"
               id="name_value"
@@ -232,15 +234,15 @@ async function deleteName() {
         </div>
 
         <div class="form-group">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="form.is_primary" class="rounded border-gray-300 text-primary-600" />
-            <span class="text-sm text-gray-700">Set as primary display name</span>
+          <label class="checkbox-group">
+            <input type="checkbox" v-model="form.is_primary" class="checkbox-input" />
+            <span class="checkbox-text">Set as primary display name</span>
           </label>
         </div>
 
-        <div v-if="error" class="text-sm text-red-600">{{ error }}</div>
+        <div v-if="error" class="form-error-text">{{ error }}</div>
 
-        <div class="flex justify-end gap-2 mt-4">
+        <div class="form-buttons">
           <BaseButton variant="ghost" size="sm" @click="isAdding = false">Cancel</BaseButton>
           <BaseButton type="submit" size="sm" :loading="isSaving">Save</BaseButton>
         </div>
@@ -253,9 +255,9 @@ async function deleteName() {
       title="Delete Name"
       @close="showDeleteConfirm = false"
     >
-      <p class="text-sm text-gray-500 mb-4">Are you sure you want to delete this name?</p>
+      <p class="modal-message">Are you sure you want to delete this name?</p>
       <template #footer>
-        <div class="flex justify-end gap-2 w-full">
+        <div class="modal-buttons">
           <BaseButton variant="ghost" @click="showDeleteConfirm = false">Cancel</BaseButton>
           <BaseButton variant="danger" :loading="isDeleting" @click="deleteName">Delete</BaseButton>
         </div>
@@ -265,69 +267,174 @@ async function deleteName() {
 </template>
 
 <style scoped>
+/* Header */
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.manager-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+/* Auto-primary hint */
 .auto-primary-hint {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.hint-text {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Names list */
+.names-list > * + * {
+  margin-top: var(--spacing-3);
+}
+
+.empty-names {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Name card */
+.name-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
   background-color: var(--bg-secondary);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.name-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
 }
 
-/* Utility classes with dark mode support */
-.flex { display: flex; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mt-4 { margin-top: 1rem; }
-.p-3 { padding: 0.75rem; }
-.p-4 { padding: 1rem; }
-.space-y-3 > * + * { margin-top: 0.75rem; }
-.grid { display: grid; }
-.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.col-span-1 { grid-column: span 1 / span 1; }
-.col-span-2 { grid-column: span 2 / span 2; }
-.w-full { width: 100%; }
-.border { border-width: 1px; }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded { border-radius: 0.25rem; }
-.cursor-pointer { cursor: pointer; }
-.italic { font-style: italic; }
-.uppercase { text-transform: uppercase; }
+.name-display {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
 
-/* Typography - dark mode aware */
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.font-medium { font-weight: 500; }
-.text-gray-900 { color: var(--text-primary); }
-.text-gray-700 { color: var(--text-secondary); }
-.text-gray-500 { color: var(--text-secondary); }
-.text-gray-400 { color: var(--text-tertiary); }
-.text-red-600 { color: var(--color-error-600); }
+.name-lang {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
 
-/* Backgrounds - dark mode aware */
-.bg-white { background-color: var(--bg-secondary); }
-.bg-gray-50 { background-color: var(--bg-secondary); }
-.border-gray-200 { border-color: var(--border-primary); }
-.border-gray-300 { border-color: var(--border-secondary); }
+/* Action buttons */
+.name-actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
 
-/* Interactive states */
-.hover\:text-primary-600:hover { color: var(--color-primary-600); }
-.hover\:text-red-600:hover { color: var(--color-error-600); }
+.action-edit,
+.action-delete {
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.action-edit:hover {
+  color: var(--color-primary-600);
+}
+
+.action-delete:hover {
+  color: var(--color-error-600);
+}
+
+/* Add/Edit form */
+.name-form {
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.name-form-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.name-form-fields > * + * {
+  margin-top: var(--spacing-3);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-3);
+}
+
+.form-col-narrow {
+  grid-column: span 1 / span 1;
+}
+
+.form-col-wide {
+  grid-column: span 2 / span 2;
+}
+
+/* Checkbox */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+}
+
+.checkbox-input {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-secondary);
+  color: var(--color-primary-600);
+}
+
+.checkbox-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Form error */
+.form-error-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-error-600);
+}
+
+/* Form buttons */
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
+}
+
+/* Modal content */
+.modal-message {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  width: 100%;
+}
 </style>

@@ -19,7 +19,7 @@ const { t } = useI18n()
 
 <style scoped>
 .not-found-view {
-  padding: var(--spacing-12) 0;
+  padding: var(--spacing-8) 0;
   min-height: 60vh;
   display: flex;
   align-items: center;
