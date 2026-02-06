@@ -8,7 +8,7 @@ const authStore = useAuthStore()
 
 <template>
   <div class="home-view">
-    <div class="container container-md">
+    <div class="container container-lg">
       <div class="hero">
         <h1 class="hero-title">{{ t('app.name') }}</h1>
         <p class="hero-tagline">{{ t('app.tagline') }}</p>
@@ -60,7 +60,7 @@ const authStore = useAuthStore()
 
 <style scoped>
 .home-view {
-  padding: var(--spacing-12) 0;
+  padding: var(--spacing-8) 0;
 }
 
 .hero {

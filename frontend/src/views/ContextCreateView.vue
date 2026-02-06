@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
-import { contextService, getErrorMessage } from '@/services'
+import { contextService, profileService, getErrorMessage } from '@/services'
 import { CONTEXT_TYPES, CONTEXT_TYPE_META, type ContextType } from '@/types'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
@@ -35,6 +35,31 @@ const availableContextTypes = computed(() => {
     return CONTEXT_TYPES.filter((type) => type !== 'legal' && type !== 'healthcare')
   }
   return CONTEXT_TYPES
+})
+
+// Non-deprecated identity names for the "pick from names" chips
+const availableNames = computed(() =>
+  profileStore.identityNames.filter((n) => !n.is_deprecated)
+)
+
+function resolveNameValue(nameValue: Record<string, string>): string {
+  const lang = navigator.language.split('-')[0]
+  return nameValue[lang] ?? nameValue['en'] ?? Object.values(nameValue)[0] ?? ''
+}
+
+function pickName(resolved: string) {
+  form.display_name_override = resolved
+}
+
+onMounted(async () => {
+  if (authStore.userId && profileStore.identityNames.length === 0) {
+    try {
+      const names = await profileService.getNames(authStore.userId)
+      profileStore.setIdentityNames(names)
+    } catch {
+      // Non-critical: chips won't show, text input still works
+    }
+  }
 })
 
 async function handleSubmit() {
@@ -75,26 +100,26 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <div class="context-create-view">
-    <div class="container container-md">
-      <div class="page-header mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">{{ t('context.createNew') }}</h1>
-        <p class="text-gray-500 mt-1">{{ t('context.createDescription') }}</p>
+  <div class="page-view">
+    <div class="container container-lg">
+      <div class="page-header">
+        <h1 class="page-title">{{ t('context.createNew') }}</h1>
+        <p class="page-description">{{ t('context.createDescription') }}</p>
       </div>
 
-      <div v-if="error" class="alert alert-error mb-6">
+      <div v-if="error" class="alert alert-error create-error">
         {{ error }}
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="create-grid">
         <!-- Main Form -->
-        <div class="lg:col-span-2">
+        <div class="form-column">
           <BaseCard>
             <form @submit.prevent="handleSubmit">
               <!-- Context Type Selection -->
-              <div class="mb-8">
-                <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('context.type') }}</label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="form-section">
+                <label class="section-label">{{ t('context.type') }}</label>
+                <div class="type-grid">
                   <div
                     v-for="contextType in availableContextTypes"
                     :key="contextType"
@@ -115,21 +140,21 @@ const handleCancel = () => {
                         </div>
                       </div>
                       <div v-if="form.context_type === contextType" class="card-check">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </div>
-                <p v-if="authStore.accountType === 'pseudonymous'" class="mt-2 text-sm text-warning-600">
+                <p v-if="authStore.accountType === 'pseudonymous'" class="pseudo-warning">
                   {{ t('context.pseudonymousRestriction') }}
                 </p>
               </div>
 
               <!-- Basic Info -->
-              <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+              <div class="form-section">
+                <h3 class="section-heading">Basic Information</h3>
                 <BaseInput
                   v-model="form.context_name"
                   id="context_name"
@@ -138,23 +163,23 @@ const handleCancel = () => {
                   required
                   :hint="t('context.nameHint')"
                 />
-                
-                <div class="form-group mb-4">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" v-model="form.is_active" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                    <span class="text-sm font-medium text-gray-700">{{ t('context.isActive') }}</span>
+
+                <div class="form-group">
+                  <label class="checkbox-group">
+                    <input type="checkbox" v-model="form.is_active" class="checkbox-input" />
+                    <span class="checkbox-text">{{ t('context.isActive') }}</span>
                   </label>
-                  <p class="text-xs text-gray-500 mt-1 ml-6">{{ t('context.isActiveHint') }}</p>
+                  <p class="checkbox-hint">{{ t('context.isActiveHint') }}</p>
                 </div>
               </div>
 
               <!-- Overrides -->
-              <div class="mb-8">
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-lg font-medium text-gray-900">{{ t('context.overrides') }}</h3>
-                  <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Optional</span>
+              <div class="form-section">
+                <div class="overrides-header">
+                  <h3 class="section-heading">{{ t('context.overrides') }}</h3>
+                  <span class="optional-badge">Optional</span>
                 </div>
-                <p class="text-sm text-gray-500 mb-4">{{ t('context.overridesDescription') }}</p>
+                <p class="overrides-description">{{ t('context.overridesDescription') }}</p>
 
                 <BaseInput
                   v-model="form.display_name_override"
@@ -162,6 +187,22 @@ const handleCancel = () => {
                   :label="t('context.displayNameOverride')"
                   :placeholder="t('context.inheritFromProfile')"
                 />
+
+                <div v-if="availableNames.length > 0" class="name-chips-section">
+                  <span class="chips-label">{{ t('context.pickFromNames') }}</span>
+                  <div class="name-chips">
+                    <button
+                      v-for="name in availableNames"
+                      :key="name.id"
+                      type="button"
+                      class="name-chip"
+                      @click="pickName(resolveNameValue(name.name_value))"
+                    >
+                      <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
+                      <span class="chip-name-text">{{ resolveNameValue(name.name_value) }}</span>
+                    </button>
+                  </div>
+                </div>
 
                 <BaseInput
                   v-model="form.email_override"
@@ -179,19 +220,19 @@ const handleCancel = () => {
                   :placeholder="t('context.inheritFromProfile')"
                 />
 
-                <div class="form-group mb-4">
-                  <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">{{ t('context.bio') }}</label>
+                <div class="form-group">
+                  <label for="bio" class="textarea-label">{{ t('context.bio') }}</label>
                   <textarea
                     id="bio"
                     v-model="form.bio"
                     rows="3"
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    class="textarea-field"
                     :placeholder="t('context.bioPlaceholder')"
                   ></textarea>
                 </div>
               </div>
 
-              <div class="flex justify-end gap-4 pt-4 border-t border-gray-200">
+              <div class="form-footer">
                 <BaseButton variant="ghost" @click="handleCancel" :disabled="isSubmitting">
                   {{ t('common.cancel') }}
                 </BaseButton>
@@ -204,13 +245,13 @@ const handleCancel = () => {
         </div>
 
         <!-- Sidebar / Help -->
-        <div class="lg:col-span-1">
-          <BaseCard class="bg-blue-50 border-blue-100">
-            <h3 class="text-blue-900 font-medium mb-2">About Contexts</h3>
-            <p class="text-sm text-blue-800 mb-4">
+        <div class="help-column">
+          <BaseCard class="help-card">
+            <h3 class="help-title">About Contexts</h3>
+            <p class="help-text">
               Contexts allow you to present different sides of your identity to different applications.
             </p>
-            <ul class="text-sm text-blue-800 list-disc list-inside space-y-1">
+            <ul class="help-list">
               <li>Override your name and email</li>
               <li>Keep your phone number private</li>
               <li>Customize your bio per context</li>
@@ -223,8 +264,69 @@ const handleCancel = () => {
 </template>
 
 <style scoped>
-.context-create-view {
-  padding: var(--spacing-8) 0;
+/* Page header */
+.create-error {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Layout grid */
+.create-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6);
+}
+
+@media (min-width: 1024px) {
+  .create-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.form-column {
+  min-width: 0;
+}
+
+.help-column {
+  min-width: 0;
+}
+
+/* Form sections */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.section-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.section-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Context type selection grid */
+.type-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-3);
+}
+
+@media (min-width: 640px) {
+  .type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pseudo-warning {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-600);
 }
 
 /* Context Type Selection Cards */
@@ -282,6 +384,11 @@ const handleCancel = () => {
   color: var(--color-primary-600);
 }
 
+.check-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 /* Selected state overrides - high contrast */
 .context-type-card.is-selected .card-title {
   color: white;
@@ -295,96 +402,149 @@ const handleCancel = () => {
   color: white;
 }
 
-/* Tailwind-like utilities */
-.grid { display: grid; }
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.gap-6 { gap: 1.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
-.gap-2 { gap: 0.5rem; }
-.mb-8 { margin-bottom: 2rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.mt-1 { margin-top: 0.25rem; }
-.mt-2 { margin-top: 0.5rem; }
-.ml-1 { margin-left: 0.25rem; }
-.ml-6 { margin-left: 1.5rem; }
-.pt-4 { padding-top: 1rem; }
-.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-.p-4 { padding: 1rem; }
-.w-full { width: 100%; }
-.h-5 { height: 1.25rem; }
-.w-5 { width: 1.25rem; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-.relative { position: relative; }
-.block { display: block; }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-md { border-radius: 0.375rem; }
-.rounded { border-radius: 0.25rem; }
-.border { border-width: 1px; }
-.border-t { border-top-width: 1px; }
-.border-gray-200 { border-color: var(--border-primary); }
-.border-gray-300 { border-color: var(--border-secondary); }
-.border-primary-500 { border-color: var(--color-primary-500); }
-.ring-2 { box-shadow: 0 0 0 2px var(--ring-color, var(--color-primary-500)); }
-.ring-primary-500 { --ring-color: var(--color-primary-500); }
-.border-blue-100 { border-color: var(--color-primary-200); }
-.bg-white { background-color: var(--bg-secondary); }
-.bg-gray-50 { background-color: var(--bg-secondary); }
-.bg-gray-100 { background-color: var(--bg-tertiary); }
-.bg-primary-50 { background-color: var(--color-primary-50); }
-.bg-blue-50 { background-color: var(--color-primary-50); }
-.text-gray-900 { color: var(--text-primary); }
-.text-gray-700 { color: var(--text-secondary); }
-.text-gray-500 { color: var(--text-secondary); }
-.text-primary-600 { color: var(--color-primary-600); }
-.text-warning-600 { color: var(--color-warning-600); }
-.text-blue-900 { color: var(--color-primary-700); }
-.text-blue-800 { color: var(--color-primary-600); }
-.hover\:bg-gray-50:hover { background-color: var(--bg-tertiary); }
+/* Checkbox */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+}
 
-/* Dark mode overrides for selection cards */
-:global(.dark) .bg-primary-50 {
-  background-color: rgba(59, 130, 246, 0.15);
+.checkbox-input {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-secondary);
+  color: var(--color-primary-600);
 }
-:global(.dark) .bg-blue-50 {
+
+.checkbox-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.checkbox-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--spacing-1);
+  margin-left: var(--spacing-6);
+}
+
+/* Overrides section */
+.overrides-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.overrides-header .section-heading {
+  margin-bottom: 0;
+}
+
+.optional-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
+.overrides-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Name chips */
+.chips-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.chip-name-text {
+  font-size: var(--font-size-sm);
+}
+
+/* Textarea */
+.textarea-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.textarea-field {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.textarea-field:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Form footer */
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border-primary);
+}
+
+/* Help card */
+.help-card {
+  background-color: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+}
+
+:global(.dark) .help-card {
   background-color: rgba(59, 130, 246, 0.1);
-}
-:global(.dark) .border-blue-100 {
   border-color: var(--color-primary-700);
 }
-:global(.dark) .text-blue-900 {
+
+.help-title {
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-2);
+}
+
+:global(.dark) .help-title {
   color: var(--color-primary-300);
 }
-:global(.dark) .text-blue-800 {
+
+.help-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-600);
+  margin-bottom: var(--spacing-4);
+}
+
+:global(.dark) .help-text {
   color: var(--color-primary-400);
 }
-.font-bold { font-weight: 700; }
-.font-medium { font-weight: 500; }
-.text-2xl { font-size: 1.5rem; line-height: 2rem; }
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.cursor-pointer { cursor: pointer; }
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.list-disc { list-style-type: disc; }
-.list-inside { list-style-position: inside; }
 
-@media (min-width: 640px) {
-  .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sm\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.help-list {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-600);
+  list-style-type: disc;
+  list-style-position: inside;
 }
 
-@media (min-width: 1024px) {
-  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lg\:col-span-2 { grid-column: span 2 / span 2; }
-  .lg\:col-span-1 { grid-column: span 1 / span 1; }
+.help-list > li + li {
+  margin-top: var(--spacing-1);
+}
+
+:global(.dark) .help-list {
+  color: var(--color-primary-400);
 }
 </style>

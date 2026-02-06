@@ -155,6 +155,7 @@
     "inheritFromProfile": "Leave empty to inherit from base profile",
     "overrides": "Profile Overrides",
     "overridesDescription": "These values will override your base profile when using this context. Leave empty to use your base profile values.",
+    "pickFromNames": "Pick from your identity names",
     "pseudonymousRestriction": "Note: Pseudonymous accounts cannot create legal or healthcare contexts.",
     "types": {
       "professional": "Professional",
