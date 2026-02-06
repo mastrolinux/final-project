@@ -189,18 +189,6 @@ async function toggleInactive(): Promise<void> {
   min-width: 200px;
 }
 
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-1) 0;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 .btn-icon {
   width: 20px;
   height: 20px;
