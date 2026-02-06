@@ -19,6 +19,7 @@ from src.schemas.profile import (
     ProfileUpdate,
     ProfileResponse,
     IdentityNameCreate,
+    IdentityNameUpdate,
     IdentityNameResponse
 )
 
@@ -171,6 +172,66 @@ def get_identity_names(
     except ProfileServiceError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
+@router.patch(
+    "/profiles/{user_id}/names/{name_id}",
+    response_model=IdentityNameResponse
+)
+def update_identity_name(
+    user_id: UUID,
+    name_id: UUID,
+    update_data: IdentityNameUpdate,
+    service: ProfileService = Depends(get_profile_service)
+):
+    """
+    Update an identity name
+
+    Validates that the name belongs to the specified user.
+    Only provided (non-null) fields are updated.
+    """
+    try:
+        name = service.update_identity_name(user_id, name_id, update_data)
+        return name
+    except ProfileServiceError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.delete(
+    "/profiles/{user_id}/names/{name_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_identity_name(
+    user_id: UUID,
+    name_id: UUID,
+    service: ProfileService = Depends(get_profile_service)
+):
+    """
+    Delete an identity name
+
+    Hard deletes the name record. Validates ownership before deletion.
+    """
+    try:
+        service.delete_identity_name(user_id, name_id)
+        return None
+    except ProfileServiceError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 

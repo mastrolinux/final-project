@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useProfileStore } from '@/stores/profile.store'
-import type { ProfileResponse, ContextProfileResponse } from '@/types'
+import type { ProfileResponse, ContextProfileResponse, IdentityName } from '@/types'
 
 describe('useProfileStore', () => {
   beforeEach(() => {
@@ -269,6 +269,86 @@ describe('useProfileStore', () => {
       expect(store.profile).toBeNull()
       expect(store.contexts).toEqual([])
       expect(store.activeContextId).toBeNull()
+    })
+  })
+
+  describe('auto-primary identity name', () => {
+    const makeName = (overrides: Partial<IdentityName> = {}): IdentityName => ({
+      id: 'name-1',
+      identity_id: 'user-123',
+      name_type: 'preferred',
+      name_value: { en: 'Test User' },
+      is_primary: false,
+      is_deprecated: false,
+      visibility_level: 'public',
+      context_id: null,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      ...overrides
+    })
+
+    it('should auto-promote first non-deprecated name when none is primary', () => {
+      const store = useProfileStore()
+      const names = [
+        makeName({ id: 'n1', name_value: { en: 'First' } }),
+        makeName({ id: 'n2', name_value: { en: 'Second' } })
+      ]
+
+      store.setIdentityNames(names)
+
+      expect(store.identityNames[0].is_primary).toBe(true)
+      expect(store.identityNames[1].is_primary).toBe(false)
+      expect(store.autoPromotedPrimary).toBe(true)
+    })
+
+    it('should not auto-promote if a primary already exists', () => {
+      const store = useProfileStore()
+      const names = [
+        makeName({ id: 'n1', name_value: { en: 'First' } }),
+        makeName({ id: 'n2', name_value: { en: 'Second' }, is_primary: true })
+      ]
+
+      store.setIdentityNames(names)
+
+      expect(store.identityNames[0].is_primary).toBe(false)
+      expect(store.identityNames[1].is_primary).toBe(true)
+      expect(store.autoPromotedPrimary).toBe(false)
+    })
+
+    it('should skip deprecated names when auto-promoting', () => {
+      const store = useProfileStore()
+      const names = [
+        makeName({ id: 'n1', name_value: { en: 'Deprecated' }, is_deprecated: true }),
+        makeName({ id: 'n2', name_value: { en: 'Active' } })
+      ]
+
+      store.setIdentityNames(names)
+
+      expect(store.identityNames[0].is_primary).toBe(false)
+      expect(store.identityNames[1].is_primary).toBe(true)
+      expect(store.autoPromotedPrimary).toBe(true)
+    })
+
+    it('should not auto-promote if all names are deprecated', () => {
+      const store = useProfileStore()
+      const names = [
+        makeName({ id: 'n1', is_deprecated: true }),
+        makeName({ id: 'n2', is_deprecated: true })
+      ]
+
+      store.setIdentityNames(names)
+
+      expect(store.identityNames.every(n => !n.is_primary)).toBe(true)
+      expect(store.autoPromotedPrimary).toBe(false)
+    })
+
+    it('should clear autoPromotedPrimary on clearProfile', () => {
+      const store = useProfileStore()
+      store.setIdentityNames([makeName()])
+      expect(store.autoPromotedPrimary).toBe(true)
+
+      store.clearProfile()
+      expect(store.autoPromotedPrimary).toBe(false)
     })
   })
 

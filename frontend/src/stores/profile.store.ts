@@ -26,6 +26,7 @@ export const useProfileStore = defineStore('profile', () => {
   const resolvedProfile = ref<ResolvedProfileResponse | null>(null)
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
+  const autoPromotedPrimary = ref<boolean>(false)
 
   // Computed
   const activeContext = computed(() =>
@@ -65,6 +66,18 @@ export const useProfileStore = defineStore('profile', () => {
 
   function setIdentityNames(names: IdentityName[]): void {
     identityNames.value = names
+    // Auto-promote the first non-deprecated name to primary if none is set.
+    // This prevents the display name from falling back to the user's email
+    // when names exist but none has been explicitly marked as primary.
+    if (names.length > 0 && !names.some((n) => n.is_primary && !n.is_deprecated)) {
+      const candidate = names.find((n) => !n.is_deprecated)
+      if (candidate) {
+        candidate.is_primary = true
+        autoPromotedPrimary.value = true
+      }
+    } else {
+      autoPromotedPrimary.value = false
+    }
   }
 
   function addIdentityName(name: IdentityName): void {
@@ -124,6 +137,7 @@ export const useProfileStore = defineStore('profile', () => {
     activeContextId.value = null
     resolvedProfile.value = null
     error.value = null
+    autoPromotedPrimary.value = false
   }
 
   return {
@@ -135,6 +149,7 @@ export const useProfileStore = defineStore('profile', () => {
     resolvedProfile,
     isLoading,
     error,
+    autoPromotedPrimary,
 
     // Computed
     activeContext,
