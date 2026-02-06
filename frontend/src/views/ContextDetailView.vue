@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
-import { contextService, getErrorMessage } from '@/services'
+import { contextService, profileService, getErrorMessage } from '@/services'
 import { CONTEXT_TYPE_META, type ContextProfileResponse, type ResolvedProfileResponse } from '@/types'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
@@ -37,8 +37,31 @@ const editForm = ref({
   is_active: true
 })
 
+// Non-deprecated identity names for the "pick from names" chips
+const availableNames = computed(() =>
+  profileStore.identityNames.filter((n) => !n.is_deprecated)
+)
+
+function resolveNameValue(nameValue: Record<string, string>): string {
+  const lang = navigator.language.split('-')[0]
+  return nameValue[lang] ?? nameValue['en'] ?? Object.values(nameValue)[0] ?? ''
+}
+
+function pickName(resolved: string) {
+  editForm.value.display_name_override = resolved
+}
+
 onMounted(async () => {
   await loadContext()
+  // Load identity names for the "pick from names" chips
+  if (authStore.userId && profileStore.identityNames.length === 0) {
+    try {
+      const names = await profileService.getNames(authStore.userId)
+      profileStore.setIdentityNames(names)
+    } catch {
+      // Non-critical: chips won't show, text input still works
+    }
+  }
 })
 
 async function loadContext() {
@@ -100,10 +123,10 @@ async function saveChanges() {
       is_active: editForm.value.is_active
     })
     context.value = updatedContext
-    
+
     // Reload resolved profile to reflect changes
     resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
-    
+
     profileStore.updateContext(updatedContext)
     isEditing.value = false
     uiStore.addNotification({
@@ -141,32 +164,32 @@ async function deleteContext() {
 </script>
 
 <template>
-  <div class="context-detail-view">
-    <div class="container container-md">
-      <div class="page-header mb-6">
-        <router-link to="/contexts" class="back-link inline-flex items-center text-gray-500 hover:text-gray-900 mb-4">
-          <span class="mr-1">&larr;</span> {{ t('common.back') }}
+  <div class="page-view">
+    <div class="container container-lg">
+      <div class="page-header">
+        <router-link to="/contexts" class="back-link">
+          <span class="back-arrow">&larr;</span> {{ t('common.back') }}
         </router-link>
       </div>
 
-      <div v-if="isLoading" class="loading-state text-center py-12">
-        <div class="spinner spinner-lg mx-auto"></div>
-        <p class="mt-4 text-gray-500">{{ t('common.loading') }}</p>
+      <div v-if="isLoading" class="loading-container">
+        <div class="spinner spinner-lg loading-spinner"></div>
+        <p class="loading-text">{{ t('common.loading') }}</p>
       </div>
 
-      <div v-else-if="error && !context" class="alert alert-error mb-6">
+      <div v-else-if="error && !context" class="alert alert-error alert-spaced">
         {{ error }}
       </div>
 
       <template v-else-if="context">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="detail-grid">
           <!-- Main Content -->
-          <div class="lg:col-span-2 space-y-6">
+          <div class="main-column">
             <!-- Context Header Card -->
             <BaseCard>
-              <div class="flex justify-between items-start">
+              <div class="context-header-row">
                 <div>
-                  <div class="flex items-center gap-3 mb-2">
+                  <div class="context-badges">
                     <BaseBadge :variant="context.context_type" size="md">
                       {{ CONTEXT_TYPE_META[context.context_type]?.label }}
                     </BaseBadge>
@@ -174,10 +197,10 @@ async function deleteContext() {
                       {{ t('context.inactive') }}
                     </BaseBadge>
                   </div>
-                  <h1 class="text-2xl font-bold text-gray-900">{{ context.context_name }}</h1>
-                  <p class="text-sm text-gray-500 mt-1">Created {{ new Date(context.created_at).toLocaleDateString() }}</p>
+                  <h1 class="context-title">{{ context.context_name }}</h1>
+                  <p class="context-meta">Created {{ new Date(context.created_at).toLocaleDateString() }}</p>
                 </div>
-                <div v-if="!isEditing" class="flex gap-2">
+                <div v-if="!isEditing" class="action-buttons">
                   <BaseButton variant="secondary" size="sm" @click="startEditing">
                     {{ t('common.edit') }}
                   </BaseButton>
@@ -191,45 +214,45 @@ async function deleteContext() {
             <!-- Resolved Profile Preview -->
             <BaseCard v-if="!isEditing && resolvedProfile">
               <template #header>
-                <h2 class="text-lg font-semibold">Resolved Profile</h2>
-                <p class="text-sm text-gray-500 font-normal mt-1">What applications see when using this context</p>
+                <h2 class="card-heading">Resolved Profile</h2>
+                <p class="resolved-subtitle">What applications see when using this context</p>
               </template>
-              
-              <div class="space-y-4">
+
+              <div class="fields-list">
                 <div class="field-group">
-                  <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-medium text-gray-500 uppercase">Display Name</label>
+                  <div class="field-header">
+                    <label class="field-label-sm">Display Name</label>
                     <BaseBadge v-if="context.display_name_override" variant="info" size="sm">Custom</BaseBadge>
                     <BaseBadge v-else-if="resolvedProfile.display_name" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
-                  <div class="text-gray-900">{{ resolvedProfile.display_name || 'Not set' }}</div>
+                  <div class="field-value-text">{{ resolvedProfile.display_name || 'Not set' }}</div>
                 </div>
 
                 <div class="field-group">
-                  <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-medium text-gray-500 uppercase">Email</label>
+                  <div class="field-header">
+                    <label class="field-label-sm">Email</label>
                     <BaseBadge v-if="context.email_override" variant="info" size="sm">Custom</BaseBadge>
                     <BaseBadge v-else-if="resolvedProfile.email" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
-                  <div class="text-gray-900">{{ resolvedProfile.email || 'Not set' }}</div>
+                  <div class="field-value-text">{{ resolvedProfile.email || 'Not set' }}</div>
                 </div>
 
                 <div class="field-group">
-                  <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-medium text-gray-500 uppercase">Phone</label>
+                  <div class="field-header">
+                    <label class="field-label-sm">Phone</label>
                     <BaseBadge v-if="context.phone_override" variant="info" size="sm">Custom</BaseBadge>
                     <BaseBadge v-else-if="resolvedProfile.phone" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
-                  <div class="text-gray-900">{{ resolvedProfile.phone || 'Not set' }}</div>
+                  <div class="field-value-text">{{ resolvedProfile.phone || 'Not set' }}</div>
                 </div>
 
                 <div class="field-group">
-                  <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-medium text-gray-500 uppercase">Bio</label>
+                  <div class="field-header">
+                    <label class="field-label-sm">Bio</label>
                     <BaseBadge v-if="context.bio" variant="info" size="sm">Custom</BaseBadge>
                     <BaseBadge v-else-if="resolvedProfile.bio" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
-                  <div class="text-gray-900 whitespace-pre-wrap">{{ resolvedProfile.bio || 'Not set' }}</div>
+                  <div class="field-value-bio">{{ resolvedProfile.bio || 'Not set' }}</div>
                 </div>
               </div>
             </BaseCard>
@@ -237,10 +260,10 @@ async function deleteContext() {
             <!-- Edit Form -->
             <BaseCard v-if="isEditing">
               <template #header>
-                <h2 class="text-lg font-semibold">Edit Context</h2>
+                <h2 class="card-heading">Edit Context</h2>
               </template>
 
-              <form @submit.prevent="saveChanges" class="space-y-4">
+              <form @submit.prevent="saveChanges" class="edit-form">
                 <BaseInput
                   v-model="editForm.context_name"
                   id="context_name"
@@ -248,15 +271,31 @@ async function deleteContext() {
                   required
                 />
 
-                <div class="border-t border-gray-200 my-4 pt-4">
-                  <h3 class="text-sm font-medium text-gray-900 mb-4">Overrides</h3>
-                  
+                <div class="edit-divider">
+                  <h3 class="overrides-heading">Overrides</h3>
+
                   <BaseInput
                     v-model="editForm.display_name_override"
                     id="display_name"
                     :label="t('context.displayNameOverride')"
                     :placeholder="t('context.inheritFromProfile')"
                   />
+
+                  <div v-if="availableNames.length > 0" class="name-chips-section chips-spaced">
+                    <span class="chips-label">{{ t('context.pickFromNames') }}</span>
+                    <div class="name-chips">
+                      <button
+                        v-for="name in availableNames"
+                        :key="name.id"
+                        type="button"
+                        class="name-chip"
+                        @click="pickName(resolveNameValue(name.name_value))"
+                      >
+                        <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
+                        <span class="chip-name-text">{{ resolveNameValue(name.name_value) }}</span>
+                      </button>
+                    </div>
+                  </div>
 
                   <BaseInput
                     v-model="editForm.email_override"
@@ -274,26 +313,26 @@ async function deleteContext() {
                     :placeholder="t('context.inheritFromProfile')"
                   />
 
-                  <div class="form-group mb-4">
-                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">{{ t('context.bio') }}</label>
+                  <div class="form-group textarea-group">
+                    <label for="bio" class="textarea-label">{{ t('context.bio') }}</label>
                     <textarea
                       id="bio"
                       v-model="editForm.bio"
                       rows="3"
-                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                      class="textarea-field"
                       :placeholder="t('context.inheritFromProfile')"
                     ></textarea>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" v-model="editForm.is_active" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                    <span class="text-sm font-medium text-gray-700">{{ t('context.isActive') }}</span>
+                  <label class="checkbox-group">
+                    <input type="checkbox" v-model="editForm.is_active" class="checkbox-input" />
+                    <span class="checkbox-text">{{ t('context.isActive') }}</span>
                   </label>
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4">
+                <div class="form-actions">
                   <BaseButton variant="ghost" @click="cancelEditing" :disabled="isSaving">
                     {{ t('common.cancel') }}
                   </BaseButton>
@@ -306,32 +345,32 @@ async function deleteContext() {
           </div>
 
           <!-- Sidebar -->
-          <div class="lg:col-span-1 space-y-6">
+          <div class="sidebar-column">
             <!-- Connected Apps (Placeholder) -->
             <BaseCard>
               <template #header>
-                <h2 class="text-lg font-semibold">Connected Apps</h2>
+                <h2 class="card-heading">Connected Apps</h2>
               </template>
-              <div class="text-sm text-gray-500 text-center py-4">
+              <div class="connected-empty">
                 No applications connected to this context.
               </div>
             </BaseCard>
 
             <!-- Inheritance Legend -->
-            <BaseCard class="bg-gray-50">
-              <h3 class="text-sm font-medium text-gray-900 mb-3">Field Inheritance</h3>
-              <div class="space-y-3">
-                <div class="flex items-center gap-2">
+            <BaseCard class="legend-card">
+              <h3 class="legend-title">Field Inheritance</h3>
+              <div class="legend-items">
+                <div class="legend-row">
                   <BaseBadge variant="neutral" size="sm">Inherited</BaseBadge>
-                  <span class="text-xs text-gray-600">Value comes from your base profile</span>
+                  <span class="legend-desc">Value comes from your base profile</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="legend-row">
                   <BaseBadge variant="info" size="sm">Custom</BaseBadge>
-                  <span class="text-xs text-gray-600">Value is specific to this context</span>
+                  <span class="legend-desc">Value is specific to this context</span>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-500 italic">No badge</span>
-                  <span class="text-xs text-gray-600">Not set in base profile or this context</span>
+                <div class="legend-row">
+                  <span class="legend-no-badge">No badge</span>
+                  <span class="legend-desc">Not set in base profile or this context</span>
                 </div>
               </div>
             </BaseCard>
@@ -345,17 +384,17 @@ async function deleteContext() {
         :title="t('context.deleteConfirmTitle')"
         @close="showDeleteConfirm = false"
       >
-        <p class="text-sm text-gray-500 mb-4">
+        <p class="modal-message">
           {{ t('context.deleteConfirmMessage') }}
         </p>
-        <div class="bg-red-50 border border-red-100 rounded-md p-3 mb-4">
-          <p class="text-xs text-red-800">
+        <div class="delete-warning">
+          <p class="delete-warning-text">
             <strong>Warning:</strong> Any applications using this context will lose access to your identity information.
           </p>
         </div>
-        
+
         <template #footer>
-          <div class="flex justify-end gap-3 w-full">
+          <div class="modal-actions">
             <BaseButton variant="ghost" @click="showDeleteConfirm = false">
               {{ t('common.cancel') }}
             </BaseButton>
@@ -370,69 +409,303 @@ async function deleteContext() {
 </template>
 
 <style scoped>
-.context-detail-view {
-  padding: var(--spacing-8) 0;
+/* Back link */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+  text-decoration: none;
 }
 
-/* Tailwind-like utilities */
-.grid { display: grid; }
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.gap-6 { gap: 1.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-2 { gap: 0.5rem; }
-.space-y-6 > * + * { margin-top: 1.5rem; }
-.space-y-4 > * + * { margin-top: 1rem; }
-.space-y-3 > * + * { margin-top: 0.75rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.mt-1 { margin-top: 0.25rem; }
-.mt-4 { margin-top: 1rem; }
-.mr-1 { margin-right: 0.25rem; }
-.my-4 { margin-top: 1rem; margin-bottom: 1rem; }
-.pt-4 { padding-top: 1rem; }
-.py-12 { padding-top: 3rem; padding-bottom: 3rem; }
-.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-.p-3 { padding: 0.75rem; }
-.text-center { text-align: center; }
-.text-2xl { font-size: 1.5rem; line-height: 2rem; }
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-.font-medium { font-weight: 500; }
-.font-normal { font-weight: 400; }
-.uppercase { text-transform: uppercase; }
-.text-gray-900 { color: var(--text-primary); }
-.text-gray-600 { color: var(--text-secondary); }
-.text-gray-500 { color: var(--text-secondary); }
-.text-red-800 { color: #991b1b; }
-.bg-gray-50 { background-color: var(--bg-secondary); }
-.bg-red-50 { background-color: #fef2f2; }
-.border-t { border-top-width: 1px; }
-.border-gray-200 { border-color: var(--border-primary); }
-.border-gray-300 { border-color: var(--border-secondary); }
-.border-red-100 { border-color: #fee2e2; }
-.rounded-md { border-radius: 0.375rem; }
-.rounded { border-radius: 0.25rem; }
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.items-start { align-items: flex-start; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-.inline-flex { display: inline-flex; }
-.block { display: block; }
-.w-full { width: 100%; }
-.whitespace-pre-wrap { white-space: pre-wrap; }
-.cursor-pointer { cursor: pointer; }
+.back-link:hover {
+  color: var(--text-primary);
+}
+
+.back-arrow {
+  margin-right: var(--spacing-1);
+}
+
+/* Loading state */
+.loading-container {
+  text-align: center;
+  padding: var(--spacing-12) 0;
+}
+
+.loading-spinner {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loading-text {
+  margin-top: var(--spacing-4);
+  color: var(--text-secondary);
+}
+
+.alert-spaced {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Detail grid layout */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6);
+}
 
 @media (min-width: 1024px) {
-  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lg\:col-span-2 { grid-column: span 2 / span 2; }
-  .lg\:col-span-1 { grid-column: span 1 / span 1; }
+  .detail-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.main-column {
+  grid-column: 1;
+}
+
+@media (min-width: 1024px) {
+  .main-column {
+    grid-column: span 2 / span 2;
+  }
+}
+
+.main-column > * + * {
+  margin-top: var(--spacing-6);
+}
+
+.sidebar-column > * + * {
+  margin-top: var(--spacing-6);
+}
+
+/* Context header */
+.context-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.context-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.context-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.context-meta {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+/* Card elements */
+.card-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.resolved-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+  margin-top: var(--spacing-1);
+}
+
+/* Field display */
+.fields-list > * + * {
+  margin-top: var(--spacing-4);
+}
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-1);
+}
+
+.field-label-sm {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.field-value-text {
+  color: var(--text-primary);
+}
+
+.field-value-bio {
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+/* Edit form */
+.edit-form > * + * {
+  margin-top: var(--spacing-4);
+}
+
+.edit-divider {
+  border-top: 1px solid var(--border-primary);
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  padding-top: var(--spacing-4);
+}
+
+.overrides-heading {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Name chips (uses global .name-chips-section, .name-chips, .name-chip from components.css) */
+.chips-spaced {
+  margin-bottom: var(--spacing-4);
+}
+
+.chips-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.chip-name-text {
+  font-size: var(--font-size-sm);
+}
+
+/* Textarea */
+.textarea-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.textarea-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.textarea-field {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.textarea-field:focus {
+  border-color: var(--color-primary-500);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+/* Checkbox */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+}
+
+.checkbox-input {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-secondary);
+  color: var(--color-primary-600);
+}
+
+.checkbox-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-4);
+}
+
+/* Sidebar - connected apps */
+.connected-empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--spacing-4) 0;
+}
+
+/* Sidebar - inheritance legend */
+.legend-card {
+  background-color: var(--bg-tertiary);
+}
+
+.legend-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.legend-items > * + * {
+  margin-top: var(--spacing-3);
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.legend-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.legend-no-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Modal content */
+.modal-message {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.delete-warning {
+  background-color: var(--color-error-50);
+  border: 1px solid #fee2e2;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.delete-warning-text {
+  font-size: var(--font-size-xs);
+  color: #991b1b;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  width: 100%;
 }
 </style>
