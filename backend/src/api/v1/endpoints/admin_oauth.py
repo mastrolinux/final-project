@@ -14,8 +14,11 @@ from src.core.database import get_db
 from src.core.security import hash_password
 from src.api.dependencies.auth import require_admin
 from src.models.auth import AuthUser
+from src.models.audit import AuditEventType, AuditOperation
 from src.models.oauth import OAuthClient
 from src.repositories.oauth_repository import OAuthRepository
+from src.repositories.audit_repository import AuditRepository
+from src.services.audit_service import AuditService
 from src.schemas.oauth import (
     OAuthClientCreate,
     OAuthClientUpdate,
@@ -33,6 +36,11 @@ def get_oauth_repository(db: Session = Depends(get_db)) -> OAuthRepository:
     return OAuthRepository(db)
 
 
+def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
+    """Dependency to get AuditService instance for admin audit logging."""
+    return AuditService(AuditRepository(db))
+
+
 # =============================================================================
 # OAuth Client CRUD Endpoints
 # =============================================================================
@@ -47,7 +55,8 @@ def get_oauth_repository(db: Session = Depends(get_db)) -> OAuthRepository:
 def create_oauth_client(
     client_data: OAuthClientCreate,
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """
     Create a new OAuth client.
@@ -97,7 +106,19 @@ def create_oauth_client(
     
     # Save to database
     created_client = oauth_repo.create_client(client)
-    
+
+    # Audit: OAuth client creation
+    audit_service.log_event(
+        event_type=AuditEventType.client_create,
+        user_id=admin.user_id,
+        actor_id=admin.user_id,
+        resource_type="oauth_client",
+        resource_id=created_client.client_id,
+        operation=AuditOperation.create,
+        changes={"client_name": created_client.client_name},
+        legal_basis="legitimate_interest"
+    )
+
     # Return response with plain secret (only time it's shown)
     return OAuthClientCreateResponse(
         client_id=created_client.client_id,
@@ -220,7 +241,8 @@ def update_oauth_client(
     client_id: str,
     update_data: OAuthClientUpdate,
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """
     Update an OAuth client.
@@ -252,7 +274,19 @@ def update_oauth_client(
     
     # Save changes
     updated_client = oauth_repo.update_client(client)
-    
+
+    # Audit: OAuth client update
+    audit_service.log_event(
+        event_type=AuditEventType.client_update,
+        user_id=admin.user_id,
+        actor_id=admin.user_id,
+        resource_type="oauth_client",
+        resource_id=client_id,
+        operation=AuditOperation.update,
+        changes=update_data.model_dump(exclude_unset=True, exclude={"client_secret"}),
+        legal_basis="legitimate_interest"
+    )
+
     return OAuthClientResponse(
         client_id=updated_client.client_id,
         client_name=updated_client.client_name,
@@ -279,7 +313,8 @@ def update_oauth_client(
 def delete_oauth_client(
     client_id: str,
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """
     Soft-delete an OAuth client.
@@ -300,7 +335,18 @@ def delete_oauth_client(
     
     # Soft delete (sets deleted_at and is_active=false)
     oauth_repo.delete_client(client_id)
-    
+
+    # Audit: OAuth client soft delete
+    audit_service.log_event(
+        event_type=AuditEventType.client_delete,
+        user_id=admin.user_id,
+        actor_id=admin.user_id,
+        resource_type="oauth_client",
+        resource_id=client_id,
+        operation=AuditOperation.delete,
+        legal_basis="legitimate_interest"
+    )
+
     return None
 
 
@@ -313,7 +359,8 @@ def delete_oauth_client(
 def purge_oauth_client(
     client_id: str,
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """
     Permanently delete an OAuth client from the database.
@@ -339,7 +386,19 @@ def purge_oauth_client(
             detail=f"Client '{client_id}' not found"
         )
     
+    # Audit: record BEFORE purge (data will be gone after)
+    audit_service.log_event(
+        event_type=AuditEventType.client_purge,
+        user_id=admin.user_id,
+        actor_id=admin.user_id,
+        resource_type="oauth_client",
+        resource_id=client_id,
+        operation=AuditOperation.delete,
+        changes={"hard_delete": True},
+        legal_basis="legitimate_interest"
+    )
+
     # Permanently delete the client
     oauth_repo.purge_client(client_id)
-    
+
     return None

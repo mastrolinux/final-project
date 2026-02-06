@@ -4,14 +4,16 @@ Authentication API Endpoints
 REST API endpoints for user authentication, registration, and email verification.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from src.core.database import get_db
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.audit_repository import AuditRepository
 from src.services.auth_service import AuthService
+from src.services.audit_service import AuditService
 from src.schemas.auth import (
     RegisterRequest, RegisterResponse,
     LoginRequest, LoginResponse,
@@ -30,12 +32,14 @@ router = APIRouter()
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     """
     Dependency to get AuthService instance.
-    
-    Creates service with auth and profile repositories.
+
+    Creates service with auth, profile repositories and audit service.
     """
     auth_repo = AuthRepository(db)
     profile_repo = ProfileRepository(db)
-    return AuthService(auth_repo, profile_repo)
+    audit_repo = AuditRepository(db)
+    audit_service = AuditService(audit_repo)
+    return AuthService(auth_repo, profile_repo, audit_service=audit_service)
 
 
 @router.post(
@@ -47,6 +51,7 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
 )
 def register(
     request: RegisterRequest,
+    http_request: Request,
     db: Session = Depends(get_db)
 ):
     """
@@ -112,13 +117,20 @@ def register(
         
         # Step 2: Create auth user with auth service
         auth_repo = AuthRepository(db)
-        auth_service = AuthService(auth_repo, profile_repo)
-        
+        audit_repo = AuditRepository(db)
+        audit_service = AuditService(audit_repo)
+        auth_service = AuthService(auth_repo, profile_repo, audit_service=audit_service)
+
+        ip_address = http_request.client.host if http_request.client else None
+        user_agent = http_request.headers.get("user-agent")
+
         success, error, data = auth_service.register_user(
             email=request.email,
             password=request.password,
             user_id=str(base_profile.user_id),
-            display_name=request.preferred_name
+            display_name=request.preferred_name,
+            ip_address=ip_address,
+            user_agent=user_agent
         )
         
         if not success:
@@ -157,31 +169,32 @@ def register(
 )
 def login(
     request: LoginRequest,
+    http_request: Request,
     service: AuthService = Depends(get_auth_service)
 ):
     """
     User Login
-    
+
     Authenticates user with email and password, returns JWT tokens.
-    
+
     **Process:**
     1. Validates credentials against Argon2id hash
     2. Checks if account is locked (5 failed attempts = 15 min lock)
     3. Generates JWT access token (1 hour expiry)
     4. Generates JWT refresh token (30 days expiry)
     5. Resets failed login counter on success
-    
+
     **Response:**
     - access_token: Use for API requests (Authorization: Bearer token)
     - refresh_token: Use to get new access token when expired
     - expires_in: Access token expiry in seconds (3600 = 1 hour)
-    
+
     **Security:**
     - Password verified with constant-time comparison
     - Failed attempts tracked and logged
     - Account locked after 5 failed attempts
     - Generic error message (doesn't reveal if email exists)
-    
+
     **Example Request:**
     ```json
     {
@@ -189,14 +202,19 @@ def login(
       "password": "SecurePass123!"
     }
     ```
-    
+
     **Errors:**
     - 401: Invalid email or password
     - 403: Account locked due to failed login attempts
     """
+    ip_address = http_request.client.host if http_request.client else None
+    user_agent = http_request.headers.get("user-agent")
+
     success, error, data = service.login(
         email=request.email,
-        password=request.password
+        password=request.password,
+        ip_address=ip_address,
+        user_agent=user_agent
     )
     
     if not success:

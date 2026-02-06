@@ -19,6 +19,7 @@ from src.models.oauth import (
     TokenEndpointAuthMethod,
     ConsentMethod
 )
+from src.models.audit import AuditLog, AuditOperation, AuditEventType
 
 __all__ = [
     "BaseProfile",
@@ -34,6 +35,9 @@ __all__ = [
     "OAuthConsent",
     "AccessLevel",
     "TokenEndpointAuthMethod",
-    "ConsentMethod"
+    "ConsentMethod",
+    "AuditLog",
+    "AuditOperation",
+    "AuditEventType",
 ]
 
