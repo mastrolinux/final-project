@@ -36,7 +36,7 @@ onMounted(async () => {
       profileService.getNames(authStore.userId),
       contextService.list(authStore.userId)
     ])
-    
+
     profileStore.setProfile(profile)
     profileStore.setIdentityNames(names)
     profileStore.setContexts(contexts)
@@ -61,38 +61,38 @@ const navigateToCreateContext = () => {
 </script>
 
 <template>
-  <div class="profile-view">
-    <div class="container container-md">
+  <div class="page-view">
+    <div class="container container-lg">
       <div v-if="isLoading" class="loading-state">
         <div class="spinner spinner-lg"></div>
-        <p class="mt-4 text-secondary">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t('common.loading') }}</p>
       </div>
 
-      <div v-else-if="error" class="alert alert-error mb-6">
+      <div v-else-if="error" class="alert alert-error alert-spaced">
         {{ error }}
       </div>
 
       <div v-else-if="profileStore.profile" class="profile-content">
         <!-- Header Section -->
-        <div class="profile-header mb-8 text-center">
-          <div class="avatar-lg mx-auto mb-4 bg-primary-100 text-primary-700 flex items-center justify-center rounded-full">
+        <div class="profile-header">
+          <div class="profile-avatar">
             {{ initials }}
           </div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-1">{{ profileStore.displayName }}</h1>
-          <p class="text-gray-500 mb-4">{{ profileStore.profile.primary_email }}</p>
+          <h1 class="profile-name">{{ profileStore.displayName }}</h1>
+          <p class="profile-email">{{ profileStore.profile.primary_email }}</p>
           <BaseButton variant="secondary" @click="navigateToEdit">
             {{ t('profile.editProfile') }}
           </BaseButton>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="profile-grid">
           <!-- Base Information -->
           <BaseCard>
             <template #header>
-              <h2 class="text-lg font-semibold">{{ t('profile.baseProfile') }}</h2>
+              <h2 class="card-heading">{{ t('profile.baseProfile') }}</h2>
             </template>
-            
-            <div class="space-y-4">
+
+            <div class="fields-list">
               <div class="field-group">
                 <label class="field-label">{{ t('auth.accountType.label') }}</label>
                 <div>
@@ -132,34 +132,34 @@ const navigateToCreateContext = () => {
           <!-- Identity Names -->
           <BaseCard>
             <template #header>
-              <div class="flex justify-between items-center">
-                <h2 class="text-lg font-semibold">Identity Names</h2>
+              <div class="card-header-row">
+                <h2 class="card-heading">Identity Names</h2>
                 <BaseButton variant="ghost" size="sm" @click="navigateToEdit">+ Add</BaseButton>
               </div>
             </template>
-            
-            <div v-if="profileStore.identityNames.length === 0" class="text-gray-500 text-center py-4">
+
+            <div v-if="profileStore.identityNames.length === 0" class="empty-names">
               No additional names configured.
             </div>
 
-            <div v-else class="space-y-4">
+            <div v-else class="fields-list">
               <div
                 v-for="name in profileStore.identityNames"
                 :key="name.id"
-                class="name-item pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                class="name-item"
               >
-                <div class="flex items-center gap-2 mb-2">
+                <div class="name-badges">
                   <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
                   <BaseBadge v-if="name.is_primary" variant="success" size="sm">Primary</BaseBadge>
                 </div>
-                <div class="flex flex-wrap gap-x-4 gap-y-1">
+                <div class="name-languages">
                   <div
                     v-for="(value, lang) in name.name_value"
                     :key="lang"
-                    class="text-sm"
+                    class="name-lang-entry"
                   >
-                    <span class="font-medium text-gray-500 uppercase text-xs mr-1">{{ lang }}</span>
-                    <span class="text-gray-900">{{ value }}</span>
+                    <span class="name-lang-code">{{ lang }}</span>
+                    <span class="name-lang-value">{{ value }}</span>
                   </div>
                 </div>
               </div>
@@ -167,39 +167,39 @@ const navigateToCreateContext = () => {
           </BaseCard>
 
           <!-- Identity Contexts -->
-          <BaseCard class="md:col-span-2">
+          <BaseCard class="col-span-full">
             <template #header>
-              <div class="flex justify-between items-center">
-                <h2 class="text-lg font-semibold">Identity Contexts</h2>
+              <div class="card-header-row">
+                <h2 class="card-heading">Identity Contexts</h2>
                 <BaseButton variant="ghost" size="sm" @click="navigateToCreateContext">+ Create</BaseButton>
               </div>
             </template>
 
-            <div v-if="profileStore.contexts.length === 0" class="text-center py-8">
-              <div class="text-gray-500 mb-4">No contexts yet. Create one to separate your identities.</div>
+            <div v-if="profileStore.contexts.length === 0" class="empty-contexts">
+              <div class="empty-contexts-text">No contexts yet. Create one to separate your identities.</div>
               <BaseButton variant="primary" @click="navigateToCreateContext">Create Context</BaseButton>
             </div>
 
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-else class="contexts-cards">
               <div
                 v-for="context in profileStore.contexts"
                 :key="context.id"
-                class="context-card p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-sm transition-all cursor-pointer bg-white"
+                class="context-card"
                 @click="router.push({ name: 'context-detail', params: { id: context.id } })"
               >
-                <div class="flex items-start justify-between mb-2">
+                <div class="context-card-header">
                   <BaseBadge :variant="context.context_type">
                     {{ CONTEXT_TYPE_META[context.context_type]?.label || context.context_type }}
                   </BaseBadge>
-                  <span class="text-gray-400">→</span>
+                  <span class="context-card-arrow">-></span>
                 </div>
-                <h3 class="font-medium text-gray-900 mb-1">{{ context.context_name }}</h3>
-                <p class="text-sm text-gray-500 line-clamp-2">{{ context.bio || 'Inherited bio' }}</p>
+                <h3 class="context-card-title">{{ context.context_name }}</h3>
+                <p class="context-card-bio">{{ context.bio || 'Inherited bio' }}</p>
               </div>
             </div>
-            
+
             <template #footer>
-              <div class="text-center">
+              <div class="card-footer-center">
                 <BaseButton variant="ghost" @click="navigateToContexts">View All Contexts</BaseButton>
               </div>
             </template>
@@ -211,23 +211,97 @@ const navigateToCreateContext = () => {
 </template>
 
 <style scoped>
-.profile-view {
-  padding: var(--spacing-8) 0;
+/* Loading state */
+.loading-state {
+  text-align: center;
+  padding: var(--spacing-12) 0;
 }
 
-.avatar-lg {
+.loading-text {
+  margin-top: var(--spacing-4);
+  color: var(--text-secondary);
+}
+
+.alert-spaced {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Profile header */
+.profile-header {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.profile-avatar {
   width: 80px;
   height: 80px;
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  margin: 0 auto var(--spacing-4);
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+}
+
+.profile-name {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.profile-email {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Profile grid */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6);
+}
+
+@media (min-width: 768px) {
+  .profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .col-span-full {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Card elements */
+.card-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-footer-center {
+  text-align: center;
+}
+
+/* Field display */
+.fields-list > * + * {
+  margin-top: var(--spacing-4);
 }
 
 .field-label {
   font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-gray-500);
+  color: var(--text-tertiary);
   margin-bottom: var(--spacing-1);
 }
 
@@ -236,66 +310,119 @@ const navigateToCreateContext = () => {
   color: var(--text-primary);
 }
 
-/* Utility classes that might be missing if Tailwind isn't fully set up */
-.grid { display: grid; }
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.gap-6 { gap: 1.5rem; }
-.gap-4 { gap: 1rem; }
-.space-y-4 > * + * { margin-top: 1rem; }
-.text-center { text-align: center; }
-.mx-auto { margin-left: auto; margin-right: auto; }
-.mb-8 { margin-bottom: 2rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-.font-medium { font-weight: 500; }
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.text-gray-900 { color: var(--text-primary); }
-.text-gray-500 { color: var(--text-secondary); }
-.text-gray-400 { color: var(--text-tertiary); }
-.bg-primary-100 { background-color: var(--color-primary-100); }
-.text-primary-700 { color: var(--color-primary-700); }
-.rounded-full { border-radius: 9999px; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.flex-wrap { flex-wrap: wrap; }
-.gap-x-4 { column-gap: 1rem; }
-.gap-y-1 { row-gap: 0.25rem; }
-.uppercase { text-transform: uppercase; }
-.mr-1 { margin-right: 0.25rem; }
-.p-4 { padding: 1rem; }
-.border { border-width: 1px; }
-.border-gray-200 { border-color: var(--border-primary); }
-.border-gray-100 { border-color: var(--border-primary); }
-.border-b { border-bottom-width: 1px; }
-.rounded-lg { border-radius: 0.5rem; }
-.bg-white { background-color: var(--bg-secondary); }
-.cursor-pointer { cursor: pointer; }
-.line-clamp-2 {
+/* Identity names */
+.empty-names {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--spacing-4) 0;
+}
+
+.name-item {
+  padding-bottom: var(--spacing-4);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.name-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.name-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.name-languages {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-4);
+  row-gap: var(--spacing-1);
+}
+
+.name-lang-entry {
+  font-size: var(--font-size-sm);
+}
+
+.name-lang-code {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-right: var(--spacing-1);
+}
+
+.name-lang-value {
+  color: var(--text-primary);
+}
+
+/* Context cards */
+.empty-contexts {
+  text-align: center;
+  padding: var(--spacing-8) 0;
+}
+
+.empty-contexts-text {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.contexts-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 640px) {
+  .contexts-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .contexts-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.context-card {
+  padding: var(--spacing-4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.context-card:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-sm);
+}
+
+.context-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2);
+}
+
+.context-card-arrow {
+  color: var(--text-tertiary);
+}
+
+.context-card-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.context-card-bio {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .md\:col-span-2 { grid-column: span 2 / span 2; }
-}
-
-@media (min-width: 640px) {
-  .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (min-width: 1024px) {
-  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 </style>

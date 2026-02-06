@@ -190,13 +190,6 @@ async function handleDecision(decision: 'allow' | 'deny') {
   background-color: var(--bg-secondary);
 }
 
-.container-sm {
-  max-width: 480px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-4);
-}
-
 .client-logo {
   width: 80px;
   height: 80px;
