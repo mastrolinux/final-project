@@ -8,7 +8,7 @@ Implements Authorization Code Flow with mandatory PKCE.
 import hashlib
 import base64
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, TYPE_CHECKING
 from uuid import UUID
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
@@ -26,6 +26,10 @@ from src.models.oauth import (
 )
 from src.models.profile import BaseProfile, AccountType
 from src.models.context import ContextProfile, ContextType
+from src.models.audit import AuditEventType, AuditOperation
+
+if TYPE_CHECKING:
+    from src.services.audit_service import AuditService
 
 
 class OAuthServiceError(Exception):
@@ -128,11 +132,13 @@ class OAuthService:
         self,
         oauth_repo: OAuthRepository,
         profile_repo: Optional[ProfileRepository] = None,
-        context_repo: Optional[ContextRepository] = None
+        context_repo: Optional[ContextRepository] = None,
+        audit_service: Optional["AuditService"] = None
     ):
         self.oauth_repo = oauth_repo
         self.profile_repo = profile_repo
         self.context_repo = context_repo
+        self.audit_service = audit_service
     
     # =========================================================================
     # PKCE Validation
@@ -738,7 +744,19 @@ class OAuthService:
         
         # Try as refresh token
         revoked = self.oauth_repo.revoke_refresh_token_by_raw(token)
-        
+
+        # Audit: token revocation
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.token_revoke,
+                user_id=None,
+                actor_id=None,
+                resource_type="oauth_token",
+                resource_id="redacted",
+                operation=AuditOperation.revoke,
+                legal_basis="consent"
+            )
+
         # Always return success per RFC 7009
         return True
     
@@ -776,7 +794,22 @@ class OAuthService:
             ip_address=ip_address,
             user_agent=user_agent
         )
-        
+
+        # Audit: consent grant
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.consent_grant,
+                user_id=user_id,
+                actor_id=user_id,
+                resource_type="oauth_consent",
+                resource_id=client_id,
+                operation=AuditOperation.grant,
+                changes={"granted_scopes": granted_scopes},
+                ip_address=ip_address,
+                user_agent=user_agent,
+                legal_basis="consent"
+            )
+
         return consent
     
     def check_consent(
@@ -800,10 +833,24 @@ class OAuthService:
     def withdraw_consent(self, user_id: UUID, client_id: str) -> bool:
         """
         Withdraw user consent for a client.
-        
+
         Also revokes all tokens for this user-client pair.
         """
-        return self.oauth_repo.withdraw_consent(user_id, client_id)
+        result = self.oauth_repo.withdraw_consent(user_id, client_id)
+
+        # Audit: consent withdrawal
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.consent_withdraw,
+                user_id=user_id,
+                actor_id=user_id,
+                resource_type="oauth_consent",
+                resource_id=client_id,
+                operation=AuditOperation.withdraw,
+                legal_basis="consent"
+            )
+
+        return result
     
     def get_user_consents(self, user_id: UUID) -> List[OAuthConsent]:
         """Get all active consents for a user."""
