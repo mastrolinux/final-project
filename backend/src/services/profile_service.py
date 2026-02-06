@@ -5,12 +5,16 @@ Business logic layer for profile management.
 Implements validation rules and account type constraints.
 """
 
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, TYPE_CHECKING
 from uuid import UUID
 
 from src.repositories.profile_repository import ProfileRepository
 from src.schemas.profile import ProfileCreate, ProfileUpdate, IdentityNameCreate
 from src.models.profile import BaseProfile, IdentityName, AccountType
+from src.models.audit import AuditEventType, AuditOperation
+
+if TYPE_CHECKING:
+    from src.services.audit_service import AuditService
 
 
 class ProfileServiceError(Exception):
@@ -20,15 +24,21 @@ class ProfileServiceError(Exception):
 
 class ProfileService:
     """Service layer for profile business logic"""
-    
-    def __init__(self, repository: ProfileRepository):
+
+    def __init__(
+        self,
+        repository: ProfileRepository,
+        audit_service: Optional["AuditService"] = None
+    ):
         """
         Initialize service with repository
-        
+
         Args:
             repository: ProfileRepository instance
+            audit_service: Optional audit service for event logging
         """
         self.repository = repository
+        self.audit_service = audit_service
     
     def create_profile(self, profile_data: ProfileCreate) -> BaseProfile:
         """
@@ -64,7 +74,23 @@ class ProfileService:
             primary_phone=profile_data.primary_phone,
             preferred_language=profile_data.preferred_language
         )
-        
+
+        # Audit: profile creation
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.profile_create,
+                user_id=profile.user_id,
+                actor_id=profile.user_id,
+                resource_type="profile",
+                resource_id=str(profile.user_id),
+                operation=AuditOperation.create,
+                changes={
+                    "account_type": profile_data.account_type.value,
+                    "primary_email": profile_data.primary_email,
+                },
+                legal_basis="contract"
+            )
+
         return profile
     
     def get_profile(self, user_id: UUID) -> BaseProfile:
@@ -174,7 +200,20 @@ class ProfileService:
         
         # Update profile
         profile = self.repository.update_profile(user_id, **updates)
-        
+
+        # Audit: profile update
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.profile_update,
+                user_id=user_id,
+                actor_id=user_id,
+                resource_type="profile",
+                resource_id=str(user_id),
+                operation=AuditOperation.update,
+                changes={"fields_updated": list(updates.keys())},
+                legal_basis="contract"
+            )
+
         return profile
     
     def delete_profile(self, user_id: UUID) -> bool:
@@ -191,10 +230,22 @@ class ProfileService:
             ProfileServiceError: If profile not found
         """
         result = self.repository.soft_delete_profile(user_id)
-        
+
         if not result:
             raise ProfileServiceError(f"Profile {user_id} not found")
-        
+
+        # Audit: profile deletion (soft delete)
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.profile_delete,
+                user_id=user_id,
+                actor_id=user_id,
+                resource_type="profile",
+                resource_id=str(user_id),
+                operation=AuditOperation.delete,
+                legal_basis="contract"
+            )
+
         return result
     
     def add_identity_name(
