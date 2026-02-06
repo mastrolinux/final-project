@@ -92,6 +92,12 @@ async function saveName() {
         name_value: nameValue,
         is_primary: form.value.is_primary
       })
+      // If this name became primary, un-mark others locally
+      if (form.value.is_primary) {
+        profileStore.identityNames.forEach((n) => {
+          if (n.id !== editingId.value) n.is_primary = false
+        })
+      }
       profileStore.updateIdentityName(editingId.value, updated)
     } else {
       // Create
@@ -100,6 +106,10 @@ async function saveName() {
         name_value: nameValue,
         is_primary: form.value.is_primary
       })
+      // If the new name is primary, un-mark existing ones locally
+      if (form.value.is_primary) {
+        profileStore.identityNames.forEach((n) => { n.is_primary = false })
+      }
       profileStore.addIdentityName(created)
     }
     isAdding.value = false
@@ -139,6 +149,14 @@ async function deleteName() {
       <BaseButton variant="secondary" size="sm" @click="startAdding" v-if="!isAdding">
         + Add Name
       </BaseButton>
+    </div>
+
+    <!-- Auto-primary hint -->
+    <div v-if="profileStore.autoPromotedPrimary" class="auto-primary-hint mb-3">
+      <p class="text-xs text-gray-600">
+        No name was marked as primary, so the first name was selected automatically.
+        Edit any name and check "Set as primary display name" to choose a different one.
+      </p>
     </div>
 
     <!-- List -->
@@ -247,6 +265,13 @@ async function deleteName() {
 </template>
 
 <style scoped>
+.auto-primary-hint {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

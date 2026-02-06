@@ -200,7 +200,7 @@ async function deleteContext() {
                   <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-medium text-gray-500 uppercase">Display Name</label>
                     <BaseBadge v-if="context.display_name_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge v-else-if="resolvedProfile.display_name" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
                   <div class="text-gray-900">{{ resolvedProfile.display_name || 'Not set' }}</div>
                 </div>
@@ -209,16 +209,16 @@ async function deleteContext() {
                   <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-medium text-gray-500 uppercase">Email</label>
                     <BaseBadge v-if="context.email_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge v-else-if="resolvedProfile.email" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
-                  <div class="text-gray-900">{{ resolvedProfile.email }}</div>
+                  <div class="text-gray-900">{{ resolvedProfile.email || 'Not set' }}</div>
                 </div>
 
                 <div class="field-group">
                   <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-medium text-gray-500 uppercase">Phone</label>
                     <BaseBadge v-if="context.phone_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge v-else-if="resolvedProfile.phone" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
                   <div class="text-gray-900">{{ resolvedProfile.phone || 'Not set' }}</div>
                 </div>
@@ -227,7 +227,7 @@ async function deleteContext() {
                   <div class="flex justify-between items-center mb-1">
                     <label class="text-xs font-medium text-gray-500 uppercase">Bio</label>
                     <BaseBadge v-if="context.bio" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge v-else-if="resolvedProfile.bio" variant="neutral" size="sm">Inherited</BaseBadge>
                   </div>
                   <div class="text-gray-900 whitespace-pre-wrap">{{ resolvedProfile.bio || 'Not set' }}</div>
                 </div>
@@ -328,6 +328,10 @@ async function deleteContext() {
                 <div class="flex items-center gap-2">
                   <BaseBadge variant="info" size="sm">Custom</BaseBadge>
                   <span class="text-xs text-gray-600">Value is specific to this context</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 italic">No badge</span>
+                  <span class="text-xs text-gray-600">Not set in base profile or this context</span>
                 </div>
               </div>
             </BaseCard>

@@ -9,7 +9,7 @@ from typing import Optional, List, Tuple, TYPE_CHECKING
 from uuid import UUID
 
 from src.repositories.profile_repository import ProfileRepository
-from src.schemas.profile import ProfileCreate, ProfileUpdate, IdentityNameCreate
+from src.schemas.profile import ProfileCreate, ProfileUpdate, IdentityNameCreate, IdentityNameUpdate
 from src.models.profile import BaseProfile, IdentityName, AccountType
 from src.models.audit import AuditEventType, AuditOperation
 
@@ -281,6 +281,77 @@ class ProfileService:
             visibility_level=name_data.visibility_level,
             context_id=name_data.context_id
         )
-        
+
         return name
+
+    def update_identity_name(
+        self,
+        user_id: UUID,
+        name_id: UUID,
+        update_data: IdentityNameUpdate
+    ) -> IdentityName:
+        """
+        Update an identity name belonging to a profile.
+
+        Validates that the name belongs to the given user before applying
+        updates. Only non-None fields in update_data are changed.
+
+        Args:
+            user_id: Owner user ID
+            name_id: Identity name ID to update
+            update_data: Fields to update
+
+        Returns:
+            Updated identity name
+
+        Raises:
+            ProfileServiceError: If name not found or does not belong to user
+        """
+        name = self.repository.get_identity_name_by_id(name_id)
+        if not name:
+            raise ProfileServiceError(f"Identity name {name_id} not found")
+        if name.identity_id != user_id:
+            raise ProfileServiceError(
+                f"Identity name {name_id} does not belong to user {user_id}"
+            )
+
+        updates = {
+            k: v for k, v in update_data.model_dump(exclude_unset=True).items()
+            if v is not None
+        }
+        if not updates:
+            return name
+
+        updated = self.repository.update_identity_name(name_id, **updates)
+        return updated
+
+    def delete_identity_name(
+        self,
+        user_id: UUID,
+        name_id: UUID
+    ) -> bool:
+        """
+        Delete an identity name belonging to a profile.
+
+        Validates ownership before deletion.
+
+        Args:
+            user_id: Owner user ID
+            name_id: Identity name ID to delete
+
+        Returns:
+            True if deleted
+
+        Raises:
+            ProfileServiceError: If name not found or does not belong to user
+        """
+        name = self.repository.get_identity_name_by_id(name_id)
+        if not name:
+            raise ProfileServiceError(f"Identity name {name_id} not found")
+        if name.identity_id != user_id:
+            raise ProfileServiceError(
+                f"Identity name {name_id} does not belong to user {user_id}"
+            )
+
+        return self.repository.delete_identity_name(name_id)
 
