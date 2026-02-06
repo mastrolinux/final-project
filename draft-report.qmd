@@ -46,7 +46,7 @@ Modern identity systems get authentication right but identity wrong. They can ve
 
 This project implements a context-aware identity and profile management API that addresses a fundamental architectural gap in contemporary identity systems. The system treats identity as contextual, culturally diverse, and user-controlled rather than singular, Western-centric, and administratively fixed.
 
-The implementation follows the Web API Development project template "Identity and profile management API", focusing on RESTful API design, secure authentication and authorization, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
+The implementation follows the Web API Development project template "Identity and profile management API" [@cipriani2025pitch], focusing on RESTful API design, secure authentication and authorization, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
 
 ## Problem Motivation
 
@@ -70,7 +70,7 @@ The measurable impact is substantial. 90% of enterprises experienced identity-re
 
 The scope includes multi-context identity profile management with an inheritance engine, an OAuth 2.1 authorization server with mandatory PKCE, GDPR-inspired privacy features including data export and deletion with 30-day grace periods, multilingual name support accommodating global conventions via JSONB storage, comprehensive audit logging for transparency and accountability, profile picture management with context-specific overrides, and identity document upload for account verification enabling access to legal and healthcare contexts.
 
-Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management for service accounts and API keys, blockchain-based decentralized identity solutions, and biometric authentication mechanisms. An earlier iteration of the project included a guardian relationship system for managing identities of minors and dependents. Tutor feedback on the preliminary submission identified this subsystem as disproportionately complex relative to the project's core contribution, and it was removed from scope to allow deeper treatment of the context-aware identity and OAuth features that constitute the primary research focus.
+Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management for service accounts and API keys, blockchain-based decentralized identity solutions, and biometric authentication mechanisms. An earlier iteration of the project included a guardian relationship system for managing identities of minors and dependents. Tutor feedback on the preliminary submission [@cipriani2026preliminary] identified this subsystem as disproportionately complex relative to the project's core contribution, and it was removed from scope to allow deeper treatment of the context-aware identity and OAuth features that constitute the primary research focus.
 
 Privacy-by-design principles inspired by GDPR, CCPA, and HIPAA guide the architecture. However, this is not a legally compliant implementation. Full regulatory compliance requires legal counsel, Data Protection Impact Assessments, formal breach notification processes, and organizational governance beyond the scope of this academic thesis.
 
@@ -84,7 +84,7 @@ Authentication and security have matured, but no existing solution combines user
 
 # Literature Review {#sec-literature}
 
-Three bodies of literature establish the foundation for context-aware identity management. Technical standards from W3C and Unicode document global naming diversity that Western systems cannot accommodate. Sociological research from Goffman through contemporary social media studies demonstrates that context-dependent identity presentation is a fundamental human need, not a pathology. Privacy regulations like GDPR and security frameworks from NIST establish that users must control their own data with transparent processing.
+The background research report [@cipriani2025background] identified three bodies of literature that establish the foundation for context-aware identity management. Technical standards from W3C and Unicode document global naming diversity that Western systems cannot accommodate. Sociological research from Goffman through contemporary social media studies demonstrates that context-dependent identity presentation is a fundamental human need, not a pathology. Privacy regulations like GDPR and security frameworks from NIST establish that users must control their own data with transparent processing.
 
 ## The Technical and Cultural Challenge of Names
 
@@ -203,7 +203,7 @@ The comparison reveals a consistent pattern: existing solutions optimize for one
 
 ## Problem Formulation and Theoretical Foundation
 
-Contemporary identity management systems enforce singular, culturally-biased identity models that fail to accommodate human identity presentation across contexts. The design applies Goffman's dramaturgical theory [@goffman1959presentation], positing that identity is performative rather than essential. Digital platforms forcing singular identity models result in self-censorship and documented harm to marginalized populations [@haimson2016authenticself].
+The design presented in the preliminary report [@cipriani2026preliminary] addresses the architectural gap identified in the background research [@cipriani2025background]. Contemporary identity management systems enforce singular, culturally-biased identity models that fail to accommodate human identity presentation across contexts. The design applies Goffman's dramaturgical theory [@goffman1959presentation], positing that identity is performative rather than essential. Digital platforms forcing singular identity models result in self-censorship and documented harm to marginalized populations [@haimson2016authenticself].
 
 The multi-context architecture derives directly from the sociological literature on identity presentation. Goffman's framework establishes that humans naturally maintain bounded social contexts, presenting different aspects of identity to different audiences. Marwick and boyd [@marwick2011tweet] documented how digital platforms create "context collapse" that forces users to navigate tensions between authentic self-expression and awareness of diverse audiences. The architecture recreates bounded contexts through context profiles inheriting from base profiles while overriding specific fields. OAuth tokens bind to specific contexts, ensuring context-appropriate data access.
 

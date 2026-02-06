@@ -11,6 +11,11 @@ from src.schemas.context import (
     ContextProfileResponse,
     ResolvedProfileResponse
 )
+from src.schemas.audit import (
+    AuditLogEntry,
+    AuditTrailResponse,
+    AuditIntegrityResponse
+)
 from src.schemas.oauth import (
     AuthorizationRequest,
     AuthorizationResponse,
@@ -52,5 +57,9 @@ __all__ = [
     "ConsentRequest",
     "ConsentResponse",
     "OAuthServerMetadata",
-    "ScopeInfo"
+    "ScopeInfo",
+    # Audit schemas
+    "AuditLogEntry",
+    "AuditTrailResponse",
+    "AuditIntegrityResponse",
 ]

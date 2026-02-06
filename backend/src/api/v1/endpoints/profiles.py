@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.audit_repository import AuditRepository
 from src.services.profile_service import ProfileService, ProfileServiceError
+from src.services.audit_service import AuditService
 from src.schemas.profile import (
     ProfileCreate,
     ProfileUpdate,
@@ -25,9 +27,11 @@ router = APIRouter()
 
 
 def get_profile_service(db: Session = Depends(get_db)) -> ProfileService:
-    """Dependency to get ProfileService instance"""
+    """Dependency to get ProfileService instance with audit logging."""
     repository = ProfileRepository(db)
-    return ProfileService(repository)
+    audit_repo = AuditRepository(db)
+    audit_service = AuditService(audit_repo)
+    return ProfileService(repository, audit_service=audit_service)
 
 
 @router.post("/profiles", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
