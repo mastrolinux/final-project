@@ -36,11 +36,21 @@
   --color-success-700: #15803d;
 
   --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
   --color-warning-500: #f59e0b;
   --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+
+  /* Admin-specific semantic colors (theme-aware) */
+  --admin-text: #92400e;
+  --admin-text-hover: #78350f;
+  --admin-bg: #fef3c7;
+  --admin-bg-hover: #fde68a;
+  --admin-bg-active: #fcd34d;
 
   --color-error-50: #fef2f2;
   --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
 
   --color-info-50: #eff6ff;
@@ -164,6 +174,12 @@
   --input-bg: var(--color-gray-800);
   --input-border: var(--color-gray-600);
   --input-border-focus: var(--color-primary-400);
+
+  --admin-text: #fbbf24;
+  --admin-text-hover: #fcd34d;
+  --admin-bg: rgba(251, 191, 36, 0.12);
+  --admin-bg-hover: rgba(251, 191, 36, 0.18);
+  --admin-bg-active: rgba(251, 191, 36, 0.25);
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
