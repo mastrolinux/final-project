@@ -107,6 +107,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/OAuthCallbackView.vue'),
     meta: { title: 'Authorization' }
   },
+  // Audit trail (any authenticated user)
+  {
+    path: '/audit',
+    name: 'audit-trail',
+    component: () => import('@/views/AuditTrailView.vue'),
+    meta: { requiresAuth: true, title: 'Audit Trail' }
+  },
   // Admin routes
   {
     path: '/admin/oauth/clients',
@@ -125,6 +132,12 @@ const routes: RouteRecordRaw[] = [
     name: 'admin-oauth-client-edit',
     component: () => import('@/views/admin/AdminOAuthClientEditView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true, title: 'Edit OAuth Client' }
+  },
+  {
+    path: '/admin/audit/verify',
+    name: 'admin-audit-verify',
+    component: () => import('@/views/admin/AdminAuditVerifyView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Audit Integrity' }
   },
   {
     path: '/:pathMatch(.*)*',
