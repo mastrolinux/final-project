@@ -363,18 +363,9 @@ async function handleDeleteAccount() {
   min-width: 150px;
 }
 
-.card-danger {
-  border-color: var(--color-error-200);
-}
-
-.card-danger .card-header {
-  background-color: var(--color-error-50);
-  color: var(--color-error-700);
-}
-
 .btn-danger-outline {
   color: var(--color-error-600);
-  border-color: var(--color-error-300);
+  border-color: var(--color-error-500);
 }
 
 .btn-danger-outline:hover {
