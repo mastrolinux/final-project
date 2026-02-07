@@ -9,6 +9,7 @@ import BaseInput from '@/components/common/BaseInput.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -102,6 +103,7 @@ const handleCancel = () => {
 <template>
   <div class="page-view">
     <div class="container container-lg">
+      <AppBreadcrumb />
       <div class="page-header">
         <h1 class="page-title">{{ t('context.createNew') }}</h1>
         <p class="page-description">{{ t('context.createDescription') }}</p>

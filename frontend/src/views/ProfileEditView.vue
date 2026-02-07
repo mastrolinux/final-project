@@ -10,6 +10,7 @@ import BaseButton from '@/components/common/BaseButton.vue'
 import BaseCard from '@/components/common/BaseCard.vue'
 import IdentityNameManager from '@/components/profile/IdentityNameManager.vue'
 import type { ProfileUpdate } from '@/types'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -97,6 +98,7 @@ const handleCancel = () => {
 <template>
   <div class="page-view">
     <div class="container container-lg">
+      <AppBreadcrumb />
       <div class="page-header">
         <h1 class="page-title">{{ t('profile.editProfile') }}</h1>
       </div>

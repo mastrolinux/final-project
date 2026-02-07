@@ -38,6 +38,34 @@
     "next": "التالي",
     "submit": "إرسال"
   },
+  "settings": {
+    "privacyData": "الخصوصية والبيانات",
+    "privacyDataDescription": "قم بتنزيل نسخة من جميع البيانات الشخصية المحفوظة في هذا النظام، وفقا للمادة 15 من اللائحة العامة لحماية البيانات.",
+    "viewExportData": "عرض وتصدير بياناتي"
+  },
+  "privacy": {
+    "title": "تصدير البيانات",
+    "description": "جميع البيانات الشخصية المحفوظة في هذا النظام، وفقا للمادة 15 من اللائحة العامة لحماية البيانات (حق الوصول).",
+    "backToSettings": "العودة الى الاعدادات",
+    "downloadJson": "تحميل JSON",
+    "downloading": "جاري التحضير...",
+    "exportedAt": "تم التصدير في",
+    "formatVersion": "اصدار التنسيق",
+    "legalBasis": "الاساس القانوني",
+    "sections": {
+      "profile": "الملف الشخصي",
+      "identityNames": "اسماء الهوية",
+      "contextProfiles": "ملفات السياق",
+      "authentication": "المصادقة",
+      "oauthConsents": "موافقات OAuth",
+      "gdprInfo": "معلومات GDPR"
+    },
+    "values": {
+      "yes": "نعم",
+      "no": "لا",
+      "notSet": "غير محدد"
+    }
+  },
   "errors": {
     "network": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
     "unauthorized": "يرجى تسجيل الدخول للمتابعة.",
