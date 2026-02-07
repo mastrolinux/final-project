@@ -38,6 +38,34 @@
     "next": "Siguiente",
     "submit": "Enviar"
   },
+  "settings": {
+    "privacyData": "Privacidad y datos",
+    "privacyDataDescription": "Descarga una copia de todos los datos personales almacenados en este sistema, segun el Articulo 15 del RGPD.",
+    "viewExportData": "Ver y exportar mis datos"
+  },
+  "privacy": {
+    "title": "Exportacion de datos",
+    "description": "Todos los datos personales almacenados en este sistema, segun el Articulo 15 del RGPD (Derecho de acceso).",
+    "backToSettings": "Volver a configuracion",
+    "downloadJson": "Descargar JSON",
+    "downloading": "Preparando...",
+    "exportedAt": "Exportado el",
+    "formatVersion": "Version del formato",
+    "legalBasis": "Base legal",
+    "sections": {
+      "profile": "Perfil",
+      "identityNames": "Nombres de identidad",
+      "contextProfiles": "Perfiles de contexto",
+      "authentication": "Autenticacion",
+      "oauthConsents": "Consentimientos OAuth",
+      "gdprInfo": "Informacion RGPD"
+    },
+    "values": {
+      "yes": "Si",
+      "no": "No",
+      "notSet": "No definido"
+    }
+  },
   "errors": {
     "network": "Error de red. Por favor verifica tu conexion.",
     "unauthorized": "Por favor inicia sesion para continuar.",

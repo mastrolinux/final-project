@@ -19,6 +19,11 @@ declare module 'vue-router' {
     requiresVerified?: boolean
     requiresAdmin?: boolean
     title?: string
+    breadcrumb?: {
+      parent: string
+      parentLabel: string
+      currentLabel?: string
+    }
   }
 }
 
@@ -63,7 +68,11 @@ const routes: RouteRecordRaw[] = [
     path: '/profile/edit',
     name: 'profile-edit',
     component: () => import('@/views/ProfileEditView.vue'),
-    meta: { requiresAuth: true, title: 'Edit Profile' }
+    meta: {
+      requiresAuth: true,
+      title: 'Edit Profile',
+      breadcrumb: { parent: '/profile', parentLabel: 'nav.profile' }
+    }
   },
   {
     path: '/profile',
@@ -81,19 +90,37 @@ const routes: RouteRecordRaw[] = [
     path: '/contexts/new',
     name: 'context-create',
     component: () => import('@/views/ContextCreateView.vue'),
-    meta: { requiresAuth: true, title: 'Create Context' }
+    meta: {
+      requiresAuth: true,
+      title: 'Create Context',
+      breadcrumb: { parent: '/contexts', parentLabel: 'nav.contexts' }
+    }
   },
   {
     path: '/contexts/:id',
     name: 'context-detail',
     component: () => import('@/views/ContextDetailView.vue'),
-    meta: { requiresAuth: true, title: 'Context Details' }
+    meta: {
+      requiresAuth: true,
+      title: 'Context Details',
+      breadcrumb: { parent: '/contexts', parentLabel: 'nav.contexts' }
+    }
   },
   {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),
     meta: { requiresAuth: true, title: 'Settings' }
+  },
+  {
+    path: '/settings/data-export',
+    name: 'data-export',
+    component: () => import('@/views/DataExportView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Data Export',
+      breadcrumb: { parent: '/settings', parentLabel: 'nav.settings' }
+    }
   },
   {
     path: '/oauth/authorize',
@@ -125,19 +152,34 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/oauth/clients/new',
     name: 'admin-oauth-client-create',
     component: () => import('@/views/admin/AdminOAuthClientCreateView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Create OAuth Client' }
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Create OAuth Client',
+      breadcrumb: { parent: '/admin/oauth/clients', parentLabel: 'nav.adminOAuthClients' }
+    }
   },
   {
     path: '/admin/oauth/clients/:clientId/edit',
     name: 'admin-oauth-client-edit',
     component: () => import('@/views/admin/AdminOAuthClientEditView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Edit OAuth Client' }
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Edit OAuth Client',
+      breadcrumb: { parent: '/admin/oauth/clients', parentLabel: 'nav.adminOAuthClients' }
+    }
   },
   {
     path: '/admin/audit/verify',
     name: 'admin-audit-verify',
     component: () => import('@/views/admin/AdminAuditVerifyView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Audit Integrity' }
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Audit Integrity',
+      breadcrumb: { parent: '/admin/oauth/clients', parentLabel: 'nav.adminOAuthClients' }
+    }
   },
   {
     path: '/:pathMatch(.*)*',

@@ -10,6 +10,7 @@ import BaseButton from '@/components/common/BaseButton.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -167,9 +168,7 @@ async function deleteContext() {
   <div class="page-view">
     <div class="container container-lg">
       <div class="page-header">
-        <router-link to="/contexts" class="back-link">
-          <span class="back-arrow">&larr;</span> {{ t('common.back') }}
-        </router-link>
+        <AppBreadcrumb />
       </div>
 
       <div v-if="isLoading" class="loading-container">
@@ -409,23 +408,6 @@ async function deleteContext() {
 </template>
 
 <style scoped>
-/* Back link */
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-4);
-  text-decoration: none;
-}
-
-.back-link:hover {
-  color: var(--text-primary);
-}
-
-.back-arrow {
-  margin-right: var(--spacing-1);
-}
-
 /* Loading state */
 .loading-container {
   text-align: center;

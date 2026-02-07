@@ -62,6 +62,9 @@ class AuditEventType(str, enum.Enum):
     consent_grant = "consent.grant"
     consent_withdraw = "consent.withdraw"
 
+    # Privacy events
+    data_export = "privacy.data_export"
+
     # OAuth events
     token_revoke = "oauth.token.revoke"
     client_create = "oauth.client.create"
