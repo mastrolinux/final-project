@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getErrorMessage } from '@/services'
 import auditService from '@/services/audit.service'
@@ -9,12 +8,11 @@ import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseInput from '@/components/common/BaseInput.vue'
 import {
-  ArrowLeftIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
-const router = useRouter()
 const { t } = useI18n()
 
 const verifyLimit = ref('1000')
@@ -45,18 +43,12 @@ async function runVerification() {
   }
 }
 
-function goBack() {
-  router.push({ name: 'admin-oauth-clients' })
-}
 </script>
 
 <template>
   <div class="admin-audit-verify-view">
     <div class="container container-lg">
-      <button type="button" class="back-link" @click="goBack">
-        <ArrowLeftIcon class="back-icon" />
-        {{ t('audit.verify.backToAdmin') }}
-      </button>
+      <AppBreadcrumb />
 
       <div class="page-header">
         <h1 class="page-title">{{ t('audit.verify.title') }}</h1>
@@ -130,28 +122,6 @@ function goBack() {
   padding: var(--spacing-8) 0;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-1) 0;
-  margin-bottom: var(--spacing-4);
-  transition: color var(--transition-fast);
-}
-
-.back-link:hover {
-  color: var(--text-primary);
-}
-
-.back-icon {
-  width: 16px;
-  height: 16px;
-}
 
 .verify-controls {
   display: flex;

@@ -79,6 +79,32 @@ async function handlePasswordChange() {
   }
 }
 
+// Resend verification email
+const isResendingVerification = ref(false)
+const resendVerificationSuccess = ref(false)
+
+async function handleResendVerification() {
+  if (!authStore.userEmail) return
+  isResendingVerification.value = true
+  resendVerificationSuccess.value = false
+
+  try {
+    await authService.resendVerificationEmail(authStore.userEmail)
+    resendVerificationSuccess.value = true
+    uiStore.addNotification({
+      type: 'success',
+      message: t('auth.verificationEmailSent')
+    })
+  } catch (err) {
+    uiStore.addNotification({
+      type: 'error',
+      message: getErrorMessage(err)
+    })
+  } finally {
+    isResendingVerification.value = false
+  }
+}
+
 // Account deletion
 const showDeleteConfirm = ref(false)
 const deleteConfirmation = ref('')
@@ -223,14 +249,24 @@ async function handleDeleteAccount() {
               <h3>{{ t('common.email') }}</h3>
               <p>{{ authStore.userEmail }}</p>
             </div>
-            <span
-              :class="[
-                'badge',
-                authStore.isEmailVerified ? 'badge-success' : 'badge-warning'
-              ]"
-            >
-              {{ authStore.isEmailVerified ? t('auth.verified') : t('auth.unverified') }}
-            </span>
+            <div class="setting-actions">
+              <button
+                v-if="!authStore.isEmailVerified"
+                class="btn btn-sm btn-outline"
+                :disabled="isResendingVerification || resendVerificationSuccess"
+                @click="handleResendVerification"
+              >
+                {{ isResendingVerification ? t('common.sending') : t('auth.resendVerification') }}
+              </button>
+              <span
+                :class="[
+                  'badge',
+                  authStore.isEmailVerified ? 'badge-success' : 'badge-warning'
+                ]"
+              >
+                {{ authStore.isEmailVerified ? t('auth.verified') : t('auth.unverified') }}
+              </span>
+            </div>
           </div>
 
           <div class="setting-row">
@@ -238,6 +274,24 @@ async function handleDeleteAccount() {
               <h3>{{ t('settings.accountType') }}</h3>
               <p>{{ t(`account.types.${authStore.accountType}`) }}</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Privacy & Data -->
+      <section class="settings-section card">
+        <div class="card-header">
+          <h2>{{ t('settings.privacyData') }}</h2>
+        </div>
+        <div class="card-body">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h3>{{ t('settings.privacyData') }}</h3>
+              <p>{{ t('settings.privacyDataDescription') }}</p>
+            </div>
+            <router-link to="/settings/data-export" class="btn btn-primary">
+              {{ t('settings.viewExportData') }}
+            </router-link>
           </div>
         </div>
       </section>
@@ -336,6 +390,17 @@ async function handleDeleteAccount() {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
   margin: 0;
+}
+
+.setting-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.btn-sm {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
 }
 
 .setting-block {
