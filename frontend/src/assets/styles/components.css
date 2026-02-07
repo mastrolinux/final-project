@@ -87,6 +87,7 @@
 .card-header {
   padding: var(--spacing-4) var(--spacing-6);
   border-bottom: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .card-body {
@@ -98,6 +99,34 @@
   border-top: 1px solid var(--border-primary);
   background-color: var(--bg-tertiary);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* Danger Card */
+.card-danger {
+  border-color: var(--color-error-500);
+}
+
+.card-danger .card-header {
+  background-color: var(--color-error-50);
+  color: var(--color-error-700);
+}
+
+.dark .card-danger {
+  border-color: var(--color-error-600);
+}
+
+.dark .card-danger .card-header {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: var(--color-error-500);
+}
+
+.dark .btn-danger-outline {
+  color: var(--color-error-500);
+  border-color: var(--color-error-600);
+}
+
+.dark .btn-danger-outline:hover {
+  background-color: rgba(220, 38, 38, 0.15);
 }
 
 /* Form Groups */
