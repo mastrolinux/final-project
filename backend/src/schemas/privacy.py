@@ -116,3 +116,18 @@ class DataExportResponse(BaseModel):
     authentication: AuthenticationExport
     oauth_consents: List[OAuthConsentExport]
     gdpr_metadata: GDPRMetadata
+
+
+class DeletionRequestResponse(BaseModel):
+    """Response for account deletion request."""
+    status: str
+    deletion_scheduled_at: str
+    permanent_deletion_date: str
+    message: str
+
+
+class DeletionStatusResponse(BaseModel):
+    """Response for deletion status check."""
+    status: str
+    deletion_scheduled_at: Optional[str] = None
+    permanent_deletion_date: Optional[str] = None
