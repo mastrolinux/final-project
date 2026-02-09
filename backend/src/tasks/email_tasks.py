@@ -270,7 +270,7 @@ def send_restoration_email(self, email: str, token: str):
         Exception: If email sending fails after retries
     """
     try:
-        restore_url = f"{settings.FRONTEND_URL}/restore-account?token={token}"
+        restore_url = f"{settings.FRONTEND_URL}/restore-account/confirm?token={token}"
         api_restore_url = (
             f"{settings.API_BASE_URL}/api/v1/auth/restore-account/confirm"
         )

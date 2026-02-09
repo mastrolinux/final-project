@@ -664,6 +664,9 @@ class AuthService:
         # Check grace period
         retention_days = settings.DELETION_RETENTION_DAYS
         deleted_at = _ensure_utc(auth_user.deleted_at)
+        if deleted_at is None:
+            # Account already restored or was never deleted
+            return False, "INVALID_RESTORATION_TOKEN", None
         permanent_date = deleted_at + timedelta(days=retention_days)
         if permanent_date <= datetime.now(timezone.utc):
             return False, "ACCOUNT_PERMANENTLY_DELETED", None

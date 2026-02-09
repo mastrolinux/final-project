@@ -55,7 +55,9 @@ class ResolvedProfile:
         bio: Optional[str],
         context_type: Optional[ContextType] = None,
         context_name: Optional[str] = None,
-        identity_names: Optional[List[IdentityName]] = None
+        identity_names: Optional[List[IdentityName]] = None,
+        avatar_url: Optional[str] = None,
+        avatar_thumbnail_url: Optional[str] = None,
     ):
         self.user_id = user_id
         self.account_type = account_type
@@ -67,6 +69,8 @@ class ResolvedProfile:
         self.context_type = context_type
         self.context_name = context_name
         self.identity_names = identity_names or []
+        self.avatar_url = avatar_url
+        self.avatar_thumbnail_url = avatar_thumbnail_url
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert resolved profile to dictionary for API responses"""
@@ -78,6 +82,8 @@ class ResolvedProfile:
             "phone": self.phone,
             "preferred_language": self.preferred_language,
             "bio": self.bio,
+            "avatar_url": self.avatar_url,
+            "avatar_thumbnail_url": self.avatar_thumbnail_url,
             "context_type": self.context_type.value if self.context_type else None,
             "context_name": self.context_name,
             "identity_names": [
@@ -473,6 +479,8 @@ class ContextService:
         resolved_email = base_profile.primary_email
         resolved_phone = base_profile.primary_phone
         resolved_bio = None
+        resolved_avatar_url = base_profile.avatar_url
+        resolved_avatar_thumbnail_url = base_profile.avatar_thumbnail_url
         
         # Apply context overrides (null means inherit from base)
         if context.display_name_override is not None:
@@ -486,6 +494,10 @@ class ContextService:
         
         if context.bio is not None:
             resolved_bio = context.bio
+
+        if context.avatar_override_url is not None:
+            resolved_avatar_url = context.avatar_override_url
+            resolved_avatar_thumbnail_url = context.avatar_override_thumbnail_url
         
         # Resolve multilingual names with fallback chain
         # Apply language-specific name resolution for each identity name
@@ -513,7 +525,9 @@ class ContextService:
             bio=resolved_bio,
             context_type=context.context_type,
             context_name=context.context_name,
-            identity_names=resolved_names
+            identity_names=resolved_names,
+            avatar_url=resolved_avatar_url,
+            avatar_thumbnail_url=resolved_avatar_thumbnail_url,
         )
         
         return resolved
@@ -562,7 +576,9 @@ class ContextService:
             bio=None,  # No context-specific bio
             context_type=None,
             context_name=None,
-            identity_names=identity_names
+            identity_names=identity_names,
+            avatar_url=base_profile.avatar_url,
+            avatar_thumbnail_url=base_profile.avatar_thumbnail_url,
         )
         
         return resolved
