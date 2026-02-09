@@ -139,6 +139,8 @@ class ContextProfileResponse(BaseModel):
     email_override: Optional[str] = None
     phone_override: Optional[str] = None
     bio: Optional[str] = None
+    avatar_override_url: Optional[str] = None
+    avatar_override_thumbnail_url: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -217,6 +219,14 @@ class ResolvedProfileResponse(BaseModel):
     bio: Optional[str] = Field(
         None,
         description="Biography (context-specific if available)"
+    )
+    avatar_url: Optional[str] = Field(
+        None,
+        description="Avatar URL (from context override or base profile)"
+    )
+    avatar_thumbnail_url: Optional[str] = Field(
+        None,
+        description="Avatar thumbnail URL (from context override or base profile)"
     )
     context_type: Optional[ContextType] = Field(
         None,

@@ -116,6 +116,8 @@ class ProfileResponse(BaseModel):
     primary_email: str
     primary_phone: Optional[str] = None
     preferred_language: str
+    avatar_url: Optional[str] = None
+    avatar_thumbnail_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
