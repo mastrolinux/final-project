@@ -6,11 +6,13 @@ Aggregates user data from all repositories into a single
 machine-readable export.
 """
 
+import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
+from src.core.config import settings
 from src.models.audit import AuditEventType, AuditOperation
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.context_repository import ContextRepository
@@ -28,6 +30,11 @@ class PrivacyServiceError(Exception):
 
 class ProfileNotFoundError(PrivacyServiceError):
     """Raised when the requested profile does not exist."""
+    pass
+
+
+class AccountAlreadyDeletedError(PrivacyServiceError):
+    """Raised when a deletion request targets an already-deleted account."""
     pass
 
 
@@ -253,3 +260,199 @@ class PrivacyService:
             )
 
         return export
+
+    def soft_delete_account(
+        self,
+        user_id: UUID,
+        actor_id: Optional[UUID] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+    ) -> dict:
+        """
+        Soft delete user account and all associated data.
+
+        Sets deleted_at on auth_users, base_profiles, and context_profiles.
+        Revokes all OAuth tokens and withdraws consents.
+        Creates an immutable audit log entry.
+
+        Args:
+            user_id: Data subject UUID
+            actor_id: UUID of the actor requesting deletion
+            ip_address: Requester IP address (for audit)
+            user_agent: Requester user agent (for audit)
+
+        Returns:
+            Dict with deletion scheduling information
+
+        Raises:
+            ProfileNotFoundError: If the user profile does not exist
+            AccountAlreadyDeletedError: If the account is already soft-deleted
+        """
+        # Verify user exists
+        profile = self.profile_repo.get_profile_by_id(user_id)
+        if not profile:
+            raise ProfileNotFoundError(
+                f"Profile not found for user_id: {user_id}"
+            )
+
+        auth_user = self.auth_repo.get_by_user_id(str(user_id))
+        if not auth_user:
+            raise ProfileNotFoundError(
+                f"Auth user not found for user_id: {user_id}"
+            )
+
+        if auth_user.deleted_at is not None:
+            raise AccountAlreadyDeletedError(
+                f"Account already deleted for user_id: {user_id}"
+            )
+
+        now = datetime.now(timezone.utc)
+        retention_days = settings.DELETION_RETENTION_DAYS
+        permanent_deletion_date = now + timedelta(days=retention_days)
+
+        # Soft delete auth user
+        self.auth_repo.soft_delete(str(user_id))
+
+        # Soft delete base profile
+        self.profile_repo.soft_delete_profile(user_id)
+
+        # Soft delete all context profiles
+        self.context_repo.soft_delete_user_contexts(user_id)
+
+        # Revoke all OAuth access tokens
+        self.oauth_repo.revoke_all_user_tokens(user_id)
+
+        # Revoke all OAuth refresh tokens
+        self.oauth_repo.revoke_all_user_refresh_tokens(user_id)
+
+        # Withdraw all consents
+        self.oauth_repo.withdraw_all_user_consents(user_id)
+
+        # Audit log
+        if self.audit_service:
+            self.audit_service.log_event(
+                event_type=AuditEventType.account_deletion_requested,
+                user_id=user_id,
+                actor_id=actor_id or user_id,
+                resource_type="account",
+                resource_id=str(user_id),
+                operation=AuditOperation.delete,
+                changes={
+                    "retention_days": retention_days,
+                    "permanent_deletion_date": permanent_deletion_date.isoformat(),
+                },
+                ip_address=ip_address,
+                user_agent=user_agent,
+                legal_basis="gdpr_art_17_erasure",
+            )
+
+        return {
+            "status": "scheduled",
+            "deletion_scheduled_at": now.isoformat(),
+            "permanent_deletion_date": permanent_deletion_date.isoformat(),
+            "message": (
+                "Account scheduled for deletion. You can restore your account "
+                f"by registering again with the same email within {retention_days} days."
+            ),
+        }
+
+    def get_deletion_status(
+        self,
+        user_id: UUID,
+    ) -> dict:
+        """
+        Get the current deletion status of a user account.
+
+        Args:
+            user_id: Data subject UUID
+
+        Returns:
+            Dict with status: "active", "scheduled", or "purged"
+        """
+        # Check for active account
+        auth_user = self.auth_repo.get_by_user_id(str(user_id))
+        if auth_user:
+            return {"status": "active"}
+
+        # Check for soft-deleted account (including deleted)
+        auth_user_deleted = self.auth_repo.get_by_email_including_deleted(
+            ""  # placeholder
+        )
+        # Better approach: query by user_id without deleted_at filter
+        from sqlalchemy import select
+        from src.models.auth import AuthUser
+        stmt = select(AuthUser).where(AuthUser.user_id == str(user_id))
+        result = self.auth_repo.db.execute(stmt)
+        auth_user_any = result.scalars().first()
+
+        if auth_user_any and auth_user_any.deleted_at is not None:
+            retention_days = settings.DELETION_RETENTION_DAYS
+            deleted_at = auth_user_any.deleted_at
+            # Normalize timezone (SQLite may strip tzinfo)
+            if deleted_at.tzinfo is None:
+                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+            permanent_date = deleted_at + timedelta(days=retention_days)
+            return {
+                "status": "scheduled",
+                "deletion_scheduled_at": deleted_at.isoformat(),
+                "permanent_deletion_date": permanent_date.isoformat(),
+            }
+
+        return {"status": "purged"}
+
+    def purge_expired_accounts(
+        self,
+        retention_days: Optional[int] = None,
+    ) -> int:
+        """
+        Permanently delete accounts whose grace period has expired.
+
+        Args:
+            retention_days: Override for retention period (uses config default)
+
+        Returns:
+            Number of accounts permanently purged
+        """
+        if retention_days is None:
+            retention_days = settings.DELETION_RETENTION_DAYS
+
+        expired_users = self.auth_repo.get_expired_soft_deleted_users(
+            retention_days
+        )
+
+        purged_count = 0
+        for auth_user in expired_users:
+            user_id_str = str(auth_user.user_id)
+            # Hash the user_id for audit (no PII in purge events)
+            hashed_id = hashlib.sha256(user_id_str.encode()).hexdigest()[:16]
+
+            # Hard delete profile (CASCADE handles children)
+            self.profile_repo.hard_delete_profile(auth_user.user_id)
+
+            # Hard delete auth user
+            self.auth_repo.hard_delete(user_id_str)
+
+            # Audit log with hashed identifier (no PII)
+            if self.audit_service:
+                self.audit_service.log_event(
+                    event_type=AuditEventType.account_permanently_purged,
+                    user_id=None,  # SET NULL after purge
+                    actor_id=None,
+                    resource_type="account",
+                    resource_id=f"purged:{hashed_id}",
+                    operation=AuditOperation.delete,
+                    changes={
+                        "retention_days": retention_days,
+                        "purged_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                    legal_basis="gdpr_art_17_retention_expiry",
+                )
+
+            purged_count += 1
+
+        logger.info(
+            "Purged %d expired accounts (retention: %d days)",
+            purged_count,
+            retention_days,
+        )
+        return purged_count
