@@ -72,6 +72,10 @@ class AuditEventType(str, enum.Enum):
     client_delete = "oauth.client.delete"
     client_purge = "oauth.client.purge"
 
+    # Avatar events
+    avatar_upload = "avatar.upload"
+    avatar_delete = "avatar.delete"
+
 
 # SHA-256 of b"GENESIS" - used as previous_hash for the first entry in the chain
 GENESIS_HASH = "901131d838b17aac0f7885b81e03cbdc9f5157a00343d30ab22083685ed1416a"

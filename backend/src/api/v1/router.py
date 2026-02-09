@@ -57,3 +57,7 @@ api_router.include_router(audit.router, prefix="/audit", tags=["Audit"])
 from src.api.v1.endpoints import privacy
 api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
 
+# Include Avatar endpoints (Profile Picture Upload)
+from src.api.v1.endpoints import avatars
+api_router.include_router(avatars.router, tags=["Avatars"])
+
