@@ -21,7 +21,9 @@ from src.schemas.auth import (
     RequestPasswordResetRequest, RequestPasswordResetResponse,
     ResetPasswordRequest, ResetPasswordResponse,
     ResendVerificationRequest, ResendVerificationResponse,
-    RefreshTokenRequest, RefreshTokenResponse
+    RefreshTokenRequest, RefreshTokenResponse,
+    RestoreAccountRequest, RestoreAccountResponse,
+    RestoreAccountConfirmRequest, RestoreAccountConfirmResponse,
 )
 from src.core.redis_client import TokenBlacklist, get_blacklist
 
@@ -99,7 +101,43 @@ def register(
     try:
         # Create profile repository
         profile_repo = ProfileRepository(db)
-        
+
+        # Step 0: Check for recoverable soft-deleted account before
+        # attempting profile creation. The unique constraint on
+        # primary_email would otherwise raise IntegrityError for
+        # soft-deleted rows (which still exist in the table).
+        auth_repo = AuthRepository(db)
+        deleted_user = auth_repo.get_by_email_including_deleted(
+            request.email
+        )
+        if deleted_user and deleted_user.deleted_at is not None:
+            from datetime import timedelta, timezone, datetime
+            from src.core.config import settings
+            retention_days = settings.DELETION_RETENTION_DAYS
+            deleted_at = deleted_user.deleted_at
+            if deleted_at.tzinfo is None:
+                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+            permanent_date = (
+                deleted_at + timedelta(days=retention_days)
+            )
+            if permanent_date > datetime.now(timezone.utc):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "detail": (
+                            "A recoverable account exists for this email"
+                        ),
+                        "code": "ACCOUNT_RECOVERABLE",
+                        "account_recoverable": True,
+                        "permanent_deletion_date": (
+                            permanent_date.isoformat()
+                        ),
+                        "restore_endpoint": (
+                            "/api/v1/auth/restore-account"
+                        ),
+                    },
+                )
+
         # Step 1: Create base profile
         try:
             base_profile = profile_repo.create_profile(
@@ -136,8 +174,21 @@ def register(
         if not success:
             # Rollback profile creation if auth user creation fails
             db.rollback()
-            
-            if "already registered" in error:
+
+            if error == "ACCOUNT_RECOVERABLE":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "detail": "A recoverable account exists for this email",
+                        "code": "ACCOUNT_RECOVERABLE",
+                        "account_recoverable": True,
+                        "permanent_deletion_date": data.get(
+                            "permanent_deletion_date"
+                        ),
+                        "restore_endpoint": "/api/v1/auth/restore-account",
+                    },
+                )
+            elif "already registered" in error:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=error
@@ -147,7 +198,7 @@ def register(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=error
                 )
-        
+
         return RegisterResponse(**data)
         
     except HTTPException:
@@ -218,7 +269,20 @@ def login(
     )
     
     if not success:
-        if "locked" in error.lower():
+        if error == "ACCOUNT_DELETED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "detail": "Account scheduled for deletion",
+                    "code": "ACCOUNT_DELETED",
+                    "deletion_scheduled_at": data.get("deletion_scheduled_at"),
+                    "permanent_deletion_date": data.get(
+                        "permanent_deletion_date"
+                    ),
+                    "recovery_info": data.get("recovery_info"),
+                },
+            )
+        elif "locked" in error.lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=error
@@ -228,7 +292,7 @@ def login(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=error
             )
-    
+
     return LoginResponse(**data)
 
 
@@ -570,4 +634,82 @@ def refresh_token(
             )
 
     return RefreshTokenResponse(**data)
+
+
+@router.post(
+    "/restore-account",
+    response_model=RestoreAccountResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Request Account Restoration",
+    description=(
+        "Request restoration of a soft-deleted account. Sends a time-limited "
+        "restoration token via email. Always returns 202 regardless of whether "
+        "the email exists (prevents enumeration)."
+    ),
+)
+def request_restore_account(
+    request: RestoreAccountRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Request account restoration email."""
+    service.request_account_restoration(request.email)
+    return RestoreAccountResponse(
+        message=(
+            "If a recoverable account exists for this email, "
+            "a restoration link has been sent."
+        )
+    )
+
+
+@router.post(
+    "/restore-account/confirm",
+    response_model=RestoreAccountConfirmResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Confirm Account Restoration",
+    description=(
+        "Confirm account restoration with the token received via email "
+        "and set a new password. Returns JWT tokens on success."
+    ),
+)
+def confirm_restore_account(
+    request: RestoreAccountConfirmRequest,
+    http_request: Request,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Confirm account restoration with token and new password."""
+    ip_address = http_request.client.host if http_request.client else None
+    user_agent = http_request.headers.get("user-agent")
+
+    success, error_code, data = service.confirm_account_restoration(
+        token=request.token,
+        new_password=request.new_password,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+
+    if not success:
+        if error_code == "ACCOUNT_PERMANENTLY_DELETED":
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail={
+                    "detail": "Account permanently deleted. Grace period expired.",
+                    "code": "ACCOUNT_PERMANENTLY_DELETED",
+                },
+            )
+        elif error_code == "INVALID_RESTORATION_TOKEN":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "detail": "Invalid or expired restoration token",
+                    "code": "INVALID_RESTORATION_TOKEN",
+                },
+            )
+        else:
+            # Password validation error
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_code,
+            )
+
+    return RestoreAccountConfirmResponse(**data)
 

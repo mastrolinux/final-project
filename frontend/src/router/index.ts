@@ -65,6 +65,26 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresGuest: true, title: 'Reset Password' }
   },
   {
+    path: '/restore-account',
+    name: 'restore-account',
+    component: () => import('@/views/RestoreAccountView.vue'),
+    meta: {
+      requiresGuest: true,
+      title: 'Restore Account',
+      breadcrumb: { parent: '/', parentLabel: 'nav.home' }
+    }
+  },
+  {
+    path: '/restore-account/confirm',
+    name: 'restore-account-confirm',
+    component: () => import('@/views/RestoreAccountConfirmView.vue'),
+    meta: {
+      requiresGuest: true,
+      title: 'Restore Account',
+      breadcrumb: { parent: '/', parentLabel: 'nav.home' }
+    }
+  },
+  {
     path: '/profile/edit',
     name: 'profile-edit',
     component: () => import('@/views/ProfileEditView.vue'),

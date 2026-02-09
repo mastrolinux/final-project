@@ -68,3 +68,57 @@ export interface AuthUser {
   account_type: AccountType
   is_admin: boolean
 }
+
+/**
+ * Request to initiate account restoration after soft deletion.
+ */
+export interface RestoreAccountRequest {
+  email: string
+}
+
+/**
+ * Generic response for restore request (always 202, enumeration prevention).
+ */
+export interface RestoreAccountResponse {
+  message: string
+}
+
+/**
+ * Request to confirm account restoration with token and new password.
+ */
+export interface RestoreAccountConfirmRequest {
+  token: string
+  new_password: string
+}
+
+/**
+ * Response for successful account restoration (includes JWT tokens).
+ */
+export interface RestoreAccountConfirmResponse {
+  message: string
+  access_token: string
+  refresh_token: string
+  token_type: string
+  restored_at: string
+}
+
+/**
+ * Structured error detail returned by login (403) for deleted accounts.
+ */
+export interface AccountDeletedDetail {
+  code: 'ACCOUNT_DELETED'
+  deletion_scheduled_at: string
+  permanent_deletion_date: string
+  recovery_info: string
+}
+
+/**
+ * Structured error detail returned by register (409) for recoverable accounts.
+ */
+export interface AccountRecoverableDetail {
+  detail: string
+  code: 'ACCOUNT_RECOVERABLE'
+  account_recoverable: boolean
+  permanent_deletion_date: string
+  restore_endpoint: string
+}

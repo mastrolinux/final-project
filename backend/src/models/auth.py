@@ -88,7 +88,11 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
     # Password reset
     reset_token = Column(String, nullable=True, index=True)
     reset_token_expires_at = Column(DateTime(timezone=True), nullable=True)
-    
+
+    # Account restoration (after soft deletion)
+    restoration_token = Column(String, nullable=True, index=True)
+    restoration_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     # Admin flag - grants access to admin endpoints
     is_admin = Column(Boolean, nullable=False, default=False)
     
@@ -131,6 +135,22 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         return expires_at > datetime.now(timezone.utc)
+
+    def is_restoration_token_valid(self, token: str) -> bool:
+        """Check if restoration token is valid and not expired."""
+        if not self.restoration_token or self.restoration_token != token:
+            return False
+        if not self.restoration_token_expires_at:
+            return False
+        expires_at = self.restoration_token_expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return expires_at > datetime.now(timezone.utc)
+
+    @property
+    def is_deleted(self) -> bool:
+        """Check if account is soft-deleted."""
+        return self.deleted_at is not None
 
 
 # Import uuid for default value

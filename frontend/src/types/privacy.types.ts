@@ -115,3 +115,24 @@ export interface DataExportResponse {
   oauth_consents: OAuthConsentExport[]
   gdpr_metadata: GDPRMetadata
 }
+
+/**
+ * Response for account deletion request (GDPR Art. 17 soft delete).
+ */
+export interface DeletionRequestResponse {
+  status: string
+  deletion_scheduled_at: string
+  permanent_deletion_date: string
+  message: string
+}
+
+/**
+ * Response for deletion status check.
+ */
+export type DeletionStatus = 'active' | 'scheduled' | 'purged'
+
+export interface DeletionStatusResponse {
+  status: DeletionStatus
+  deletion_scheduled_at: string | null
+  permanent_deletion_date: string | null
+}
