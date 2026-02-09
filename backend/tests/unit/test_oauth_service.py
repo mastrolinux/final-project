@@ -384,7 +384,7 @@ class TestScopeBasedFiltering:
             "sub": "user-123",
             "preferred_name": "Sarah",
             "display_name": "Dr. Sarah Chen",
-            "photo_url": "https://example.com/photo.jpg",
+            "avatar_url": "https://example.com/photo.jpg",
             "primary_email": "sarah@example.com",
             "primary_phone": "+1-555-0101"
         }
@@ -396,7 +396,7 @@ class TestScopeBasedFiltering:
 
         assert "preferred_name" in result
         assert "display_name" in result
-        assert "photo_url" in result
+        assert "avatar_url" in result
         assert "primary_email" not in result
         assert "primary_phone" not in result
 

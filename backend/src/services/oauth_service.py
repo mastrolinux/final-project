@@ -384,11 +384,12 @@ class OAuthService:
         # Define field access by scope
         scope_fields = {
             'openid': {'sub'},
-            'profile:read:basic': {'preferred_name', 'display_name', 'photo_url'},
+            'profile:read:basic': {'preferred_name', 'display_name', 'avatar_url', 'avatar_thumbnail_url'},
+            'profile:read:photo': {'avatar_url', 'avatar_thumbnail_url'},
             'profile:read:email': {'primary_email', 'email', 'email_verified'},
             'profile:read:phone': {'primary_phone', 'phone', 'phone_verified'},
             'profile:read:full': {
-                'preferred_name', 'display_name', 'photo_url', 'bio',
+                'preferred_name', 'display_name', 'avatar_url', 'avatar_thumbnail_url', 'bio',
                 'website', 'primary_email', 'email', 'primary_phone', 'phone',
                 'preferred_language', 'email_verified', 'phone_verified'
             },
