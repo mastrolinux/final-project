@@ -8,6 +8,7 @@ import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
 import { CONTEXT_TYPE_META } from '@/types'
+import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -191,7 +192,7 @@ const navigateToCreateContext = () => {
                   <BaseBadge :variant="context.context_type">
                     {{ CONTEXT_TYPE_META[context.context_type]?.label || context.context_type }}
                   </BaseBadge>
-                  <span class="context-card-arrow">-></span>
+                  <ChevronRightIcon class="context-card-arrow" />
                 </div>
                 <h3 class="context-card-title">{{ context.context_name }}</h3>
                 <p class="context-card-bio">{{ context.bio || 'Inherited bio' }}</p>
@@ -408,6 +409,8 @@ const navigateToCreateContext = () => {
 }
 
 .context-card-arrow {
+  width: 16px;
+  height: 16px;
   color: var(--text-tertiary);
 }
 

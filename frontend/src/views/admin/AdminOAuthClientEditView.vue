@@ -5,7 +5,7 @@ import { adminOAuthService, getErrorMessage } from '@/services'
 import type { OAuthClientResponse, OAuthClientUpdate } from '@/types'
 import BaseCard from '@/components/common/BaseCard.vue'
 import OAuthClientForm from '@/components/admin/OAuthClientForm.vue'
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -46,18 +46,12 @@ function handleCancel(): void {
   router.push({ name: 'admin-oauth-clients' })
 }
 
-function goBack(): void {
-  router.push({ name: 'admin-oauth-clients' })
-}
 </script>
 
 <template>
   <div class="admin-oauth-client-edit-view">
     <div class="container container-lg">
-      <button type="button" class="back-link" @click="goBack">
-        <ArrowLeftIcon class="back-icon" />
-        Back to OAuth Clients
-      </button>
+      <AppBreadcrumb />
 
       <div class="page-header">
         <h1 class="page-title">Edit OAuth Client</h1>
@@ -99,29 +93,6 @@ function goBack(): void {
   padding: var(--spacing-8) 0;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color var(--transition-fast);
-  margin-bottom: var(--spacing-4);
-}
-
-.back-link:hover {
-  color: var(--color-primary-600);
-}
-
-.back-icon {
-  width: 16px;
-  height: 16px;
-}
 
 .loading-state {
   display: flex;

@@ -6,7 +6,7 @@ import type { OAuthClientCreate, OAuthClientUpdate, OAuthClientCreateResponse } 
 import BaseCard from '@/components/common/BaseCard.vue'
 import OAuthClientForm from '@/components/admin/OAuthClientForm.vue'
 import OAuthClientSecretModal from '@/components/admin/OAuthClientSecretModal.vue'
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const router = useRouter()
 
@@ -39,18 +39,12 @@ function handleSecretModalClose(): void {
   router.push({ name: 'admin-oauth-clients' })
 }
 
-function goBack(): void {
-  router.push({ name: 'admin-oauth-clients' })
-}
 </script>
 
 <template>
   <div class="admin-oauth-client-create-view">
     <div class="container container-lg">
-      <button type="button" class="back-link" @click="goBack">
-        <ArrowLeftIcon class="back-icon" />
-        Back to OAuth Clients
-      </button>
+      <AppBreadcrumb />
 
       <div class="page-header">
         <h1 class="page-title">Create OAuth Client</h1>
@@ -85,30 +79,6 @@ function goBack(): void {
 <style scoped>
 .admin-oauth-client-create-view {
   padding: var(--spacing-8) 0;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color var(--transition-fast);
-  margin-bottom: var(--spacing-4);
-}
-
-.back-link:hover {
-  color: var(--color-primary-600);
-}
-
-.back-icon {
-  width: 16px;
-  height: 16px;
 }
 
 .alert-error {
