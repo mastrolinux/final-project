@@ -1476,6 +1476,563 @@
           ]
         }
       ]
+    },
+    {
+      "name": "10 - Soft Deletion and Account Restoration",
+      "description": "GDPR Article 17 soft deletion with 30-day grace period, login/register interception for deleted accounts, and two-step email-verified account restoration.",
+      "item": [
+        {
+          "name": "Step 1: Register Deletion Test User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{deletion_test_email}}\",\n  \"password\": \"{{deletion_test_password}}\",\n  \"preferred_name\": \"Deletion Test User\",\n  \"account_type\": \"unverified\",\n  \"preferred_language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "const email = `deletion-test-${timestamp}@example.com`;",
+                  "pm.collectionVariables.set('deletion_test_email', email);",
+                  "pm.collectionVariables.set('deletion_test_password', 'DeleteMe123!');",
+                  "console.log(`Registering deletion test user: ${email}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('User registered for deletion test', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('user_id');",
+                  "    pm.collectionVariables.set('deletion_test_user_id', jsonData.user_id);",
+                  "    console.log(`Deletion test user ID: ${jsonData.user_id}`);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: Login as Deletion Test User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{deletion_test_email}}\",\n  \"password\": \"{{deletion_test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('JWT tokens received', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('refresh_token');",
+                  "    pm.collectionVariables.set('deletion_access_token', jsonData.access_token);",
+                  "    console.log('Deletion test user tokens saved');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: Deletion Status is Active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deletion_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/deletion-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "deletion-status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Account status is active', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('active');",
+                  "    pm.expect(jsonData.deletion_scheduled_at).to.be.null;",
+                  "    pm.expect(jsonData.permanent_deletion_date).to.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4: Deletion Status Requires Auth (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/deletion-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "deletion-status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5: Deletion Request Requires Auth (401)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/deletion-request",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "deletion-request"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 6: Request Account Deletion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deletion_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/deletion-request",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "deletion-request"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has deletion scheduling info', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('scheduled');",
+                  "    pm.expect(jsonData).to.have.property('deletion_scheduled_at');",
+                  "    pm.expect(jsonData).to.have.property('permanent_deletion_date');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('30');",
+                  "    console.log(`Deletion scheduled at: ${jsonData.deletion_scheduled_at}`);",
+                  "    console.log(`Permanent deletion: ${jsonData.permanent_deletion_date}`);",
+                  "});",
+                  "",
+                  "pm.test('Permanent deletion date is ~30 days from now', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const scheduled = new Date(jsonData.deletion_scheduled_at);",
+                  "    const permanent = new Date(jsonData.permanent_deletion_date);",
+                  "    const diffDays = (permanent - scheduled) / (1000 * 60 * 60 * 24);",
+                  "    pm.expect(diffDays).to.be.closeTo(30, 1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 7: Deleted User JWT Rejected (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deletion_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/deletion-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "deletion-status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 - deleted user JWT blocked', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "console.log('[PASS] Soft-deleted user cannot use existing JWT tokens');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 8: Login After Deletion Returns 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{deletion_test_email}}\",\n  \"password\": \"{{deletion_test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 403 Forbidden', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test('Response has ACCOUNT_DELETED code', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.have.property('code');",
+                  "    pm.expect(jsonData.detail.code).to.eql('ACCOUNT_DELETED');",
+                  "});",
+                  "",
+                  "pm.test('Response includes deletion dates and recovery info', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.have.property('deletion_scheduled_at');",
+                  "    pm.expect(jsonData.detail).to.have.property('permanent_deletion_date');",
+                  "    pm.expect(jsonData.detail).to.have.property('recovery_info');",
+                  "    console.log(`Recovery info: ${jsonData.detail.recovery_info}`);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 9: Register with Deleted Email Returns 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{deletion_test_email}}\",\n  \"password\": \"AnotherSecure123!\",\n  \"preferred_name\": \"New User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Response has ACCOUNT_RECOVERABLE code', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.have.property('code');",
+                  "    pm.expect(jsonData.detail.code).to.eql('ACCOUNT_RECOVERABLE');",
+                  "    pm.expect(jsonData.detail.account_recoverable).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response includes restore endpoint and deletion date', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.have.property('restore_endpoint');",
+                  "    pm.expect(jsonData.detail.restore_endpoint).to.eql('/api/v1/auth/restore-account');",
+                  "    pm.expect(jsonData.detail).to.have.property('permanent_deletion_date');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 10: Request Account Restoration (202)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{deletion_test_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/restore-account",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "restore-account"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('Response has generic message (enumeration prevention)', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('restoration');",
+                  "});",
+                  "",
+                  "console.log('Check Mailpit at http://127.0.0.1:54324 for restoration email');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 11: Restore Request Unknown Email (202 - Enumeration Prevention)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent-account@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/restore-account",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "restore-account"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 Accepted (same as valid email)', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('Same generic message returned (prevents enumeration)', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('restoration');",
+                  "});",
+                  "",
+                  "console.log('[PASS] Enumeration prevention: unknown email returns same 202 response');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 12: Restore Confirm Invalid Token (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"new_password\": \"RestoredSecure123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/restore-account/confirm",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "restore-account", "confirm"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response has INVALID_RESTORATION_TOKEN code', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.have.property('code');",
+                  "    pm.expect(jsonData.detail.code).to.eql('INVALID_RESTORATION_TOKEN');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 13: Restore Confirm Short Token (422 Validation)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"short\",\n  \"new_password\": \"RestoredSecure123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/auth/restore-account/confirm",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "auth", "restore-account", "confirm"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422 - token too short for schema', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "console.log('[PASS] Schema validation rejects tokens shorter than 32 chars');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 14: Data Export Requires Auth (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/privacy/export",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "privacy", "export"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "console.log('',);",
+                  "console.log('======================================');",
+                  "console.log('SOFT DELETION TESTS COMPLETE');",
+                  "console.log('GDPR Article 17 flow verified');",
+                  "console.log('======================================');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1557,6 +2114,22 @@
     },
     {
       "key": "test_client_secret",
+      "value": ""
+    },
+    {
+      "key": "deletion_test_email",
+      "value": ""
+    },
+    {
+      "key": "deletion_test_password",
+      "value": "DeleteMe123!"
+    },
+    {
+      "key": "deletion_test_user_id",
+      "value": ""
+    },
+    {
+      "key": "deletion_access_token",
       "value": ""
     }
   ]
