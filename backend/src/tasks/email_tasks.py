@@ -248,10 +248,116 @@ def send_password_reset_email(self, email: str, token: str):
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
-        
+
     except Exception as exc:
         # Retry with exponential backoff
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
+@celery_app.task(name="send_restoration_email", bind=True, max_retries=3)
+def send_restoration_email(self, email: str, token: str):
+    """
+    Send account restoration email via SMTP.
 
+    Email includes restoration link that expires in 24 hours.
+    Retries up to 3 times on failure with exponential backoff.
+
+    Args:
+        email: Recipient email address
+        token: Account restoration token
+
+    Raises:
+        Exception: If email sending fails after retries
+    """
+    try:
+        restore_url = f"{settings.FRONTEND_URL}/restore-account/confirm?token={token}"
+        api_restore_url = (
+            f"{settings.API_BASE_URL}/api/v1/auth/restore-account/confirm"
+        )
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Restore your account"
+        msg["From"] = settings.SMTP_FROM_EMAIL
+        msg["To"] = email
+
+        # Plain text version
+        text = f"""
+        Account Restoration Request
+
+        You requested to restore your deleted account. Click the link below to proceed:
+        {restore_url}
+
+        This link expires in 24 hours.
+
+        You will be asked to set a new password during restoration.
+
+        --- API Testing (Development) ---
+        Token: {token}
+
+        curl -X POST {api_restore_url} \\
+          -H "Content-Type: application/json" \\
+          -d '{{"token": "{token}", "new_password": "YourNewPassword123!"}}'
+
+        If you didn't request this, please ignore this email.
+
+        Best regards,
+        Identity Management Team
+        """
+
+        # HTML version
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #059669;">Restore Your Account</h2>
+              <p>You requested to restore your deleted account.
+                 Click the button below to proceed:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{restore_url}"
+                   style="background-color: #059669; color: white; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px;
+                          display: inline-block;">
+                  Restore Account
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">
+                Or copy and paste this link into your browser:<br>
+                <a href="{restore_url}">{restore_url}</a>
+              </p>
+              <p style="color: #666; font-size: 14px;">
+                This link expires in 24 hours.
+                You will be asked to set a new password.
+              </p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <div style="background-color: #ecfdf5; padding: 15px;
+                          border-radius: 5px; margin: 15px 0;">
+                <p style="color: #065f46; font-size: 12px; margin: 0 0 10px 0;">
+                  <strong>API Testing (Development Only)</strong>
+                </p>
+                <p style="color: #047857; font-size: 11px; margin: 0 0 5px 0;">
+                  Token: <code style="background: #d1fae5; padding: 2px 6px;
+                    border-radius: 3px;">{token}</code>
+                </p>
+                <p style="color: #047857; font-size: 11px; margin: 0;">
+                  API: <code style="background: #d1fae5; padding: 2px 6px;
+                    border-radius: 3px;">{api_restore_url}</code>
+                </p>
+              </div>
+              <p style="color: #999; font-size: 12px;">
+                If you didn't request this, please ignore this email.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        with get_smtp_connection() as server:
+            server.send_message(msg)
+
+        return {"status": "sent", "email": email}
+
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
