@@ -218,7 +218,86 @@
     "deleteAccountConfirmTitle": "Delete Your Account?",
     "deleteAccountConfirmMessage": "This action is irreversible. All your data, contexts, and profile information will be permanently deleted.",
     "typeDeleteToConfirm": "Type DELETE to confirm",
-    "permanentlyDelete": "Permanently Delete Account"
+    "permanentlyDelete": "Permanently Delete Account",
+    "privacyData": "Privacy & Data",
+    "privacyDataDescription": "Download a copy of all personal data held by this system, as provided by GDPR Article 15.",
+    "viewExportData": "View & Export My Data"
+  },
+  "privacy": {
+    "title": "Data Export",
+    "description": "All personal data held by this system, per GDPR Article 15 (Right of Access).",
+    "backToSettings": "Back to Settings",
+    "downloadJson": "Download JSON",
+    "downloading": "Preparing...",
+    "exportedAt": "Exported at",
+    "formatVersion": "Format version",
+    "legalBasis": "Legal basis",
+    "sections": {
+      "profile": "Profile",
+      "identityNames": "Identity Names",
+      "contextProfiles": "Context Profiles",
+      "authentication": "Authentication",
+      "oauthConsents": "OAuth Consents",
+      "gdprInfo": "GDPR Information"
+    },
+    "profile": {
+      "userId": "User ID",
+      "accountType": "Account type",
+      "legalName": "Legal name",
+      "primaryEmail": "Primary email",
+      "primaryPhone": "Primary phone",
+      "preferredLanguage": "Preferred language",
+      "createdAt": "Created",
+      "updatedAt": "Last updated"
+    },
+    "names": {
+      "type": "Type",
+      "value": "Value",
+      "primary": "Primary",
+      "deprecated": "Deprecated",
+      "visibility": "Visibility"
+    },
+    "contexts": {
+      "type": "Type",
+      "name": "Name",
+      "active": "Active",
+      "inactive": "Inactive",
+      "displayName": "Display name",
+      "email": "Email",
+      "phone": "Phone",
+      "bio": "Bio"
+    },
+    "auth": {
+      "email": "Email",
+      "emailVerified": "Email verified",
+      "lastLogin": "Last login",
+      "passwordChanged": "Password changed",
+      "isAdmin": "Administrator",
+      "createdAt": "Account created",
+      "noAuthData": "No authentication data available."
+    },
+    "consents": {
+      "clientId": "Client ID",
+      "scopes": "Granted scopes",
+      "method": "Consent method",
+      "grantedAt": "Granted",
+      "expiresAt": "Expires",
+      "withdrawnAt": "Withdrawn",
+      "noConsents": "No OAuth consents on record."
+    },
+    "gdpr": {
+      "processingPurposes": "Processing Purposes",
+      "retentionPeriods": "Retention Periods",
+      "dataSubjectRights": "Your Rights",
+      "dataSources": "Data Sources",
+      "recipients": "Recipients",
+      "automatedDecisions": "Automated Decision-Making"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No",
+      "notSet": "Not set"
+    }
   },
   "oauth": {
     "title": "Authorization Request",

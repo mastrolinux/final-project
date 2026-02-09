@@ -38,6 +38,34 @@
     "next": "下一步",
     "submit": "提交"
   },
+  "settings": {
+    "privacyData": "隐私与数据",
+    "privacyDataDescription": "根据GDPR第15条下载本系统保存的所有个人数据副本。",
+    "viewExportData": "查看并导出我的数据"
+  },
+  "privacy": {
+    "title": "数据导出",
+    "description": "根据GDPR第15条(访问权),本系统保存的所有个人数据。",
+    "backToSettings": "返回设置",
+    "downloadJson": "下载JSON",
+    "downloading": "准备中...",
+    "exportedAt": "导出时间",
+    "formatVersion": "格式版本",
+    "legalBasis": "法律依据",
+    "sections": {
+      "profile": "个人资料",
+      "identityNames": "身份名称",
+      "contextProfiles": "情境档案",
+      "authentication": "身份验证",
+      "oauthConsents": "OAuth授权",
+      "gdprInfo": "GDPR信息"
+    },
+    "values": {
+      "yes": "是",
+      "no": "否",
+      "notSet": "未设置"
+    }
+  },
   "errors": {
     "network": "网络错误，请检查您的连接。",
     "unauthorized": "请登录后继续。",

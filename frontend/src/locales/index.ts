@@ -8,13 +8,15 @@ import en from './en.json'
 import es from './es.json'
 import zh from './zh.json'
 import ar from './ar.json'
+import it from './it.json'
 
-export type SupportedLocale = 'en' | 'es' | 'zh' | 'ar'
+export type SupportedLocale = 'en' | 'it' | 'es' | 'zh' | 'ar'
 
-export const SUPPORTED_LOCALES: SupportedLocale[] = ['en', 'es', 'zh', 'ar']
+export const SUPPORTED_LOCALES: SupportedLocale[] = ['en', 'it', 'es', 'zh', 'ar']
 
 export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   en: 'English',
+  it: 'Italiano',
   es: 'Espanol',
   zh: '中文',
   ar: 'العربية'
@@ -48,6 +50,7 @@ export const i18n = createI18n({
   fallbackLocale: 'en',
   messages: {
     en,
+    it,
     es,
     zh,
     ar
