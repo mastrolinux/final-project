@@ -1,13 +1,41 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useUiStore } from '@/stores'
-import { authService, getErrorMessage } from '@/services'
+import { authService, privacyService, getErrorMessage } from '@/services'
 import { setLocale, SUPPORTED_LOCALES, LOCALE_NAMES, type SupportedLocale } from '@/locales'
+import type { DeletionStatus } from '@/types'
+import axios from 'axios'
 
 const { t, locale } = useI18n()
+const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+
+// Deletion status (fetched on mount)
+const deletionStatus = ref<DeletionStatus>('active')
+const deletionScheduledAt = ref<string | null>(null)
+const permanentDeletionDate = ref<string | null>(null)
+
+onMounted(async () => {
+  try {
+    const status = await privacyService.getDeletionStatus()
+    deletionStatus.value = status.status
+    deletionScheduledAt.value = status.deletion_scheduled_at
+    permanentDeletionDate.value = status.permanent_deletion_date
+  } catch {
+    // Silently ignore - banner just won't show
+  }
+})
+
+function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
 
 const currentLocale = computed({
   get: () => locale.value as SupportedLocale,
@@ -110,6 +138,10 @@ const showDeleteConfirm = ref(false)
 const deleteConfirmation = ref('')
 const isDeleting = ref(false)
 const deleteError = ref<string | null>(null)
+const deletionResult = ref<{
+  deletionDate: string
+  permanentDate: string
+} | null>(null)
 
 const canDelete = computed(() => deleteConfirmation.value === 'DELETE')
 
@@ -120,10 +152,23 @@ async function handleDeleteAccount() {
   deleteError.value = null
 
   try {
-    await authService.deleteAccount()
-    authStore.logout()
+    const result = await privacyService.requestDeletion()
+    showDeleteConfirm.value = false
+    deletionResult.value = {
+      deletionDate: result.deletion_scheduled_at,
+      permanentDate: result.permanent_deletion_date
+    }
+    // Log out after a short delay so the user can see the confirmation
+    setTimeout(() => {
+      authStore.logout()
+      router.push({ name: 'home' })
+    }, 5000)
   } catch (err) {
-    deleteError.value = getErrorMessage(err)
+    if (axios.isAxiosError(err) && err.response?.status === 409) {
+      deleteError.value = t('settings.deletion.alreadyDeleted')
+    } else {
+      deleteError.value = getErrorMessage(err)
+    }
   } finally {
     isDeleting.value = false
   }
@@ -136,6 +181,37 @@ async function handleDeleteAccount() {
       <div class="page-header">
         <h1 class="page-title">{{ t('settings.title') }}</h1>
         <p class="page-description">{{ t('settings.description') }}</p>
+      </div>
+
+      <!-- Deletion status banner -->
+      <div
+        v-if="deletionStatus === 'scheduled' && permanentDeletionDate"
+        class="alert alert-warning deletion-banner mb-6"
+      >
+        <p>{{ t('settings.deletion.scheduledBanner', { date: formatDate(permanentDeletionDate) }) }}</p>
+        <router-link to="/restore-account" class="btn btn-sm btn-outline mt-2">
+          {{ t('settings.deletion.restoreLink') }}
+        </router-link>
+      </div>
+
+      <!-- Deletion result confirmation (shown after successful deletion request) -->
+      <div v-if="deletionResult" class="card card-danger deletion-result mb-6">
+        <div class="card-body">
+          <h2 class="mb-2">{{ t('settings.deletion.scheduled') }}</h2>
+          <p class="text-secondary mb-4">{{ t('settings.deletion.scheduledMessage') }}</p>
+          <div class="deletion-dates">
+            <div class="deletion-date-row">
+              <span class="text-secondary">{{ t('settings.deletion.deletionDate') }}</span>
+              <span>{{ formatDate(deletionResult.deletionDate) }}</span>
+            </div>
+            <div class="deletion-date-row">
+              <span class="text-secondary">{{ t('settings.deletion.permanentDate') }}</span>
+              <span>{{ formatDate(deletionResult.permanentDate) }}</span>
+            </div>
+          </div>
+          <p class="text-secondary mt-4">{{ t('settings.deletion.graceMessage') }}</p>
+          <p class="text-secondary mt-2">{{ t('settings.deletion.logoutNotice') }}</p>
+        </div>
       </div>
 
       <!-- Appearance Settings -->
@@ -297,7 +373,7 @@ async function handleDeleteAccount() {
       </section>
 
       <!-- Danger Zone -->
-      <section class="settings-section card card-danger">
+      <section v-if="!deletionResult" class="settings-section card card-danger">
         <div class="card-header">
           <h2>{{ t('settings.dangerZone') }}</h2>
         </div>
@@ -367,6 +443,40 @@ async function handleDeleteAccount() {
 .card-header h2 {
   font-size: var(--font-size-lg);
   margin: 0;
+}
+
+.deletion-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.deletion-banner p {
+  margin: 0;
+}
+
+.deletion-result h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-error-600);
+}
+
+.deletion-dates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.deletion-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mb-6 {
+  margin-bottom: var(--spacing-6);
 }
 
 .setting-row {

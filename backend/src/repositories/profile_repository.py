@@ -342,6 +342,44 @@ class ProfileRepository:
             return None, []
         
         names = self.get_identity_names(user_id, include_deprecated=include_deprecated)
-        
+
         return profile, names
+
+    def restore_profile(self, user_id: UUID) -> bool:
+        """
+        Restore a soft-deleted profile by clearing deleted_at.
+
+        Args:
+            user_id: User ID of profile to restore
+
+        Returns:
+            True if profile was restored, False if not found
+        """
+        profile = self.db.query(BaseProfile).filter(
+            BaseProfile.user_id == user_id
+        ).first()
+        if not profile or profile.deleted_at is None:
+            return False
+        profile.deleted_at = None
+        self.db.commit()
+        return True
+
+    def hard_delete_profile(self, user_id: UUID) -> bool:
+        """
+        Permanently delete a profile. CASCADE handles identity_names.
+
+        Args:
+            user_id: User ID of profile to delete
+
+        Returns:
+            True if deleted, False if not found
+        """
+        profile = self.db.query(BaseProfile).filter(
+            BaseProfile.user_id == user_id
+        ).first()
+        if not profile:
+            return False
+        self.db.delete(profile)
+        self.db.commit()
+        return True
 
