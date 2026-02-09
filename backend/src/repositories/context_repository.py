@@ -199,11 +199,11 @@ class ContextRepository:
     def count_user_contexts(self, user_id: UUID, active_only: bool = True) -> int:
         """
         Count number of context profiles for a user
-        
+
         Args:
             user_id: User ID
             active_only: Whether to count only active contexts
-            
+
         Returns:
             Number of context profiles
         """
@@ -213,11 +213,46 @@ class ContextRepository:
                 ContextProfile.deleted_at.is_(None)
             )
         )
-        
+
         if active_only:
             query = query.filter(ContextProfile.is_active == True)
-        
+
         return query.count()
+
+    def soft_delete_user_contexts(self, user_id: UUID) -> int:
+        """
+        Soft delete all context profiles for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Number of context profiles soft-deleted
+        """
+        now = datetime.now(timezone.utc)
+        count = self.db.query(ContextProfile).filter(
+            ContextProfile.user_id == user_id,
+            ContextProfile.deleted_at.is_(None)
+        ).update({ContextProfile.deleted_at: now}, synchronize_session=False)
+        self.db.commit()
+        return count
+
+    def restore_user_contexts(self, user_id: UUID) -> int:
+        """
+        Restore all soft-deleted context profiles for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Number of context profiles restored
+        """
+        count = self.db.query(ContextProfile).filter(
+            ContextProfile.user_id == user_id,
+            ContextProfile.deleted_at.isnot(None)
+        ).update({ContextProfile.deleted_at: None}, synchronize_session=False)
+        self.db.commit()
+        return count
 
 
 

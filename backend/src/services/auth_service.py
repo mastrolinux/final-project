@@ -21,11 +21,26 @@ from src.core.security import (
     create_refresh_token,
     verify_token
 )
-from src.tasks.email_tasks import send_verification_email, send_password_reset_email
+from src.tasks.email_tasks import (
+    send_verification_email,
+    send_password_reset_email,
+    send_restoration_email,
+)
 from src.models.audit import AuditEventType, AuditOperation
 
 if TYPE_CHECKING:
     from src.services.audit_service import AuditService
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    """Ensure a datetime is timezone-aware UTC.
+
+    SQLite stores timestamps without timezone info. PostgreSQL preserves it.
+    This helper normalizes both cases to UTC-aware datetimes.
+    """
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 class AuthService:
@@ -108,10 +123,28 @@ class AuthService:
             Tuple of (success, error_message, auth_data)
             auth_data contains: user_id, email, is_email_verified
         """
-        # Check if email already exists
+        # Check if email already exists (active accounts)
         existing = self.auth_repo.get_by_email(email)
         if existing:
             return False, "Email already registered", None
+
+        # Check for soft-deleted recoverable account
+        deleted_user = self.auth_repo.get_by_email_including_deleted(email)
+        if deleted_user and deleted_user.deleted_at is not None:
+            from src.core.config import settings
+            from datetime import timedelta
+            retention_days = settings.DELETION_RETENTION_DAYS
+            deleted_at = _ensure_utc(deleted_user.deleted_at)
+            permanent_date = deleted_at + timedelta(days=retention_days)
+            now = datetime.now(timezone.utc)
+            if permanent_date > now:
+                # Account is recoverable
+                return False, "ACCOUNT_RECOVERABLE", {
+                    "account_recoverable": True,
+                    "permanent_deletion_date": permanent_date.isoformat(),
+                    "restore_endpoint": "/api/v1/auth/restore-account",
+                }
+            # Grace period expired, allow fresh registration
 
         # Validate password strength
         valid, message = validate_password_strength(password)
@@ -179,9 +212,27 @@ class AuthService:
             Tuple of (success, error_message, token_data)
             token_data contains: access_token, refresh_token, token_type, expires_in, user_id, email
         """
-        # Get auth user
+        # Get auth user (active accounts only)
         auth_user = self.auth_repo.get_by_email(email)
         if not auth_user:
+            # Check for soft-deleted account
+            deleted_user = self.auth_repo.get_by_email_including_deleted(email)
+            if deleted_user and deleted_user.deleted_at is not None:
+                from datetime import timedelta
+                retention_days = settings.DELETION_RETENTION_DAYS
+                deleted_at = _ensure_utc(deleted_user.deleted_at)
+                permanent_date = deleted_at + timedelta(
+                    days=retention_days
+                )
+                if permanent_date > datetime.now(timezone.utc):
+                    return False, "ACCOUNT_DELETED", {
+                        "deletion_scheduled_at": deleted_user.deleted_at.isoformat(),
+                        "permanent_deletion_date": permanent_date.isoformat(),
+                        "recovery_info": (
+                            "Register again with the same email to restore "
+                            "your account before the permanent deletion date."
+                        ),
+                    }
             return False, "Invalid email or password", None
 
         # Check if account is locked
@@ -531,4 +582,151 @@ class AuthService:
             "refresh_token": new_refresh_token,
             "token_type": "bearer",
             "expires_in": 3600  # 1 hour
+        }
+
+    def request_account_restoration(
+        self,
+        email: str
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Request account restoration after soft deletion.
+
+        Generates a time-limited restoration token and sends it via email.
+        Always returns success to prevent email enumeration.
+
+        Args:
+            email: Email of the soft-deleted account
+
+        Returns:
+            Tuple of (success, error_message)
+        """
+        from datetime import timedelta
+
+        # Look for soft-deleted account
+        auth_user = self.auth_repo.get_by_email_including_deleted(email)
+        if not auth_user or auth_user.deleted_at is None:
+            # No soft-deleted account found, but return success anyway
+            return True, None
+
+        # Check if grace period has expired
+        retention_days = settings.DELETION_RETENTION_DAYS
+        deleted_at = _ensure_utc(auth_user.deleted_at)
+        permanent_date = deleted_at + timedelta(days=retention_days)
+        if permanent_date <= datetime.now(timezone.utc):
+            # Grace period expired, return success without sending email
+            return True, None
+
+        # Generate restoration token
+        restoration_token = secrets.token_urlsafe(32)
+        self.auth_repo.set_restoration_token(
+            str(auth_user.user_id), restoration_token, expires_hours=24
+        )
+
+        # Send restoration email
+        send_restoration_email.delay(email, restoration_token)
+
+        return True, None
+
+    def confirm_account_restoration(
+        self,
+        token: str,
+        new_password: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        """
+        Confirm account restoration with token and new password.
+
+        Validates the restoration token, checks grace period, restores all
+        user records, sets new password, and issues JWT tokens.
+
+        Args:
+            token: Restoration token from email
+            new_password: New password for the restored account
+            ip_address: Client IP address (for audit logging)
+            user_agent: Client user agent (for audit logging)
+
+        Returns:
+            Tuple of (success, error_code, data)
+            error_code is one of: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED
+        """
+        from datetime import timedelta
+
+        # Find user by restoration token (including deleted accounts)
+        auth_user = self.auth_repo.get_by_restoration_token(token)
+        if not auth_user:
+            return False, "INVALID_RESTORATION_TOKEN", None
+
+        # Validate token expiry
+        if not auth_user.is_restoration_token_valid(token):
+            return False, "INVALID_RESTORATION_TOKEN", None
+
+        # Check grace period
+        retention_days = settings.DELETION_RETENTION_DAYS
+        deleted_at = _ensure_utc(auth_user.deleted_at)
+        permanent_date = deleted_at + timedelta(days=retention_days)
+        if permanent_date <= datetime.now(timezone.utc):
+            return False, "ACCOUNT_PERMANENTLY_DELETED", None
+
+        # Validate new password strength
+        valid, message = validate_password_strength(new_password)
+        if not valid:
+            return False, message, None
+
+        # Hash new password
+        password_hash = hash_password(new_password)
+
+        # Restore auth user (clear deleted_at)
+        self.auth_repo.restore_account(str(auth_user.user_id))
+
+        # Restore base profile
+        self.profile_repo.restore_profile(auth_user.user_id)
+
+        # Restore context profiles
+        from src.repositories.context_repository import ContextRepository
+        # Access context repo if available through the profile_repo's db session
+        context_repo = ContextRepository(self.auth_repo.db)
+        context_repo.restore_user_contexts(auth_user.user_id)
+
+        # Set new password
+        self.auth_repo.update_password(str(auth_user.user_id), password_hash)
+
+        # Clear restoration token
+        self.auth_repo.clear_restoration_token(str(auth_user.user_id))
+
+        # Get account type for token generation
+        base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
+        account_type = (
+            base_profile.account_type.value if base_profile else "unverified"
+        )
+
+        # Generate new JWT tokens
+        access_token = create_access_token(
+            str(auth_user.user_id),
+            auth_user.email,
+            account_type
+        )
+        refresh_token_val = create_refresh_token(str(auth_user.user_id))
+
+        now = datetime.now(timezone.utc)
+
+        # Audit: account restoration
+        self._audit(
+            event_type=AuditEventType.account_restored,
+            user_id=auth_user.user_id,
+            resource_type="account",
+            resource_id=str(auth_user.user_id),
+            operation=AuditOperation.restore,
+            changes={"restored_at": now.isoformat()},
+            ip_address=ip_address,
+            user_agent=user_agent,
+            legal_basis="contract"
+        )
+
+        return True, None, {
+            "message": "Account restored successfully",
+            "access_token": access_token,
+            "refresh_token": refresh_token_val,
+            "token_type": "bearer",
+            "restored_at": now.isoformat(),
         }
