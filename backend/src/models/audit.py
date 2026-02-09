@@ -28,6 +28,7 @@ class AuditOperation(str, enum.Enum):
     grant = "grant"
     withdraw = "withdraw"
     revoke = "revoke"
+    restore = "restore"
 
 
 class AuditEventType(str, enum.Enum):
@@ -64,6 +65,9 @@ class AuditEventType(str, enum.Enum):
 
     # Privacy events
     data_export = "privacy.data_export"
+    account_deletion_requested = "privacy.account_deletion_requested"
+    account_restored = "privacy.account_restored"
+    account_permanently_purged = "privacy.account_permanently_purged"
 
     # OAuth events
     token_revoke = "oauth.token.revoke"
@@ -71,6 +75,10 @@ class AuditEventType(str, enum.Enum):
     client_update = "oauth.client.update"
     client_delete = "oauth.client.delete"
     client_purge = "oauth.client.purge"
+
+    # Avatar events
+    avatar_upload = "avatar.upload"
+    avatar_delete = "avatar.delete"
 
 
 # SHA-256 of b"GENESIS" - used as previous_hash for the first entry in the chain
