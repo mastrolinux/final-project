@@ -176,6 +176,7 @@ class TestAuthService:
         """Test successful user registration."""
         # Setup mocks
         mock_auth_repo.get_by_email.return_value = None
+        mock_auth_repo.get_by_email_including_deleted.return_value = None
         mock_auth_user = Mock()
         mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
@@ -223,6 +224,7 @@ class TestAuthService:
     def test_register_user_weak_password(self, auth_service, mock_auth_repo):
         """Test registration fails with weak password."""
         mock_auth_repo.get_by_email.return_value = None
+        mock_auth_repo.get_by_email_including_deleted.return_value = None
         
         success, error, data = auth_service.register_user(
             email="test@example.com",
@@ -274,6 +276,7 @@ class TestAuthService:
     def test_login_invalid_credentials(self, auth_service, mock_auth_repo):
         """Test login fails with invalid credentials."""
         mock_auth_repo.get_by_email.return_value = None
+        mock_auth_repo.get_by_email_including_deleted.return_value = None
         
         success, error, data = auth_service.login(
             email="nonexistent@example.com",

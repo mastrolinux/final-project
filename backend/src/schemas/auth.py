@@ -4,6 +4,7 @@ Authentication Schemas
 Pydantic models for authentication request/response validation.
 """
 
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
@@ -340,4 +341,52 @@ class RefreshTokenResponse(BaseModel):
             }]
         }
     )
+
+
+# --- Account Restoration Schemas (MAS-42: Soft Deletion) ---
+
+
+class RestoreAccountRequest(BaseModel):
+    """Request to initiate account restoration after soft deletion."""
+    email: EmailStr = Field(..., description="Email of the soft-deleted account")
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def strip_email(cls, v):
+        """Strip whitespace from email."""
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
+
+
+class RestoreAccountResponse(BaseModel):
+    """Response for restore account request (always 202)."""
+    message: str = Field(
+        ...,
+        description="Generic message (does not reveal if email exists)"
+    )
+
+
+class RestoreAccountConfirmRequest(BaseModel):
+    """Confirm account restoration with token and new password."""
+    token: str = Field(
+        ...,
+        min_length=32,
+        description="Restoration token from email"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+    )
+
+
+class RestoreAccountConfirmResponse(BaseModel):
+    """Response for successful account restoration."""
+    message: str = Field(..., description="Restoration success message")
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: str = Field(default="bearer", description="Token type")
+    restored_at: datetime = Field(..., description="Restoration timestamp")
 

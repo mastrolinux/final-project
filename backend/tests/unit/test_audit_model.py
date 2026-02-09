@@ -22,7 +22,8 @@ class TestAuditOperation:
         """Verify all operation enum values are lowercase strings."""
         expected = {
             "create", "update", "delete", "login", "logout",
-            "register", "verify", "grant", "withdraw", "revoke"
+            "register", "verify", "grant", "withdraw", "revoke",
+            "restore"
         }
         actual = {op.value for op in AuditOperation}
         assert actual == expected

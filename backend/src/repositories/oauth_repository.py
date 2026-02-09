@@ -593,6 +593,25 @@ class OAuthRepository:
             OAuthConsent.withdrawn_at.is_(None)
         ).order_by(OAuthConsent.granted_at.desc()).all()
     
+    def withdraw_all_user_consents(self, user_id: UUID) -> int:
+        """
+        Withdraw all active consents for a user.
+        Used during account soft deletion.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Number of consents withdrawn
+        """
+        now = datetime.now(timezone.utc)
+        count = self.db.query(OAuthConsent).filter(
+            OAuthConsent.user_id == user_id,
+            OAuthConsent.withdrawn_at.is_(None)
+        ).update({OAuthConsent.withdrawn_at: now}, synchronize_session=False)
+        self.db.commit()
+        return count
+
     def has_valid_consent(
         self,
         user_id: UUID,

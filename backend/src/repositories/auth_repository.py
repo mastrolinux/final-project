@@ -6,7 +6,7 @@ Handles CRUD operations and authentication-specific queries.
 """
 
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -247,7 +247,7 @@ class AuthRepository:
     def soft_delete(self, user_id: str) -> None:
         """
         Soft delete auth user (30-day grace period).
-        
+
         Args:
             user_id: User ID from base_profiles
         """
@@ -255,4 +255,124 @@ class AuthRepository:
         if auth_user:
             auth_user.deleted_at = datetime.now(timezone.utc)
             self.db.commit()
+
+    def get_by_email_including_deleted(self, email: str) -> Optional[AuthUser]:
+        """
+        Get auth user by email, including soft-deleted accounts.
+        Used for restoration detection during registration and login.
+
+        Args:
+            email: User email address
+
+        Returns:
+            AuthUser if found (active or deleted), None otherwise
+        """
+        stmt = select(AuthUser).where(
+            AuthUser.email == email
+        )
+        result = self.db.execute(stmt)
+        return result.scalars().first()
+
+    def get_by_restoration_token(self, token: str) -> Optional[AuthUser]:
+        """
+        Get auth user by restoration token, including soft-deleted accounts.
+
+        Args:
+            token: Account restoration token
+
+        Returns:
+            AuthUser if found, None otherwise
+        """
+        stmt = select(AuthUser).where(
+            AuthUser.restoration_token == token
+        )
+        result = self.db.execute(stmt)
+        return result.scalars().first()
+
+    def set_restoration_token(self, user_id: str, token: str, expires_hours: int = 24) -> None:
+        """
+        Set account restoration token on a soft-deleted user.
+        Queries without deleted_at filter since the target account is deleted.
+
+        Args:
+            user_id: User ID from base_profiles
+            token: Restoration token
+            expires_hours: Token expiration in hours (default 24)
+        """
+        stmt = select(AuthUser).where(AuthUser.user_id == user_id)
+        result = self.db.execute(stmt)
+        auth_user = result.scalars().first()
+        if auth_user:
+            auth_user.restoration_token = token
+            auth_user.restoration_token_expires_at = (
+                datetime.now(timezone.utc) + timedelta(hours=expires_hours)
+            )
+            self.db.commit()
+
+    def clear_restoration_token(self, user_id: str) -> None:
+        """
+        Clear restoration token after use.
+        Queries without deleted_at filter since the target account may be deleted.
+
+        Args:
+            user_id: User ID from base_profiles
+        """
+        stmt = select(AuthUser).where(AuthUser.user_id == user_id)
+        result = self.db.execute(stmt)
+        auth_user = result.scalars().first()
+        if auth_user:
+            auth_user.restoration_token = None
+            auth_user.restoration_token_expires_at = None
+            self.db.commit()
+
+    def restore_account(self, user_id: str) -> None:
+        """
+        Restore a soft-deleted account by clearing deleted_at.
+
+        Args:
+            user_id: User ID from base_profiles
+        """
+        stmt = select(AuthUser).where(AuthUser.user_id == user_id)
+        result = self.db.execute(stmt)
+        auth_user = result.scalars().first()
+        if auth_user:
+            auth_user.deleted_at = None
+            self.db.commit()
+
+    def get_expired_soft_deleted_users(self, retention_days: int) -> List[AuthUser]:
+        """
+        Get soft-deleted users whose grace period has expired.
+
+        Args:
+            retention_days: Number of days after deletion before permanent purge
+
+        Returns:
+            List of AuthUser records eligible for permanent deletion
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        stmt = select(AuthUser).where(
+            AuthUser.deleted_at.isnot(None),
+            AuthUser.deleted_at < cutoff
+        )
+        result = self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    def hard_delete(self, user_id: str) -> bool:
+        """
+        Permanently delete auth user record.
+
+        Args:
+            user_id: User ID from base_profiles
+
+        Returns:
+            True if deleted, False if not found
+        """
+        stmt = select(AuthUser).where(AuthUser.user_id == user_id)
+        result = self.db.execute(stmt)
+        auth_user = result.scalars().first()
+        if auth_user:
+            self.db.delete(auth_user)
+            self.db.commit()
+            return True
+        return False
 
