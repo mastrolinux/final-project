@@ -10,7 +10,9 @@ import type {
   RegisterResponse,
   LoginRequest,
   LoginResponse,
-  RefreshTokenResponse
+  RefreshTokenResponse,
+  RestoreAccountResponse,
+  RestoreAccountConfirmResponse
 } from '@/types'
 
 export const authService = {
@@ -106,10 +108,27 @@ export const authService = {
   },
 
   /**
-   * Delete user account permanently.
+   * Request account restoration for a soft-deleted account.
+   * Always returns 202 regardless of whether the email exists (enumeration prevention).
    */
-  async deleteAccount(): Promise<void> {
-    await api.delete('/auth/account')
+  async requestAccountRestoration(email: string): Promise<RestoreAccountResponse> {
+    const response = await api.post<RestoreAccountResponse>('/auth/restore-account', { email })
+    return response.data
+  },
+
+  /**
+   * Confirm account restoration with token and new password.
+   * Returns JWT tokens on success.
+   */
+  async confirmAccountRestoration(
+    token: string,
+    newPassword: string
+  ): Promise<RestoreAccountConfirmResponse> {
+    const response = await api.post<RestoreAccountConfirmResponse>(
+      '/auth/restore-account/confirm',
+      { token, new_password: newPassword }
+    )
+    return response.data
   },
 
   /**
