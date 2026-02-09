@@ -1,0 +1,450 @@
+{
+  "app": {
+    "name": "Gestione Identita",
+    "tagline": "Sistema di identita multi-contesto orientato alla privacy"
+  },
+  "nav": {
+    "home": "Home",
+    "profile": "Profilo",
+    "contexts": "Contesti",
+    "settings": "Impostazioni",
+    "audit": "Registro attivita",
+    "admin": "Admin",
+    "adminOAuthClients": "Client OAuth",
+    "adminAuditVerify": "Integrita audit",
+    "login": "Accedi",
+    "register": "Registrati",
+    "logout": "Esci"
+  },
+  "home": {
+    "title": "Sistema di Gestione Identita",
+    "subtitle": "Gestione sicura e privacy-first delle identita su contesti multipli",
+    "cta": {
+      "getStarted": "Inizia ora",
+      "learnMore": "Scopri di piu"
+    },
+    "features": {
+      "title": "Perche sceglierci",
+      "privacy": {
+        "title": "Privacy by Design",
+        "description": "Costruito con principi ispirati al GDPR per la massima protezione dei dati"
+      },
+      "contexts": {
+        "title": "Identita multi-contesto",
+        "description": "Gestisci diverse identita per uso professionale, sociale e personale"
+      },
+      "security": {
+        "title": "Sicurezza enterprise",
+        "description": "Protocolli di crittografia e autenticazione standard di settore"
+      }
+    }
+  },
+  "auth": {
+    "login": "Accedi",
+    "register": "Registrati",
+    "logout": "Esci",
+    "email": "Indirizzo email",
+    "emailPlaceholder": "Inserisci la tua email",
+    "password": "Password",
+    "passwordPlaceholder": "Inserisci la tua password",
+    "confirmPassword": "Conferma password",
+    "confirmPasswordPlaceholder": "Conferma la tua password",
+    "preferredName": "Nome preferito",
+    "preferredNamePlaceholder": "Come preferisci essere chiamato?",
+    "forgotPassword": "Password dimenticata?",
+    "noAccount": "Non hai un account?",
+    "hasAccount": "Hai gia un account?",
+    "createAccount": "Crea account",
+    "signIn": "Accedi",
+    "signOut": "Esci",
+    "signUp": "Registrati",
+    "loggingIn": "Accesso in corso...",
+    "registering": "Creazione account...",
+    "loginSuccess": "Bentornato!",
+    "registerSuccess": "Account creato con successo",
+    "verifyEmail": "Verifica la tua email",
+    "verifyYourEmail": "Verifica la tua email",
+    "verifyEmailMessage": "Controlla la tua casella di posta e clicca sul link di verifica che ti abbiamo inviato.",
+    "verifyEmailSent": "Abbiamo inviato un link di verifica a {email}",
+    "verifyingEmail": "Verifica email in corso...",
+    "emailVerified": "Email verificata",
+    "emailVerifiedMessage": "La tua email e stata verificata con successo. Ora puoi accedere a tutte le funzionalita.",
+    "verificationFailed": "Verifica fallita",
+    "verificationEmailSent": "Una nuova email di verifica e stata inviata.",
+    "resendVerification": "Reinvia email di verifica",
+    "goToProfile": "Vai al profilo",
+    "goToLogin": "Vai al login",
+    "tryAgain": "Riprova",
+    "backToLogin": "Torna al login",
+    "forgotPasswordMessage": "Inserisci la tua email e ti invieremo le istruzioni per reimpostare la password.",
+    "sendResetLink": "Invia link di reset",
+    "checkYourEmail": "Controlla la tua email",
+    "resetEmailSent": "Se esiste un account con quella email, riceverai le istruzioni per reimpostare la password.",
+    "resetPassword": "Reimposta password",
+    "resetPasswordMessage": "Inserisci la tua nuova password qui sotto.",
+    "newPassword": "Nuova password",
+    "passwordReset": "Password reimpostata",
+    "passwordResetSuccess": "La tua password e stata reimpostata con successo. Ora puoi accedere con la nuova password.",
+    "invalidLink": "Link non valido",
+    "invalidResetToken": "Questo link di reset password non e valido o e scaduto.",
+    "requestNewLink": "Richiedi nuovo link",
+    "passwordTooShort": "La password deve contenere almeno 8 caratteri",
+    "passwordsDoNotMatch": "Le password non corrispondono",
+    "verified": "Verificato",
+    "unverified": "Non verificato",
+    "accountType": {
+      "label": "Tipo di account",
+      "verified": "Verificato",
+      "unverified": "Non verificato",
+      "pseudonymous": "Pseudonimo",
+      "verifiedDescription": "Accesso completo con verifica email",
+      "unverifiedDescription": "Accesso limitato fino alla verifica email",
+      "pseudonymousDescription": "Account anonimo con alcune restrizioni"
+    }
+  },
+  "account": {
+    "types": {
+      "verified": "Account verificato",
+      "unverified": "Account non verificato",
+      "pseudonymous": "Account pseudonimo"
+    }
+  },
+  "profile": {
+    "title": "Il mio profilo",
+    "description": "Gestisci le informazioni del tuo profilo base",
+    "baseProfile": "Profilo base",
+    "legalName": "Nome legale",
+    "primaryEmail": "Email principale",
+    "primaryPhone": "Telefono principale",
+    "preferredLanguage": "Lingua preferita",
+    "createdAt": "Membro dal",
+    "editProfile": "Modifica profilo",
+    "saveChanges": "Salva modifiche",
+    "cancel": "Annulla",
+    "viewContexts": "Vedi contesti"
+  },
+  "context": {
+    "title": "Contesti di identita",
+    "description": "Gestisci diversi contesti di identita per vari aspetti della tua vita",
+    "viewContext": "Vedi contesto: {name}",
+    "create": "Crea contesto",
+    "createNew": "Crea nuovo contesto",
+    "createDescription": "Crea un nuovo contesto di identita per uno scopo o dominio specifico",
+    "createSuccess": "Contesto creato con successo",
+    "edit": "Modifica contesto",
+    "delete": "Elimina contesto",
+    "deleteSuccess": "Contesto eliminato con successo",
+    "deleteConfirmTitle": "Eliminare il contesto?",
+    "deleteConfirmMessage": "Sei sicuro di voler eliminare questo contesto? Questa azione non puo essere annullata.",
+    "updateSuccess": "Contesto aggiornato con successo",
+    "switch": "Cambia contesto",
+    "active": "Attivo",
+    "inactive": "Inattivo",
+    "name": "Nome contesto",
+    "namePlaceholder": "es. Profilo lavorativo, Persona gaming",
+    "nameHint": "Un nome descrittivo per identificare questo contesto",
+    "type": "Tipo di contesto",
+    "displayName": "Nome visualizzato",
+    "displayNameOverride": "Nome visualizzato (override)",
+    "emailOverride": "Email (override)",
+    "phoneOverride": "Telefono (override)",
+    "bio": "Bio",
+    "bioPlaceholder": "Una breve descrizione per questo contesto",
+    "isActive": "Contesto attivo",
+    "isActiveHint": "I contesti inattivi non saranno visibili alle applicazioni di terze parti",
+    "inheritFromProfile": "Lascia vuoto per ereditare dal profilo base",
+    "overrides": "Override del profilo",
+    "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
+    "pickFromNames": "Scegli dai tuoi nomi di identita",
+    "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
+    "types": {
+      "professional": "Professionale",
+      "social": "Sociale",
+      "legal": "Legale",
+      "healthcare": "Sanitario",
+      "family": "Famiglia",
+      "custom": "Personalizzato"
+    },
+    "typeDescriptions": {
+      "professional": "Identita per lavoro, affari e carriera",
+      "social": "Social media e comunita online",
+      "legal": "Documenti ufficiali e questioni legali",
+      "healthcare": "Cartelle cliniche e operatori sanitari",
+      "family": "Famiglia e relazioni personali",
+      "custom": "Contesto personalizzato per esigenze specifiche"
+    },
+    "fields": {
+      "contextName": "Nome contesto",
+      "contextType": "Tipo contesto",
+      "displayName": "Nome visualizzato",
+      "email": "Email",
+      "phone": "Telefono",
+      "bio": "Bio"
+    },
+    "inheritance": {
+      "inherited": "Ereditato dal profilo base",
+      "overridden": "Valore personalizzato per questo contesto"
+    },
+    "restrictions": {
+      "pseudonymousLegal": "Gli account pseudonimi non possono creare contesti legali",
+      "pseudonymousHealthcare": "Gli account pseudonimi non possono creare contesti sanitari"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "description": "Gestisci le impostazioni e le preferenze del tuo account",
+    "appearance": "Aspetto",
+    "language": "Lingua",
+    "languageDescription": "Scegli la lingua di visualizzazione preferita",
+    "languageChanged": "Lingua aggiornata",
+    "theme": "Tema",
+    "themeDescription": "Scegli il tema colore preferito",
+    "themeSystem": "Predefinito di sistema",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+    "themeChanged": "Tema aggiornato",
+    "security": "Sicurezza",
+    "changePassword": "Cambia password",
+    "changePasswordDescription": "Aggiorna la password del tuo account",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "updatePassword": "Aggiorna password",
+    "passwordChanged": "Password aggiornata con successo",
+    "account": "Informazioni account",
+    "accountType": "Tipo di account",
+    "dangerZone": "Zona pericolosa",
+    "deleteAccount": "Elimina account",
+    "deleteAccountWarning": "Una volta eliminato, il tuo account e tutti i dati associati saranno rimossi permanentemente.",
+    "deleteAccountConfirmTitle": "Eliminare il tuo account?",
+    "deleteAccountConfirmMessage": "Questa azione e irreversibile. Tutti i tuoi dati, contesti e informazioni del profilo saranno eliminati permanentemente.",
+    "typeDeleteToConfirm": "Scrivi DELETE per confermare",
+    "permanentlyDelete": "Elimina permanentemente l'account",
+    "privacyData": "Privacy e dati",
+    "privacyDataDescription": "Scarica una copia di tutti i dati personali detenuti da questo sistema, come previsto dall'Articolo 15 del GDPR.",
+    "viewExportData": "Visualizza e esporta i miei dati"
+  },
+  "privacy": {
+    "title": "Esportazione dati",
+    "description": "Tutti i dati personali detenuti da questo sistema, ai sensi dell'Articolo 15 del GDPR (Diritto di accesso).",
+    "backToSettings": "Torna alle impostazioni",
+    "downloadJson": "Scarica JSON",
+    "downloading": "Preparazione...",
+    "exportedAt": "Esportato il",
+    "formatVersion": "Versione formato",
+    "legalBasis": "Base giuridica",
+    "sections": {
+      "profile": "Profilo",
+      "identityNames": "Nomi di identita",
+      "contextProfiles": "Profili di contesto",
+      "authentication": "Autenticazione",
+      "oauthConsents": "Consensi OAuth",
+      "gdprInfo": "Informazioni GDPR"
+    },
+    "profile": {
+      "userId": "ID utente",
+      "accountType": "Tipo di account",
+      "legalName": "Nome legale",
+      "primaryEmail": "Email principale",
+      "primaryPhone": "Telefono principale",
+      "preferredLanguage": "Lingua preferita",
+      "createdAt": "Creato il",
+      "updatedAt": "Ultimo aggiornamento"
+    },
+    "names": {
+      "type": "Tipo",
+      "value": "Valore",
+      "primary": "Principale",
+      "deprecated": "Deprecato",
+      "visibility": "Visibilita"
+    },
+    "contexts": {
+      "type": "Tipo",
+      "name": "Nome",
+      "active": "Attivo",
+      "inactive": "Inattivo",
+      "displayName": "Nome visualizzato",
+      "email": "Email",
+      "phone": "Telefono",
+      "bio": "Bio"
+    },
+    "auth": {
+      "email": "Email",
+      "emailVerified": "Email verificata",
+      "lastLogin": "Ultimo accesso",
+      "passwordChanged": "Password modificata",
+      "isAdmin": "Amministratore",
+      "createdAt": "Account creato il",
+      "noAuthData": "Nessun dato di autenticazione disponibile."
+    },
+    "consents": {
+      "clientId": "ID client",
+      "scopes": "Ambiti concessi",
+      "method": "Metodo di consenso",
+      "grantedAt": "Concesso il",
+      "expiresAt": "Scade il",
+      "withdrawnAt": "Revocato il",
+      "noConsents": "Nessun consenso OAuth registrato."
+    },
+    "gdpr": {
+      "processingPurposes": "Finalita del trattamento",
+      "retentionPeriods": "Periodi di conservazione",
+      "dataSubjectRights": "I tuoi diritti",
+      "dataSources": "Fonti dei dati",
+      "recipients": "Destinatari",
+      "automatedDecisions": "Processo decisionale automatizzato"
+    },
+    "values": {
+      "yes": "Si",
+      "no": "No",
+      "notSet": "Non impostato"
+    }
+  },
+  "oauth": {
+    "title": "Richiesta di autorizzazione",
+    "authorize": "Autorizza",
+    "deny": "Nega",
+    "allow": "Consenti accesso",
+    "clientWantsAccess": "{client} vuole accedere al tuo account",
+    "selectContext": "Seleziona contesto di identita",
+    "selectContextDescription": "Scegli quale profilo di identita vuoi condividere con questa applicazione.",
+    "scopes": "Permessi richiesti",
+    "processing": "Elaborazione...",
+    "processingMessage": "Attendi il completamento dell'autenticazione.",
+    "authenticationFailed": "Autenticazione fallita",
+    "errors": {
+      "missingCode": "Codice di autorizzazione mancante",
+      "stateMismatch": "Validazione di sicurezza fallita. Riprova.",
+      "access_denied": "Accesso negato",
+      "invalid_request": "Richiesta di autorizzazione non valida",
+      "unauthorized_client": "Client non autorizzato",
+      "server_error": "Errore del server",
+      "invalid_client": "Applicazione client non valida",
+      "invalid_grant": "Grant non valido"
+    }
+  },
+  "nameInput": {
+    "title": "Come preferisci essere chiamato?",
+    "placeholder": "Inserisci il tuo nome completo",
+    "continue": "Continua",
+    "detection": {
+      "title": "Abbiamo rilevato: {pattern}",
+      "confirm": "Si, e corretto",
+      "chooseDifferent": "No, scelgo un formato diverso",
+      "keepSimple": "Mantieni semplice - usa come inserito"
+    },
+    "patterns": {
+      "chinese": "Nome est-asiatico",
+      "arabic": "Nome arabo",
+      "spanish": "Nome spagnolo/portoghese",
+      "tamil": "Nome sud-indiano",
+      "mononym": "Nome singolo",
+      "western": "Nome occidentale/standard"
+    }
+  },
+  "audit": {
+    "title": "Registro attivita",
+    "description": "Rivedi lo storico delle azioni eseguite sul tuo account",
+    "filters": {
+      "eventType": "Tipo di evento",
+      "resourceType": "Tipo di risorsa",
+      "allEvents": "Tutti gli eventi",
+      "allResources": "Tutte le risorse"
+    },
+    "events": {
+      "loginSuccess": "Accesso (riuscito)",
+      "loginFailure": "Accesso (fallito)",
+      "logout": "Disconnessione",
+      "register": "Registrazione",
+      "emailVerification": "Verifica email",
+      "passwordChange": "Cambio password",
+      "passwordResetRequest": "Richiesta reset password",
+      "passwordReset": "Reset password",
+      "profileCreate": "Profilo creato",
+      "profileUpdate": "Profilo aggiornato",
+      "profileDelete": "Profilo eliminato",
+      "contextCreate": "Contesto creato",
+      "contextUpdate": "Contesto aggiornato",
+      "contextDelete": "Contesto eliminato",
+      "consentGrant": "Consenso concesso",
+      "consentWithdraw": "Consenso revocato",
+      "tokenRevoke": "Token revocato"
+    },
+    "resources": {
+      "authUser": "Autenticazione",
+      "profile": "Profilo",
+      "context": "Contesto",
+      "oauthConsent": "Consenso OAuth",
+      "oauthToken": "Token OAuth",
+      "oauthClient": "Client OAuth"
+    },
+    "empty": {
+      "title": "Nessuna voce di audit",
+      "description": "Non ci sono voci nel registro di audit corrispondenti ai tuoi filtri."
+    },
+    "pagination": {
+      "previous": "Precedente",
+      "next": "Successivo",
+      "page": "Pagina {current} di {total}",
+      "showing": "{count} di {total} voci"
+    },
+    "verify": {
+      "title": "Integrita del registro di audit",
+      "description": "Verifica la catena di hash crittografica delle voci del registro di audit per rilevare manomissioni",
+      "backToAdmin": "Torna all'admin",
+      "entriesLabel": "Voci da verificare",
+      "entriesHint": "Numero di voci recenti da controllare (1 - 10.000)",
+      "runButton": "Verifica integrita",
+      "verifying": "Verifica in corso...",
+      "limitError": "Inserisci un numero tra 1 e 10.000",
+      "chainValid": "Catena di hash valida",
+      "chainInvalid": "Manomissione rilevata",
+      "entriesVerified": "Voci verificate",
+      "errorDetails": "Dettagli errore",
+      "validExplanation": "Tutte le {count} voci del registro di audit hanno un collegamento valido nella catena di hash. Nessuna manomissione rilevata.",
+      "invalidExplanation": "La verifica della catena di hash e fallita, indicando una possibile manomissione delle voci del registro di audit."
+    }
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "deleting": "Eliminazione...",
+    "edit": "Modifica",
+    "create": "Crea",
+    "creating": "Creazione...",
+    "back": "Indietro",
+    "backToHome": "Torna alla home",
+    "next": "Avanti",
+    "submit": "Invia",
+    "confirm": "Conferma",
+    "yes": "Si",
+    "no": "No",
+    "optional": "Opzionale",
+    "required": "Obbligatorio",
+    "status": "Stato",
+    "email": "Email",
+    "phone": "Telefono",
+    "created": "Creato",
+    "sending": "Invio..."
+  },
+  "errors": {
+    "network": "Errore di rete. Controlla la tua connessione.",
+    "unauthorized": "Effettua il login per continuare.",
+    "forbidden": "Non hai i permessi per questa azione.",
+    "notFound": "La risorsa richiesta non e stata trovata.",
+    "expired": "Questo contenuto e scaduto.",
+    "validation": "Controlla i dati inseriti.",
+    "generic": "Si e verificato un errore imprevisto. Riprova.",
+    "pageNotFound": "Pagina non trovata",
+    "pageNotFoundMessage": "La pagina che cerchi non esiste o e stata spostata."
+  },
+  "notifications": {
+    "profileUpdated": "Profilo aggiornato con successo",
+    "contextCreated": "Contesto creato con successo",
+    "contextUpdated": "Contesto aggiornato con successo",
+    "contextDeleted": "Contesto eliminato con successo",
+    "loggedOut": "Sei stato disconnesso"
+  }
+}
