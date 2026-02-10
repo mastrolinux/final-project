@@ -56,9 +56,31 @@ class SupabaseStorageClient:
 
     BUCKET = "avatars"
 
-    def __init__(self, supabase_url: str, supabase_key: str):
+    def __init__(self, supabase_url: str, supabase_key: str, public_url: str = ""):
         from supabase import create_client
         self._client = create_client(supabase_url, supabase_key)
+        self._supabase_url = supabase_url.rstrip("/")
+        self._public_url = public_url.rstrip("/") if public_url else ""
+        self._ensure_bucket()
+
+    def _ensure_bucket(self) -> None:
+        """Create the avatars bucket if it does not already exist."""
+        try:
+            self._client.storage.get_bucket(self.BUCKET)
+            logger.info("Storage bucket '%s' exists", self.BUCKET)
+        except Exception:
+            try:
+                self._client.storage.create_bucket(
+                    self.BUCKET,
+                    options={"public": True},
+                )
+                logger.info("Created storage bucket '%s'", self.BUCKET)
+            except Exception as exc:
+                logger.warning(
+                    "Could not create bucket '%s': %s. "
+                    "Uploads will fail until the bucket is created manually.",
+                    self.BUCKET, exc,
+                )
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
         """Upload to Supabase Storage, overwriting any existing object at the path."""
@@ -82,8 +104,16 @@ class SupabaseStorageClient:
             return False
 
     def get_public_url(self, path: str) -> str:
-        """Return the public URL for an object in the avatars bucket."""
-        return self._client.storage.from_(self.BUCKET).get_public_url(path)
+        """Return the public URL for an object in the avatars bucket.
+
+        When a separate ``public_url`` was provided (e.g. the host-facing
+        Supabase URL that differs from the Docker-internal one), the SDK
+        URL is rewritten so that browsers can resolve it.
+        """
+        url = self._client.storage.from_(self.BUCKET).get_public_url(path)
+        if self._public_url and self._supabase_url in url:
+            url = url.replace(self._supabase_url, self._public_url, 1)
+        return url
 
 
 class InMemoryStorageClient:
