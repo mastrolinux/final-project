@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
+from src.core.storage import SupabaseStorageClient, configure_storage_client
 from src.api.v1.router import api_router
 
 # Initialize FastAPI app
@@ -28,6 +29,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Configure storage client for avatar uploads (Supabase Storage)
+if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY:
+    configure_storage_client(
+        SupabaseStorageClient(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_KEY,
+            public_url=settings.SUPABASE_PUBLIC_URL,
+        )
+    )
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
