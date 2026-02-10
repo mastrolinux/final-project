@@ -343,7 +343,7 @@ async function handleContextAvatarRemove() {
                     v-model="editForm.display_name_override"
                     id="display_name"
                     :label="t('context.displayNameOverride')"
-                    :placeholder="t('context.inheritFromProfile')"
+                    :placeholder="t('context.optionalField')"
                   />
 
                   <div v-if="availableNames.length > 0" class="name-chips-section chips-spaced">
@@ -385,7 +385,7 @@ async function handleContextAvatarRemove() {
                       v-model="editForm.bio"
                       rows="3"
                       class="textarea-field"
-                      :placeholder="t('context.inheritFromProfile')"
+                      :placeholder="t('context.bioPlaceholder')"
                     ></textarea>
                   </div>
 

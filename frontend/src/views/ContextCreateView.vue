@@ -219,7 +219,7 @@ const handleCancel = () => {
                   v-model="form.display_name_override"
                   id="display_name"
                   :label="t('context.displayNameOverride')"
-                  :placeholder="t('context.inheritFromProfile')"
+                  :placeholder="t('context.optionalField')"
                 />
 
                 <div v-if="availableNames.length > 0" class="name-chips-section">
