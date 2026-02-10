@@ -10,6 +10,8 @@ import BaseButton from '@/components/common/BaseButton.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
+import AvatarUpload from '@/components/profile/AvatarUpload.vue'
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const { t } = useI18n()
@@ -26,6 +28,7 @@ const isLoading = ref(true)
 const isEditing = ref(false)
 const isSaving = ref(false)
 const isDeleting = ref(false)
+const isUploadingAvatar = ref(false)
 const error = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 
@@ -162,6 +165,57 @@ async function deleteContext() {
     isDeleting.value = false
   }
 }
+
+async function handleContextAvatarUpload(file: File) {
+  if (!authStore.userId || !context.value) return
+
+  isUploadingAvatar.value = true
+  error.value = null
+  try {
+    const result = await contextService.uploadAvatar(
+      authStore.userId,
+      contextId.value,
+      file
+    )
+    // Update local context ref
+    context.value = {
+      ...context.value,
+      avatar_override_url: result.avatar_url,
+      avatar_override_thumbnail_url: result.avatar_thumbnail_url
+    }
+    // Update store
+    profileStore.setContextAvatar(contextId.value, result.avatar_url, result.avatar_thumbnail_url)
+    // Reload resolved profile to reflect inheritance change
+    resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
+    uiStore.addNotification({ type: 'success', message: t('context.avatar.uploadSuccess') })
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
+async function handleContextAvatarRemove() {
+  if (!authStore.userId || !context.value) return
+
+  isUploadingAvatar.value = true
+  error.value = null
+  try {
+    await contextService.deleteAvatar(authStore.userId, contextId.value)
+    context.value = {
+      ...context.value,
+      avatar_override_url: null,
+      avatar_override_thumbnail_url: null
+    }
+    profileStore.clearContextAvatar(contextId.value)
+    resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
+    uiStore.addNotification({ type: 'success', message: t('context.avatar.removeSuccess') })
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
 </script>
 
 <template>
@@ -218,6 +272,18 @@ async function deleteContext() {
               </template>
 
               <div class="fields-list">
+                <div class="field-group">
+                  <div class="field-header">
+                    <label class="field-label-sm">Avatar</label>
+                    <BaseBadge v-if="context.avatar_override_url" variant="info" size="sm">Custom</BaseBadge>
+                  </div>
+                  <AvatarDisplay
+                    :src="resolvedProfile.avatar_url"
+                    :name="resolvedProfile.display_name || ''"
+                    size="lg"
+                  />
+                </div>
+
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Display Name</label>
@@ -321,6 +387,17 @@ async function deleteContext() {
                       class="textarea-field"
                       :placeholder="t('context.inheritFromProfile')"
                     ></textarea>
+                  </div>
+
+                  <div class="form-group avatar-override-group">
+                    <label class="textarea-label">{{ t('context.avatar.override') }}</label>
+                    <AvatarUpload
+                      :currentUrl="context?.avatar_override_url"
+                      :name="editForm.display_name_override || profileStore.displayName"
+                      :isUploading="isUploadingAvatar"
+                      @upload="handleContextAvatarUpload"
+                      @remove="handleContextAvatarRemove"
+                    />
                   </div>
                 </div>
 
@@ -562,6 +639,11 @@ async function deleteContext() {
 
 .chip-name-text {
   font-size: var(--font-size-sm);
+}
+
+/* Avatar override */
+.avatar-override-group {
+  margin-top: var(--spacing-4);
 }
 
 /* Textarea */

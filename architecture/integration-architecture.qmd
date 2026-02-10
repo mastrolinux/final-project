@@ -190,7 +190,7 @@ The `/api/v1/auth/refresh` endpoint implements refresh token rotation as require
 | `email_verified` | `email_verified` | Boolean flag |
 | `phone_number` | `primary_phone` | Verified phone |
 | `phone_number_verified` | `phone_verified` | Boolean flag |
-| `picture` | `photo_url` | Profile photo URL |
+| `picture` | `avatar_url` | Profile photo URL |
 | `locale` | `preferred_language` | ISO 639-1 code |
 
 **Extensions (Non-Standard):**
@@ -755,7 +755,7 @@ Third-Party App                    Identity API
 
 | Scope | Access Level | Fields |
 |-------|-------------|--------|
-| `profile:read:basic` | Read | preferred_name, display_name, photo_url |
+| `profile:read:basic` | Read | preferred_name, display_name, avatar_url |
 | `profile:read:email` | Read | email |
 | `profile:read:phone` | Read | phone |
 | `profile:read:full` | Read | All fields except legal_name |
@@ -1064,7 +1064,7 @@ X-RateLimit-Reset: 1697472000
   "email": "r.johnson@hospital.org",
   "phone": "+1-555-0123",
   "bio": "Board-certified cardiovascular surgeon with 15 years experience",
-  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
   "credentials": ["MD", "FACS"],
   "website": "https://drjohnson.medical",
   "context": "professional",
@@ -1098,7 +1098,7 @@ Content-Language: en
   "email": "bob.johnson@email.com",
   "phone": "+1-555-0123",
   "bio": "Love hiking, photography, and craft beer",
-  "photo_url": "https://storage.example.com/users/usr_123456/casual-photo.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_123456/casual-photo.jpg",
   "interests": ["hiking", "photography", "craft-beer"],
   "context": "social",
   "language": "en",
@@ -1127,7 +1127,7 @@ Accept: application/json
   "email": "bob.johnson@email.com",
   "phone": "+1-555-0199",
   "bio": "Dad, husband, weekend warrior",
-  "photo_url": "https://storage.example.com/users/usr_123456/family-photo.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_123456/family-photo.jpg",
   "context": "family",
   "language": "en",
   "created_at": "2024-01-15T10:30:00Z",
@@ -1156,7 +1156,7 @@ X-Client-ID: linkedin_client_123
   "preferred_name": "Dr. Johnson",
   "display_name": "Dr. Robert J. Johnson, MD",
   "bio": "Board-certified cardiovascular surgeon with 15 years experience",
-  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
   "context": "professional",
   "scope": "profile:read:basic"
 }
@@ -1189,7 +1189,7 @@ X-Client-ID: healthplatform_client_456
   "phone": "+1-555-0123",
   "phone_verified": true,
   "bio": "Board-certified cardiovascular surgeon with 15 years experience",
-  "photo_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_123456/professional-headshot.jpg",
   "credentials": ["MD", "FACS"],
   "website": "https://drjohnson.medical",
   "professional_title": "Cardiovascular Surgeon",
@@ -1220,7 +1220,7 @@ Accept-Language: es-ES,es;q=0.9,en;q=0.8
   "display_name": "María García",
   "email": "maria@email.com",
   "bio": "Ingeniera de software especializada en sistemas distribuidos",
-  "photo_url": "https://storage.example.com/users/usr_789012/photo.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_789012/photo.jpg",
   "context": "base",
   "language": "es",
   "created_at": "2024-03-10T08:15:00Z",
@@ -1241,7 +1241,7 @@ Accept-Language: en-US,en;q=0.9
   "display_name": "Maria Garcia",
   "email": "maria@email.com",
   "bio": "Software engineer specializing in distributed systems",
-  "photo_url": "https://storage.example.com/users/usr_789012/photo.jpg",
+  "avatar_url": "https://storage.example.com/users/usr_789012/photo.jpg",
   "context": "base",
   "language": "en",
   "created_at": "2024-03-10T08:15:00Z",
