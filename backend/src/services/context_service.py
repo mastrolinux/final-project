@@ -9,6 +9,8 @@ from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
 from uuid import UUID
 from datetime import datetime, timezone
 
+from sqlalchemy.exc import IntegrityError
+
 from src.core.types import UNSET, _Unset
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
@@ -229,15 +231,22 @@ class ContextService:
                 raise ContextServiceError("Invalid email override format")
         
         # Create context profile
-        context = self.context_repo.create_context_profile(
-            user_id=user_id,
-            context_type=context_type,
-            context_name=context_name,
-            display_name_override=display_name_override,
-            email_override=email_override,
-            phone_override=phone_override,
-            bio=bio
-        )
+        try:
+            context = self.context_repo.create_context_profile(
+                user_id=user_id,
+                context_type=context_type,
+                context_name=context_name,
+                display_name_override=display_name_override,
+                email_override=email_override,
+                phone_override=phone_override,
+                bio=bio
+            )
+        except IntegrityError:
+            raise ContextServiceError(
+                f"Context '{context_name}' of type {context_type.value} "
+                f"already exists for this user",
+                status_code=409
+            )
 
         # Audit: context creation
         if self.audit_service:
@@ -479,8 +488,12 @@ class ContextService:
         resolved_email = base_profile.primary_email
         resolved_phone = base_profile.primary_phone
         resolved_bio = None
-        resolved_avatar_url = base_profile.avatar_url
-        resolved_avatar_thumbnail_url = base_profile.avatar_thumbnail_url
+        # Avatars are NOT inherited from the base profile.  Each context
+        # must have an explicit avatar_override or it returns None (privacy-
+        # by-design: the user's base photo is never leaked into a context
+        # without explicit consent).
+        resolved_avatar_url = None
+        resolved_avatar_thumbnail_url = None
 
         # Apply context overrides (null means inherit from base)
         if context.display_name_override is not None:

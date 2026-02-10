@@ -12,7 +12,9 @@ import type {
   ContextProfileResponse,
   ContextProfileCreate,
   ContextProfileUpdate,
-  ResolvedProfileResponse
+  ResolvedProfileResponse,
+  AvatarResponse,
+  AvatarDeleteResponse
 } from '@/types'
 
 export const contextService = {
@@ -83,6 +85,40 @@ export const contextService = {
   async getResolved(userId: string, contextId: string): Promise<ResolvedProfileResponse> {
     const response = await api.get<ResolvedProfileResponse>(
       `/profiles/${userId}/contexts/${contextId}/resolved`
+    )
+    return response.data
+  },
+
+  /**
+   * Upload or replace a context-specific avatar override.
+   * When set, this avatar takes precedence over the base avatar
+   * in resolved profiles.
+   */
+  async uploadAvatar(
+    userId: string,
+    contextId: string,
+    file: File
+  ): Promise<AvatarResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post<AvatarResponse>(
+      `/profiles/${userId}/contexts/${contextId}/avatar`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    return response.data
+  },
+
+  /**
+   * Delete a context-specific avatar override.
+   * After deletion, the resolved profile returns null for avatar fields.
+   */
+  async deleteAvatar(
+    userId: string,
+    contextId: string
+  ): Promise<AvatarDeleteResponse> {
+    const response = await api.delete<AvatarDeleteResponse>(
+      `/profiles/${userId}/contexts/${contextId}/avatar`
     )
     return response.data
   }

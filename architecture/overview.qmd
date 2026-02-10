@@ -500,7 +500,7 @@ Accept-Language: en-US,zh;q=0.9
      "phone_verified": true,
      "bio": "Board-certified cardiovascular surgeon",
      "credentials": ["MD", "FACS"],
-     "photo_url": "https://storage/professional.jpg",
+     "avatar_url": "https://storage/professional.jpg",
      "context": "professional"
    }
    ```

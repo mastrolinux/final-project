@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useProfileStore } from '@/stores'
 import { authService } from '@/services'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
 import {
   ChevronDownIcon,
   Bars3Icon,
@@ -148,6 +149,12 @@ async function handleLogout() {
       <ThemeToggle />
       <template v-if="isAuthenticated">
         <div class="user-menu">
+          <AvatarDisplay
+            v-if="profileStore.profile?.avatar_thumbnail_url"
+            :src="profileStore.profile.avatar_thumbnail_url"
+            :name="displayName"
+            size="sm"
+          />
           <span class="user-name">{{ displayName }}</span>
           <button class="btn btn-ghost btn-sm" @click="handleLogout">
             {{ t('nav.logout') }}
@@ -247,9 +254,11 @@ async function handleLogout() {
 
         <div class="mobile-drawer-footer" v-if="isAuthenticated">
           <div class="mobile-user-info">
-            <div class="mobile-user-avatar">
-              {{ displayName.charAt(0).toUpperCase() }}
-            </div>
+            <AvatarDisplay
+              :src="profileStore.profile?.avatar_thumbnail_url"
+              :name="displayName"
+              size="sm"
+            />
             <span class="mobile-user-name">{{ displayName }}</span>
           </div>
           <button class="mobile-logout-btn" @click="handleLogout">
@@ -650,20 +659,6 @@ async function handleLogout() {
   align-items: center;
   gap: var(--spacing-3);
   min-width: 0;
-}
-
-.mobile-user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary-100);
-  color: var(--color-primary-700);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  flex-shrink: 0;
 }
 
 .mobile-user-name {
