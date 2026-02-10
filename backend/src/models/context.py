@@ -75,12 +75,12 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     email_override = Column(String(255), nullable=True)
     phone_override = Column(String(50), nullable=True)
     bio = Column(Text, nullable=True)
-    
+
     # Avatar override fields (null means inherit from base profile)
     avatar_override_url = Column(Text, nullable=True)
     avatar_override_thumbnail_url = Column(Text, nullable=True)
     avatar_override_storage_path = Column(Text, nullable=True)
-    
+
     # Status
     is_active = Column(Boolean, nullable=False, default=True)
     
@@ -124,7 +124,7 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
         if self.avatar_override_url is not None:
             overrides['avatar_url'] = self.avatar_override_url
             overrides['avatar_thumbnail_url'] = self.avatar_override_thumbnail_url
-            
+
         return overrides
 
 
