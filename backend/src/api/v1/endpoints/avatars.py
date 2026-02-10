@@ -8,9 +8,12 @@ Context avatar endpoints allow per-context overrides that, when present,
 take precedence over the base avatar in the inheritance engine.
 """
 
+import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from src.core.database import get_db
 from src.core.storage import StorageClient, get_storage_client
@@ -58,11 +61,20 @@ async def upload_base_avatar(
     converted to WebP format.
     """
     file_data = await file.read()
+    logger.info("Avatar upload request: user_id=%s, file=%s, size=%d bytes",
+                user_id, file.filename, len(file_data))
     try:
         result = service.upload_base_avatar(user_id, file_data)
         return result
     except AvatarServiceError as exc:
+        logger.warning("Avatar upload rejected: %s", exc.message)
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    except Exception as exc:
+        logger.exception("Unexpected error during avatar upload for user %s", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Avatar upload failed: {exc}"
+        )
 
 
 @router.delete(
