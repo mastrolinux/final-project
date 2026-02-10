@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     
     # Supabase Configuration
     SUPABASE_URL: str = "http://127.0.0.1:54321"
+    SUPABASE_PUBLIC_URL: str = ""  # External-facing URL; defaults to SUPABASE_URL
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_JWT_SECRET: str = ""
