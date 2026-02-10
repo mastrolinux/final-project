@@ -162,12 +162,12 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     primary_email = Column[str](String(255), nullable=False, unique=True)
     primary_phone = Column[str](String(50), nullable=True)
     preferred_language = Column[str](String(10), nullable=False, default="en")
-    
+
     # Avatar fields (managed by avatar service, not directly editable)
     avatar_url = Column[str](Text, nullable=True)
     avatar_thumbnail_url = Column[str](Text, nullable=True)
     avatar_storage_path = Column[str](Text, nullable=True)
-    
+
     # Relationships
     identity_names = relationship(
         "IdentityName",
