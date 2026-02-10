@@ -20,6 +20,10 @@ services:
       - PYTHONWARNINGS=ignore::DeprecationWarning
       # Override DATABASE_URL to connect to Supabase running on host
       - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      # Override SUPABASE_URL so the Storage SDK can reach the host
+      - SUPABASE_URL=http://host.docker.internal:54321
+      # Public-facing URL for browser-resolvable avatar URLs
+      - SUPABASE_PUBLIC_URL=http://127.0.0.1:54321
       # Redis connection
       - REDIS_URL=redis://redis:6379/0
       # SMTP for Mailpit on host

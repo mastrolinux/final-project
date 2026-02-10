@@ -481,24 +481,24 @@ class ContextService:
         resolved_bio = None
         resolved_avatar_url = base_profile.avatar_url
         resolved_avatar_thumbnail_url = base_profile.avatar_thumbnail_url
-        
+
         # Apply context overrides (null means inherit from base)
         if context.display_name_override is not None:
             resolved_display_name = context.display_name_override
-        
+
         if context.email_override is not None:
             resolved_email = context.email_override
-        
+
         if context.phone_override is not None:
             resolved_phone = context.phone_override
-        
+
         if context.bio is not None:
             resolved_bio = context.bio
 
         if context.avatar_override_url is not None:
             resolved_avatar_url = context.avatar_override_url
             resolved_avatar_thumbnail_url = context.avatar_override_thumbnail_url
-        
+
         # Resolve multilingual names with fallback chain
         # Apply language-specific name resolution for each identity name
         resolved_names = []
@@ -529,9 +529,9 @@ class ContextService:
             avatar_url=resolved_avatar_url,
             avatar_thumbnail_url=resolved_avatar_thumbnail_url,
         )
-        
+
         return resolved
-    
+
     def resolve_base_profile(
         self,
         user_id: UUID,
