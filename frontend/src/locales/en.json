@@ -145,7 +145,18 @@
     "editProfile": "Edit profile",
     "saveChanges": "Save changes",
     "cancel": "Cancel",
-    "viewContexts": "View Contexts"
+    "viewContexts": "View Contexts",
+    "avatar": {
+      "title": "Profile Picture",
+      "upload": "Upload",
+      "remove": "Remove",
+      "change": "Change",
+      "uploading": "Uploading...",
+      "uploadSuccess": "Avatar uploaded successfully",
+      "removeSuccess": "Avatar removed successfully",
+      "fileTooLarge": "File size must not exceed 5 MB",
+      "invalidFormat": "Supported formats: JPEG, PNG, WebP"
+    }
   },
   "context": {
     "title": "Identity Contexts",
@@ -212,6 +223,12 @@
     "restrictions": {
       "pseudonymousLegal": "Pseudonymous accounts cannot create legal contexts",
       "pseudonymousHealthcare": "Pseudonymous accounts cannot create healthcare contexts"
+    },
+    "avatar": {
+      "override": "Avatar Override",
+      "uploadSuccess": "Context avatar uploaded successfully",
+      "uploadFailed": "Context created, but the avatar upload failed. You can retry from the detail page.",
+      "removeSuccess": "Context avatar removed successfully"
     }
   },
   "settings": {

@@ -650,11 +650,54 @@ POST /api/v1/users/profile
 
 ### File Storage: Supabase Storage
 
-**What it stores:**
+The system stores binary assets in a single Supabase Storage bucket named `avatars` with public read access enabled. The bucket is auto-created on application startup if it does not exist.
 
-- Profile photos
-- Document uploads (verification)
-- Data export archives (GDPR)
+#### Stored Asset Types
+
+| Asset Type | Description | Status |
+|------------|-------------|--------|
+| Profile avatars | Base profile photos (400x400 + 80x80 thumbnail) | Implemented |
+| Context avatar overrides | Per-context profile photos | Implemented |
+| Document uploads | Verification documents | Planned |
+| Data export archives | GDPR Art. 15 portable data packages | Planned |
+
+#### Storage Path Conventions
+
+Each upload uses a UUID nonce as a subdirectory to ensure cache-busting when an avatar is replaced.
+
+```
+avatars/                              # Supabase Storage bucket
+  {user_id}/
+    {nonce}/
+      avatar.webp                     # Base profile avatar (400x400)
+      thumbnail.webp                  # Base profile thumbnail (80x80)
+    contexts/
+      {context_id}/
+        {nonce}/
+          avatar.webp                 # Context avatar override (400x400)
+          thumbnail.webp              # Context thumbnail override (80x80)
+```
+
+#### Image Processing Pipeline
+
+Upload processing is handled by `src/core/image.py` using Pillow:
+
+1. Validate file size (max 5 MB)
+2. Parse image from magic bytes, rejecting MIME spoofing
+3. Accept only JPEG, PNG, or WebP formats
+4. Center-crop to square aspect ratio
+5. Resize to 400x400 (avatar) and 80x80 (thumbnail)
+6. Encode as WebP (quality 85)
+
+The pipeline produces a `ProcessedImage` containing both the avatar and thumbnail as byte buffers, which are uploaded as two separate storage objects.
+
+#### Avatar Inheritance and Privacy
+
+Base profile avatars and context avatar overrides are stored independently. The context resolution engine does not inherit the base profile avatar into resolved context profiles. If a context lacks an explicit avatar override, the resolved profile returns `null` for `avatar_url` and `avatar_thumbnail_url`. This prevents the user's base photo from being exposed to OAuth clients requesting a different context without the user's explicit per-context consent.
+
+#### Retention and Deletion
+
+Avatar storage objects follow the parent entity lifecycle. When a base profile or context is soft-deleted, avatar URLs become inaccessible through the API but the storage objects remain until the 30-day retention period expires and the entity is purged. On explicit avatar deletion, both the avatar and thumbnail objects are removed from storage immediately and the corresponding database columns are set to null.
 
 
 ## Data Lifecycle

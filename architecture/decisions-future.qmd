@@ -256,6 +256,36 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 - Serverless: Good for scale but complex local development
 
 
+### ADR-009: Avatar Non-Inheritance in Context Resolution
+
+**Status**: [ACCEPTED]
+
+**Context**: The context resolution engine merges base profile fields into resolved context profiles using a null-means-inherit pattern. Applying this pattern to avatar fields (`avatar_url`, `avatar_thumbnail_url`) causes the user's base profile photo to appear in every resolved context profile, including those consumed by third-party OAuth clients. A user who sets a professional headshot on their base profile would have that photo exposed to any client requesting their "Social" or "Custom" context, without explicit consent.
+
+**Decision**: Exclude avatar fields from the inheritance engine. Each context must set an explicit `avatar_override_url` or the resolved profile returns null for avatar fields.
+
+**Rationale**:
+
+- Avatar images constitute biometric data subject to heightened privacy requirements
+- The resolved profile endpoint is consumed by OAuth clients, so inherited data reaches third parties
+- Privacy-by-design requires explicit consent for data sharing across contexts
+- Other override fields (display_name, email, phone, bio) are textual and lower-risk; avatar images carry stronger identification potential
+
+**Consequences**:
+
+- [+] Privacy-by-design: user's base photo never leaks into context profiles without explicit action
+- [+] Per-context control: user decides exactly which contexts display a photo
+- [+] GDPR-inspired data minimization: resolved profiles contain only explicitly consented data
+- [-] User must upload avatar per context (no automatic reuse from base profile)
+- [-] Contexts without an explicit avatar override show initials-only display
+
+**Alternatives Considered**:
+
+- Frontend-only blocking: hide inherited avatar in the UI but still expose it through the API. Rejected because OAuth clients bypass the frontend.
+- Opt-in toggle per context: add an `inherit_avatar` boolean field. Rejected as over-engineering for the current scope; the user can upload the same image to multiple contexts if desired.
+- Per-user media gallery: allow uploading once and assigning to multiple contexts via foreign key. Deferred to future work due to complexity cost relative to the six-context-type ceiling (see Future Enhancements).
+
+
 ## Trade-offs Analysis
 
 ### Flexibility vs Complexity
@@ -318,6 +348,18 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 - Self-sovereign identity
 - User-controlled identifiers
 - Blockchain-based
+
+**Per-User Media Gallery**
+
+The current avatar system requires uploading a separate image file for each context. A media gallery would introduce a `user_media` table where each uploaded image is stored once, and context avatar assignments reference images by foreign key rather than duplicating storage objects.
+
+- Upload-once, assign-many: reduce redundant uploads for users who want the same image across multiple contexts
+- Storage deduplication and per-user quota enforcement through a single relation
+- Simplified GDPR Art. 15 data export: all user images queryable from one table
+- Gallery picker UI component for selecting from previously uploaded images during context creation or editing
+- Orphan detection required for images uploaded but never assigned to any context
+
+This enhancement was evaluated during the avatar privacy redesign (ADR-009) and deferred. The complexity cost, including a new database table, migration, CRUD endpoints, RLS policies, and a gallery picker component, is not justified given the six-context-type ceiling in the current system. A production deployment with a larger context cardinality or frequent avatar changes would benefit from this pattern.
 
 
 ### Phase 3: Advanced Access Control
