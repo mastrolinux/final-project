@@ -256,34 +256,74 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 - Serverless: Good for scale but complex local development
 
 
-### ADR-009: Avatar Non-Inheritance in Context Resolution
+### ADR-009: Native OAuth Client Implementation for Social Login
 
-**Status**: [ACCEPTED]
+**Status**: [PENDING]
 
-**Context**: The context resolution engine merges base profile fields into resolved context profiles using a null-means-inherit pattern. Applying this pattern to avatar fields (`avatar_url`, `avatar_thumbnail_url`) causes the user's base profile photo to appear in every resolved context profile, including those consumed by third-party OAuth clients. A user who sets a professional headshot on their base profile would have that photo exposed to any client requesting their "Social" or "Custom" context, without explicit consent.
+**Context**:
 
-**Decision**: Exclude avatar fields from the inheritance engine. Each context must set an explicit `avatar_override_url` or the resolved profile returns null for avatar fields.
+The system requires social login functionality to reduce friction in user onboarding and align with modern authentication expectations. Users expect to authenticate using existing Google, GitHub, or other social provider accounts rather than creating new credentials.
+
+The project has already implemented a complete OAuth 2.1 Authorization Server (Phase 3, completed January 2026), demonstrating the server-side role in the OAuth protocol. Social login represents the client-side role, creating an opportunity to implement both perspectives within the same system.
+
+Two architectural patterns exist for social login integration:
+
+- **Pattern A (Hybrid Supabase)**: Leverage Supabase's built-in social provider configuration for OAuth redirects and callbacks, then issue custom JWT tokens after processing the provider response. This approach was initially documented in the architecture but creates a dependency on Supabase for a critical authentication path.
+
+- **Pattern B (Native OAuth Client)**: Implement a native OAuth client using a library like authlib to handle the complete Authorization Code Flow with social providers. This provides full control over the OAuth client implementation without relying on Supabase's social authentication features.
+
+The decision must balance implementation complexity against architectural principles established in ADR-002 (avoiding Supabase Auth for critical systems) and the educational value of implementing both OAuth roles.
+
+**Decision**:
+
+Implement a native OAuth client (Pattern B) using the authlib library to handle social login via standard OAuth 2.0 Authorization Code Flow with PKCE.
+
+The implementation will:
+- Use authlib as the OAuth client library for protocol handling
+- Support initial MVP with Google as the first provider
+- Implement account linking logic for existing email matches
+- Issue the same custom JWT tokens used by email/password authentication
+- Store provider credentials in environment variables
+- Reuse existing auth infrastructure (auth_users table, JWT issuance, Redis sessions)
 
 **Rationale**:
 
-- Avatar images constitute biometric data subject to heightened privacy requirements
-- The resolved profile endpoint is consumed by OAuth clients, so inherited data reaches third parties
-- Privacy-by-design requires explicit consent for data sharing across contexts
-- Other override fields (display_name, email, phone, bio) are textual and lower-risk; avatar images carry stronger identification potential
+- **Educational Value**: Implementing both OAuth server (already complete) and OAuth client roles demonstrates comprehensive understanding of the OAuth 2.0/2.1 protocol from both perspectives. This strengthens the thesis contribution by showing mastery of identity federation patterns.
+- **Architectural Consistency**: ADR-002 deliberately avoided Supabase Auth to maintain control over authentication flows and demonstrate security fundamentals. Using Supabase social providers would create an inconsistency by delegating a critical authentication path to a managed service after explicitly choosing custom authentication elsewhere.
+- **Reduced Vendor Dependency**: Pattern B eliminates reliance on Supabase for authentication logic. Supabase remains solely a PostgreSQL provider, making future migrations simpler and reducing vendor lock-in for critical security infrastructure.
+- **Foundation for Future Features**: Native OAuth client implementation provides groundwork for potential Phase 4 features like OpenID Connect Provider or identity brokering, where understanding both client and server roles becomes essential.
+- **Industry-Standard Library**: authlib is a production-grade library maintained by the author of Flask-OAuthlib and implements OAuth 2.0, OAuth 2.1, and OpenID Connect standards correctly. Using an established library reduces protocol implementation risk while maintaining control over business logic.
+- **Unified Token Strategy**: Both email/password and social login will issue the same JWT token format, maintaining consistency in session management, RLS policies, and client-side token handling.
 
 **Consequences**:
 
-- [+] Privacy-by-design: user's base photo never leaks into context profiles without explicit action
-- [+] Per-context control: user decides exactly which contexts display a photo
-- [+] GDPR-inspired data minimization: resolved profiles contain only explicitly consented data
-- [-] User must upload avatar per context (no automatic reuse from base profile)
-- [-] Contexts without an explicit avatar override show initials-only display
+- [+] Complete control over OAuth client flow, including error handling, state management, and security parameters
+- [+] Demonstrates mastery of OAuth protocol from both client and server perspectives
+- [+] No Supabase dependency for authentication critical path
+- [+] Simpler migration story if switching database providers
+- [+] Foundation for future identity brokering or OIDC Provider features (Phase 4)
+- [+] Consistent JWT token format across all authentication methods
+- [+] Better alignment with ADR-002 architectural principles
+- [-] Higher implementation complexity than hybrid Supabase approach (estimated 2-3 days vs 1 day)
+- [-] Need to manage OAuth provider credentials (client ID/secret) in environment variables
+- [-] Responsible for callback endpoint security (state parameter, CSRF protection)
+- [-] Must handle provider-specific profile response formats
+- [-] Additional testing surface for OAuth client flow edge cases
 
 **Alternatives Considered**:
 
-- Frontend-only blocking: hide inherited avatar in the UI but still expose it through the API. Rejected because OAuth clients bypass the frontend.
-- Opt-in toggle per context: add an `inherit_avatar` boolean field. Rejected as over-engineering for the current scope; the user can upload the same image to multiple contexts if desired.
-- Per-user media gallery: allow uploading once and assigning to multiple contexts via foreign key. Deferred to future work due to complexity cost relative to the six-context-type ceiling (see Future Enhancements).
+- **Pattern A (Hybrid Supabase Social Providers)**: Initially documented in security-architecture.qmd. This approach leverages Supabase's OAuth configuration to handle provider redirects and callbacks, then issues custom JWT tokens after processing the response. Rejected because it creates architectural inconsistency with ADR-002's decision to avoid Supabase Auth, introduces vendor dependency for critical authentication path, and reduces educational value by delegating OAuth client implementation to a managed service.
+- **Pattern C (No Social Login)**: Implement only email/password authentication without social login support. Rejected because it reduces real-world applicability and user experience. Social login is a standard feature in modern identity systems. Eliminating it would make the thesis project less representative of production identity management systems.
+
+**Implementation Scope (MVP for Phase 5)**:
+
+- Single provider: Google OAuth 2.0
+- Authorization Code Flow with PKCE (state parameter for CSRF)
+- Account linking: detect existing email matches, require explicit user consent
+- Environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+- Endpoints: POST /api/v1/auth/social/{provider}/authorize, GET /api/v1/auth/social/{provider}/callback
+- Database: Reuse auth_users table, add optional provider_id and provider columns
+- Token issuance: Same JWT format as email/password (access + refresh tokens)
 
 
 ## Trade-offs Analysis
@@ -634,6 +674,6 @@ on the right track.
 
 
 
-**Document Status**: Living Document  
-**Last Updated**: November 1, 2025  
+**Document Status**: Living Document
+**Last Updated**: February 11, 2026
 **Next Review**: Weekly during development
