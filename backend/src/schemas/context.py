@@ -222,11 +222,11 @@ class ResolvedProfileResponse(BaseModel):
     )
     avatar_url: Optional[str] = Field(
         None,
-        description="Avatar URL (from context override or base profile)"
+        description="Avatar URL (from context override only; not inherited from base profile)"
     )
     avatar_thumbnail_url: Optional[str] = Field(
         None,
-        description="Avatar thumbnail URL (from context override or base profile)"
+        description="Avatar thumbnail URL (from context override only; not inherited from base profile)"
     )
     context_type: Optional[ContextType] = Field(
         None,

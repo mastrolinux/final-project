@@ -145,7 +145,18 @@
     "editProfile": "Modifica profilo",
     "saveChanges": "Salva modifiche",
     "cancel": "Annulla",
-    "viewContexts": "Vedi contesti"
+    "viewContexts": "Vedi contesti",
+    "avatar": {
+      "title": "Foto profilo",
+      "upload": "Carica",
+      "remove": "Rimuovi",
+      "change": "Cambia",
+      "uploading": "Caricamento...",
+      "uploadSuccess": "Avatar caricato con successo",
+      "removeSuccess": "Avatar rimosso con successo",
+      "fileTooLarge": "Il file non deve superare 5 MB",
+      "invalidFormat": "Formati supportati: JPEG, PNG, WebP"
+    }
   },
   "context": {
     "title": "Contesti di identita",
@@ -169,7 +180,7 @@
     "nameHint": "Un nome descrittivo per identificare questo contesto",
     "type": "Tipo di contesto",
     "displayName": "Nome visualizzato",
-    "displayNameOverride": "Nome visualizzato (override)",
+    "displayNameOverride": "Nome visualizzato",
     "emailOverride": "Email (override)",
     "phoneOverride": "Telefono (override)",
     "bio": "Bio",
@@ -177,6 +188,7 @@
     "isActive": "Contesto attivo",
     "isActiveHint": "I contesti inattivi non saranno visibili alle applicazioni di terze parti",
     "inheritFromProfile": "Lascia vuoto per ereditare dal profilo base",
+    "optionalField": "Opzionale",
     "overrides": "Override del profilo",
     "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
     "pickFromNames": "Scegli dai tuoi nomi di identita",
@@ -212,6 +224,12 @@
     "restrictions": {
       "pseudonymousLegal": "Gli account pseudonimi non possono creare contesti legali",
       "pseudonymousHealthcare": "Gli account pseudonimi non possono creare contesti sanitari"
+    },
+    "avatar": {
+      "override": "Override avatar",
+      "uploadSuccess": "Avatar del contesto caricato con successo",
+      "uploadFailed": "Contesto creato, ma il caricamento dell'avatar non e' riuscito. Puoi riprovare dalla pagina di dettaglio.",
+      "removeSuccess": "Avatar del contesto rimosso con successo"
     }
   },
   "settings": {

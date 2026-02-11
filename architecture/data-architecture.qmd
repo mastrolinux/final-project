@@ -28,6 +28,8 @@ erDiagram
         string primary_email
         string primary_phone
         string preferred_language
+        string avatar_url
+        string avatar_thumbnail_url
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
@@ -49,14 +51,19 @@ erDiagram
     ContextProfiles {
         uuid id PK
         uuid user_id FK
-        uuid base_profile_id FK
         enum context_type
         string context_name
-        jsonb overrides
-        enum visibility
-        array allowed_scopes
+        text display_name_override "nullable"
+        string email_override "nullable"
+        string phone_override "nullable"
+        text bio "nullable"
+        text avatar_override_url "nullable"
+        text avatar_override_thumbnail_url "nullable"
+        text avatar_override_storage_path "nullable"
+        boolean is_active
         timestamp valid_from
         timestamp valid_to
+        timestamp deleted_at "soft delete"
     }
 ```
 
@@ -138,37 +145,83 @@ erDiagram
 
 ```{mermaid}
 erDiagram
-    OAuthClients ||--o{ OAuthGrants : authorizes
-    OAuthScopes ||--o{ OAuthGrants : defines
-    
+    OAuthClients ||--o{ OAuthAuthorizationCodes : issues
+    OAuthClients ||--o{ OAuthAccessTokens : grants
+    OAuthClients ||--o{ OAuthRefreshTokens : grants
+    OAuthClients ||--o{ OAuthConsents : records
+    OAuthAccessTokens ||--o| OAuthRefreshTokens : paired
+
     OAuthClients {
         string client_id PK
         string client_secret_hash
         string client_name
+        string client_description
+        string client_uri
+        string logo_uri
         array redirect_uris
         array allowed_scopes
-        string default_context_type
+        enum default_context_type
+        boolean is_confidential
         boolean is_active
+        boolean is_first_party
+        enum token_endpoint_auth_method
     }
-    
-    OAuthGrants {
+
+    OAuthAuthorizationCodes {
+        string code PK
+        string client_id FK
+        uuid user_id FK
+        string redirect_uri
+        string scope
+        string code_challenge "PKCE S256"
+        uuid context_profile_id FK
+        timestamp expires_at
+        timestamp used_at
+    }
+
+    OAuthAccessTokens {
+        uuid id PK
+        string token_hash
+        string client_id FK
+        uuid user_id FK
+        string scope
+        uuid context_profile_id FK
+        timestamp expires_at
+        timestamp revoked_at
+    }
+
+    OAuthRefreshTokens {
+        uuid id PK
+        string token_hash
+        uuid access_token_id FK
+        string client_id FK
+        uuid user_id FK
+        string scope
+        timestamp expires_at
+        timestamp revoked_at
+        timestamp rotated_at
+        uuid replaced_by_id FK
+    }
+
+    OAuthConsents {
         uuid id PK
         uuid user_id FK
         string client_id FK
         array granted_scopes
         uuid context_profile_id FK
-        string access_token_hash
-        string refresh_token_hash
+        timestamp granted_at
         timestamp expires_at
-        timestamp revoked_at
+        timestamp withdrawn_at
+        enum consent_method
     }
-    
+
     OAuthScopes {
         string scope_name PK
         string description
-        string required_context_type
+        enum required_context_type
         enum access_level
         array allowed_fields
+        boolean is_sensitive
     }
 ```
 
@@ -650,11 +703,54 @@ POST /api/v1/users/profile
 
 ### File Storage: Supabase Storage
 
-**What it stores:**
+The system stores binary assets in a single Supabase Storage bucket named `avatars` with public read access enabled. The bucket is auto-created on application startup if it does not exist.
 
-- Profile photos
-- Document uploads (verification)
-- Data export archives (GDPR)
+#### Stored Asset Types
+
+| Asset Type | Description | Status |
+|------------|-------------|--------|
+| Profile avatars | Base profile photos (400x400 + 80x80 thumbnail) | Implemented |
+| Context avatar overrides | Per-context profile photos | Implemented |
+| Document uploads | Verification documents | Planned |
+| Data export archives | GDPR Art. 15 portable data packages | Planned |
+
+#### Storage Path Conventions
+
+Each upload uses a UUID nonce as a subdirectory to ensure cache-busting when an avatar is replaced.
+
+```
+avatars/                              # Supabase Storage bucket
+  {user_id}/
+    {nonce}/
+      avatar.webp                     # Base profile avatar (400x400)
+      thumbnail.webp                  # Base profile thumbnail (80x80)
+    contexts/
+      {context_id}/
+        {nonce}/
+          avatar.webp                 # Context avatar override (400x400)
+          thumbnail.webp              # Context thumbnail override (80x80)
+```
+
+#### Image Processing Pipeline
+
+Upload processing is handled by `src/core/image.py` using Pillow:
+
+1. Validate file size (max 5 MB)
+2. Parse image from magic bytes, rejecting MIME spoofing
+3. Accept only JPEG, PNG, or WebP formats
+4. Center-crop to square aspect ratio
+5. Resize to 400x400 (avatar) and 80x80 (thumbnail)
+6. Encode as WebP (quality 85)
+
+The pipeline produces a `ProcessedImage` containing both the avatar and thumbnail as byte buffers, which are uploaded as two separate storage objects.
+
+#### Avatar Inheritance and Privacy
+
+Base profile avatars and context avatar overrides are stored independently. The context resolution engine does not inherit the base profile avatar into resolved context profiles. If a context lacks an explicit avatar override, the resolved profile returns `null` for `avatar_url` and `avatar_thumbnail_url`. This prevents the user's base photo from being exposed to OAuth clients requesting a different context without the user's explicit per-context consent.
+
+#### Retention and Deletion
+
+Avatar storage objects follow the parent entity lifecycle. When a base profile or context is soft-deleted, avatar URLs become inaccessible through the API but the storage objects remain until the 30-day retention period expires and the entity is purged. On explicit avatar deletion, both the avatar and thumbnail objects are removed from storage immediately and the corresponding database columns are set to null.
 
 
 ## Data Lifecycle
@@ -781,11 +877,23 @@ CREATE INDEX idx_auth_users_deleted ON auth_users(deleted_at)
 CREATE INDEX idx_profiles_name_gin 
   ON identity_names USING GIN(name_value);
 
-CREATE INDEX idx_context_overrides_gin 
-  ON context_profiles USING GIN(overrides);
+-- Context profile lookups
+CREATE INDEX idx_context_profiles_user_id
+  ON context_profiles(user_id);
+CREATE INDEX idx_context_profiles_type
+  ON context_profiles(context_type);
+CREATE INDEX idx_context_profiles_active
+  ON context_profiles(is_active) WHERE is_active = true;
+CREATE INDEX idx_context_profiles_deleted
+  ON context_profiles(deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX idx_context_profiles_user_type_name
+  ON context_profiles(user_id, context_type, context_name)
+  WHERE deleted_at IS NULL;
 
 -- Temporal queries
-CREATE INDEX idx_profiles_validity 
+CREATE INDEX idx_context_profiles_validity
+  ON context_profiles(valid_from, valid_to);
+CREATE INDEX idx_profiles_validity
   ON base_profiles(valid_from, valid_to);
 
 -- Audit log queries
@@ -815,13 +923,22 @@ CREATE INDEX idx_audit_log_resource
 
 ### Database Schema Migrations (Supabase CLI)
 
-```sql
-# Migration file structure
+```
 supabase/
 |-- migrations/
-|   |-- 20240101120000_initial_schema.sql
-|   |-- 20240115140000_add_context_profiles.sql
-|   +-- 20240220161500_add_oauth_tables.sql
+|   |-- 20250104000000_initial_schema.sql
+|   |-- 20251215210114_create_context_profiles.sql
+|   |-- 20251229123515_create_auth_users.sql
+|   |-- 20251231120000_fix_function_search_path.sql
+|   |-- 20260109170328_add_family_custom_context_types.sql
+|   |-- 20260109170500_update_context_profiles_rls.sql
+|   |-- 20260116000000_create_oauth_tables.sql
+|   |-- 20260121135928_add_admin_flag.sql
+|   |-- 20260206000000_create_audit_logs.sql
+|   |-- 20260209000000_add_soft_deletion_support.sql
+|   |-- 20260209100000_add_avatar_columns.sql
+|   |-- 20260210000000_add_avatar_fields.sql
+|   +-- 20260210100000_fix_unique_context_soft_delete.sql
 |-- seed.sql
 +-- config.toml
 ```

@@ -250,6 +250,8 @@ def get_resolved_context_profile(
             phone=resolved.phone,
             preferred_language=resolved.preferred_language,
             bio=resolved.bio,
+            avatar_url=resolved.avatar_url,
+            avatar_thumbnail_url=resolved.avatar_thumbnail_url,
             context_type=resolved.context_type,
             context_name=resolved.context_name,
             identity_names=[
@@ -321,6 +323,8 @@ def get_resolved_base_profile(
             phone=resolved.phone,
             preferred_language=resolved.preferred_language,
             bio=resolved.bio,
+            avatar_url=resolved.avatar_url,
+            avatar_thumbnail_url=resolved.avatar_thumbnail_url,
             context_type=resolved.context_type,
             context_name=resolved.context_name,
             identity_names=[

@@ -130,6 +130,65 @@ export const useProfileStore = defineStore('profile', () => {
     error.value = err
   }
 
+  /**
+   * Update base profile avatar URLs after upload.
+   * Avoids a full profile re-fetch by patching the store directly.
+   */
+  function setProfileAvatar(avatarUrl: string, thumbnailUrl: string): void {
+    if (profile.value) {
+      profile.value = {
+        ...profile.value,
+        avatar_url: avatarUrl,
+        avatar_thumbnail_url: thumbnailUrl
+      }
+    }
+  }
+
+  /**
+   * Clear base profile avatar URLs after deletion.
+   */
+  function clearProfileAvatar(): void {
+    if (profile.value) {
+      profile.value = {
+        ...profile.value,
+        avatar_url: null,
+        avatar_thumbnail_url: null
+      }
+    }
+  }
+
+  /**
+   * Update a context's avatar URLs after upload.
+   */
+  function setContextAvatar(
+    contextId: string,
+    avatarUrl: string,
+    thumbnailUrl: string
+  ): void {
+    const index = contexts.value.findIndex((c) => c.id === contextId)
+    if (index !== -1) {
+      contexts.value[index] = {
+        ...contexts.value[index],
+        avatar_override_url: avatarUrl,
+        avatar_override_thumbnail_url: thumbnailUrl
+      }
+    }
+  }
+
+  /**
+   * Clear a context's avatar override URLs after deletion.
+   */
+  function clearContextAvatar(contextId: string): void {
+    const index = contexts.value.findIndex((c) => c.id === contextId)
+    if (index !== -1) {
+      contexts.value[index] = {
+        ...contexts.value[index],
+        avatar_override_url: null,
+        avatar_override_thumbnail_url: null
+      }
+    }
+  }
+
   function clearProfile(): void {
     profile.value = null
     identityNames.value = []
@@ -172,6 +231,10 @@ export const useProfileStore = defineStore('profile', () => {
     setResolvedProfile,
     setLoading,
     setError,
+    setProfileAvatar,
+    clearProfileAvatar,
+    setContextAvatar,
+    clearContextAvatar,
     clearProfile
   }
 })
