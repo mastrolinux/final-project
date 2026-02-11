@@ -96,10 +96,10 @@ class AuthRepository:
     def get_by_reset_token(self, token: str) -> Optional[AuthUser]:
         """
         Get auth user by password reset token.
-        
+
         Args:
             token: Password reset token
-            
+
         Returns:
             AuthUser if found and not deleted, None otherwise
         """
@@ -109,16 +109,35 @@ class AuthRepository:
         )
         result = self.db.execute(stmt)
         return result.scalars().first()
-    
+
+    def get_by_provider(self, provider: str, provider_id: str) -> Optional[AuthUser]:
+        """
+        Get auth user by OAuth provider and provider ID.
+
+        Args:
+            provider: OAuth provider name (e.g., 'google', 'github')
+            provider_id: Provider-specific user identifier
+
+        Returns:
+            AuthUser if found and not deleted, None otherwise
+        """
+        stmt = select(AuthUser).where(
+            AuthUser.provider == provider,
+            AuthUser.provider_id == provider_id,
+            AuthUser.deleted_at.is_(None)
+        )
+        result = self.db.execute(stmt)
+        return result.scalars().first()
+
     def create(self, email: str, password_hash: str, user_id: str) -> AuthUser:
         """
-        Create new auth user.
-        
+        Create new auth user (email/password authentication).
+
         Args:
             email: User email address
             password_hash: Argon2id hashed password
             user_id: Foreign key to base_profiles.user_id
-            
+
         Returns:
             Created AuthUser instance
         """
@@ -127,6 +146,42 @@ class AuthRepository:
             password_hash=password_hash,
             user_id=user_id,
             is_email_verified=False
+        )
+        self.db.add(auth_user)
+        self.db.commit()
+        self.db.refresh(auth_user)
+        return auth_user
+
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        user_id: str,
+        is_email_verified: bool = False,
+        provider: Optional[str] = None,
+        provider_id: Optional[str] = None
+    ) -> AuthUser:
+        """
+        Create new auth user (email/password or OAuth).
+
+        Args:
+            email: User email address
+            password_hash: Argon2id hashed password
+            user_id: Foreign key to base_profiles.user_id
+            is_email_verified: Email verification status
+            provider: Optional OAuth provider name
+            provider_id: Optional provider-specific user ID
+
+        Returns:
+            Created AuthUser instance
+        """
+        auth_user = AuthUser(
+            email=email,
+            password_hash=password_hash,
+            user_id=user_id,
+            is_email_verified=is_email_verified,
+            provider=provider,
+            provider_id=provider_id
         )
         self.db.add(auth_user)
         self.db.commit()
