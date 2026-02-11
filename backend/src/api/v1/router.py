@@ -41,6 +41,10 @@ api_router.include_router(contexts.router, tags=["Contexts"])
 from src.api.v1.endpoints import auth
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 
+# Include social auth endpoints (OAuth 2.0 client for social login)
+from src.api.v1.endpoints import social_auth
+api_router.include_router(social_auth.router, prefix="/auth", tags=["Social Authentication"])
+
 # Include OAuth 2.1 endpoints
 from src.api.v1.endpoints import oauth
 api_router.include_router(oauth.router, prefix="/oauth", tags=["OAuth 2.1"])
