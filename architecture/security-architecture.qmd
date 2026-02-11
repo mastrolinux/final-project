@@ -488,7 +488,7 @@ Authorization: Bearer <token_with_profile:read:full>
   "display_name": "Alex Johnson",
   "email": "alex@example.com",
   "bio": "Software engineer",
-  "photo_url": "https://storage/photo.jpg"
+  "avatar_url": "https://storage/photo.jpg"
   // legal_name: NEVER INCLUDED via OAuth
 }
 

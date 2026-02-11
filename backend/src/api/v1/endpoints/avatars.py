@@ -141,7 +141,7 @@ def delete_context_avatar(
     """
     Delete a context-specific avatar override.
 
-    After deletion, the context inherits the base profile avatar.
+    After deletion, the resolved profile returns null for avatar fields.
     """
     try:
         result = service.delete_context_avatar(user_id, context_id)

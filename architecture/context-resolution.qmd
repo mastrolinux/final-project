@@ -78,7 +78,7 @@ flowchart TD
     "email": "r.johnson@hospital.org",
     "bio": "Board-certified cardiovascular surgeon with 15 years experience",
     "credentials": ["MD", "FACS"],
-    "photo_url": "https://storage/professional-headshot.jpg"
+    "avatar_url": "https://storage/professional-headshot.jpg"
   }
 }
 ```
@@ -91,7 +91,7 @@ flowchart TD
     "display_name": "Bob J.",
     "preferred_name": "Bob",
     "bio": "Love hiking, photography, and craft beer",
-    "photo_url": "https://storage/casual-photo.jpg"
+    "avatar_url": "https://storage/casual-photo.jpg"
   }
 }
 ```
@@ -223,7 +223,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
   "user_id": "usr_123456",
   "display_name": "Dr. Robert J. Johnson, MD",
   "preferred_name": "Dr. Johnson",
-  "photo_url": "https://storage/professional-headshot.jpg",
+  "avatar_url": "https://storage/professional-headshot.jpg",
   "bio": "Board-certified cardiovascular surgeon",
   "context": "professional"
 }
@@ -247,7 +247,7 @@ graph TD
         BP --> F2["email<br/>bob@email.com"]
         BP --> F3["phone<br/>+1-555-0123"]
         BP --> F4["bio<br/>Surgeon and enthusiast"]
-        BP --> F5["photo_url: null"]
+        BP --> F5["avatar_url: null"]
     end
     
     subgraph CP_Group["Professional Context Override"]
@@ -255,7 +255,7 @@ graph TD
         CP --> O1["display_name<br/>Dr. Robert J. Johnson"]
         CP --> O2["email<br/>r.johnson@hospital.org"]
         CP --> O3["bio<br/>Board-certified surgeon"]
-        CP --> O4["photo_url<br/>professional.jpg"]
+        CP --> O4["avatar_url<br/>professional.jpg"]
     end
     
     subgraph RP_Group["Resolved Profile"]
@@ -265,7 +265,7 @@ graph TD
         RP --> R3["email<br/>r.johnson@hospital.org<br/>from Override"]
         RP --> R4["phone<br/>+1-555-0123<br/>from Base"]
         RP --> R5["bio<br/>Board-certified surgeon<br/>from Override"]
-        RP --> R6["photo_url<br/>professional.jpg<br/>from Override"]
+        RP --> R6["avatar_url<br/>professional.jpg<br/>from Override only"]
     end
     
     BP --> RP
@@ -283,6 +283,7 @@ graph TD
 3. **Null Handling**: Explicit null in override removes field
 4. **Nested Objects**: Deep merge for JSONB fields
 5. **Arrays**: Replace (not merge) for array fields
+6. **Avatar Exception**: `avatar_url` and `avatar_thumbnail_url` are not inherited from the base profile. If a context lacks an explicit avatar override, the resolved profile returns null for both fields. This prevents the user's base photo from leaking into context-specific profiles consumed by OAuth clients without explicit per-context consent (see ADR-009 in decisions-future.qmd).
 
 ### Example: Deep Merge for Names
 
@@ -339,7 +340,7 @@ Accept-Language: en-US
   "email": "bob.johnson@email.com",
   "phone": "+1-555-0123",
   "bio": "Surgeon and outdoor enthusiast",
-  "photo_url": null,
+  "avatar_url": null,
   "context": "base",
   "language": "en",
   "created_at": "2024-01-15T10:30:00Z",
@@ -365,7 +366,7 @@ Accept-Language: en-US
   "email": "r.johnson@hospital.org",
   "phone": "+1-555-0123",
   "bio": "Board-certified cardiovascular surgeon with 15 years experience",
-  "photo_url": "https://storage.example.com/professional-headshot.jpg",
+  "avatar_url": "https://storage.example.com/professional-headshot.jpg",
   "credentials": ["MD", "FACS"],
   "context": "professional",
   "language": "en",
@@ -391,7 +392,7 @@ Accept: application/json
   "email": "bob.johnson@email.com",
   "phone": "+1-555-0123",
   "bio": "Love hiking, photography, and craft beer",
-  "photo_url": "https://storage.example.com/casual-photo.jpg",
+  "avatar_url": "https://storage.example.com/casual-photo.jpg",
   "context": "social",
   "language": "en",
   "created_at": "2024-01-15T10:30:00Z",
@@ -460,7 +461,7 @@ flowchart LR
     ScopeFilter -->|profile:read:phone| Phone[Basic +<br/>Phone]
     ScopeFilter -->|profile:read:full| Full[All Fields<br/>Except Legal]
     
-    Basic --> Return1[display_name<br/>photo_url<br/>bio]
+    Basic --> Return1[display_name<br/>avatar_url<br/>bio]
     Email --> Return2[Basic +<br/>email]
     Phone --> Return3[Basic +<br/>phone]
     Full --> Return4[All non-sensitive<br/>fields]
@@ -476,7 +477,7 @@ flowchart LR
 
 | Scope | Allowed Fields | Use Case |
 |-------|---------------|----------|
-| `profile:read:basic` | `user_id`, `display_name`, `preferred_name`, `photo_url`, `bio` | Public sharing (social media) |
+| `profile:read:basic` | `user_id`, `display_name`, `preferred_name`, `avatar_url`, `bio` | Public sharing (social media) |
 | `profile:read:email` | Basic + `email`, `email_verified` | Email communication |
 | `profile:read:phone` | Basic + `phone`, `phone_verified` | Phone contact |
 | `profile:read:full` | All except `legal_name`, `date_of_birth` | Professional platforms |
@@ -495,7 +496,7 @@ flowchart LR
   "phone": "+1-555-0123",
   "date_of_birth": "1985-03-20",
   "bio": "Board-certified cardiovascular surgeon",
-  "photo_url": "https://storage/professional.jpg",
+  "avatar_url": "https://storage/professional.jpg",
   "credentials": ["MD", "FACS"]
 }
 ```
@@ -507,7 +508,7 @@ flowchart LR
   "preferred_name": "Dr. Johnson",
   "display_name": "Dr. Robert J. Johnson, MD",
   "bio": "Board-certified cardiovascular surgeon",
-  "photo_url": "https://storage/professional.jpg"
+  "avatar_url": "https://storage/professional.jpg"
 }
 ```
 
