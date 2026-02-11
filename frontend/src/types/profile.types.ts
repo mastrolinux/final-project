@@ -39,6 +39,8 @@ export interface ProfileResponse {
   primary_email: string
   primary_phone: string | null
   preferred_language: string
+  avatar_url: string | null
+  avatar_thumbnail_url: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -76,7 +78,21 @@ export interface ResolvedBaseProfile {
   email: string
   phone: string | null
   preferred_language: string
+  avatar_url: string | null
+  avatar_thumbnail_url: string | null
   identity_names: IdentityNameInResolved[]
+}
+
+/** Response from avatar upload endpoint. */
+export interface AvatarResponse {
+  avatar_url: string
+  avatar_thumbnail_url: string
+  message: string
+}
+
+/** Response from avatar delete endpoint. */
+export interface AvatarDeleteResponse {
+  message: string
 }
 
 export interface IdentityNameInResolved {

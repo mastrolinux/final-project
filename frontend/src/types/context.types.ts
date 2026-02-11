@@ -51,6 +51,8 @@ export interface ContextProfileResponse {
   email_override: string | null
   phone_override: string | null
   bio: string | null
+  avatar_override_url: string | null
+  avatar_override_thumbnail_url: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -67,6 +69,8 @@ export interface ResolvedProfileResponse {
   phone: string | null
   preferred_language: string
   bio: string | null
+  avatar_url: string | null
+  avatar_thumbnail_url: string | null
   context_type: ContextType | null
   context_name: string | null
   identity_names: IdentityNameInResolved[]

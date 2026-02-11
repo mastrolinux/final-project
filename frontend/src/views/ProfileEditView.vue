@@ -2,12 +2,13 @@
 import { ref, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useAuthStore, useProfileStore } from '@/stores'
+import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
 import { profileService, getErrorMessage } from '@/services'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseCard from '@/components/common/BaseCard.vue'
+import AvatarUpload from '@/components/profile/AvatarUpload.vue'
 import IdentityNameManager from '@/components/profile/IdentityNameManager.vue'
 import type { ProfileUpdate } from '@/types'
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
@@ -16,9 +17,11 @@ const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
+const uiStore = useUiStore()
 
 const isLoading = ref(true)
 const isSaving = ref(false)
+const isUploadingAvatar = ref(false)
 const error = ref<string | null>(null)
 
 const form = reactive<{
@@ -93,6 +96,36 @@ const handleSave = async () => {
 const handleCancel = () => {
   router.back()
 }
+
+const handleAvatarUpload = async (file: File) => {
+  if (!authStore.userId) return
+
+  isUploadingAvatar.value = true
+  try {
+    const result = await profileService.uploadAvatar(authStore.userId, file)
+    profileStore.setProfileAvatar(result.avatar_url, result.avatar_thumbnail_url)
+    uiStore.addNotification({ type: 'success', message: t('profile.avatar.uploadSuccess') })
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
+const handleAvatarRemove = async () => {
+  if (!authStore.userId) return
+
+  isUploadingAvatar.value = true
+  try {
+    await profileService.deleteAvatar(authStore.userId)
+    profileStore.clearProfileAvatar()
+    uiStore.addNotification({ type: 'success', message: t('profile.avatar.removeSuccess') })
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
 </script>
 
 <template>
@@ -112,6 +145,19 @@ const handleCancel = () => {
         <div v-if="error" class="alert alert-error edit-error">
           {{ error }}
         </div>
+
+        <BaseCard>
+          <template #header>
+            <h2 class="card-heading">{{ t('profile.avatar.title') }}</h2>
+          </template>
+          <AvatarUpload
+            :currentUrl="profileStore.profile?.avatar_url"
+            :name="profileStore.displayName"
+            :isUploading="isUploadingAvatar"
+            @upload="handleAvatarUpload"
+            @remove="handleAvatarRemove"
+          />
+        </BaseCard>
 
         <BaseCard>
           <template #header>
