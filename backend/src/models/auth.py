@@ -37,6 +37,8 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
         user_id: Foreign key to base_profiles.user_id (UNIQUE for 1:1 relationship)
         email: Login email (should match base_profiles.primary_email)
         password_hash: Argon2id hashed password
+        provider: OAuth provider name (NULL for email/password users)
+        provider_id: Provider-specific user identifier (NULL for email/password users)
         is_email_verified: Email verification status
         email_verified_at: Timestamp when email was verified
         verification_token: Token sent via email for verification
@@ -68,6 +70,10 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
     # Login credentials
     email = Column(String, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
+
+    # OAuth provider fields (NULL for email/password users)
+    provider = Column(String(50), nullable=True, index=True)  # 'google', 'github', etc.
+    provider_id = Column(String(255), nullable=True)  # Provider-specific user ID
     
     # Email verification
     is_email_verified = Column(Boolean, nullable=False, default=False)
