@@ -272,7 +272,74 @@ class TestInheritanceEngine:
         assert resolved.display_name is None
         assert resolved.bio is None
         assert resolved.preferred_language == sample_verified_profile.preferred_language
-    
+
+    def test_resolve_context_does_not_inherit_base_avatar(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """
+        Avatar is NOT inherited from the base profile into resolved contexts.
+
+        Privacy-by-design: a user's base avatar should never leak into a
+        context without explicit consent.  The resolved profile returns None
+        for avatar fields unless the context has its own avatar_override.
+        """
+        # Set a base profile avatar
+        sample_verified_profile.avatar_url = "https://storage.example.com/avatar.webp"
+        sample_verified_profile.avatar_thumbnail_url = "https://storage.example.com/thumb.webp"
+        db_session.commit()
+
+        # Create context with NO avatar override
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.social,
+            context_name="Social"
+        )
+
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id
+        )
+
+        # Avatar must NOT be inherited from base profile
+        assert resolved.avatar_url is None
+        assert resolved.avatar_thumbnail_url is None
+
+    def test_resolve_context_uses_explicit_avatar_override(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile
+    ):
+        """
+        When a context has an explicit avatar_override, the resolved profile
+        returns that override (not the base avatar).
+        """
+        # Set a base profile avatar
+        sample_verified_profile.avatar_url = "https://storage.example.com/base.webp"
+        sample_verified_profile.avatar_thumbnail_url = "https://storage.example.com/base-thumb.webp"
+        db_session.commit()
+
+        # Create context and set an avatar override directly
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work"
+        )
+        context.avatar_override_url = "https://storage.example.com/work.webp"
+        context.avatar_override_thumbnail_url = "https://storage.example.com/work-thumb.webp"
+        db_session.commit()
+
+        resolved = context_service.resolve_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_id=context.id
+        )
+
+        assert resolved.avatar_url == "https://storage.example.com/work.webp"
+        assert resolved.avatar_thumbnail_url == "https://storage.example.com/work-thumb.webp"
+
     def test_resolve_base_profile_without_context(
         self,
         context_service: ContextService,

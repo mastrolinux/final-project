@@ -9,6 +9,7 @@ import BaseInput from '@/components/common/BaseInput.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
+import AvatarUpload from '@/components/profile/AvatarUpload.vue'
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
 
 const { t } = useI18n()
@@ -19,6 +20,7 @@ const uiStore = useUiStore()
 
 const isSubmitting = ref(false)
 const error = ref<string | null>(null)
+const pendingAvatarFile = ref<File | null>(null)
 
 const form = reactive({
   context_type: 'professional' as ContextType,
@@ -82,6 +84,28 @@ async function handleSubmit() {
 
     profileStore.addContext(newContext)
 
+    // Upload pending avatar if the user selected one during creation.
+    // The upload requires a context ID, so it runs after create succeeds.
+    if (pendingAvatarFile.value && authStore.userId) {
+      try {
+        const result = await contextService.uploadAvatar(
+          authStore.userId,
+          newContext.id,
+          pendingAvatarFile.value
+        )
+        profileStore.setContextAvatar(newContext.id, result.avatar_url, result.avatar_thumbnail_url)
+      } catch {
+        // Context was created successfully but avatar upload failed.
+        // User can retry from the context detail page.
+        uiStore.addNotification({
+          type: 'warning',
+          message: t('context.avatar.uploadFailed')
+        })
+        router.push({ name: 'context-detail', params: { id: newContext.id } })
+        return
+      }
+    }
+
     uiStore.addNotification({
       type: 'success',
       message: t('context.createSuccess')
@@ -93,6 +117,14 @@ async function handleSubmit() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function handleAvatarSelect(file: File) {
+  pendingAvatarFile.value = file
+}
+
+function handleAvatarClear() {
+  pendingAvatarFile.value = null
 }
 
 const handleCancel = () => {
@@ -187,7 +219,7 @@ const handleCancel = () => {
                   v-model="form.display_name_override"
                   id="display_name"
                   :label="t('context.displayNameOverride')"
-                  :placeholder="t('context.inheritFromProfile')"
+                  :placeholder="t('context.optionalField')"
                 />
 
                 <div v-if="availableNames.length > 0" class="name-chips-section">
@@ -231,6 +263,18 @@ const handleCancel = () => {
                     class="textarea-field"
                     :placeholder="t('context.bioPlaceholder')"
                   ></textarea>
+                </div>
+
+                <div class="form-group avatar-override-group">
+                  <label class="textarea-label">{{ t('context.avatar.override') }}</label>
+                  <AvatarUpload
+                    :currentUrl="null"
+                    :name="form.display_name_override || profileStore.displayName"
+                    :isUploading="isSubmitting"
+                    deferred
+                    @upload="handleAvatarSelect"
+                    @remove="handleAvatarClear"
+                  />
                 </div>
               </div>
 
@@ -493,6 +537,11 @@ const handleCancel = () => {
   outline: none;
   border-color: var(--color-primary-500);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Avatar override */
+.avatar-override-group {
+  margin-top: var(--spacing-4);
 }
 
 /* Form footer */

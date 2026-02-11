@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore, useProfileStore } from '@/stores'
@@ -7,6 +7,7 @@ import { profileService, contextService, getErrorMessage } from '@/services'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseBadge from '@/components/common/BaseBadge.vue'
+import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
 import { CONTEXT_TYPE_META } from '@/types'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 
@@ -17,16 +18,6 @@ const profileStore = useProfileStore()
 
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-
-const initials = computed(() => {
-  const name = profileStore.displayName || 'User'
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-})
 
 onMounted(async () => {
   if (!authStore.userId) return
@@ -76,8 +67,12 @@ const navigateToCreateContext = () => {
       <div v-else-if="profileStore.profile" class="profile-content">
         <!-- Header Section -->
         <div class="profile-header">
-          <div class="profile-avatar">
-            {{ initials }}
+          <div class="profile-avatar-wrapper">
+            <AvatarDisplay
+              :src="profileStore.profile.avatar_url"
+              :name="profileStore.displayName"
+              size="xl"
+            />
           </div>
           <h1 class="profile-name">{{ profileStore.displayName }}</h1>
           <p class="profile-email">{{ profileStore.profile.primary_email }}</p>
@@ -194,7 +189,14 @@ const navigateToCreateContext = () => {
                   </BaseBadge>
                   <ChevronRightIcon class="context-card-arrow" />
                 </div>
-                <h3 class="context-card-title">{{ context.context_name }}</h3>
+                <div class="context-card-identity">
+                  <AvatarDisplay
+                    :src="context.avatar_override_url"
+                    :name="context.display_name_override || profileStore.displayName"
+                    size="sm"
+                  />
+                  <h3 class="context-card-title">{{ context.context_name }}</h3>
+                </div>
                 <p class="context-card-bio">{{ context.bio || 'Inherited bio' }}</p>
               </div>
             </div>
@@ -233,18 +235,10 @@ const navigateToCreateContext = () => {
   margin-bottom: var(--spacing-8);
 }
 
-.profile-avatar {
-  width: 80px;
-  height: 80px;
-  font-size: 2rem;
-  font-weight: var(--font-weight-semibold);
-  margin: 0 auto var(--spacing-4);
-  background-color: var(--color-primary-100);
-  color: var(--color-primary-700);
+.profile-avatar-wrapper {
   display: flex;
-  align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-4);
 }
 
 .profile-name {
@@ -414,10 +408,16 @@ const navigateToCreateContext = () => {
   color: var(--text-tertiary);
 }
 
+.context-card-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+}
+
 .context-card-title {
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
-  margin-bottom: var(--spacing-1);
 }
 
 .context-card-bio {

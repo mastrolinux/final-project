@@ -9,7 +9,9 @@ import type {
   ProfileUpdate,
   IdentityName,
   IdentityNameCreate,
-  ResolvedBaseProfile
+  ResolvedBaseProfile,
+  AvatarResponse,
+  AvatarDeleteResponse
 } from '@/types'
 
 export const profileService = {
@@ -86,6 +88,31 @@ export const profileService = {
    */
   async deleteName(userId: string, nameId: string): Promise<void> {
     await api.delete(`/profiles/${userId}/names/${nameId}`)
+  },
+
+  /**
+   * Upload or replace the base profile avatar.
+   * Sends file as multipart/form-data. Backend processes it to 400x400 avatar
+   * and 80x80 thumbnail in WebP format.
+   */
+  async uploadAvatar(userId: string, file: File): Promise<AvatarResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post<AvatarResponse>(
+      `/profiles/${userId}/avatar`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    return response.data
+  },
+
+  /**
+   * Delete the base profile avatar.
+   * After deletion, the profile reverts to text-based initials.
+   */
+  async deleteAvatar(userId: string): Promise<AvatarDeleteResponse> {
+    const response = await api.delete<AvatarDeleteResponse>(`/profiles/${userId}/avatar`)
+    return response.data
   }
 }
 
