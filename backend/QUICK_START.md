@@ -243,6 +243,201 @@ curl -s -X POST http://localhost:8000/api/v1/auth/login \
   | jq '.is_admin'
 ```
 
+## Google OAuth Social Login Setup
+
+The API supports social login with Google using OAuth 2.0 Authorization Code Flow with PKCE.
+
+### Step 1: Create Google OAuth Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Navigate to **APIs & Services** → **Credentials**
+4. Click **Create Credentials** → **OAuth 2.0 Client ID**
+5. If prompted, configure the OAuth consent screen:
+   - User Type: **External** (for testing)
+   - App name: "Identity Management System" (or your choice)
+   - User support email: Your email
+   - Developer contact: Your email
+   - Scopes: Add `openid`, `email`, and `profile`
+   - Test users: Add your Google account email
+6. Configure the OAuth Client:
+   - Application type: **Web application**
+   - Name: "Identity API - Local Development"
+   - Authorized redirect URIs: Add
+     ```
+     http://localhost:8000/api/v1/auth/social/google/callback
+     ```
+7. Click **Create** and note your **Client ID** and **Client Secret**
+
+### Step 2: Configure Environment Variables
+
+Edit `backend/.env` and add your Google OAuth credentials:
+
+```bash
+# Google OAuth 2.0 Credentials
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/social/google/callback
+```
+
+### Step 3: Reload Environment Variables
+
+After updating `.env`, you must **recreate** the container to load the new variables:
+
+```bash
+# Option 1: Using management scripts (recommended)
+./scripts/stop.sh
+./scripts/start.sh
+
+# Option 2: Force recreate the API container
+docker compose up -d --force-recreate api
+
+# Option 3: Full restart
+docker compose down && docker compose up -d
+```
+
+**Note**: `docker compose restart api` does NOT reload environment variables!
+
+### Step 4: Test Social Login
+
+#### Option A: Using the Frontend (Recommended)
+
+1. Start the frontend (if not running):
+   ```bash
+   cd ../frontend
+   npm run dev
+   ```
+
+2. Navigate to http://localhost:3000/login
+
+3. Click the **"Continue with Google"** button
+
+4. Sign in with your Google account
+
+5. You should be redirected back and authenticated
+
+#### Option B: Manual API Testing
+
+1. Get the authorization URL:
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/auth/social/google/authorize \
+     -H "Content-Type: application/json" | jq
+   ```
+
+   Response:
+   ```json
+   {
+     "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?...",
+     "state": "random-state-value",
+     "code_verifier": "random-verifier-value"
+   }
+   ```
+
+2. Copy the `authorization_url` and open it in a browser
+
+3. Sign in with Google and authorize the app
+
+4. Google will redirect to:
+   ```
+   http://localhost:8000/api/v1/auth/social/google/callback?code=...&state=...
+   ```
+
+5. Extract the `code` and `state` from the URL
+
+6. Exchange the code for tokens:
+   ```bash
+   curl "http://localhost:8000/api/v1/auth/social/google/callback?code=YOUR_CODE&state=YOUR_STATE&code_verifier=YOUR_VERIFIER&expected_state=YOUR_STATE" | jq
+   ```
+
+   Response:
+   ```json
+   {
+     "access_token": "eyJhbGc...",
+     "refresh_token": "eyJhbGc...",
+     "token_type": "bearer",
+     "expires_in": 1800,
+     "user_id": "uuid-here",
+     "email": "your.email@gmail.com",
+     "is_new_user": true
+   }
+   ```
+
+### Security Features
+
+- **PKCE (S256)**: Proof Key for Code Exchange prevents authorization code interception
+- **State Parameter**: CSRF protection with random state validation
+- **ID Token Verification**: Backend verifies Google's JWT signature using Google's public keys
+- **Account Linking Detection**: Prevents duplicate accounts with existing email/password users
+
+### Verify OAuth User in Database
+
+After logging in with Google, verify the user was created:
+
+```bash
+docker exec supabase_db_backend psql -U postgres -d postgres -c "
+SELECT email, provider, provider_id, is_email_verified
+FROM auth_users
+WHERE provider = 'google';
+"
+```
+
+Expected output:
+```
+         email          | provider | provider_id  | is_email_verified
+------------------------+----------+--------------+-------------------
+ your.email@gmail.com   | google   | google-12345 | t
+```
+
+### Troubleshooting
+
+#### Error: "OAuth credentials not configured"
+- Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`
+- Reload environment variables (restart is not enough):
+  ```bash
+  ./scripts/stop.sh && ./scripts/start.sh
+  # OR
+  docker compose up -d --force-recreate api
+  ```
+
+#### Error: "Redirect URI mismatch"
+- In Google Cloud Console, verify the redirect URI is exactly:
+  ```
+  http://localhost:8000/api/v1/auth/social/google/callback
+  ```
+- Note: Must be HTTP (not HTTPS) for local development
+- No trailing slash
+
+#### Error: "Account linking required"
+- This means the email already exists with email/password authentication
+- Sign in with your password instead
+- Future feature: Manual account linking will be added
+
+#### Error: "Invalid state parameter"
+- State mismatch indicates a CSRF attack or session timeout
+- Try the login flow again from the beginning
+- Ensure you're using the same browser session
+
+#### Google shows "This app isn't verified"
+- This is normal for apps in development mode
+- Click **"Advanced"** → **"Go to [App Name] (unsafe)"**
+- For production, submit your app for Google verification
+
+### Production Setup
+
+For production deployment, update the redirect URI in both places:
+
+1. **Google Cloud Console**:
+   ```
+   https://api.yourdomain.com/api/v1/auth/social/google/callback
+   ```
+
+2. **Production Environment** (`env.production.template`):
+   ```bash
+   GOOGLE_REDIRECT_URI=https://api.yourdomain.com/api/v1/auth/social/google/callback
+   ```
+
+3. Submit your app for **Google OAuth Verification** to remove the "unverified app" warning
+
 ## OAuth 2.1 Quick Test
 
 Once you have admin access, test the OAuth flow:
