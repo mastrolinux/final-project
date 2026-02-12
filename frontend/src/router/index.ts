@@ -154,6 +154,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/OAuthCallbackView.vue'),
     meta: { title: 'Authorization' }
   },
+  {
+    path: '/auth/social/:provider/callback',
+    name: 'social-auth-callback',
+    component: () => import('@/views/SocialAuthCallbackView.vue'),
+    meta: { title: 'Social Login' }
+  },
   // Audit trail (any authenticated user)
   {
     path: '/audit',

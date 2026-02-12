@@ -122,11 +122,15 @@ export const authService = {
    */
   async confirmAccountRestoration(
     token: string,
-    newPassword: string
+    newPassword?: string
   ): Promise<RestoreAccountConfirmResponse> {
+    const payload: { token: string; new_password?: string } = { token }
+    if (newPassword) {
+      payload.new_password = newPassword
+    }
     const response = await api.post<RestoreAccountConfirmResponse>(
       '/auth/restore-account/confirm',
-      { token, new_password: newPassword }
+      payload
     )
     return response.data
   },
@@ -170,6 +174,55 @@ export const authService = {
       authStore.setInitialized(true)
       return false
     }
+  },
+
+  /**
+   * Get OAuth authorization URL for social login.
+   * Returns authorization URL, state, and code_verifier to be stored in sessionStorage.
+   */
+  async getOAuthAuthorizationUrl(provider: string): Promise<{
+    authorization_url: string
+    state: string
+    code_verifier: string
+  }> {
+    const response = await api.post<{
+      authorization_url: string
+      state: string
+      code_verifier: string
+      message: string
+    }>(`/auth/social/${provider}/authorize`)
+    return {
+      authorization_url: response.data.authorization_url,
+      state: response.data.state,
+      code_verifier: response.data.code_verifier
+    }
+  },
+
+  /**
+   * Complete OAuth callback flow.
+   * Exchanges authorization code for JWT tokens.
+   */
+  async handleOAuthCallback(params: {
+    provider: string
+    code: string
+    state: string
+    code_verifier: string
+    expected_state: string
+  }): Promise<LoginResponse> {
+    const response = await api.get<LoginResponse>(
+      `/auth/social/${params.provider}/callback`,
+      {
+        params: {
+          code: params.code,
+          state: params.state,
+          code_verifier: params.code_verifier,
+          expected_state: params.expected_state
+        }
+      }
+    )
+    const authStore = useAuthStore()
+    authStore.setUser(response.data)
+    return response.data
   }
 }
 

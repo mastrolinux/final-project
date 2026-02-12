@@ -17,14 +17,56 @@ const isSuccess = ref(false)
 const error = ref<string | null>(null)
 const validationError = ref<string | null>(null)
 const errorType = ref<string | null>(null)
+const isOAuthUser = ref(false)
+const showPasswordForm = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   token.value = (route.query.token as string) || ''
   if (!token.value) {
     error.value = t('auth.restore.invalidTokenMessage')
     errorType.value = 'INVALID_RESTORATION_TOKEN'
+    return
   }
+
+  // Try to restore without password first (for OAuth users)
+  // If it's an email/password user, we'll get PASSWORD_REQUIRED error
+  await attemptOAuthRestore()
 })
+
+async function attemptOAuthRestore() {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    // Attempt restoration without password (for OAuth users)
+    await authService.confirmAccountRestoration(token.value)
+    isSuccess.value = true
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.data?.detail) {
+      const detail = err.response.data.detail
+      if (typeof detail === 'object' && detail.code) {
+        if (detail.code === 'PASSWORD_REQUIRED') {
+          // This is an email/password user, show password form
+          showPasswordForm.value = true
+        } else if (detail.code === 'ACCOUNT_PERMANENTLY_DELETED') {
+          errorType.value = detail.code
+          error.value = t('auth.restore.permanentlyDeletedMessage')
+        } else if (detail.code === 'INVALID_RESTORATION_TOKEN') {
+          errorType.value = detail.code
+          error.value = t('auth.restore.invalidTokenMessage')
+        } else {
+          error.value = detail.detail || getErrorMessage(err)
+        }
+      } else {
+        error.value = getErrorMessage(err)
+      }
+    } else {
+      error.value = getErrorMessage(err)
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 
 function validatePassword(): boolean {
   validationError.value = null
@@ -120,8 +162,17 @@ function goToLogin() {
             </div>
           </template>
 
-          <!-- Password form -->
-          <template v-else>
+          <!-- Loading state -->
+          <template v-else-if="isLoading && !showPasswordForm">
+            <div class="loading-state text-center">
+              <div class="spinner-large"></div>
+              <h2>{{ t('auth.restore.restoring') }}</h2>
+              <p class="text-secondary">{{ t('auth.restore.restoringMessage') }}</p>
+            </div>
+          </template>
+
+          <!-- Password form (only for email/password users) -->
+          <template v-else-if="showPasswordForm">
             <h1 class="form-title">{{ t('auth.restore.confirmTitle') }}</h1>
             <p class="form-description">{{ t('auth.restore.confirmDescription') }}</p>
 
@@ -224,5 +275,26 @@ function goToLogin() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
+}
+
+.loading-state {
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+.spinner-large {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-gray-200);
+  border-top-color: var(--color-primary-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: var(--spacing-4);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
