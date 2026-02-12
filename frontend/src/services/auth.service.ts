@@ -122,11 +122,15 @@ export const authService = {
    */
   async confirmAccountRestoration(
     token: string,
-    newPassword: string
+    newPassword?: string
   ): Promise<RestoreAccountConfirmResponse> {
+    const payload: { token: string; new_password?: string } = { token }
+    if (newPassword) {
+      payload.new_password = newPassword
+    }
     const response = await api.post<RestoreAccountConfirmResponse>(
       '/auth/restore-account/confirm',
-      { token, new_password: newPassword }
+      payload
     )
     return response.data
   },

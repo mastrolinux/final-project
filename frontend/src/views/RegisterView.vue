@@ -5,6 +5,7 @@ import { authService, getErrorMessage } from '@/services'
 import { useUiStore } from '@/stores'
 import type { AccountType } from '@/types'
 import axios from 'axios'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton.vue'
 
 const { t } = useI18n()
 const uiStore = useUiStore()
@@ -110,6 +111,14 @@ async function handleSubmit() {
         </div>
 
         <template v-else>
+          <!-- Social registration section -->
+          <div class="social-register-section">
+            <GoogleLoginButton @error="error = $event" />
+            <div class="divider">
+              <span>{{ t('auth.orContinueWith') }}</span>
+            </div>
+          </div>
+
           <form @submit.prevent="handleSubmit">
             <div v-if="error" class="alert alert-error mb-4">
               {{ error }}
@@ -211,6 +220,30 @@ async function handleSubmit() {
 
 .auth-header h1 {
   margin-bottom: var(--spacing-3);
+}
+
+.social-register-section {
+  margin-bottom: var(--spacing-6);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: var(--spacing-6) 0;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--color-gray-300);
+}
+
+.divider span {
+  padding: 0 var(--spacing-3);
 }
 
 .btn-block {

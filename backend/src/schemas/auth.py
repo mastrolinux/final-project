@@ -368,17 +368,20 @@ class RestoreAccountResponse(BaseModel):
 
 
 class RestoreAccountConfirmRequest(BaseModel):
-    """Confirm account restoration with token and new password."""
+    """Confirm account restoration with token and optional new password.
+
+    Password is required for email/password users but optional for OAuth users.
+    """
     token: str = Field(
         ...,
         min_length=32,
         description="Restoration token from email"
     )
-    new_password: str = Field(
-        ...,
+    new_password: Optional[str] = Field(
+        None,
         min_length=8,
         max_length=128,
-        description="New password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+        description="New password (required for email/password users, not needed for OAuth users)"
     )
 
 

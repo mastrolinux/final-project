@@ -265,10 +265,9 @@ class TestIDTokenVerification:
 class TestAuthenticateOrCreateUser:
     """Test user authentication or creation logic."""
 
-    @pytest.mark.asyncio
-    async def test_existing_oauth_user_authentication(self):
+    def test_existing_oauth_user_authentication(self):
         """Test authentication of existing OAuth user."""
-        from uuid import uuid4
+        from uuid import uuid4, UUID
         from src.models.profile import BaseProfile
 
         # Mock repositories
@@ -285,19 +284,23 @@ class TestAuthenticateOrCreateUser:
             email="user@gmail.com",
             password_hash="hashed",
             provider="google",
-            provider_id="google-123"
+            provider_id="google-123",
+            is_email_verified=True,
+            is_admin=False
         )
-        mock_auth_repo.get_by_provider = AsyncMock(return_value=existing_user)
-        mock_auth_repo.update_last_login = AsyncMock()
+        mock_auth_repo.get_by_provider = Mock(return_value=existing_user)
+        mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
+        mock_auth_repo.update_last_login = Mock()
 
         # Mock profile for account_type
         mock_profile = Mock(spec=BaseProfile)
         mock_profile.account_type = AccountType.verified
-        mock_profile_repo.get_by_user_id = AsyncMock(return_value=mock_profile)
+        mock_profile_repo.get_profile_by_id = Mock(return_value=mock_profile)
 
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
-        access_token, refresh_token, is_new_user = await service.authenticate_or_create_user(
+        (access_token, refresh_token, user_id, is_new_user,
+         account_type, is_email_verified, is_admin) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-123",
             email="user@gmail.com",
@@ -307,12 +310,15 @@ class TestAuthenticateOrCreateUser:
 
         assert access_token is not None
         assert refresh_token is not None
+        assert user_id == user_uuid
         assert is_new_user is False
+        assert account_type == "verified"
+        assert is_email_verified is True
+        assert is_admin is False
         mock_auth_repo.update_last_login.assert_called_once()
-        mock_profile_repo.get_by_user_id.assert_called_once()
+        mock_profile_repo.get_profile_by_id.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_account_linking_required(self):
+    def test_account_linking_required(self):
         """Test account linking error when email exists."""
         from uuid import uuid4
 
@@ -321,7 +327,8 @@ class TestAuthenticateOrCreateUser:
         mock_profile_repo = Mock()
 
         # No OAuth user, but email exists
-        mock_auth_repo.get_by_provider = AsyncMock(return_value=None)
+        mock_auth_repo.get_by_provider = Mock(return_value=None)
+        mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
 
         existing_email_user = AuthUser(
             id=str(uuid4()),
@@ -331,12 +338,12 @@ class TestAuthenticateOrCreateUser:
             provider=None,  # Email/password user
             provider_id=None
         )
-        mock_auth_repo.get_by_email = AsyncMock(return_value=existing_email_user)
+        mock_auth_repo.get_by_email = Mock(return_value=existing_email_user)
 
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
         with pytest.raises(AccountLinkingError) as exc_info:
-            await service.authenticate_or_create_user(
+            service.authenticate_or_create_user(
                 provider="google",
                 provider_id="google-new",
                 email="user@gmail.com",
@@ -346,22 +353,30 @@ class TestAuthenticateOrCreateUser:
 
         assert "already registered with email/password" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_create_new_oauth_user(self):
+    def test_create_new_oauth_user(self):
         """Test creating new user with OAuth credentials."""
+        from uuid import uuid4
+        from src.models.profile import BaseProfile
+
         # Mock repositories
         mock_auth_repo = Mock()
         mock_profile_repo = Mock()
 
         # No existing user
-        mock_auth_repo.get_by_provider = AsyncMock(return_value=None)
-        mock_auth_repo.get_by_email = AsyncMock(return_value=None)
-        mock_profile_repo.create_base_profile = AsyncMock()
-        mock_auth_repo.create_user = AsyncMock()
+        mock_auth_repo.get_by_provider = Mock(return_value=None)
+        mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
+        mock_auth_repo.get_by_email = Mock(return_value=None)
+
+        # Mock profile creation
+        mock_profile = Mock(spec=BaseProfile)
+        mock_profile.user_id = uuid4()
+        mock_profile_repo.create_profile = Mock(return_value=mock_profile)
+        mock_auth_repo.create_user = Mock()
 
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
-        access_token, refresh_token, is_new_user = await service.authenticate_or_create_user(
+        (access_token, refresh_token, user_id, is_new_user,
+         account_type, is_email_verified, is_admin) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-new",
             email="newuser@gmail.com",
@@ -371,10 +386,14 @@ class TestAuthenticateOrCreateUser:
 
         assert access_token is not None
         assert refresh_token is not None
+        assert user_id == str(mock_profile.user_id)
         assert is_new_user is True
+        assert account_type == "verified"
+        assert is_email_verified is True
+        assert is_admin is False
 
         # Verify profile and auth user created
-        mock_profile_repo.create_base_profile.assert_called_once()
+        mock_profile_repo.create_profile.assert_called_once()
         mock_auth_repo.create_user.assert_called_once()
 
         # Verify OAuth fields passed to create_user

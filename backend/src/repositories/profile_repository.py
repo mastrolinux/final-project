@@ -79,6 +79,20 @@ class ProfileRepository:
                 BaseProfile.deleted_at.is_(None)
             )
         ).first()
+
+    def get_profile_by_id_including_deleted(self, user_id: UUID) -> Optional[BaseProfile]:
+        """
+        Get profile by user ID, including soft-deleted profiles.
+        
+        Args:
+            user_id: User ID to look up
+            
+        Returns:
+            Profile if found, None otherwise
+        """
+        return self.db.query(BaseProfile).filter(
+            BaseProfile.user_id == user_id
+        ).first()
     
     def get_profile_by_email(self, email: str) -> Optional[BaseProfile]:
         """
