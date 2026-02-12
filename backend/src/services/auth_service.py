@@ -277,18 +277,19 @@ class AuthService:
         base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
         account_type = base_profile.account_type.value if base_profile else "unverified"
 
-        # Generate JWT tokens
-        access_token = create_access_token(
-            str(auth_user.user_id),
-            auth_user.email,
-            account_type
-        )
-        refresh_token = create_refresh_token(str(auth_user.user_id))
-
         # Check admin status from database OR environment config
         is_admin = auth_user.is_admin or (
             auth_user.email.lower() in settings.admin_emails
         )
+
+        # Generate JWT tokens
+        access_token = create_access_token(
+            str(auth_user.user_id),
+            auth_user.email,
+            account_type,
+            is_admin
+        )
+        refresh_token = create_refresh_token(str(auth_user.user_id))
 
         # Audit: login success
         self._audit(
@@ -569,11 +570,17 @@ class AuthService:
         base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
         account_type = base_profile.account_type.value if base_profile else "unverified"
 
+        # Check admin status from database OR environment config
+        is_admin = auth_user.is_admin or (
+            auth_user.email.lower() in settings.admin_emails
+        )
+
         # Step 7: Generate new tokens
         new_access_token = create_access_token(
             str(auth_user.user_id),
             auth_user.email,
-            account_type
+            account_type,
+            is_admin
         )
         new_refresh_token = create_refresh_token(str(auth_user.user_id))
 
@@ -630,25 +637,27 @@ class AuthService:
     def confirm_account_restoration(
         self,
         token: str,
-        new_password: str,
+        new_password: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
         """
-        Confirm account restoration with token and new password.
+        Confirm account restoration with token and optional new password.
 
         Validates the restoration token, checks grace period, restores all
-        user records, sets new password, and issues JWT tokens.
+        user records. For email/password users, requires and sets new password.
+        For OAuth users (Google, etc.), password is not needed.
 
         Args:
             token: Restoration token from email
-            new_password: New password for the restored account
+            new_password: New password (required for email/password users, not for OAuth)
             ip_address: Client IP address (for audit logging)
             user_agent: Client user agent (for audit logging)
 
         Returns:
             Tuple of (success, error_code, data)
-            error_code is one of: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED
+            error_code is one of: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED,
+                                  PASSWORD_REQUIRED, PROFILE_NOT_FOUND
         """
         from datetime import timedelta
 
@@ -671,19 +680,45 @@ class AuthService:
         if permanent_date <= datetime.now(timezone.utc):
             return False, "ACCOUNT_PERMANENTLY_DELETED", None
 
-        # Validate new password strength
-        valid, message = validate_password_strength(new_password)
-        if not valid:
-            return False, message, None
+        # Check if this is an OAuth user (has provider like 'google')
+        is_oauth_user = auth_user.provider is not None
 
-        # Hash new password
-        password_hash = hash_password(new_password)
+        # For email/password users, password is required
+        if not is_oauth_user and not new_password:
+            return False, "PASSWORD_REQUIRED", None
+
+        # For email/password users, validate and hash new password
+        if not is_oauth_user:
+            valid, message = validate_password_strength(new_password)
+            if not valid:
+                return False, message, None
+            password_hash = hash_password(new_password)
 
         # Restore auth user (clear deleted_at)
         self.auth_repo.restore_account(str(auth_user.user_id))
 
-        # Restore base profile
-        self.profile_repo.restore_profile(auth_user.user_id)
+        # Restore base profile - check if it succeeds
+        profile_restored = self.profile_repo.restore_profile(auth_user.user_id)
+        if not profile_restored:
+            # Profile restoration failed - check why
+            # Use method that includes deleted profiles to verify existence
+            existing_profile = self.profile_repo.get_profile_by_id_including_deleted(auth_user.user_id)
+            if not existing_profile:
+                return False, "PROFILE_NOT_FOUND", {
+                    "message": f"Base profile for user {auth_user.user_id} not found. Data integrity issue - auth_user exists but base_profile is missing.",
+                    "user_id": str(auth_user.user_id)
+                }
+            # Profile exists but restoration failed - check if already restored
+            if existing_profile.deleted_at is None:
+                # Profile was already restored, continue
+                pass
+            else:
+                # Profile is still deleted despite restoration attempt - database error
+                return False, "PROFILE_NOT_FOUND", {
+                    "message": f"Failed to restore base profile for user {auth_user.user_id}. Database error or constraint violation.",
+                    "user_id": str(auth_user.user_id),
+                    "profile_deleted_at": existing_profile.deleted_at.isoformat()
+                }
 
         # Restore context profiles
         from src.repositories.context_repository import ContextRepository
@@ -691,23 +726,35 @@ class AuthService:
         context_repo = ContextRepository(self.auth_repo.db)
         context_repo.restore_user_contexts(auth_user.user_id)
 
-        # Set new password
-        self.auth_repo.update_password(str(auth_user.user_id), password_hash)
+        # Set new password only for email/password users
+        if not is_oauth_user:
+            self.auth_repo.update_password(str(auth_user.user_id), password_hash)
 
         # Clear restoration token
         self.auth_repo.clear_restoration_token(str(auth_user.user_id))
 
         # Get account type for token generation
         base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
-        account_type = (
-            base_profile.account_type.value if base_profile else "unverified"
+        if not base_profile:
+            # This should not happen if restore succeeded, but check anyway
+            return False, "PROFILE_NOT_FOUND", {
+                "message": f"Base profile for user {auth_user.user_id} not found after restoration. This should not happen.",
+                "user_id": str(auth_user.user_id)
+            }
+        
+        account_type = base_profile.account_type.value
+
+        # Check admin status from database OR environment config
+        is_admin = auth_user.is_admin or (
+            auth_user.email.lower() in settings.admin_emails
         )
 
         # Generate new JWT tokens
         access_token = create_access_token(
             str(auth_user.user_id),
             auth_user.email,
-            account_type
+            account_type,
+            is_admin
         )
         refresh_token_val = create_refresh_token(str(auth_user.user_id))
 

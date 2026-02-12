@@ -220,16 +220,17 @@ class SocialAuthService:
         client = OAuth2Client(
             client_id=settings.GOOGLE_CLIENT_ID,
             client_secret=settings.GOOGLE_CLIENT_SECRET,
-            redirect_uri=settings.GOOGLE_REDIRECT_URI,
-            code_verifier=code_verifier  # Include PKCE verifier
+            redirect_uri=settings.GOOGLE_REDIRECT_URI
         )
 
         try:
             # Exchange authorization code for tokens
+            # PKCE: code_verifier must be passed to fetch_token(), not OAuth2Client constructor
             token_response = client.fetch_token(
                 url=self.GOOGLE_TOKEN_ENDPOINT,
                 grant_type="authorization_code",
-                code=code
+                code=code,
+                code_verifier=code_verifier  # Include PKCE verifier in token exchange
             )
 
             return token_response
@@ -278,7 +279,7 @@ class SocialAuthService:
         except Exception as e:
             raise OAuthTokenVerificationError(f"Unexpected error verifying ID token: {str(e)}")
 
-    async def authenticate_or_create_user(
+    def authenticate_or_create_user(
         self,
         provider: str,
         provider_id: str,
@@ -287,7 +288,7 @@ class SocialAuthService:
         email_verified: bool = False,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
-    ) -> Tuple[str, str, bool]:
+    ) -> Tuple[str, str, str, bool, str, bool, bool]:
         """
         Authenticate existing OAuth user or create new account.
 
@@ -307,27 +308,31 @@ class SocialAuthService:
             user_agent: Optional user agent for audit
 
         Returns:
-            Tuple of (access_token, refresh_token, is_new_user)
+            Tuple of (access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin)
 
         Raises:
             AccountLinkingError: If account linking fails
         """
-        # Check if OAuth account already exists
-        existing_oauth_user = await self.auth_repo.get_by_provider(provider, provider_id)
+        # Check if OAuth account already exists (active accounts only)
+        existing_oauth_user = self.auth_repo.get_by_provider(provider, provider_id)
 
         if existing_oauth_user:
             # Existing OAuth user - authenticate directly
-            user_id_str = existing_oauth_user.user_id
+            user_id_str = str(existing_oauth_user.user_id)
 
             # Get profile for account_type
-            profile = await self.profile_repo.get_by_user_id(user_id_str)
+            profile = self.profile_repo.get_profile_by_id(UUID(user_id_str))
             account_type = profile.account_type.value if profile else "unverified"
 
+            # Get admin status (check DB flag + ADMIN_USER_EMAILS fallback)
+            from src.core.config import settings
+            is_admin = existing_oauth_user.is_admin or email.lower() in settings.admin_emails
+
             # Update last login timestamp
-            await self.auth_repo.update_last_login(UUID(user_id_str))
+            self.auth_repo.update_last_login(UUID(user_id_str))
 
             # Issue JWT tokens
-            access_token = create_access_token(user_id=user_id_str, email=email, account_type=account_type)
+            access_token = create_access_token(user_id=user_id_str, email=email, account_type=account_type, is_admin=is_admin)
             refresh_token = create_refresh_token(user_id=user_id_str)
 
             # Audit login event
@@ -342,10 +347,30 @@ class SocialAuthService:
                 legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
             )
 
-            return access_token, refresh_token, False
+            return access_token, refresh_token, user_id_str, False, account_type, existing_oauth_user.is_email_verified, is_admin
+
+        # Check for soft-deleted OAuth account (restoration needed)
+        deleted_oauth_user = self.auth_repo.get_by_provider_including_deleted(provider, provider_id)
+        if deleted_oauth_user and deleted_oauth_user.deleted_at is not None:
+            from src.core.config import settings
+            from datetime import timedelta
+
+            retention_days = settings.DELETION_RETENTION_DAYS
+            deleted_at = deleted_oauth_user.deleted_at
+            if deleted_at.tzinfo is None:
+                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+
+            permanent_date = deleted_at + timedelta(days=retention_days)
+
+            # Only offer restoration if within grace period
+            if permanent_date > datetime.now(timezone.utc):
+                raise AccountLinkingError(
+                    f"Account for {provider} user {provider_id} was deleted on {deleted_at.isoformat()}. "
+                    f"ACCOUNT_RECOVERABLE|{permanent_date.isoformat()}"
+                )
 
         # Check if email already exists (potential account linking)
-        existing_email_user = await self.auth_repo.get_by_email(email)
+        existing_email_user = self.auth_repo.get_by_email(email)
 
         if existing_email_user:
             # Account linking scenario: email exists but not linked to this OAuth provider
@@ -357,26 +382,31 @@ class SocialAuthService:
             )
 
         # Create new user with OAuth credentials
-        # Generate user_id for new profile
-        user_id = str(uuid4())
+        # Determine account type based on email verification
         account_type = AccountType.verified if email_verified else AccountType.unverified
 
         # Create base profile first
-        await self.profile_repo.create_base_profile(
-            user_id=user_id,
-            primary_email=email,
+        # Note: BaseProfile model will auto-generate user_id
+        profile = self.profile_repo.create_profile(
             account_type=account_type,
+            primary_email=email,
             preferred_language="en",
-            identity_names={"display_name": {"en": display_name}},
-            created_at=datetime.now(timezone.utc)
+            legal_name=display_name if email_verified else None  # Only set legal_name if verified
         )
+
+        # Get the generated user_id and ensure it's a string
+        user_id_str = str(profile.user_id)
 
         # Create auth_user with OAuth credentials
         # OAuth users don't have passwords, but we hash a random token for schema compatibility
         random_password_hash = hash_password(secrets.token_urlsafe(32))
 
-        await self.auth_repo.create_user(
-            user_id=user_id,
+        # Check if user should be admin (from ADMIN_USER_EMAILS)
+        from src.core.config import settings
+        is_admin = email.lower() in settings.admin_emails
+
+        self.auth_repo.create_user(
+            user_id=user_id_str,
             email=email,
             password_hash=random_password_hash,  # Not used for OAuth users
             is_email_verified=email_verified,
@@ -384,16 +414,16 @@ class SocialAuthService:
             provider_id=provider_id
         )
 
-        # Issue JWT tokens
-        access_token = create_access_token(user_id=user_id, email=email, account_type=account_type.value)
-        refresh_token = create_refresh_token(user_id=user_id)
+        # Issue JWT tokens with admin status
+        access_token = create_access_token(user_id=user_id_str, email=email, account_type=account_type.value, is_admin=is_admin)
+        refresh_token = create_refresh_token(user_id=user_id_str)
 
         # Audit account creation
         self._audit(
             event_type=AuditEventType.register,
-            user_id=UUID(user_id),
+            user_id=UUID(user_id_str),
             resource_type="auth_user",
-            resource_id=user_id,
+            resource_id=user_id_str,
             operation=AuditOperation.create,
             changes={
                 "provider": provider,
@@ -405,4 +435,4 @@ class SocialAuthService:
             legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
         )
 
-        return access_token, refresh_token, True
+        return access_token, refresh_token, user_id_str, True, account_type.value, email_verified, is_admin

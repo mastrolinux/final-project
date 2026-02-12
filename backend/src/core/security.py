@@ -116,7 +116,7 @@ class TokenData(BaseModel):
     jti: str  # Unique token ID for revocation tracking
 
 
-def create_access_token(user_id: str, email: str, account_type: str) -> str:
+def create_access_token(user_id: str, email: str, account_type: str, is_admin: bool = False) -> str:
     """
     Generate JWT access token with HS256 signing.
     
@@ -124,6 +124,7 @@ def create_access_token(user_id: str, email: str, account_type: str) -> str:
     - sub: user_id
     - email: user email
     - account_type: verified/unverified/pseudonymous
+    - is_admin: admin privilege flag
     - token_type: "access"
     - exp: expiration timestamp (1 hour)
     - iat: issued at timestamp
@@ -133,6 +134,7 @@ def create_access_token(user_id: str, email: str, account_type: str) -> str:
         user_id: User identifier from auth_users.user_id
         email: User email
         account_type: Account verification level
+        is_admin: Admin privilege flag
         
     Returns:
         Encoded JWT token string
@@ -142,6 +144,7 @@ def create_access_token(user_id: str, email: str, account_type: str) -> str:
         "sub": user_id,
         "email": email,
         "account_type": account_type,
+        "is_admin": is_admin,
         "token_type": "access",
         "exp": expire,
         "iat": datetime.now(timezone.utc),
