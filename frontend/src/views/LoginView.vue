@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { authService, getErrorMessage } from '@/services'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton.vue'
 import axios from 'axios'
 
 const router = useRouter()
@@ -93,6 +94,14 @@ async function handleSubmit() {
         </div>
 
         <template v-else>
+          <!-- Social Login Options -->
+          <div class="social-login-section">
+            <GoogleLoginButton @error="error = $event" />
+            <div class="divider">
+              <span>{{ t('auth.orContinueWith') }}</span>
+            </div>
+          </div>
+
           <form @submit.prevent="handleSubmit">
             <div v-if="error" class="alert alert-error mb-4">
               {{ error }}
@@ -202,5 +211,29 @@ async function handleSubmit() {
 .deleted-account-card .btn {
   display: block;
   width: 100%;
+}
+
+.social-login-section {
+  margin-bottom: var(--spacing-6);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: var(--spacing-6) 0;
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-gray-300);
+}
+
+.divider span {
+  padding: 0 var(--spacing-4);
 }
 </style>
