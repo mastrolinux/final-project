@@ -280,11 +280,23 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/social/google/callback
 ```
 
-### Step 3: Restart the Backend
+### Step 3: Reload Environment Variables
+
+After updating `.env`, you must **recreate** the container to load the new variables:
 
 ```bash
-docker compose restart api
+# Option 1: Using management scripts (recommended)
+./scripts/stop.sh
+./scripts/start.sh
+
+# Option 2: Force recreate the API container
+docker compose up -d --force-recreate api
+
+# Option 3: Full restart
+docker compose down && docker compose up -d
 ```
+
+**Note**: `docker compose restart api` does NOT reload environment variables!
 
 ### Step 4: Test Social Login
 
@@ -296,7 +308,7 @@ docker compose restart api
    npm run dev
    ```
 
-2. Navigate to http://localhost:5173/login
+2. Navigate to http://localhost:3000/login
 
 3. Click the **"Continue with Google"** button
 
@@ -380,7 +392,12 @@ Expected output:
 
 #### Error: "OAuth credentials not configured"
 - Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`
-- Restart the backend: `docker compose restart api`
+- Reload environment variables (restart is not enough):
+  ```bash
+  ./scripts/stop.sh && ./scripts/start.sh
+  # OR
+  docker compose up -d --force-recreate api
+  ```
 
 #### Error: "Redirect URI mismatch"
 - In Google Cloud Console, verify the redirect URI is exactly:
