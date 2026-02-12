@@ -129,6 +129,25 @@ class AuthRepository:
         result = self.db.execute(stmt)
         return result.scalars().first()
 
+    def get_by_provider_including_deleted(self, provider: str, provider_id: str) -> Optional[AuthUser]:
+        """
+        Get auth user by OAuth provider and provider ID, including soft-deleted accounts.
+        Used for restoration detection during OAuth login.
+
+        Args:
+            provider: OAuth provider name (e.g., 'google', 'github')
+            provider_id: Provider-specific user identifier
+
+        Returns:
+            AuthUser if found (active or deleted), None otherwise
+        """
+        stmt = select(AuthUser).where(
+            AuthUser.provider == provider,
+            AuthUser.provider_id == provider_id
+        )
+        result = self.db.execute(stmt)
+        return result.scalars().first()
+
     def create(self, email: str, password_hash: str, user_id: str) -> AuthUser:
         """
         Create new auth user (email/password authentication).
@@ -288,7 +307,7 @@ class AuthRepository:
     def reset_failed_login(self, user_id: str) -> None:
         """
         Reset failed login attempts after successful login.
-        
+
         Args:
             user_id: User ID from base_profiles
         """
@@ -296,6 +315,18 @@ class AuthRepository:
         if auth_user:
             auth_user.failed_login_attempts = 0
             auth_user.locked_until = None
+            auth_user.last_login_at = datetime.now(timezone.utc)
+            self.db.commit()
+
+    def update_last_login(self, user_id: str) -> None:
+        """
+        Update last login timestamp for OAuth or other authentication methods.
+
+        Args:
+            user_id: User ID from base_profiles
+        """
+        auth_user = self.get_by_user_id(user_id)
+        if auth_user:
             auth_user.last_login_at = datetime.now(timezone.utc)
             self.db.commit()
     

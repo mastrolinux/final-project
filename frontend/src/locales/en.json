@@ -107,6 +107,8 @@
       "emailSent": "Restoration Email Sent",
       "emailSentMessage": "If a recoverable account exists for this email, you will receive a restoration link shortly.",
       "sendLink": "Send Restoration Link",
+      "restoring": "Restoring Account",
+      "restoringMessage": "Please wait while we restore your account...",
       "confirmTitle": "Set New Password",
       "confirmDescription": "Choose a new password for your restored account.",
       "confirmSuccess": "Account Restored",
@@ -160,6 +162,7 @@
     "saveChanges": "Save changes",
     "cancel": "Cancel",
     "viewContexts": "View Contexts",
+    "emailChangeWarning": "Changing your email will require re-verification",
     "avatar": {
       "title": "Profile Picture",
       "upload": "Upload",
