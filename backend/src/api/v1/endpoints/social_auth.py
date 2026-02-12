@@ -228,7 +228,7 @@ async def callback(
         email_verified = claims.get("email_verified", False)
 
         # Authenticate or create user
-        access_token, refresh_token, is_new_user = await service.authenticate_or_create_user(
+        access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin = service.authenticate_or_create_user(
             provider=provider,
             provider_id=provider_id,
             email=email,
@@ -244,9 +244,11 @@ async def callback(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=1800,  # 30 minutes
-            user_id=claims.get("sub"),  # Return provider_id as user_id for now
+            user_id=user_id,
             email=email,
-            is_new_user=is_new_user
+            is_email_verified=is_email_verified,
+            account_type=account_type,
+            is_admin=is_admin
         )
 
     except OAuthStateValidationError as e:
@@ -274,11 +276,30 @@ async def callback(
             }
         )
     except AccountLinkingError as e:
+        error_message = str(e)
+
+        # Check if this is an ACCOUNT_RECOVERABLE error (soft-deleted OAuth account)
+        if "ACCOUNT_RECOVERABLE|" in error_message:
+            # Parse the permanent deletion date from the error message
+            parts = error_message.split("ACCOUNT_RECOVERABLE|")
+            permanent_deletion_date = parts[1] if len(parts) > 1 else None
+
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "ACCOUNT_RECOVERABLE",
+                    "message": "This account was previously deleted and can be restored.",
+                    "permanent_deletion_date": permanent_deletion_date,
+                    "restore_endpoint": "/api/v1/auth/restore-account"
+                }
+            )
+
+        # Regular account linking error (email exists with password auth)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "code": "account_linking_required",
-                "message": str(e)
+                "message": error_message
             }
         )
     except Exception as e:

@@ -15,6 +15,11 @@ const isProcessing = ref(true)
 const error = ref<string | null>(null)
 const accountLinkingRequired = ref(false)
 
+// Account recoverable state (409 with ACCOUNT_RECOVERABLE)
+const accountRecoverable = ref<{
+  permanentDeletionDate: string
+} | null>(null)
+
 onMounted(async () => {
   try {
     // Extract OAuth callback parameters from URL
@@ -72,14 +77,23 @@ onMounted(async () => {
   } catch (err) {
     isProcessing.value = false
 
-    // Handle account linking error (409 CONFLICT)
-    if (
-      axios.isAxiosError(err) &&
-      err.response?.status === 409 &&
-      err.response?.data?.detail?.code === 'account_linking_required'
-    ) {
-      accountLinkingRequired.value = true
-      error.value = err.response.data.detail.message
+    // Handle 409 errors
+    if (axios.isAxiosError(err) && err.response?.status === 409) {
+      const detail = err.response.data.detail
+
+      // Account recoverable (soft-deleted OAuth account)
+      if (detail?.code === 'ACCOUNT_RECOVERABLE') {
+        accountRecoverable.value = {
+          permanentDeletionDate: detail.permanent_deletion_date
+        }
+      }
+      // Account linking required (email exists with password auth)
+      else if (detail?.code === 'account_linking_required') {
+        accountLinkingRequired.value = true
+        error.value = detail.message
+      } else {
+        error.value = getErrorMessage(err)
+      }
     } else {
       error.value = getErrorMessage(err)
     }
@@ -99,6 +113,30 @@ onMounted(async () => {
           <div class="spinner-large"></div>
           <h2>{{ t('auth.social.completing') }}</h2>
           <p class="text-secondary">{{ t('auth.social.processingMessage') }}</p>
+        </div>
+
+        <!-- Account recoverable (soft-deleted OAuth account) -->
+        <div v-else-if="accountRecoverable" class="error-state">
+          <div class="error-icon warning">!</div>
+          <h2>{{ t('auth.restore.accountRecoverable') }}</h2>
+          <p class="text-secondary">
+            {{
+              t('auth.restore.accountRecoverableMessage', {
+                date: new Date(accountRecoverable.permanentDeletionDate).toLocaleDateString(
+                  undefined,
+                  { year: 'numeric', month: 'long', day: 'numeric' }
+                )
+              })
+            }}
+          </p>
+          <div class="actions">
+            <router-link to="/restore-account" class="btn btn-primary">
+              {{ t('auth.restore.restoreAccount') }}
+            </router-link>
+            <router-link to="/login" class="btn btn-outline mt-2">
+              {{ t('auth.restore.backToLogin') }}
+            </router-link>
+          </div>
         </div>
 
         <div v-else-if="accountLinkingRequired" class="error-state">
