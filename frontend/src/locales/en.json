@@ -124,6 +124,20 @@
       "accountRecoverable": "Account Can Be Restored",
       "accountRecoverableMessage": "An account with this email exists and can be restored until {date}.",
       "restoreAccount": "Restore Account"
+    },
+    "orContinueWith": "or continue with email",
+    "social": {
+      "completing": "Completing sign in...",
+      "processingMessage": "Please wait while we complete your sign in.",
+      "loginSuccess": "Welcome back! You've successfully signed in.",
+      "authenticationFailed": "Sign In Failed",
+      "invalidCallback": "Invalid OAuth callback: missing code or state parameter.",
+      "sessionExpired": "OAuth session expired. Please try signing in again.",
+      "missingProvider": "Invalid OAuth callback: missing provider.",
+      "accountLinkingRequired": "Account Linking Required",
+      "signInWithPassword": "Sign in with password",
+      "accountLinkingInfo": "This email is already registered with a password. Please sign in with your password, or contact support to link your Google account.",
+      "backToLogin": "Back to Login"
     }
   },
   "account": {
