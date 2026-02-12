@@ -676,7 +676,10 @@ def confirm_restore_account(
     http_request: Request,
     service: AuthService = Depends(get_auth_service),
 ):
-    """Confirm account restoration with token and new password."""
+    """Confirm account restoration with token and optional password.
+
+    Password is required for email/password users but not for OAuth users.
+    """
     ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent")
 
@@ -702,6 +705,24 @@ def confirm_restore_account(
                 detail={
                     "detail": "Invalid or expired restoration token",
                     "code": "INVALID_RESTORATION_TOKEN",
+                },
+            )
+        elif error_code == "PASSWORD_REQUIRED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "detail": "Password is required for email/password accounts",
+                    "code": "PASSWORD_REQUIRED",
+                },
+            )
+        elif error_code == "PROFILE_NOT_FOUND":
+            # Data integrity issue - auth_user exists but base_profile doesn't
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "detail": data.get("message", "Profile not found during restoration"),
+                    "code": "PROFILE_NOT_FOUND",
+                    "user_id": data.get("user_id") if data else None,
                 },
             )
         else:
