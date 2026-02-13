@@ -25,7 +25,7 @@ npm install
 npm run dev
 ```
 
-The application runs at http://localhost:5173 by default.
+The application runs at http://localhost:3000 by default.
 
 ### Production Build
 
