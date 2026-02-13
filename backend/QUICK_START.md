@@ -402,9 +402,9 @@ Expected output:
 #### Error: "Redirect URI mismatch"
 - In Google Cloud Console, verify the redirect URI is exactly:
   ```
-  http://localhost:8000/api/v1/auth/social/google/callback
+  http://localhost:3000/auth/social/google/callback
   ```
-- Note: Must be HTTP (not HTTPS) for local development
+- HTTP (not HTTPS) for local development
 - No trailing slash
 
 #### Error: "Account linking required"
@@ -471,7 +471,7 @@ See `postman/TESTING-GUIDE.md` Phase 7 for complete OAuth testing steps.
 
 ### 3. Frontend Admin UI
 
-If running the frontend (http://localhost:5173):
+If running the frontend (http://localhost:3000):
 1. Log in with your admin account
 2. Click "Admin" in the navigation header
 3. Manage OAuth clients visually
