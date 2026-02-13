@@ -9,7 +9,7 @@ CREATE TYPE context_type AS ENUM ('professional', 'social', 'legal', 'healthcare
 -- Stores context-specific profile overrides that inherit from base profiles
 -- Only override fields are stored; resolution merges with base profile
 CREATE TABLE context_profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES base_profiles(user_id) ON DELETE CASCADE,
     context_type context_type NOT NULL,
     context_name TEXT NOT NULL,  -- User-defined label like "Work", "LinkedIn", "Family"

@@ -5,6 +5,8 @@ This is the main FastAPI application entry point for the Identity and Profile Ma
 A thesis project designed to handle complex digital identity across cultural, contextual, and regulatory boundaries.
 """
 
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -104,7 +106,7 @@ async def detailed_health_check():
         "service": settings.APP_NAME,
         "version": "1.0.0",
         "environment": settings.ENVIRONMENT,
-        "timestamp": "2025-01-04T00:00:00Z",  # Will be dynamic in production
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "components": {
             "database": db_health,
             "supabase": supabase_health,
