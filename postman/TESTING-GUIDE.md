@@ -874,6 +874,6 @@ The frontend includes an admin interface at `/admin/oauth/clients` (requires adm
 - **Auth Endpoints**: `backend/src/api/v1/endpoints/auth.py`
 - **OAuth Endpoints**: `backend/src/api/v1/endpoints/oauth.py`
 - **Admin OAuth Endpoints**: `backend/src/api/v1/endpoints/admin_oauth.py`
-- **Frontend Admin UI**: http://localhost:5173/admin/oauth/clients
+- **Frontend Admin UI**: http://localhost:3000/admin/oauth/clients
 
 For questions or issues, refer to `CLAUDE.md` and `backend/TESTING.md`.
