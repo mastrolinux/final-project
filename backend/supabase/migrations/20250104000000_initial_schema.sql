@@ -2,9 +2,6 @@
 -- Creates base_profiles and identity_names tables with proper indexes and constraints
 -- Part of Identity and Profile Management API - Academic Thesis Project
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create enum types
 CREATE TYPE account_type AS ENUM ('verified', 'unverified', 'pseudonymous');
 CREATE TYPE name_type AS ENUM ('given', 'family', 'preferred', 'legal', 'patronymic', 'full_name', 'custom');
@@ -13,7 +10,7 @@ CREATE TYPE visibility_level AS ENUM ('public', 'private', 'historical_suppresse
 -- Base Profiles Table
 -- Stores core user profile information
 CREATE TABLE base_profiles (
-    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_type account_type NOT NULL DEFAULT 'unverified',
     legal_name TEXT,  -- Optional: Only required for verified accounts
     primary_email TEXT NOT NULL,
@@ -29,7 +26,7 @@ CREATE TABLE base_profiles (
 -- Identity Names Table
 -- Stores multilingual name representations with JSONB flexibility
 CREATE TABLE identity_names (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     identity_id UUID NOT NULL REFERENCES base_profiles(user_id) ON DELETE CASCADE,
     name_type name_type NOT NULL,
     name_value JSONB NOT NULL,  -- Stores multilingual names: {"en": "John", "es": "Juan"}
