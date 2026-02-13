@@ -1,38 +1,160 @@
-services:
-  # Backend API Service
-  - type: web
-    name: identity-api-backend
-    env: python
-    plan: free
-    region: oregon
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+# Render.com Infrastructure-as-Code Blueprint
+# Documentation: https://render.com/docs/blueprint-spec
+#
+# Deployment is triggered by GitHub Actions, not by auto-deploy.
+# autoDeployTrigger is set to 'off' so Render waits for a deploy hook call.
+#
+# SETUP: After applying this blueprint in Render, configure secrets
+# in the "identity-api-shared" environment group via the dashboard.
+# Variables marked with sync: false must be entered manually.
+
+# =============================================================================
+# SHARED ENVIRONMENT VARIABLES
+# =============================================================================
+# Both the web service and Celery worker reference this group.
+# Non-secret values are committed to git. Secrets use sync: false
+# and must be entered in the Render dashboard after blueprint apply.
+envVarGroups:
+  - name: identity-api-shared
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12"
+      # --- Application (non-secret, safe to commit) ---
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: APP_NAME
+        value: "Identity and Profile Management API"
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: SMTP_PORT
+        value: "587"
+      - key: REDIS_ENABLED
+        value: "true"
+      - key: REDIS_TTL_SECONDS
+        value: "300"
+      - key: DELETION_RETENTION_DAYS
+        value: "30"
+
+      # --- Auto-generated secrets (Render generates on first apply) ---
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # --- Secrets: enter via Render dashboard (sync: false) ---
+      - key: DATABASE_URL
+        sync: false
       - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLIC_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
       - key: FRONTEND_URL
-        value: https://identity-frontend.onrender.com
-    healthCheckPath: /health
-    autoDeploy: true
+        sync: false
+      - key: API_BASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS_STR
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: ADMIN_USER_EMAILS
+        sync: false
 
-  # Frontend Service (placeholder - uncomment when ready)
+# =============================================================================
+# SERVICES
+# =============================================================================
+services:
+  # --- FastAPI Web Service ---
+  - type: web
+    name: identity-api
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: REDIS_URL
+        fromService:
+          name: identity-redis
+          type: keyvalue
+          property: connectionString
+      - fromGroup: identity-api-shared
+
+  # --- Celery Background Worker ---
+  - type: worker
+    name: identity-celery-worker
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A src.core.celery_app worker --loglevel=info -Q emails --concurrency=2
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: REDIS_URL
+        fromService:
+          name: identity-redis
+          type: keyvalue
+          property: connectionString
+      - fromGroup: identity-api-shared
+
+  # --- Redis Key-Value Store ---
+  # Used for JWT refresh token blacklist (fail-closed security model)
+  # and as Celery message broker for async email tasks.
+  # Starter plan provides persistence (data survives restarts).
+  - type: keyvalue
+    name: identity-redis
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: volatile-ttl
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+
+  # --- Frontend (placeholder, uncomment when ready) ---
   # - type: web
   #   name: identity-frontend
-  #   env: node
-  #   plan: free
+  #   runtime: node
+  #   plan: starter
   #   region: oregon
   #   rootDir: frontend
   #   buildCommand: npm install && npm run build
   #   startCommand: npm run preview
+  #   autoDeployTrigger: "off"
   #   envVars:
   #     - key: VITE_API_URL
-  #       value: https://identity-api-backend.onrender.com
-  #   autoDeploy: true
-
+  #       value: https://identity-api.onrender.com

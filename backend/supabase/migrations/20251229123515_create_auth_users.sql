@@ -11,7 +11,7 @@
 
 CREATE TABLE auth_users (
     -- Primary identification
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Foreign key to base_profiles (1:1 relationship)
     user_id UUID NOT NULL UNIQUE REFERENCES base_profiles(user_id) ON DELETE CASCADE,
