@@ -96,7 +96,7 @@ services:
     name: identity-api
     runtime: python
     plan: starter
-    region: oregon
+    region: frankfurt
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
@@ -104,7 +104,7 @@ services:
     autoDeployTrigger: "off"
     envVars:
       - key: PYTHON_VERSION
-        value: "3.12"
+        value: "3.12.12"
       - key: REDIS_URL
         fromService:
           name: identity-redis
@@ -117,14 +117,14 @@ services:
     name: identity-celery-worker
     runtime: python
     plan: starter
-    region: oregon
+    region: frankfurt
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: celery -A src.core.celery_app worker --loglevel=info -Q emails --concurrency=2
     autoDeployTrigger: "off"
     envVars:
       - key: PYTHON_VERSION
-        value: "3.12"
+        value: "3.12.1"
       - key: REDIS_URL
         fromService:
           name: identity-redis
@@ -139,7 +139,7 @@ services:
   - type: keyvalue
     name: identity-redis
     plan: starter
-    region: oregon
+    region: frankfurt
     maxmemoryPolicy: volatile-ttl
     ipAllowList:
       - source: 0.0.0.0/0
@@ -150,7 +150,7 @@ services:
   #   name: identity-frontend
   #   runtime: node
   #   plan: starter
-  #   region: oregon
+  #   region: frankfurt
   #   rootDir: frontend
   #   buildCommand: npm install && npm run build
   #   startCommand: npm run preview
