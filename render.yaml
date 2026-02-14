@@ -151,8 +151,6 @@ services:
   - type: web
     name: identity-frontend
     runtime: static
-    plan: starter
-    region: frankfurt
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
