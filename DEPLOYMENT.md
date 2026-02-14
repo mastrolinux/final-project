@@ -111,12 +111,12 @@ After deployment, update your local `.env` files:
 
 **Backend (Production)**:
 ```
-FRONTEND_URL=https://identity-frontend.onrender.com
+FRONTEND_URL=https://identity-frontend-ka3l.onrender.com
 ```
 
 **Frontend (when deployed)**:
 ```
-VITE_API_URL=https://identity-api-backend.onrender.com
+VITE_API_URL=https://identity-api-9hpf.onrender.com
 ```
 
 ## Troubleshooting
