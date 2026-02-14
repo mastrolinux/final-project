@@ -17,7 +17,6 @@ const isSuccess = ref(false)
 const error = ref<string | null>(null)
 const validationError = ref<string | null>(null)
 const errorType = ref<string | null>(null)
-const isOAuthUser = ref(false)
 const showPasswordForm = ref(false)
 
 onMounted(async () => {
