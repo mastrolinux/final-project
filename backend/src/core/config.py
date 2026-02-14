@@ -51,13 +51,7 @@ class Settings(BaseSettings):
     # JWT Configuration (Auth Service)
     JWT_SECRET_KEY: str = "dev-jwt-secret-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-
-    # OAuth 2.0 Social Login Configuration
-    # Google OAuth 2.0
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
-    GOOGLE_REDIRECT_URI: Optional[str] = None  # e.g., http://localhost:8000/api/v1/auth/social/google/callback
-
+    
     # SMTP Configuration (Email Sending)
     # Local: Mailpit via Supabase (no auth, plain SMTP)
     # Production: Mailgun or other SMTP provider (TLS + auth)
@@ -93,6 +87,11 @@ class Settings(BaseSettings):
     
     # Privacy / GDPR Configuration
     DELETION_RETENTION_DAYS: int = 30
+
+    # Google OAuth 2.0 Social Login
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/social/google/callback"
 
     # Admin Configuration
     # Comma-separated list of admin user emails for bootstrap
