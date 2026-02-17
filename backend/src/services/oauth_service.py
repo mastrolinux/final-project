@@ -140,9 +140,7 @@ class OAuthService:
         self.context_repo = context_repo
         self.audit_service = audit_service
     
-    # =========================================================================
-    # PKCE Validation
-    # =========================================================================
+# PKCE Validation
     
     @staticmethod
     def generate_pkce_challenge(code_verifier: str) -> str:
@@ -181,9 +179,7 @@ class OAuthService:
         expected_challenge = OAuthService.generate_pkce_challenge(code_verifier)
         return expected_challenge == code_challenge
     
-    # =========================================================================
-    # Client Validation
-    # =========================================================================
+# Client Validation
     
     def get_client(self, client_id: str) -> OAuthClient:
         """
@@ -244,9 +240,7 @@ class OAuthService:
                 f"Invalid redirect_uri: must match one of the registered URIs"
             )
     
-    # =========================================================================
-    # Scope Validation
-    # =========================================================================
+# Scope Validation
     
     def validate_scopes(
         self,
@@ -420,9 +414,7 @@ class OAuthService:
         
         return filtered
     
-    # =========================================================================
-    # Authorization Code Flow
-    # =========================================================================
+# Authorization Code Flow
     
     def create_authorization_code(
         self,
@@ -664,9 +656,7 @@ class OAuthService:
             context_profile_id=context_profile_id
         )
     
-    # =========================================================================
-    # Token Introspection and Revocation
-    # =========================================================================
+# Token Introspection and Revocation
     
     def introspect_token(
         self,
@@ -761,9 +751,7 @@ class OAuthService:
         # Always return success per RFC 7009
         return True
     
-    # =========================================================================
-    # Consent Management
-    # =========================================================================
+# Consent Management
     
     def record_consent(
         self,
