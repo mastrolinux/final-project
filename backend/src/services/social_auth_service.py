@@ -368,6 +368,16 @@ class SocialAuthService:
                     f"Account for {provider} user {provider_id} was deleted on {deleted_at.isoformat()}. "
                     f"ACCOUNT_RECOVERABLE|{permanent_date.isoformat()}"
                 )
+            else:
+                # Grace period expired but soft-deleted records still exist in
+                # the database. A background purge job has not yet removed them,
+                # so creating a new account would violate the unique constraint
+                # on (provider, provider_id). Block until records are purged.
+                raise AccountLinkingError(
+                    f"Account for {provider} user {provider_id} was permanently deleted. "
+                    "The old records have not yet been purged. "
+                    "Please try again later or contact support."
+                )
 
         # Check if email already exists (potential account linking)
         existing_email_user = self.auth_repo.get_by_email(email)
