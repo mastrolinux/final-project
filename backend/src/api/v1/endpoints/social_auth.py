@@ -302,6 +302,9 @@ async def callback(
                 "message": error_message
             }
         )
+    except HTTPException:
+        # Re-raise HTTPExceptions (e.g. missing_id_token) without wrapping
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
