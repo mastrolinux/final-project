@@ -245,16 +245,17 @@ class TestAuthService:
         mock_auth_user.email = "test@example.com"
         mock_auth_user.password_hash = hash_password("SecurePass123!")
         mock_auth_user.is_email_verified = True
+        mock_auth_user.is_admin = False
         mock_auth_user.is_locked.return_value = False
-        
+
         mock_auth_repo.get_by_email.return_value = mock_auth_user
-        
+
         # Mock profile with proper account_type enum
         from src.models.profile import AccountType
         mock_profile = Mock()
         mock_profile.account_type = AccountType.verified
         mock_profile_repo.get_profile_by_id.return_value = mock_profile
-        
+
         # Login
         success, error, data = auth_service.login(
             email="test@example.com",
@@ -525,6 +526,7 @@ class TestRefreshAccessToken:
         mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
+        mock_auth_user.is_admin = False
         mock_auth_user.is_locked.return_value = False
         mock_auth_repo.get_by_user_id.return_value = mock_auth_user
 
@@ -760,6 +762,7 @@ class TestRefreshAccessToken:
         mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
+        mock_auth_user.is_admin = False
         mock_auth_user.is_locked.return_value = False
         mock_auth_repo.get_by_user_id.return_value = mock_auth_user
 
@@ -794,6 +797,7 @@ class TestRefreshAccessToken:
         mock_auth_user.user_id = "00000000-0000-0000-0000-000000000123"
         mock_auth_user.email = "test@example.com"
         mock_auth_user.deleted_at = None
+        mock_auth_user.is_admin = False
         mock_auth_user.is_locked.return_value = False
         mock_auth_repo.get_by_user_id.return_value = mock_auth_user
 
