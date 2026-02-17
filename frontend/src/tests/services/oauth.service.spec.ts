@@ -1,5 +1,9 @@
 /**
  * Unit tests for OAuth service.
+ *
+ * Tests verify correct API calls and response handling for the OAuth
+ * consent flow endpoints, including the user_id query parameter
+ * required by the backend.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -22,24 +26,27 @@ describe('oauthService', () => {
   })
 
   describe('getConsentDetails', () => {
-    it('should fetch consent details with query params', async () => {
+    it('should fetch consent details with query params and JSON accept header', async () => {
       const mockResponse: ConsentDetailsResponse = {
         client: {
           client_id: 'test-client',
           client_name: 'Test App',
-          is_verified: true
+          is_first_party: false
         },
         scopes: [
-          { id: 'openid', name: 'OpenID', description: 'Basic identity', is_default: true },
-          { id: 'profile:read:basic', name: 'Basic Profile', description: 'Name and account type', is_default: true }
+          { scope_name: 'openid', description: 'Basic identity', is_sensitive: false },
+          { scope_name: 'profile:read:basic', description: 'Name and account type', is_sensitive: false }
         ],
         request: {
           client_id: 'test-client',
           response_type: 'code',
           redirect_uri: 'https://example.com/callback',
           scope: 'openid profile:read:basic',
-          state: 'abc123'
-        }
+          state: 'abc123',
+          code_challenge: 'challenge-value',
+          code_challenge_method: 'S256'
+        },
+        requires_consent: true
       }
 
       vi.mocked(api.get).mockResolvedValue({ data: mockResponse })
@@ -73,6 +80,8 @@ describe('oauthService', () => {
         state: 'abc123',
         redirect_uri: 'https://example.com/callback',
         response_type: 'code',
+        code_challenge: 'challenge-value',
+        code_challenge_method: 'S256',
         decision: 'allow',
         context_id: 'context-123'
       })
@@ -95,6 +104,8 @@ describe('oauthService', () => {
         state: 'abc123',
         redirect_uri: 'https://example.com/callback',
         response_type: 'code',
+        code_challenge: 'challenge-value',
+        code_challenge_method: 'S256',
         decision: 'deny'
       })
 
@@ -106,48 +117,63 @@ describe('oauthService', () => {
   })
 
   describe('getConsents', () => {
-    it('should fetch list of granted consents', async () => {
+    it('should fetch list of granted consents with user_id param', async () => {
       const mockConsents: OAuthConsent[] = [
         {
-          client: {
-            client_id: 'app-1',
-            client_name: 'App One',
-            is_verified: true
-          },
-          scopes: ['openid', 'profile:read:basic'],
-          created_at: '2026-01-15T10:00:00Z',
-          updated_at: '2026-01-15T10:00:00Z'
+          id: 'consent-1',
+          user_id: 'user-abc',
+          client_id: 'app-1',
+          client_name: 'App One',
+          granted_scopes: ['openid', 'profile:read:basic'],
+          granted_at: '2026-01-15T10:00:00Z',
+          is_active: true
         },
         {
-          client: {
-            client_id: 'app-2',
-            client_name: 'App Two',
-            is_verified: false
-          },
-          scopes: ['openid'],
-          created_at: '2026-01-10T08:00:00Z',
-          updated_at: '2026-01-10T08:00:00Z',
-          context_id: 'context-456'
+          id: 'consent-2',
+          user_id: 'user-abc',
+          client_id: 'app-2',
+          client_name: 'App Two',
+          granted_scopes: ['openid'],
+          context_profile_id: 'context-456',
+          granted_at: '2026-01-10T08:00:00Z',
+          is_active: true
         }
       ]
 
-      vi.mocked(api.get).mockResolvedValue({ data: mockConsents })
+      vi.mocked(api.get).mockResolvedValue({
+        data: { consents: mockConsents, total: 2 }
+      })
 
-      const result = await oauthService.getConsents()
+      const result = await oauthService.getConsents('user-abc')
 
-      expect(api.get).toHaveBeenCalledWith('/oauth/consents')
+      expect(api.get).toHaveBeenCalledWith('/oauth/consents', {
+        params: { user_id: 'user-abc' }
+      })
       expect(result).toHaveLength(2)
-      expect(result[0].client.client_name).toBe('App One')
+      expect(result[0].client_name).toBe('App One')
+      expect(result[1].context_profile_id).toBe('context-456')
+    })
+
+    it('should return empty array when no consents exist', async () => {
+      vi.mocked(api.get).mockResolvedValue({
+        data: { consents: [], total: 0 }
+      })
+
+      const result = await oauthService.getConsents('user-xyz')
+
+      expect(result).toHaveLength(0)
     })
   })
 
   describe('revokeConsent', () => {
-    it('should revoke consent for a specific client', async () => {
+    it('should revoke consent for a specific client with user_id param', async () => {
       vi.mocked(api.delete).mockResolvedValue({})
 
-      await oauthService.revokeConsent('app-1')
+      await oauthService.revokeConsent('app-1', 'user-abc')
 
-      expect(api.delete).toHaveBeenCalledWith('/oauth/consents/app-1')
+      expect(api.delete).toHaveBeenCalledWith('/oauth/consents/app-1', {
+        params: { user_id: 'user-abc' }
+      })
     })
   })
 })
