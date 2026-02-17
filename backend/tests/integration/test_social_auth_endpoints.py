@@ -492,9 +492,9 @@ class TestSoftDeletedOAuthUserEdgeCases:
             }
         )
 
-        # Should NOT return ACCOUNT_RECOVERABLE (grace period expired)
-        # Should allow creation of new account or hard delete old one
-        # For now, expect 409 since grace period check happens in service
-        # This test documents expected behavior for future implementation
-        assert response.status_code == 409  # Currently still blocks
-        # TODO: After implementing auto-purge, this should be 200 with new account
+        # Grace period expired: old account is purged and new one is created
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email"] == "expired@gmail.com"
+        assert "access_token" in data
+        assert "refresh_token" in data

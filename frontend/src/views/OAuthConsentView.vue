@@ -7,6 +7,7 @@ import { useAuthStore, useProfileStore } from '@/stores'
 import type { OAuthClient, OAuthScope, ConsentRequestParams } from '@/types'
 import ScopeDisplay from '@/components/oauth/ScopeDisplay.vue'
 import ContextSelector from '@/components/oauth/ContextSelector.vue'
+import ContextPreview from '@/components/oauth/ContextPreview.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import BaseCard from '@/components/common/BaseCard.vue'
 
@@ -23,6 +24,8 @@ const client = ref<OAuthClient | null>(null)
 const scopes = ref<OAuthScope[]>([])
 const requestParams = ref<ConsentRequestParams | null>(null)
 const selectedContextId = ref<string | null>(null)
+const selectedScopes = ref<string[]>([])
+const rememberDecision = ref(true)
 
 const hasContexts = computed(() => profileStore.contexts.length > 0)
 
@@ -40,10 +43,21 @@ onMounted(async () => {
     // 1. Fetch consent details (client info, scopes)
     // We pass all query params to the backend
     const details = await oauthService.getConsentDetails(route.query as Record<string, string>)
-    
+
     client.value = details.client
     scopes.value = details.scopes
     requestParams.value = details.request
+
+    // Initialize selected scopes with all scopes pre-checked
+    selectedScopes.value = details.scopes.map(s => s.scope_name)
+
+    // If consent is not required (first-party client or user already
+    // granted consent covering all requested scopes), auto-approve
+    // without showing the consent screen.
+    if (!details.requires_consent) {
+      await handleDecision('allow')
+      return
+    }
 
     // 2. Fetch user contexts if not already loaded
     const userId = authStore.userId
@@ -52,7 +66,7 @@ onMounted(async () => {
         const contexts = await contextService.list(userId)
         profileStore.setContexts(contexts)
       }
-      
+
       // Default to first active context or none
       const activeContexts = profileStore.contexts.filter(c => c.is_active)
       if (activeContexts.length > 0) {
@@ -75,7 +89,7 @@ async function handleDecision(decision: 'allow' | 'deny') {
   try {
     const response = await oauthService.submitConsent({
       client_id: requestParams.value.client_id,
-      scope: requestParams.value.scope,
+      scope: decision === 'allow' ? selectedScopes.value.join(' ') : requestParams.value.scope,
       state: requestParams.value.state,
       redirect_uri: requestParams.value.redirect_uri,
       response_type: requestParams.value.response_type,
@@ -83,7 +97,8 @@ async function handleDecision(decision: 'allow' | 'deny') {
       code_challenge_method: requestParams.value.code_challenge_method,
       nonce: requestParams.value.nonce,
       decision,
-      context_id: decision === 'allow' ? (selectedContextId.value || undefined) : undefined
+      context_id: decision === 'allow' ? (selectedContextId.value || undefined) : undefined,
+      remember: rememberDecision.value
     })
 
     // Redirect user back to the application
@@ -126,51 +141,78 @@ async function handleDecision(decision: 'allow' | 'deny') {
           <div class="client-logo-placeholder mb-4" v-else>
             {{ client.client_name.charAt(0).toUpperCase() }}
           </div>
-          
+
           <h1 class="text-xl font-bold mb-2">
             {{ t('oauth.clientWantsAccess', { client: client.client_name }) }}
           </h1>
-          
+
           <div v-if="client.is_first_party" class="badge badge-success inline-flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-green-500"></span>
             {{ t('oauth.firstParty') }}
           </div>
         </div>
 
+        <!-- Scopes with granular selection and expansion -->
         <BaseCard class="mb-6">
           <h3 class="font-semibold mb-4">{{ t('oauth.scopes') }}</h3>
-          <ScopeDisplay :scopes="scopes" />
-        </BaseCard>
-
-        <BaseCard class="mb-6" v-if="hasContexts">
-          <h3 class="font-semibold mb-2">{{ t('oauth.selectContext') }}</h3>
-          <p class="text-sm text-secondary mb-4">{{ t('oauth.selectContextDescription') }}</p>
-          <ContextSelector 
-            :contexts="profileStore.contexts" 
-            v-model="selectedContextId" 
+          <ScopeDisplay
+            :scopes="scopes"
+            selectable
+            expandable
+            v-model:selectedScopes="selectedScopes"
           />
         </BaseCard>
 
+        <!-- Context selector -->
+        <BaseCard class="mb-6" v-if="hasContexts">
+          <h3 class="font-semibold mb-2">{{ t('oauth.selectContext') }}</h3>
+          <p class="text-sm text-secondary mb-4">{{ t('oauth.selectContextDescription') }}</p>
+          <ContextSelector
+            :contexts="profileStore.contexts"
+            v-model="selectedContextId"
+          />
+        </BaseCard>
+
+        <!-- Context preview -->
+        <BaseCard class="mb-6" v-if="selectedContextId && authStore.userId">
+          <h3 class="font-semibold mb-2">{{ t('oauth.dataPreview') }}</h3>
+          <p class="text-xs text-secondary mb-4">{{ t('oauth.dataPreviewDescription') }}</p>
+          <ContextPreview
+            :userId="authStore.userId"
+            :contextId="selectedContextId"
+            :selectedScopes="selectedScopes"
+          />
+        </BaseCard>
+
+        <!-- Remember decision -->
+        <div class="remember-decision mb-4">
+          <label class="remember-label">
+            <input type="checkbox" v-model="rememberDecision" />
+            <span>{{ t('oauth.rememberDecision') }}</span>
+          </label>
+          <p class="remember-description">{{ t('oauth.rememberDecisionDescription') }}</p>
+        </div>
+
         <div class="actions flex gap-4">
-          <BaseButton 
-            variant="secondary" 
-            class="flex-1" 
+          <BaseButton
+            variant="secondary"
+            class="flex-1"
             @click="handleDecision('deny')"
             :disabled="isSubmitting"
           >
             {{ t('oauth.deny') }}
           </BaseButton>
-          
-          <BaseButton 
-            variant="primary" 
-            class="flex-1" 
+
+          <BaseButton
+            variant="primary"
+            class="flex-1"
             @click="handleDecision('allow')"
             :loading="isSubmitting"
           >
             {{ t('oauth.authorize') }}
           </BaseButton>
         </div>
-        
+
         <div class="text-center mt-6 text-xs text-secondary">
           <p v-if="client.client_uri">
             <a :href="client.client_uri" target="_blank" class="link">{{ t('oauth.visitClientWebsite') }}</a>
@@ -255,6 +297,32 @@ async function handleDecision(decision: 'allow' | 'deny') {
 
 .link:hover {
   color: var(--color-primary-600);
+}
+
+.remember-decision {
+  padding: 0 var(--spacing-2);
+}
+
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.remember-label input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary-600);
+  cursor: pointer;
+}
+
+.remember-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin: var(--spacing-1) 0 0 24px;
 }
 
 .btn {

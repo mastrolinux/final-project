@@ -369,15 +369,12 @@ class SocialAuthService:
                     f"ACCOUNT_RECOVERABLE|{permanent_date.isoformat()}"
                 )
             else:
-                # Grace period expired but soft-deleted records still exist in
-                # the database. A background purge job has not yet removed them,
-                # so creating a new account would violate the unique constraint
-                # on (provider, provider_id). Block until records are purged.
-                raise AccountLinkingError(
-                    f"Account for {provider} user {provider_id} was permanently deleted. "
-                    "The old records have not yet been purged. "
-                    "Please try again later or contact support."
-                )
+                # Grace period expired: purge the old account so re-registration
+                # can proceed. Order follows privacy_service.purge_expired_accounts:
+                # hard-delete profile first (CASCADE handles children), then auth_user.
+                old_user_id = str(deleted_oauth_user.user_id)
+                self.profile_repo.hard_delete_profile(UUID(old_user_id))
+                self.auth_repo.hard_delete(old_user_id)
 
         # Check if email already exists (potential account linking)
         existing_email_user = self.auth_repo.get_by_email(email)

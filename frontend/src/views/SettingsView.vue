@@ -369,6 +369,16 @@ async function handleDeleteAccount() {
               {{ t('settings.viewExportData') }}
             </router-link>
           </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h3>{{ t('settings.connectedApps') }}</h3>
+              <p>{{ t('settings.connectedAppsDescription') }}</p>
+            </div>
+            <router-link to="/settings/consents" class="btn btn-primary">
+              {{ t('settings.manageConnectedApps') }}
+            </router-link>
+          </div>
         </div>
       </section>
 
