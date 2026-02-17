@@ -87,6 +87,7 @@ export interface ConsentDecisionRequest {
   nonce?: string | null
   decision: 'allow' | 'deny'
   context_id?: string | null
+  remember?: boolean
 }
 
 /**
