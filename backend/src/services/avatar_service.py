@@ -62,10 +62,8 @@ class AvatarService:
         self.storage = storage
         self.audit_service = audit_service
 
-    # ------------------------------------------------------------------
-    # Base profile avatar
-    # ------------------------------------------------------------------
 
+# Base profile avatar
     def upload_base_avatar(
         self, user_id: UUID, file_data: bytes
     ) -> dict:
@@ -153,10 +151,7 @@ class AvatarService:
 
         return {"message": "Avatar deleted successfully"}
 
-    # ------------------------------------------------------------------
-    # Context profile avatar override
-    # ------------------------------------------------------------------
-
+# Context profile avatar override
     def upload_context_avatar(
         self, user_id: UUID, context_id: UUID, file_data: bytes
     ) -> dict:
@@ -235,10 +230,8 @@ class AvatarService:
 
         return {"message": "Context avatar deleted successfully"}
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
+# Helpers
     def _get_verified_context(self, user_id: UUID, context_id: UUID):
         """Load a context profile and verify it belongs to the given user."""
         context = self.avatar_repo.get_context_profile(context_id)
