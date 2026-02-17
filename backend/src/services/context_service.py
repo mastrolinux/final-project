@@ -129,7 +129,7 @@ class ContextService:
         """
         Resolve name value based on language with fallback chain.
         
-        Implements W3C internationalization best practices with graceful degradation.
+        Implements W3C internationalization best practices.
         
         Fallback order (BCP 47 compliant):
         1. Requested language (e.g., 'zh' from Accept-Language header)
