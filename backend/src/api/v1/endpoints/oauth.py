@@ -56,7 +56,7 @@ from src.schemas.oauth import (
 )
 from src.models.context import ContextType
 from src.models.auth import AuthUser
-from src.api.dependencies.auth import get_current_user
+from src.api.dependencies.auth import get_current_user, get_current_user_optional
 
 
 router = APIRouter()
@@ -140,7 +140,8 @@ def get_oauth_metadata(request: Request):
     description="OAuth 2.1 Authorization Endpoint - initiates authorization flow",
     response_model=AuthorizationConsentResponse
 )
-def authorization_request(
+async def authorization_request(
+    request: Request,
     response_type: str = Query(..., description="Must be 'code'"),
     client_id: str = Query(..., description="Client identifier"),
     redirect_uri: str = Query(..., description="Callback URL"),
@@ -150,6 +151,7 @@ def authorization_request(
     code_challenge_method: str = Query("S256", description="Must be 'S256'"),
     nonce: Optional[str] = Query(None, description="OIDC nonce"),
     context_type: Optional[str] = Query(None, description="Requested context type"),
+    current_user: Optional[AuthUser] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """
@@ -164,22 +166,30 @@ def authorization_request(
     - Scope details with human-readable descriptions
     - Request parameters for consent form submission
     """
+    # When the frontend (SPA) calls this endpoint it sends Accept: application/json.
+    # Error responses should return JSON in that case instead of a 302 redirect,
+    # which would cause the browser to follow cross-origin and fail with CORS.
+    accept_header = request.headers.get("accept", "")
+    wants_json = "application/json" in accept_header
+
     # Validate response_type
     if response_type != "code":
         return _authorization_error_response(
             redirect_uri=redirect_uri,
             error="unsupported_response_type",
             error_description="response_type must be 'code'",
-            state=state
+            state=state,
+            accept_json=wants_json
         )
-    
+
     # Validate code_challenge_method
     if code_challenge_method != "S256":
         return _authorization_error_response(
             redirect_uri=redirect_uri,
             error="invalid_request",
             error_description="code_challenge_method must be 'S256'",
-            state=state
+            state=state,
+            accept_json=wants_json
         )
     
     oauth_service = OAuthService(OAuthRepository(db))
@@ -201,21 +211,24 @@ def authorization_request(
             redirect_uri=redirect_uri,
             error="unauthorized_client",
             error_description=e.error_description,
-            state=state
+            state=state,
+            accept_json=wants_json
         )
     except InvalidRequestError as e:
         return _authorization_error_response(
             redirect_uri=redirect_uri,
             error="invalid_request",
             error_description=e.error_description,
-            state=state
+            state=state,
+            accept_json=wants_json
         )
     except InvalidScopeError as e:
         return _authorization_error_response(
             redirect_uri=redirect_uri,
             error="invalid_scope",
             error_description=e.error_description,
-            state=state
+            state=state,
+            accept_json=wants_json
         )
     
     # Build structured response for consent screen
@@ -250,11 +263,28 @@ def authorization_request(
         context_type=context_type
     )
     
+    # Determine if consent is required:
+    # - First-party clients always skip consent
+    # - If user is authenticated and already has valid consent covering
+    #   all requested scopes, skip consent (implements "remember" behavior)
+    requires_consent = True
+    if client.is_first_party:
+        requires_consent = False
+    elif current_user:
+        scope_list_for_check = scope.split()
+        has_consent = oauth_service.check_consent(
+            user_id=current_user.user_id,
+            client_id=client_id,
+            required_scopes=scope_list_for_check
+        )
+        if has_consent:
+            requires_consent = False
+
     return AuthorizationConsentResponse(
         client=client_info,
         scopes=scope_infos,
         request=request_info,
-        requires_consent=not client.is_first_party
+        requires_consent=requires_consent
     )
 
 
@@ -262,18 +292,34 @@ def _authorization_error_response(
     redirect_uri: str,
     error: str,
     error_description: str,
-    state: Optional[str] = None
-) -> RedirectResponse:
-    """Build authorization error redirect response"""
+    state: Optional[str] = None,
+    accept_json: bool = False
+) -> Response:
+    """
+    Build authorization error response.
+
+    When the caller sends Accept: application/json (SPA frontend), returns
+    a JSON body so the frontend can display the error in its own UI.
+    Otherwise falls back to the standard OAuth 302 redirect.
+    """
+    if accept_json:
+        body = {
+            "error": error,
+            "error_description": error_description
+        }
+        if state:
+            body["state"] = state
+        return JSONResponse(content=body, status_code=status.HTTP_400_BAD_REQUEST)
+
     from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
-    
+
     params = {
         "error": error,
         "error_description": error_description
     }
     if state:
         params["state"] = state
-    
+
     # Append error params to redirect URI
     parsed = urlparse(redirect_uri)
     query = parse_qs(parsed.query)
@@ -283,7 +329,7 @@ def _authorization_error_response(
         parsed.scheme, parsed.netloc, parsed.path,
         parsed.params, new_query, parsed.fragment
     ))
-    
+
     return RedirectResponse(url=new_url, status_code=status.HTTP_302_FOUND)
 
 
@@ -332,18 +378,19 @@ async def submit_consent(
         return ConsentDecisionResponseBody(redirect_to=redirect_url)
     
     try:
-        # Record consent
+        # Record consent only when user opted to remember the decision
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
-        
-        oauth_service.record_consent(
-            user_id=current_user.user_id,
-            client_id=consent_data.client_id,
-            granted_scopes=consent_data.scope.split(),
-            context_profile_id=consent_data.context_id,
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
+
+        if consent_data.remember:
+            oauth_service.record_consent(
+                user_id=current_user.user_id,
+                client_id=consent_data.client_id,
+                granted_scopes=consent_data.scope.split(),
+                context_profile_id=consent_data.context_id,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
         
         # Create authorization code
         auth_code = oauth_service.create_authorization_code(

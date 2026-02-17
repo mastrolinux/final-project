@@ -303,6 +303,7 @@ async def callback(
             }
         )
     except HTTPException:
+        # Re-raise HTTPExceptions (e.g. missing_id_token) without wrapping
         raise
     except Exception as e:
         raise HTTPException(
