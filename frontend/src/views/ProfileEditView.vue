@@ -41,7 +41,8 @@ const languageOptions = [
   { label: 'English', value: 'en' },
   { label: 'Chinese (Simplified)', value: 'zh' },
   { label: 'Spanish', value: 'es' },
-  { label: 'Arabic', value: 'ar' }
+  { label: 'Arabic', value: 'ar' },
+  { label: 'Italian', value: 'it' }
 ]
 
 onMounted(async () => {
