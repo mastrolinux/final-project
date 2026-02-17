@@ -94,6 +94,7 @@ def _make_auth_user(user_id, deleted_at=None, email="test@example.com"):
     auth.password_hash = "$argon2id$v=19$m=65536,t=3,p=4$FAKE"
     auth.is_email_verified = True
     auth.is_admin = False
+    auth.provider = None
     auth.created_at = datetime.now(timezone.utc)
     auth.deleted_at = deleted_at
     auth.is_locked = Mock(return_value=False)
