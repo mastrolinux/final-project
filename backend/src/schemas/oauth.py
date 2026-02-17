@@ -790,6 +790,10 @@ class ConsentDecisionRequestBody(BaseModel):
         default=None,
         description="Context profile to bind to authorization"
     )
+    remember: bool = Field(
+        default=True,
+        description="Whether to persist consent for future requests"
+    )
 
 
 class ConsentDecisionResponseBody(BaseModel):

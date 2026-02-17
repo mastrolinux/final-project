@@ -368,6 +368,13 @@ class SocialAuthService:
                     f"Account for {provider} user {provider_id} was deleted on {deleted_at.isoformat()}. "
                     f"ACCOUNT_RECOVERABLE|{permanent_date.isoformat()}"
                 )
+            else:
+                # Grace period expired: purge the old account so re-registration
+                # can proceed. Order follows privacy_service.purge_expired_accounts:
+                # hard-delete profile first (CASCADE handles children), then auth_user.
+                old_user_id = str(deleted_oauth_user.user_id)
+                self.profile_repo.hard_delete_profile(UUID(old_user_id))
+                self.auth_repo.hard_delete(old_user_id)
 
         # Check if email already exists (potential account linking)
         existing_email_user = self.auth_repo.get_by_email(email)
