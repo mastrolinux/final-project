@@ -105,40 +105,34 @@ jobs:
 
 ### Hosting: Render.com
 
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: identity-api
-    env: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 4
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.12
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
-    healthCheckPath: /health
-    autoDeploy: true
-```
+The `render.yaml` blueprint declares four services and one shared
+environment group. Auto-deploy is disabled on all services;
+deployments are triggered via deploy hooks from GitHub Actions.
+
+| Service | Type | Runtime | Region |
+|---------|------|---------|--------|
+| identity-api | web | Python 3.12 | Frankfurt |
+| identity-celery-worker | worker | Python 3.12 | Frankfurt |
+| identity-redis | key-value | Redis | Frankfurt |
+| identity-frontend | web (static) | Static (CDN) | Global |
+
+Secrets are managed in the `identity-api-shared` environment group
+and entered via the Render dashboard (`sync: false`). Non-secret
+configuration values (algorithm, token expiry, log level) are
+committed to `render.yaml`.
 
 ### Database: Supabase
 
 - Managed PostgreSQL 15+
-- Built-in authentication
 - Row-Level Security
 - Automatic backups
-- Connection pooling
+- Connection pooling via Supavisor
 
 ### Caching: Redis (Render)
 
-- Managed Redis instance
-- Used for sessions, rate limiting
-- Persistence disabled (cache only)
-- Eviction policy: LRU
+- Managed Redis instance on Render (starter plan with persistence)
+- Used for JWT blacklist (fail-closed), Celery message broker
+- Eviction policy: volatile-ttl (expires keys with TTL first)
 
 
 ## High Availability Design
@@ -349,6 +343,88 @@ triggers:
     threshold: 30%
     action: scale_down
 ```
+
+
+## Deployed Production Infrastructure
+
+The production environment runs on Render.com with four services defined
+in `render.yaml` as an Infrastructure-as-Code blueprint. The following
+diagram depicts the production topology only; development uses local
+Docker Compose with Supabase CLI as described in the Environment Strategy
+section above.
+
+```{mermaid}
+graph TB
+    Browser["Browser"] -->|HTTPS| Cloudflare
+
+    subgraph CF["Cloudflare"]
+        Cloudflare["DNS + CDN Edge<br/>identity.okrbusiness.com"]
+    end
+
+    subgraph Render["Render.com"]
+        subgraph Frontend["Global CDN"]
+            StaticSite["identity-frontend<br/>(Vue 3 SPA, static)"]
+        end
+
+        subgraph Backend["Frankfurt Region"]
+            API["identity-api<br/>(FastAPI, Python 3.12)"]
+            Worker["identity-celery-worker<br/>(async emails)"]
+            Redis["identity-redis<br/>(sessions, broker)"]
+        end
+    end
+
+    subgraph External["External Services"]
+        Supabase[("Supabase<br/>PostgreSQL 15+")]
+        Google["Google OAuth"]
+    end
+
+    Cloudflare -->|CNAME| StaticSite
+    StaticSite -->|API calls| API
+    API --> Redis
+    API --> Supabase
+    Worker --> Redis
+    Worker --> Supabase
+    API -->|social auth| Google
+
+    style CF fill:#f9e0c7
+    style Frontend fill:#e3f2fd
+    style Backend fill:#fff3e0
+    style External fill:#f3e5f5
+```
+
+Backend services (API, Celery worker, Redis) run in the Frankfurt region.
+The frontend static site deploys to Render's global CDN without a fixed
+region, which reduces latency for geographically distributed users.
+
+### Custom Domain
+
+The frontend is accessible at `https://identity.okrbusiness.com` through
+Cloudflare DNS. A CNAME record points to the Render-assigned hostname
+(`identity-frontend-ka3l.onrender.com`). Render provisions and renews
+TLS certificates automatically via Let's Encrypt. Cloudflare operates
+in Full (strict) SSL mode, ensuring end-to-end encryption between
+the browser, Cloudflare edge, and Render origin.
+
+### Deployment Trigger
+
+Deployments are not triggered by Render's auto-deploy mechanism.
+Instead, a GitHub Actions workflow (`.github/workflows/deploy.yml`)
+fires on pushes to `main` that modify `backend/`, `frontend/`, or
+`render.yaml`. The workflow calls Render deploy hooks stored as
+GitHub repository secrets (`RENDER_DEPLOY_HOOK_API`,
+`RENDER_DEPLOY_HOOK_WORKER`, `RENDER_DEPLOY_HOOK_FRONTEND`).
+This approach provides path-based filtering, so backend-only changes
+do not trigger a frontend rebuild and vice versa.
+
+### Environment Configuration
+
+Shared environment variables for backend services are managed through
+the `identity-api-shared` Render environment group. Secrets
+(`DATABASE_URL`, `SUPABASE_SERVICE_KEY`, `GOOGLE_CLIENT_SECRET`, etc.)
+use `sync: false` and are entered via the Render dashboard.
+Frontend environment variables (`VITE_API_BASE_URL`, `VITE_API_VERSION`)
+are baked into the JavaScript bundle at build time by Vite and are not
+runtime-configurable.
 
 
 ## Security Operations

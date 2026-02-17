@@ -604,6 +604,45 @@ X-XSS-Protection: 1; mode=block
 ```
 
 
+### API Access Control for Browser-Based Clients
+
+A common question in SPA deployments is whether the API can be restricted
+to accept requests only from the frontend origin. A fundamental constraint
+of browser-based applications prevents this: the frontend JavaScript
+executes in the user's browser, so any request the frontend constructs
+can be replicated by an arbitrary HTTP client. No secret embedded in a
+browser-delivered bundle remains hidden from a user inspecting DevTools.
+
+CORS headers (`ALLOWED_ORIGINS_STR`) restrict which origins browsers
+permit for cross-origin requests. This prevents casual cross-site request
+abuse from other web applications. However, CORS is a browser-enforced
+mechanism, not a server-enforced one. Tools such as `curl`, Postman, or
+custom scripts bypass CORS entirely because they do not implement the
+same-origin policy.
+
+Cloudflare WAF rules and rate limiting at the edge can reduce automated
+abuse by blocking requests that lack expected headers (`Origin`, `Referer`)
+or match known bot signatures. These are heuristic defenses, not
+guarantees, as sophisticated clients can forge any HTTP header.
+
+Render's IP allow-list feature applies to private services (e.g., Redis)
+but cannot meaningfully protect a public-facing API. Browser requests
+originate from arbitrary user IP addresses, not from the frontend's CDN
+edge nodes, so an IP-based restriction would block legitimate users.
+
+The defense-in-depth approach adopted by this project layers multiple
+controls that collectively bound the attack surface:
+
+- CORS restricts casual browser-based cross-origin abuse
+- JWT authentication ensures only authenticated users access protected endpoints
+- Per-endpoint rate limiting (5/min for auth, 100/min for reads) bounds request volume
+- OAuth 2.1 scopes restrict what data third-party clients can access
+- Row-Level Security at the database layer prevents cross-user data access regardless of how the request reaches the API
+
+This combination provides meaningful access control without relying on
+the false premise that a browser client can hold a secret.
+
+
 ## OWASP Top 10 Mitigations
 
 | Vulnerability | Mitigation |
