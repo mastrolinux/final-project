@@ -143,6 +143,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/settings/consents',
+    name: 'oauth-consents',
+    component: () => import('@/views/OAuthConsentsView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Connected Applications',
+      breadcrumb: { parent: '/settings', parentLabel: 'nav.settings' }
+    }
+  },
+  {
     path: '/oauth/authorize',
     name: 'oauth-consent',
     component: () => import('@/views/OAuthConsentView.vue'),
