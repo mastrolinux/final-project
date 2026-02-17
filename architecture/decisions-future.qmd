@@ -207,7 +207,7 @@ Hard delete capability has been implemented for OAuth clients via the `/admin/oa
 - Adequate for scale requirements (100K-1M users)
 - Cost-effective for initial deployment
 - Good free tier for development
-- Auto-deploy from Git
+- Deploy hooks triggered by GitHub Actions (path-filtered CI/CD)
 
 **Consequences**:
 
