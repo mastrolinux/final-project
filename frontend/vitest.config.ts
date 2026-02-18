@@ -12,6 +12,7 @@ export default mergeConfig(
       setupFiles: ['./src/tests/setup.ts'],
       coverage: {
         provider: 'v8',
+        include: ['src/**'],
         reporter: ['text', 'json', 'html'],
         exclude: [
           'node_modules/',
