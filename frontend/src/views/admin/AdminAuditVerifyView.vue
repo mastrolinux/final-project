@@ -1,48 +1,47 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { getErrorMessage } from '@/services'
-import auditService from '@/services/audit.service'
-import type { AuditIntegrityResponse } from '@/types'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseInput from '@/components/common/BaseInput.vue'
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { getErrorMessage } from "@/services";
+import auditService from "@/services/audit.service";
+import type { AuditIntegrityResponse } from "@/types";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseInput from "@/components/common/BaseInput.vue";
 import {
   ShieldCheckIcon,
-  ExclamationTriangleIcon
-} from '@heroicons/vue/24/outline'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+  ExclamationTriangleIcon,
+} from "@heroicons/vue/24/outline";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const { t } = useI18n()
+const { t } = useI18n();
 
-const verifyLimit = ref('1000')
-const isVerifying = ref(false)
-const error = ref<string | null>(null)
-const result = ref<AuditIntegrityResponse | null>(null)
-const hasRun = ref(false)
+const verifyLimit = ref("1000");
+const isVerifying = ref(false);
+const error = ref<string | null>(null);
+const result = ref<AuditIntegrityResponse | null>(null);
+const hasRun = ref(false);
 
 async function runVerification() {
-  const limitNum = parseInt(verifyLimit.value, 10)
+  const limitNum = parseInt(verifyLimit.value, 10);
   if (isNaN(limitNum) || limitNum < 1 || limitNum > 10000) {
-    error.value = t('audit.verify.limitError')
-    return
+    error.value = t("audit.verify.limitError");
+    return;
   }
 
-  isVerifying.value = true
-  error.value = null
-  result.value = null
-  hasRun.value = false
+  isVerifying.value = true;
+  error.value = null;
+  result.value = null;
+  hasRun.value = false;
 
   try {
-    result.value = await auditService.verifyIntegrity(limitNum)
-    hasRun.value = true
+    result.value = await auditService.verifyIntegrity(limitNum);
+    hasRun.value = true;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isVerifying.value = false
+    isVerifying.value = false;
   }
 }
-
 </script>
 
 <template>
@@ -51,8 +50,8 @@ async function runVerification() {
       <AppBreadcrumb />
 
       <div class="page-header">
-        <h1 class="page-title">{{ t('audit.verify.title') }}</h1>
-        <p class="page-description">{{ t('audit.verify.description') }}</p>
+        <h1 class="page-title">{{ t("audit.verify.title") }}</h1>
+        <p class="page-description">{{ t("audit.verify.description") }}</p>
       </div>
 
       <!-- Verification Controls -->
@@ -72,7 +71,11 @@ async function runVerification() {
               :loading="isVerifying"
               @click="runVerification"
             >
-              {{ isVerifying ? t('audit.verify.verifying') : t('audit.verify.runButton') }}
+              {{
+                isVerifying
+                  ? t("audit.verify.verifying")
+                  : t("audit.verify.runButton")
+              }}
             </BaseButton>
           </div>
         </div>
@@ -84,32 +87,50 @@ async function runVerification() {
       <!-- Results -->
       <BaseCard v-if="hasRun && result" class="result-card">
         <div class="result-content">
-          <div class="result-icon-wrapper" :class="result.is_valid ? 'result-valid' : 'result-invalid'">
+          <div
+            class="result-icon-wrapper"
+            :class="result.is_valid ? 'result-valid' : 'result-invalid'"
+          >
             <ShieldCheckIcon v-if="result.is_valid" class="result-icon" />
             <ExclamationTriangleIcon v-else class="result-icon" />
           </div>
 
-          <h2 class="result-title" :class="result.is_valid ? 'text-success' : 'text-error'">
-            {{ result.is_valid ? t('audit.verify.chainValid') : t('audit.verify.chainInvalid') }}
+          <h2
+            class="result-title"
+            :class="result.is_valid ? 'text-success' : 'text-error'"
+          >
+            {{
+              result.is_valid
+                ? t("audit.verify.chainValid")
+                : t("audit.verify.chainInvalid")
+            }}
           </h2>
 
           <div class="result-meta">
             <div class="result-stat">
-              <span class="stat-label">{{ t('audit.verify.entriesVerified') }}</span>
+              <span class="stat-label">{{
+                t("audit.verify.entriesVerified")
+              }}</span>
               <span class="stat-value">{{ result.entries_verified }}</span>
             </div>
           </div>
 
           <div v-if="result.error_message" class="error-details">
-            <h3 class="error-details-title">{{ t('audit.verify.errorDetails') }}</h3>
+            <h3 class="error-details-title">
+              {{ t("audit.verify.errorDetails") }}
+            </h3>
             <pre class="error-details-content">{{ result.error_message }}</pre>
           </div>
 
           <p v-if="result.is_valid" class="result-explanation">
-            {{ t('audit.verify.validExplanation', { count: result.entries_verified }) }}
+            {{
+              t("audit.verify.validExplanation", {
+                count: result.entries_verified,
+              })
+            }}
           </p>
           <p v-else class="result-explanation result-explanation-error">
-            {{ t('audit.verify.invalidExplanation') }}
+            {{ t("audit.verify.invalidExplanation") }}
           </p>
         </div>
       </BaseCard>
@@ -121,7 +142,6 @@ async function runVerification() {
 .admin-audit-verify-view {
   padding: var(--spacing-8) 0;
 }
-
 
 .verify-controls {
   display: flex;

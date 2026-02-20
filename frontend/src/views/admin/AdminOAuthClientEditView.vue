@@ -1,51 +1,50 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { adminOAuthService, getErrorMessage } from '@/services'
-import type { OAuthClientResponse, OAuthClientUpdate } from '@/types'
-import BaseCard from '@/components/common/BaseCard.vue'
-import OAuthClientForm from '@/components/admin/OAuthClientForm.vue'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { adminOAuthService, getErrorMessage } from "@/services";
+import type { OAuthClientResponse, OAuthClientUpdate } from "@/types";
+import BaseCard from "@/components/common/BaseCard.vue";
+import OAuthClientForm from "@/components/admin/OAuthClientForm.vue";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
 
-const client = ref<OAuthClientResponse | null>(null)
-const isLoading = ref(true)
-const isSaving = ref(false)
-const error = ref<string | null>(null)
-const saveError = ref<string | null>(null)
+const client = ref<OAuthClientResponse | null>(null);
+const isLoading = ref(true);
+const isSaving = ref(false);
+const error = ref<string | null>(null);
+const saveError = ref<string | null>(null);
 
-const clientId = route.params.clientId as string
+const clientId = route.params.clientId as string;
 
 onMounted(async () => {
   try {
-    client.value = await adminOAuthService.getClient(clientId)
+    client.value = await adminOAuthService.getClient(clientId);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 async function handleSubmit(data: OAuthClientUpdate): Promise<void> {
-  isSaving.value = true
-  saveError.value = null
+  isSaving.value = true;
+  saveError.value = null;
 
   try {
-    await adminOAuthService.updateClient(clientId, data)
-    router.push({ name: 'admin-oauth-clients' })
+    await adminOAuthService.updateClient(clientId, data);
+    router.push({ name: "admin-oauth-clients" });
   } catch (err) {
-    saveError.value = getErrorMessage(err)
+    saveError.value = getErrorMessage(err);
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
 }
 
 function handleCancel(): void {
-  router.push({ name: 'admin-oauth-clients' })
+  router.push({ name: "admin-oauth-clients" });
 }
-
 </script>
 
 <template>
@@ -92,7 +91,6 @@ function handleCancel(): void {
 .admin-oauth-client-edit-view {
   padding: var(--spacing-8) 0;
 }
-
 
 .loading-state {
   display: flex;

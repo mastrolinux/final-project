@@ -16,10 +16,17 @@ from src.core.database import (
 )
 
 
-def test_check_db_connection_healthy(db_session):
+@patch('src.core.database.SessionLocal')
+def test_check_db_connection_healthy(mock_session):
     """Test database connection check when database is healthy"""
+    mock_db = Mock()
+    mock_result = Mock()
+    mock_result.fetchone.return_value = (1,)
+    mock_db.execute.return_value = mock_result
+    mock_session.return_value = mock_db
+
     result = check_db_connection()
-    
+
     assert result["status"] == "healthy"
     assert result["message"] == "Database connection successful"
     assert "details" in result
@@ -76,13 +83,20 @@ def test_check_supabase_connection_unconfigured(mock_settings):
     assert result["message"] == "Supabase credentials not configured"
 
 
-def test_check_database_tables(db_session):
+@patch('src.core.database.SessionLocal')
+def test_check_database_tables(mock_session):
     """Test database tables check"""
+    mock_db = Mock()
+    mock_result = Mock()
+    mock_result.fetchall.return_value = [("base_profiles",), ("identity_names",)]
+    mock_db.execute.return_value = mock_result
+    mock_session.return_value = mock_db
+
     result = check_database_tables()
-    
-    # In SQLite test database, tables should exist
-    assert result["status"] in ["healthy", "incomplete"]
-    assert "tables" in result or "existing_tables" in result
+
+    assert result["status"] == "healthy"
+    assert result["message"] == "All required tables exist"
+    assert "tables" in result
 
 
 @patch('src.core.database.SessionLocal')

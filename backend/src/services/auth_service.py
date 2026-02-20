@@ -29,6 +29,7 @@ from src.tasks.email_tasks import (
 from src.models.audit import AuditEventType, AuditOperation
 
 if TYPE_CHECKING:
+    from src.core.redis_client import TokenBlacklist
     from src.services.audit_service import AuditService
 
 

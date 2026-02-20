@@ -1,46 +1,46 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 export interface SelectOption {
-  label: string
-  value: string | number
-  disabled?: boolean
+  label: string;
+  value: string | number;
+  disabled?: boolean;
 }
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string | number | null
-    options: SelectOption[]
-    label?: string
-    id: string
-    placeholder?: string
-    error?: string
-    hint?: string
-    disabled?: boolean
-    required?: boolean
+    modelValue: string | number | null;
+    options: SelectOption[];
+    label?: string;
+    id: string;
+    placeholder?: string;
+    error?: string;
+    hint?: string;
+    disabled?: boolean;
+    required?: boolean;
   }>(),
   {
-    modelValue: '',
+    modelValue: "",
     disabled: false,
-    required: false
-  }
-)
+    required: false,
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
-}>()
+  (e: "update:modelValue", value: string | number): void;
+}>();
 
 const handleChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  emit('update:modelValue', target.value)
-}
+  const target = event.target as HTMLSelectElement;
+  emit("update:modelValue", target.value);
+};
 
 const describedBy = computed(() => {
-  const ids = []
-  if (props.hint) ids.push(`${props.id}-hint`)
-  if (props.error) ids.push(`${props.id}-error`)
-  return ids.length ? ids.join(' ') : undefined
-})
+  const ids = [];
+  if (props.hint) ids.push(`${props.id}-hint`);
+  if (props.error) ids.push(`${props.id}-error`);
+  return ids.length ? ids.join(" ") : undefined;
+});
 </script>
 
 <template>
@@ -49,7 +49,7 @@ const describedBy = computed(() => {
       {{ label }}
       <span v-if="required" class="text-error" aria-hidden="true">*</span>
     </label>
-    
+
     <div class="select-wrapper">
       <select
         :id="id"
@@ -62,7 +62,9 @@ const describedBy = computed(() => {
         :class="{ 'has-error': error }"
         @change="handleChange"
       >
-        <option v-if="placeholder" value="" disabled selected>{{ placeholder }}</option>
+        <option v-if="placeholder" value="" disabled selected>
+          {{ placeholder }}
+        </option>
         <option
           v-for="option in options"
           :key="option.value"
@@ -73,8 +75,17 @@ const describedBy = computed(() => {
         </option>
       </select>
       <div class="select-arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+            clip-rule="evenodd"
+          />
         </svg>
       </div>
     </div>
@@ -117,7 +128,9 @@ const describedBy = computed(() => {
   border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
   appearance: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .form-select:focus {
