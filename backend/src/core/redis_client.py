@@ -108,6 +108,7 @@ class TokenBlacklist:
 
         try:
             key = f"blacklist:{jti}"
+            assert self._redis_client is not None
             result = self._redis_client.exists(key)
 
             if result:
@@ -144,6 +145,7 @@ class TokenBlacklist:
 
         try:
             key = f"blacklist:{jti}"
+            assert self._redis_client is not None
             self._redis_client.setex(key, ttl_seconds, "1")
             logger.info(f"Token {jti[:8]}... blacklisted for {ttl_seconds}s")
 
@@ -165,6 +167,7 @@ class TokenBlacklist:
         """
         try:
             # Count blacklist keys (approximate for large datasets)
+            assert self._redis_client is not None
             cursor = 0
             count = 0
             while True:
