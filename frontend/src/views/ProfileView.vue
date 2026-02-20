@@ -1,55 +1,55 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { useAuthStore, useProfileStore } from '@/stores'
-import { profileService, contextService, getErrorMessage } from '@/services'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
-import { CONTEXT_TYPE_META } from '@/types'
-import { ChevronRightIcon } from '@heroicons/vue/24/outline'
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useAuthStore, useProfileStore } from "@/stores";
+import { profileService, contextService, getErrorMessage } from "@/services";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
+import { CONTEXT_TYPE_META } from "@/types";
+import { ChevronRightIcon } from "@heroicons/vue/24/outline";
 
-const { t } = useI18n()
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
+const { t } = useI18n();
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
   try {
     const [profile, names, contexts] = await Promise.all([
       profileService.get(authStore.userId),
       profileService.getNames(authStore.userId),
-      contextService.list(authStore.userId)
-    ])
+      contextService.list(authStore.userId),
+    ]);
 
-    profileStore.setProfile(profile)
-    profileStore.setIdentityNames(names)
-    profileStore.setContexts(contexts)
+    profileStore.setProfile(profile);
+    profileStore.setIdentityNames(names);
+    profileStore.setContexts(contexts);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 const navigateToEdit = () => {
-  router.push({ name: 'profile-edit' })
-}
+  router.push({ name: "profile-edit" });
+};
 
 const navigateToContexts = () => {
-  router.push({ name: 'contexts' })
-}
+  router.push({ name: "contexts" });
+};
 
 const navigateToCreateContext = () => {
-  router.push({ name: 'context-create' })
-}
+  router.push({ name: "context-create" });
+};
 </script>
 
 <template>
@@ -57,7 +57,7 @@ const navigateToCreateContext = () => {
     <div class="container container-lg">
       <div v-if="isLoading" class="loading-state">
         <div class="spinner spinner-lg"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <div v-else-if="error" class="alert alert-error alert-spaced">
@@ -77,7 +77,7 @@ const navigateToCreateContext = () => {
           <h1 class="profile-name">{{ profileStore.displayName }}</h1>
           <p class="profile-email">{{ profileStore.profile.primary_email }}</p>
           <BaseButton variant="secondary" @click="navigateToEdit">
-            {{ t('profile.editProfile') }}
+            {{ t("profile.editProfile") }}
           </BaseButton>
         </div>
 
@@ -85,42 +85,75 @@ const navigateToCreateContext = () => {
           <!-- Base Information -->
           <BaseCard>
             <template #header>
-              <h2 class="card-heading">{{ t('profile.baseProfile') }}</h2>
+              <h2 class="card-heading">{{ t("profile.baseProfile") }}</h2>
             </template>
 
             <div class="fields-list">
               <div class="field-group">
-                <label class="field-label">{{ t('auth.accountType.label') }}</label>
+                <label class="field-label">{{
+                  t("auth.accountType.label")
+                }}</label>
                 <div>
-                  <BaseBadge :variant="profileStore.profile.account_type === 'verified' ? 'success' : 'warning'">
-                    {{ t(`auth.accountType.${profileStore.profile.account_type}`) }}
+                  <BaseBadge
+                    :variant="
+                      profileStore.profile.account_type === 'verified'
+                        ? 'success'
+                        : 'warning'
+                    "
+                  >
+                    {{
+                      t(`auth.accountType.${profileStore.profile.account_type}`)
+                    }}
                   </BaseBadge>
                 </div>
               </div>
 
               <div class="field-group" v-if="profileStore.profile.legal_name">
-                <label class="field-label">{{ t('profile.legalName') }}</label>
-                <div class="field-value">{{ profileStore.profile.legal_name }}</div>
+                <label class="field-label">{{ t("profile.legalName") }}</label>
+                <div class="field-value">
+                  {{ profileStore.profile.legal_name }}
+                </div>
               </div>
 
               <div class="field-group">
-                <label class="field-label">{{ t('profile.primaryEmail') }}</label>
-                <div class="field-value">{{ profileStore.profile.primary_email }}</div>
+                <label class="field-label">{{
+                  t("profile.primaryEmail")
+                }}</label>
+                <div class="field-value">
+                  {{ profileStore.profile.primary_email }}
+                </div>
               </div>
 
-              <div class="field-group" v-if="profileStore.profile.primary_phone">
-                <label class="field-label">{{ t('profile.primaryPhone') }}</label>
-                <div class="field-value">{{ profileStore.profile.primary_phone }}</div>
+              <div
+                class="field-group"
+                v-if="profileStore.profile.primary_phone"
+              >
+                <label class="field-label">{{
+                  t("profile.primaryPhone")
+                }}</label>
+                <div class="field-value">
+                  {{ profileStore.profile.primary_phone }}
+                </div>
               </div>
 
               <div class="field-group">
-                <label class="field-label">{{ t('profile.preferredLanguage') }}</label>
-                <div class="field-value">{{ profileStore.profile.preferred_language }}</div>
+                <label class="field-label">{{
+                  t("profile.preferredLanguage")
+                }}</label>
+                <div class="field-value">
+                  {{ profileStore.profile.preferred_language }}
+                </div>
               </div>
 
               <div class="field-group">
-                <label class="field-label">{{ t('profile.createdAt') }}</label>
-                <div class="field-value">{{ new Date(profileStore.profile.created_at).toLocaleDateString() }}</div>
+                <label class="field-label">{{ t("profile.createdAt") }}</label>
+                <div class="field-value">
+                  {{
+                    new Date(
+                      profileStore.profile.created_at,
+                    ).toLocaleDateString()
+                  }}
+                </div>
               </div>
             </div>
           </BaseCard>
@@ -130,11 +163,16 @@ const navigateToCreateContext = () => {
             <template #header>
               <div class="card-header-row">
                 <h2 class="card-heading">Identity Names</h2>
-                <BaseButton variant="ghost" size="sm" @click="navigateToEdit">+ Add</BaseButton>
+                <BaseButton variant="ghost" size="sm" @click="navigateToEdit"
+                  >+ Add</BaseButton
+                >
               </div>
             </template>
 
-            <div v-if="profileStore.identityNames.length === 0" class="empty-names">
+            <div
+              v-if="profileStore.identityNames.length === 0"
+              class="empty-names"
+            >
               No additional names configured.
             </div>
 
@@ -145,8 +183,12 @@ const navigateToCreateContext = () => {
                 class="name-item"
               >
                 <div class="name-badges">
-                  <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
-                  <BaseBadge v-if="name.is_primary" variant="success" size="sm">Primary</BaseBadge>
+                  <BaseBadge variant="primary" size="sm">{{
+                    name.name_type
+                  }}</BaseBadge>
+                  <BaseBadge v-if="name.is_primary" variant="success" size="sm"
+                    >Primary</BaseBadge
+                  >
                 </div>
                 <div class="name-languages">
                   <div
@@ -167,13 +209,25 @@ const navigateToCreateContext = () => {
             <template #header>
               <div class="card-header-row">
                 <h2 class="card-heading">Identity Contexts</h2>
-                <BaseButton variant="ghost" size="sm" @click="navigateToCreateContext">+ Create</BaseButton>
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  @click="navigateToCreateContext"
+                  >+ Create</BaseButton
+                >
               </div>
             </template>
 
-            <div v-if="profileStore.contexts.length === 0" class="empty-contexts">
-              <div class="empty-contexts-text">No contexts yet. Create one to separate your identities.</div>
-              <BaseButton variant="primary" @click="navigateToCreateContext">Create Context</BaseButton>
+            <div
+              v-if="profileStore.contexts.length === 0"
+              class="empty-contexts"
+            >
+              <div class="empty-contexts-text">
+                No contexts yet. Create one to separate your identities.
+              </div>
+              <BaseButton variant="primary" @click="navigateToCreateContext"
+                >Create Context</BaseButton
+              >
             </div>
 
             <div v-else class="contexts-cards">
@@ -181,29 +235,43 @@ const navigateToCreateContext = () => {
                 v-for="context in profileStore.contexts"
                 :key="context.id"
                 class="context-card"
-                @click="router.push({ name: 'context-detail', params: { id: context.id } })"
+                @click="
+                  router.push({
+                    name: 'context-detail',
+                    params: { id: context.id },
+                  })
+                "
               >
                 <div class="context-card-header">
                   <BaseBadge :variant="context.context_type">
-                    {{ CONTEXT_TYPE_META[context.context_type]?.label || context.context_type }}
+                    {{
+                      CONTEXT_TYPE_META[context.context_type]?.label ||
+                      context.context_type
+                    }}
                   </BaseBadge>
                   <ChevronRightIcon class="context-card-arrow" />
                 </div>
                 <div class="context-card-identity">
                   <AvatarDisplay
                     :src="context.avatar_override_url"
-                    :name="context.display_name_override || profileStore.displayName"
+                    :name="
+                      context.display_name_override || profileStore.displayName
+                    "
                     size="sm"
                   />
                   <h3 class="context-card-title">{{ context.context_name }}</h3>
                 </div>
-                <p class="context-card-bio">{{ context.bio || 'Inherited bio' }}</p>
+                <p class="context-card-bio">
+                  {{ context.bio || "Inherited bio" }}
+                </p>
               </div>
             </div>
 
             <template #footer>
               <div class="card-footer-center">
-                <BaseButton variant="ghost" @click="navigateToContexts">View All Contexts</BaseButton>
+                <BaseButton variant="ghost" @click="navigateToContexts"
+                  >View All Contexts</BaseButton
+                >
               </div>
             </template>
           </BaseCard>

@@ -1,69 +1,69 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { authService, getErrorMessage } from '@/services'
-import GoogleLoginButton from '@/components/auth/GoogleLoginButton.vue'
-import axios from 'axios'
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { authService, getErrorMessage } from "@/services";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton.vue";
+import axios from "axios";
 
-const router = useRouter()
-const route = useRoute()
-const { t } = useI18n()
+const router = useRouter();
+const route = useRoute();
+const { t } = useI18n();
 
-const emailInput = ref<HTMLInputElement | null>(null)
-const email = ref('')
-const password = ref('')
-const isLoading = ref(false)
-const error = ref<string | null>(null)
+const emailInput = ref<HTMLInputElement | null>(null);
+const email = ref("");
+const password = ref("");
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 
 // Account deleted state (403 with ACCOUNT_DELETED)
 const accountDeleted = ref<{
-  deletionScheduledAt: string
-  permanentDeletionDate: string
-  recoveryInfo: string
-} | null>(null)
+  deletionScheduledAt: string;
+  permanentDeletionDate: string;
+  recoveryInfo: string;
+} | null>(null);
 
 onMounted(() => {
-  emailInput.value?.focus()
-})
+  emailInput.value?.focus();
+});
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 async function handleSubmit() {
-  error.value = null
-  accountDeleted.value = null
-  isLoading.value = true
+  error.value = null;
+  accountDeleted.value = null;
+  isLoading.value = true;
 
   try {
-    await authService.login({ email: email.value, password: password.value })
+    await authService.login({ email: email.value, password: password.value });
 
     // Redirect to intended destination or profile
-    const redirect = route.query.redirect as string
-    router.push(redirect || { name: 'profile' })
+    const redirect = route.query.redirect as string;
+    router.push(redirect || { name: "profile" });
   } catch (err) {
     // Handle 403 ACCOUNT_DELETED structured response
     if (
       axios.isAxiosError(err) &&
       err.response?.status === 403 &&
-      err.response?.data?.detail?.code === 'ACCOUNT_DELETED'
+      err.response?.data?.detail?.code === "ACCOUNT_DELETED"
     ) {
-      const detail = err.response.data.detail
+      const detail = err.response.data.detail;
       accountDeleted.value = {
         deletionScheduledAt: detail.deletion_scheduled_at,
         permanentDeletionDate: detail.permanent_deletion_date,
-        recoveryInfo: detail.recovery_info
-      }
+        recoveryInfo: detail.recovery_info,
+      };
     } else {
-      error.value = getErrorMessage(err)
+      error.value = getErrorMessage(err);
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
@@ -73,23 +73,29 @@ async function handleSubmit() {
     <div class="auth-card card">
       <div class="card-body">
         <div class="auth-header">
-          <h1>{{ t('auth.login') }}</h1>
-          <p class="text-secondary">{{ t('app.tagline') }}</p>
+          <h1>{{ t("auth.login") }}</h1>
+          <p class="text-secondary">{{ t("app.tagline") }}</p>
         </div>
 
         <!-- Account deleted card -->
         <div v-if="accountDeleted" class="deleted-account-card">
           <div class="deleted-icon">!</div>
-          <h2>{{ t('auth.restore.accountDeleted') }}</h2>
+          <h2>{{ t("auth.restore.accountDeleted") }}</h2>
           <p class="text-secondary">
-            {{ t('auth.restore.accountDeletedMessage', { date: formatDate(accountDeleted.permanentDeletionDate) }) }}
+            {{
+              t("auth.restore.accountDeletedMessage", {
+                date: formatDate(accountDeleted.permanentDeletionDate),
+              })
+            }}
           </p>
-          <p class="text-secondary mt-2">{{ t('auth.restore.recoveryInstructions') }}</p>
+          <p class="text-secondary mt-2">
+            {{ t("auth.restore.recoveryInstructions") }}
+          </p>
           <router-link to="/restore-account" class="btn btn-primary mt-4">
-            {{ t('auth.restore.restoreMyAccount') }}
+            {{ t("auth.restore.restoreMyAccount") }}
           </router-link>
           <button class="btn btn-outline mt-2" @click="accountDeleted = null">
-            {{ t('auth.restore.backToLogin') }}
+            {{ t("auth.restore.backToLogin") }}
           </button>
         </div>
 
@@ -98,7 +104,7 @@ async function handleSubmit() {
           <div class="social-login-section">
             <GoogleLoginButton @error="error = $event" />
             <div class="divider">
-              <span>{{ t('auth.orContinueWith') }}</span>
+              <span>{{ t("auth.orContinueWith") }}</span>
             </div>
           </div>
 
@@ -108,7 +114,7 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label for="email">{{ t('auth.email') }}</label>
+              <label for="email">{{ t("auth.email") }}</label>
               <input
                 id="email"
                 ref="emailInput"
@@ -121,7 +127,7 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label for="password">{{ t('auth.password') }}</label>
+              <label for="password">{{ t("auth.password") }}</label>
               <input
                 id="password"
                 v-model="password"
@@ -132,22 +138,26 @@ async function handleSubmit() {
               />
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
+            <button
+              type="submit"
+              class="btn btn-primary btn-block"
+              :disabled="isLoading"
+            >
               <span v-if="isLoading" class="spinner spinner-sm"></span>
-              {{ t('auth.signIn') }}
+              {{ t("auth.signIn") }}
             </button>
 
             <div class="form-help-link">
               <router-link to="/forgot-password" class="text-sm text-secondary">
-                {{ t('auth.forgotPassword') }}
+                {{ t("auth.forgotPassword") }}
               </router-link>
             </div>
           </form>
 
           <div class="auth-footer">
             <p class="text-secondary text-sm">
-              {{ t('auth.noAccount') }}
-              <router-link to="/register">{{ t('auth.register') }}</router-link>
+              {{ t("auth.noAccount") }}
+              <router-link to="/register">{{ t("auth.register") }}</router-link>
             </p>
           </div>
         </template>
@@ -227,7 +237,7 @@ async function handleSubmit() {
 
 .divider::before,
 .divider::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background-color: var(--color-gray-300);

@@ -1,31 +1,31 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    variant?: 'text' | 'avatar' | 'card' | 'button' | 'heading'
-    width?: string
-    height?: string
-    rounded?: boolean
+    variant?: "text" | "avatar" | "card" | "button" | "heading";
+    width?: string;
+    height?: string;
+    rounded?: boolean;
   }>(),
   {
-    variant: 'text',
-    rounded: false
-  }
-)
+    variant: "text",
+    rounded: false,
+  },
+);
 
 const customStyle = computed(() => {
-  const style: Record<string, string> = {}
-  if (props.width) style.width = props.width
-  if (props.height) style.height = props.height
-  return style
-})
+  const style: Record<string, string> = {};
+  if (props.width) style.width = props.width;
+  if (props.height) style.height = props.height;
+  return style;
+});
 
 const classes = computed(() => [
-  'skeleton',
+  "skeleton",
   `skeleton-${props.variant}`,
-  { 'skeleton-rounded': props.rounded }
-])
+  { "skeleton-rounded": props.rounded },
+]);
 </script>
 
 <template>

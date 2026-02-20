@@ -1,39 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useUiStore, type Theme } from '@/stores'
+import { computed } from "vue";
+import { useUiStore, type Theme } from "@/stores";
 
-const uiStore = useUiStore()
+const uiStore = useUiStore();
 
-const currentTheme = computed(() => uiStore.theme)
+const currentTheme = computed(() => uiStore.theme);
 
 function cycleTheme() {
-  const themes: Theme[] = ['light', 'dark', 'system']
-  const currentIndex = themes.indexOf(currentTheme.value)
-  const nextIndex = (currentIndex + 1) % themes.length
-  uiStore.setTheme(themes[nextIndex])
+  const themes: Theme[] = ["light", "dark", "system"];
+  const currentIndex = themes.indexOf(currentTheme.value);
+  const nextIndex = (currentIndex + 1) % themes.length;
+  uiStore.setTheme(themes[nextIndex]);
 }
 
 const themeIcon = computed(() => {
   switch (currentTheme.value) {
-    case 'light':
-      return 'sun'
-    case 'dark':
-      return 'moon'
-    case 'system':
-      return 'system'
+    case "light":
+      return "sun";
+    case "dark":
+      return "moon";
+    case "system":
+    default:
+      return "system";
   }
-})
+});
 
 const themeLabel = computed(() => {
   switch (currentTheme.value) {
-    case 'light':
-      return 'Light'
-    case 'dark':
-      return 'Dark'
-    case 'system':
-      return 'System'
+    case "light":
+      return "Light";
+    case "dark":
+      return "Dark";
+    case "system":
+    default:
+      return "System";
   }
-})
+});
 </script>
 
 <template>
@@ -44,7 +46,14 @@ const themeLabel = computed(() => {
     :aria-label="`Current theme: ${themeLabel}. Click to cycle themes.`"
   >
     <!-- Sun icon for light mode -->
-    <svg v-if="themeIcon === 'sun'" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg
+      v-if="themeIcon === 'sun'"
+      class="theme-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
       <circle cx="12" cy="12" r="5" />
       <line x1="12" y1="1" x2="12" y2="3" />
       <line x1="12" y1="21" x2="12" y2="23" />
@@ -57,12 +66,26 @@ const themeLabel = computed(() => {
     </svg>
 
     <!-- Moon icon for dark mode -->
-    <svg v-else-if="themeIcon === 'moon'" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg
+      v-else-if="themeIcon === 'moon'"
+      class="theme-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
 
     <!-- System icon (monitor) -->
-    <svg v-else class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg
+      v-else
+      class="theme-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
       <line x1="8" y1="21" x2="16" y2="21" />
       <line x1="12" y1="17" x2="12" y2="21" />
@@ -94,7 +117,9 @@ const themeLabel = computed(() => {
 
 .theme-toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary-500);
+  box-shadow:
+    0 0 0 2px var(--bg-primary),
+    0 0 0 4px var(--color-primary-500);
 }
 
 .theme-icon {

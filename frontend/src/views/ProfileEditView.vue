@@ -1,132 +1,144 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
-import { profileService, getErrorMessage } from '@/services'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseSelect from '@/components/common/BaseSelect.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseCard from '@/components/common/BaseCard.vue'
-import AvatarUpload from '@/components/profile/AvatarUpload.vue'
-import IdentityNameManager from '@/components/profile/IdentityNameManager.vue'
-import type { ProfileUpdate } from '@/types'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+import { ref, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useAuthStore, useProfileStore, useUiStore } from "@/stores";
+import { profileService, getErrorMessage } from "@/services";
+import BaseInput from "@/components/common/BaseInput.vue";
+import BaseSelect from "@/components/common/BaseSelect.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseCard from "@/components/common/BaseCard.vue";
+import AvatarUpload from "@/components/profile/AvatarUpload.vue";
+import IdentityNameManager from "@/components/profile/IdentityNameManager.vue";
+import type { ProfileUpdate } from "@/types";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const { t } = useI18n()
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-const uiStore = useUiStore()
+const { t } = useI18n();
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const uiStore = useUiStore();
 
-const isLoading = ref(true)
-const isSaving = ref(false)
-const isUploadingAvatar = ref(false)
-const error = ref<string | null>(null)
+const isLoading = ref(true);
+const isSaving = ref(false);
+const isUploadingAvatar = ref(false);
+const error = ref<string | null>(null);
 
 const form = reactive<{
-  legal_name: string
-  primary_email: string
-  primary_phone: string
-  preferred_language: string
+  legal_name: string;
+  primary_email: string;
+  primary_phone: string;
+  preferred_language: string;
 }>({
-  legal_name: '',
-  primary_email: '',
-  primary_phone: '',
-  preferred_language: 'en'
-})
+  legal_name: "",
+  primary_email: "",
+  primary_phone: "",
+  preferred_language: "en",
+});
 
 // Language options
 const languageOptions = [
-  { label: 'English', value: 'en' },
-  { label: 'Chinese (Simplified)', value: 'zh' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Arabic', value: 'ar' },
-  { label: 'Italian', value: 'it' }
-]
+  { label: "English", value: "en" },
+  { label: "Chinese (Simplified)", value: "zh" },
+  { label: "Spanish", value: "es" },
+  { label: "Arabic", value: "ar" },
+  { label: "Italian", value: "it" },
+];
 
 onMounted(async () => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
   try {
     // Ensure we have the latest profile data
-    const profile = await profileService.get(authStore.userId)
-    profileStore.setProfile(profile)
+    const profile = await profileService.get(authStore.userId);
+    profileStore.setProfile(profile);
 
     // Also fetch identity names for the manager
-    const names = await profileService.getNames(authStore.userId)
-    profileStore.setIdentityNames(names)
+    const names = await profileService.getNames(authStore.userId);
+    profileStore.setIdentityNames(names);
 
     // Populate form
-    form.legal_name = profile.legal_name || ''
-    form.primary_email = profile.primary_email
-    form.primary_phone = profile.primary_phone || ''
-    form.preferred_language = profile.preferred_language
+    form.legal_name = profile.legal_name || "";
+    form.primary_email = profile.primary_email;
+    form.primary_phone = profile.primary_phone || "";
+    form.preferred_language = profile.preferred_language;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 const handleSave = async () => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isSaving.value = true
-  error.value = null
+  isSaving.value = true;
+  error.value = null;
 
   try {
     const updates: ProfileUpdate = {
       legal_name: form.legal_name || undefined,
       primary_email: form.primary_email,
       primary_phone: form.primary_phone || undefined,
-      preferred_language: form.preferred_language
-    }
+      preferred_language: form.preferred_language,
+    };
 
-    const updatedProfile = await profileService.update(authStore.userId, updates)
-    profileStore.setProfile(updatedProfile)
+    const updatedProfile = await profileService.update(
+      authStore.userId,
+      updates,
+    );
+    profileStore.setProfile(updatedProfile);
 
-    router.back()
+    router.back();
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
-}
+};
 
 const handleCancel = () => {
-  router.back()
-}
+  router.back();
+};
 
 const handleAvatarUpload = async (file: File) => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isUploadingAvatar.value = true
+  isUploadingAvatar.value = true;
   try {
-    const result = await profileService.uploadAvatar(authStore.userId, file)
-    profileStore.setProfileAvatar(result.avatar_url, result.avatar_thumbnail_url)
-    uiStore.addNotification({ type: 'success', message: t('profile.avatar.uploadSuccess') })
+    const result = await profileService.uploadAvatar(authStore.userId, file);
+    profileStore.setProfileAvatar(
+      result.avatar_url,
+      result.avatar_thumbnail_url,
+    );
+    uiStore.addNotification({
+      type: "success",
+      message: t("profile.avatar.uploadSuccess"),
+    });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isUploadingAvatar.value = false
+    isUploadingAvatar.value = false;
   }
-}
+};
 
 const handleAvatarRemove = async () => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isUploadingAvatar.value = true
+  isUploadingAvatar.value = true;
   try {
-    await profileService.deleteAvatar(authStore.userId)
-    profileStore.clearProfileAvatar()
-    uiStore.addNotification({ type: 'success', message: t('profile.avatar.removeSuccess') })
+    await profileService.deleteAvatar(authStore.userId);
+    profileStore.clearProfileAvatar();
+    uiStore.addNotification({
+      type: "success",
+      message: t("profile.avatar.removeSuccess"),
+    });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isUploadingAvatar.value = false
+    isUploadingAvatar.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -134,12 +146,12 @@ const handleAvatarRemove = async () => {
     <div class="container container-lg">
       <AppBreadcrumb />
       <div class="page-header">
-        <h1 class="page-title">{{ t('profile.editProfile') }}</h1>
+        <h1 class="page-title">{{ t("profile.editProfile") }}</h1>
       </div>
 
       <div v-if="isLoading" class="loading-container">
         <div class="spinner spinner-lg"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <div v-else class="edit-content">
@@ -149,7 +161,7 @@ const handleAvatarRemove = async () => {
 
         <BaseCard>
           <template #header>
-            <h2 class="card-heading">{{ t('profile.avatar.title') }}</h2>
+            <h2 class="card-heading">{{ t("profile.avatar.title") }}</h2>
           </template>
           <AvatarUpload
             :currentUrl="profileStore.profile?.avatar_url"
@@ -198,11 +210,15 @@ const handleAvatarRemove = async () => {
             />
 
             <div class="form-actions">
-              <BaseButton variant="ghost" @click="handleCancel" :disabled="isSaving">
-                {{ t('common.cancel') }}
+              <BaseButton
+                variant="ghost"
+                @click="handleCancel"
+                :disabled="isSaving"
+              >
+                {{ t("common.cancel") }}
               </BaseButton>
               <BaseButton type="submit" :loading="isSaving">
-                {{ t('common.save') }}
+                {{ t("common.save") }}
               </BaseButton>
             </div>
           </form>

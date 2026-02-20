@@ -1,37 +1,39 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { ChevronRightIcon } from '@heroicons/vue/20/solid'
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { ChevronRightIcon } from "@heroicons/vue/20/solid";
 
 export interface BreadcrumbItem {
-  label: string
-  to?: string
+  label: string;
+  to?: string;
 }
 
-const { t } = useI18n()
-const route = useRoute()
+const { t } = useI18n();
+const route = useRoute();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const meta = route.meta.breadcrumb as
     | { parent: string; parentLabel: string; currentLabel?: string }
-    | undefined
+    | undefined;
 
-  if (!meta) return []
+  if (!meta) return [];
 
   const items: BreadcrumbItem[] = [
-    { label: t(meta.parentLabel), to: meta.parent }
-  ]
+    { label: t(meta.parentLabel), to: meta.parent },
+  ];
 
-  const currentLabel = meta.currentLabel ? t(meta.currentLabel) : (route.meta.title as string)
+  const currentLabel = meta.currentLabel
+    ? t(meta.currentLabel)
+    : (route.meta.title as string);
   if (currentLabel) {
-    items.push({ label: currentLabel })
+    items.push({ label: currentLabel });
   }
 
-  return items
-})
+  return items;
+});
 
-const hasBreadcrumbs = computed(() => breadcrumbs.value.length > 0)
+const hasBreadcrumbs = computed(() => breadcrumbs.value.length > 0);
 </script>
 
 <template>

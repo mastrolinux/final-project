@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import type { OAuthConsent } from '@/types'
-import { useI18n } from 'vue-i18n'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import { TrashIcon } from '@heroicons/vue/24/outline'
+import type { OAuthConsent } from "@/types";
+import { useI18n } from "vue-i18n";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import { TrashIcon } from "@heroicons/vue/24/outline";
 
 defineProps<{
-  consent: OAuthConsent
-}>()
+  consent: OAuthConsent;
+}>();
 
 const emit = defineEmits<{
-  revoke: [consent: OAuthConsent]
-}>()
+  revoke: [consent: OAuthConsent];
+}>();
 
-const { t, locale } = useI18n()
+const { t, locale } = useI18n();
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString(locale.value, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 </script>
 
@@ -35,13 +35,13 @@ function formatDate(dateString: string): string {
         </div>
         <div class="consent-badges">
           <BaseBadge variant="success" size="sm">
-            {{ t('context.active') }}
+            {{ t("context.active") }}
           </BaseBadge>
         </div>
       </div>
 
       <div class="consent-scopes">
-        <span class="scopes-label">{{ t('oauth.grantedScopes') }}</span>
+        <span class="scopes-label">{{ t("oauth.grantedScopes") }}</span>
         <div class="scope-badges">
           <BaseBadge
             v-for="scope in consent.granted_scopes"
@@ -56,27 +56,23 @@ function formatDate(dateString: string): string {
 
       <div class="consent-meta">
         <div v-if="consent.context_profile_id" class="meta-item">
-          <span class="meta-label">{{ t('oauth.boundToContext') }}:</span>
+          <span class="meta-label">{{ t("oauth.boundToContext") }}:</span>
           <span class="meta-value">{{ consent.context_profile_id }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">{{ t('oauth.grantedOn') }}:</span>
+          <span class="meta-label">{{ t("oauth.grantedOn") }}:</span>
           <span class="meta-value">{{ formatDate(consent.granted_at) }}</span>
         </div>
         <div v-if="consent.expires_at" class="meta-item">
-          <span class="meta-label">{{ t('oauth.expiresOn') }}:</span>
+          <span class="meta-label">{{ t("oauth.expiresOn") }}:</span>
           <span class="meta-value">{{ formatDate(consent.expires_at) }}</span>
         </div>
       </div>
 
       <div class="consent-actions">
-        <BaseButton
-          variant="danger"
-          size="sm"
-          @click="emit('revoke', consent)"
-        >
+        <BaseButton variant="danger" size="sm" @click="emit('revoke', consent)">
           <TrashIcon class="icon" />
-          {{ t('oauth.revokeAccess') }}
+          {{ t("oauth.revokeAccess") }}
         </BaseButton>
       </div>
     </div>

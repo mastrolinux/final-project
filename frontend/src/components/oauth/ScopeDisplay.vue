@@ -1,95 +1,109 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { OAuthScope } from '@/types'
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+import type { OAuthScope } from "@/types";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ChevronDownIcon,
-  ChevronUpIcon
-} from '@heroicons/vue/24/outline'
+  ChevronUpIcon,
+} from "@heroicons/vue/24/outline";
 
 const props = withDefaults(
   defineProps<{
-    scopes: OAuthScope[]
-    selectable?: boolean
-    selectedScopes?: string[]
-    expandable?: boolean
+    scopes: OAuthScope[];
+    selectable?: boolean;
+    selectedScopes?: string[];
+    expandable?: boolean;
   }>(),
   {
     selectable: false,
     selectedScopes: () => [],
-    expandable: false
-  }
-)
+    expandable: false,
+  },
+);
 
 const emit = defineEmits<{
-  'update:selectedScopes': [scopes: string[]]
-}>()
+  "update:selectedScopes": [scopes: string[]];
+}>();
 
-const { t } = useI18n()
+const { t } = useI18n();
 
 /**
  * Mapping from scope name to the specific fields it grants access to.
  * Derived from backend oauth_service.py SCOPE_FIELDS dict.
  */
 const SCOPE_FIELDS: Record<string, string[]> = {
-  openid: ['User identifier (sub)'],
-  'profile:read:basic': ['Display name', 'Preferred name', 'Account type'],
-  'profile:read:email': ['Email address', 'Email verification status'],
-  'profile:read:phone': ['Phone number', 'Phone verification status'],
-  'profile:read:full': ['Display name', 'Email', 'Phone', 'Bio', 'Avatar', 'Account type'],
-  'contexts:read': ['Context type', 'Context name'],
-  'contexts:professional:read': ['Professional credentials', 'Organization', 'Website'],
-  'contexts:social:read': ['Social handles', 'Interests'],
-  'contexts:legal:read': ['Legal name', 'Government ID reference'],
-  'contexts:healthcare:read': ['Healthcare provider', 'Medical record reference'],
-  email: ['Email address'],
-  phone: ['Phone number'],
-  offline_access: ['Long-lived refresh token']
-}
+  openid: ["User identifier (sub)"],
+  "profile:read:basic": ["Display name", "Preferred name", "Account type"],
+  "profile:read:email": ["Email address", "Email verification status"],
+  "profile:read:phone": ["Phone number", "Phone verification status"],
+  "profile:read:full": [
+    "Display name",
+    "Email",
+    "Phone",
+    "Bio",
+    "Avatar",
+    "Account type",
+  ],
+  "contexts:read": ["Context type", "Context name"],
+  "contexts:professional:read": [
+    "Professional credentials",
+    "Organization",
+    "Website",
+  ],
+  "contexts:social:read": ["Social handles", "Interests"],
+  "contexts:legal:read": ["Legal name", "Government ID reference"],
+  "contexts:healthcare:read": [
+    "Healthcare provider",
+    "Medical record reference",
+  ],
+  email: ["Email address"],
+  phone: ["Phone number"],
+  offline_access: ["Long-lived refresh token"],
+};
 
 /** The openid scope is always required per OIDC specification. */
-const REQUIRED_SCOPES = new Set(['openid'])
+const REQUIRED_SCOPES = new Set(["openid"]);
 
-const expandedScopes = ref<Set<string>>(new Set())
+const expandedScopes = ref<Set<string>>(new Set());
 
 function isRequired(scopeName: string): boolean {
-  return REQUIRED_SCOPES.has(scopeName)
+  return REQUIRED_SCOPES.has(scopeName);
 }
 
 function isSelected(scopeName: string): boolean {
-  return props.selectedScopes.includes(scopeName)
+  return props.selectedScopes.includes(scopeName);
 }
 
 function toggleScope(scopeName: string): void {
-  if (isRequired(scopeName)) return
-  const current = [...props.selectedScopes]
-  const index = current.indexOf(scopeName)
+  if (isRequired(scopeName)) return;
+  const current = [...props.selectedScopes];
+  const index = current.indexOf(scopeName);
   if (index >= 0) {
-    current.splice(index, 1)
+    current.splice(index, 1);
   } else {
-    current.push(scopeName)
+    current.push(scopeName);
   }
-  emit('update:selectedScopes', current)
+  emit("update:selectedScopes", current);
 }
 
 function toggleExpand(scopeName: string): void {
-  const expanded = new Set(expandedScopes.value)
+  const expanded = new Set(expandedScopes.value);
   if (expanded.has(scopeName)) {
-    expanded.delete(scopeName)
+    expanded.delete(scopeName);
   } else {
-    expanded.add(scopeName)
+    expanded.add(scopeName);
   }
-  expandedScopes.value = expanded
+  expandedScopes.value = expanded;
 }
 
 function isExpanded(scopeName: string): boolean {
-  return expandedScopes.value.has(scopeName)
+  return expandedScopes.value.has(scopeName);
 }
 
 function getFields(scopeName: string): string[] {
-  return SCOPE_FIELDS[scopeName] || []
+  return SCOPE_FIELDS[scopeName] || [];
 }
 </script>
 
@@ -109,20 +123,30 @@ function getFields(scopeName: string): string[] {
 
         <!-- Icon -->
         <div class="scope-icon">
-          <ExclamationTriangleIcon v-if="scope.is_sensitive" class="icon text-warning" />
+          <ExclamationTriangleIcon
+            v-if="scope.is_sensitive"
+            class="icon text-warning"
+          />
           <CheckCircleIcon v-else class="icon text-success" />
         </div>
 
         <!-- Content -->
-        <div class="scope-content" :class="{ clickable: expandable }" @click="expandable ? toggleExpand(scope.scope_name) : undefined">
+        <div
+          class="scope-content"
+          :class="{ clickable: expandable }"
+          @click="expandable ? toggleExpand(scope.scope_name) : undefined"
+        >
           <h4 class="scope-name">{{ scope.scope_name }}</h4>
           <p class="scope-description">{{ scope.description }}</p>
         </div>
 
         <!-- Badges -->
         <div class="scope-badges">
-          <span v-if="selectable && isRequired(scope.scope_name)" class="badge badge-primary">
-            {{ t('oauth.requiredScope') }}
+          <span
+            v-if="selectable && isRequired(scope.scope_name)"
+            class="badge badge-primary"
+          >
+            {{ t("oauth.requiredScope") }}
           </span>
           <span v-if="scope.is_sensitive" class="badge badge-warning">
             Sensitive
@@ -130,17 +154,31 @@ function getFields(scopeName: string): string[] {
         </div>
 
         <!-- Expand chevron -->
-        <div v-if="expandable && getFields(scope.scope_name).length > 0" class="scope-expand" @click="toggleExpand(scope.scope_name)">
-          <ChevronUpIcon v-if="isExpanded(scope.scope_name)" class="chevron-icon" />
+        <div
+          v-if="expandable && getFields(scope.scope_name).length > 0"
+          class="scope-expand"
+          @click="toggleExpand(scope.scope_name)"
+        >
+          <ChevronUpIcon
+            v-if="isExpanded(scope.scope_name)"
+            class="chevron-icon"
+          />
           <ChevronDownIcon v-else class="chevron-icon" />
         </div>
       </div>
 
       <!-- Expanded detail panel -->
-      <div v-if="expandable && isExpanded(scope.scope_name)" class="scope-detail">
-        <p class="detail-label">{{ t('oauth.scopeFields') }}:</p>
+      <div
+        v-if="expandable && isExpanded(scope.scope_name)"
+        class="scope-detail"
+      >
+        <p class="detail-label">{{ t("oauth.scopeFields") }}:</p>
         <ul class="detail-fields">
-          <li v-for="field in getFields(scope.scope_name)" :key="field" class="detail-field">
+          <li
+            v-for="field in getFields(scope.scope_name)"
+            :key="field"
+            class="detail-field"
+          >
             {{ field }}
           </li>
         </ul>
@@ -175,14 +213,14 @@ function getFields(scopeName: string): string[] {
   margin-top: 2px;
 }
 
-.scope-checkbox input[type='checkbox'] {
+.scope-checkbox input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: var(--color-primary-600);
   cursor: pointer;
 }
 
-.scope-checkbox input[type='checkbox']:disabled {
+.scope-checkbox input[type="checkbox"]:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -303,7 +341,7 @@ function getFields(scopeName: string): string[] {
 }
 
 .detail-field::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;

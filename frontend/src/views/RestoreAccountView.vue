@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { authService, getErrorMessage } from '@/services'
+import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { authService, getErrorMessage } from "@/services";
 
-const { t } = useI18n()
+const { t } = useI18n();
 
-const email = ref('')
-const isLoading = ref(false)
-const isSuccess = ref(false)
-const error = ref<string | null>(null)
+const email = ref("");
+const isLoading = ref(false);
+const isSuccess = ref(false);
+const error = ref<string | null>(null);
 
 async function handleSubmit() {
-  if (!email.value) return
+  if (!email.value) return;
 
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
-    await authService.requestAccountRestoration(email.value)
-    isSuccess.value = true
+    await authService.requestAccountRestoration(email.value);
+    isSuccess.value = true;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
@@ -34,16 +34,18 @@ async function handleSubmit() {
         <div class="card-body">
           <div v-if="isSuccess" class="success-state text-center">
             <div class="success-icon">&#x2709;</div>
-            <h1>{{ t('auth.restore.emailSent') }}</h1>
-            <p class="text-secondary">{{ t('auth.restore.emailSentMessage') }}</p>
+            <h1>{{ t("auth.restore.emailSent") }}</h1>
+            <p class="text-secondary">
+              {{ t("auth.restore.emailSentMessage") }}
+            </p>
             <router-link to="/login" class="btn btn-outline mt-4">
-              {{ t('auth.restore.backToLogin') }}
+              {{ t("auth.restore.backToLogin") }}
             </router-link>
           </div>
 
           <template v-else>
-            <h1 class="form-title">{{ t('auth.restore.title') }}</h1>
-            <p class="form-description">{{ t('auth.restore.description') }}</p>
+            <h1 class="form-title">{{ t("auth.restore.title") }}</h1>
+            <p class="form-description">{{ t("auth.restore.description") }}</p>
 
             <form @submit.prevent="handleSubmit" class="auth-form">
               <div v-if="error" class="alert alert-error">
@@ -51,7 +53,9 @@ async function handleSubmit() {
               </div>
 
               <div class="form-group">
-                <label for="email" class="form-label">{{ t('auth.email') }}</label>
+                <label for="email" class="form-label">{{
+                  t("auth.email")
+                }}</label>
                 <input
                   id="email"
                   v-model="email"
@@ -63,17 +67,23 @@ async function handleSubmit() {
                 />
               </div>
 
-              <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
-                {{ isLoading ? t('common.sending') : t('auth.restore.sendLink') }}
+              <button
+                type="submit"
+                class="btn btn-primary btn-block"
+                :disabled="isLoading"
+              >
+                {{
+                  isLoading ? t("common.sending") : t("auth.restore.sendLink")
+                }}
               </button>
 
               <div class="form-footer">
                 <router-link to="/login" class="link">
-                  {{ t('auth.restore.backToLogin') }}
+                  {{ t("auth.restore.backToLogin") }}
                 </router-link>
                 <span class="separator">|</span>
                 <router-link to="/register" class="link">
-                  {{ t('auth.register') }}
+                  {{ t("auth.register") }}
                 </router-link>
               </div>
             </form>

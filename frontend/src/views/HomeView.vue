@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '@/stores'
+import { useI18n } from "vue-i18n";
+import { useAuthStore } from "@/stores";
 
-const { t } = useI18n()
-const authStore = useAuthStore()
+const { t } = useI18n();
+const authStore = useAuthStore();
 </script>
 
 <template>
   <div class="home-view">
     <div class="container container-lg">
       <div class="hero">
-        <h1 class="hero-title">{{ t('app.name') }}</h1>
-        <p class="hero-tagline">{{ t('app.tagline') }}</p>
+        <h1 class="hero-title">{{ t("app.name") }}</h1>
+        <p class="hero-tagline">{{ t("app.tagline") }}</p>
 
         <div class="hero-actions" v-if="!authStore.isAuthenticated">
           <router-link to="/register" class="btn btn-primary btn-lg">
-            {{ t('auth.createAccount') }}
+            {{ t("auth.createAccount") }}
           </router-link>
           <router-link to="/login" class="btn btn-secondary btn-lg">
-            {{ t('auth.signIn') }}
+            {{ t("auth.signIn") }}
           </router-link>
         </div>
 
         <div class="hero-actions" v-else>
           <router-link to="/profile" class="btn btn-primary btn-lg">
-            {{ t('nav.profile') }}
+            {{ t("nav.profile") }}
           </router-link>
           <router-link to="/contexts" class="btn btn-secondary btn-lg">
-            {{ t('nav.contexts') }}
+            {{ t("nav.contexts") }}
           </router-link>
         </div>
       </div>
@@ -36,21 +36,30 @@ const authStore = useAuthStore()
         <div class="feature-card card">
           <div class="card-body">
             <h3>Multi-Context Identity</h3>
-            <p>Manage different identity contexts for professional, social, legal, and personal use.</p>
+            <p>
+              Manage different identity contexts for professional, social,
+              legal, and personal use.
+            </p>
           </div>
         </div>
 
         <div class="feature-card card">
           <div class="card-body">
             <h3>Cultural Name Support</h3>
-            <p>Support for diverse naming conventions including multilingual names and cultural patterns.</p>
+            <p>
+              Support for diverse naming conventions including multilingual
+              names and cultural patterns.
+            </p>
           </div>
         </div>
 
         <div class="feature-card card">
           <div class="card-body">
             <h3>Privacy-First Design</h3>
-            <p>Built with privacy-by-design principles inspired by GDPR and data protection standards.</p>
+            <p>
+              Built with privacy-by-design principles inspired by GDPR and data
+              protection standards.
+            </p>
           </div>
         </div>
       </div>
