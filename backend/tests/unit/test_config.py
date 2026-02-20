@@ -15,13 +15,17 @@ def test_settings_defaults():
     # Set required environment variables
     os.environ["DATABASE_URL"] = "postgresql://test@localhost/test"
     os.environ["SECRET_KEY"] = "test-secure-key-for-testing"
-    
+    # Clear variables whose defaults we want to test, since CI may set them
+    os.environ.pop("ENVIRONMENT", None)
+    os.environ.pop("DEBUG", None)
+    os.environ.pop("LOG_LEVEL", None)
+
     settings = Settings()
-    
+
     assert settings.APP_NAME == "Identity and Profile Management API"
     assert settings.ENVIRONMENT == "development"
     assert settings.DEBUG is True
-    # LOG_LEVEL can be INFO (default) or DEBUG (if set in environment)
+    # LOG_LEVEL may come from .env file (Pydantic BaseSettings reads it)
     assert settings.LOG_LEVEL in ["INFO", "DEBUG"]
 
 
