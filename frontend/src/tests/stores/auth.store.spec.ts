@@ -197,7 +197,10 @@ describe('useAuthStore', () => {
         user_id: 'user-123',
         email: 'test@example.com',
         is_email_verified: true,
-        account_type: 'verified'
+        account_type: 'verified',
+        is_admin: false,
+        provider: null,
+        has_custom_password: true
       }
 
       store.setUser(loginResponse)
@@ -208,7 +211,10 @@ describe('useAuthStore', () => {
           user_id: 'user-123',
           email: 'test@example.com',
           is_email_verified: true,
-          account_type: 'verified'
+          account_type: 'verified',
+          is_admin: false,
+          provider: null,
+          has_custom_password: true
         })
       )
     })

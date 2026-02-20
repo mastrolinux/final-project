@@ -312,7 +312,9 @@ class AuthService:
             "email": auth_user.email,
             "is_email_verified": auth_user.is_email_verified,
             "account_type": account_type,
-            "is_admin": is_admin
+            "is_admin": is_admin,
+            "provider": auth_user.provider,
+            "has_custom_password": auth_user.has_custom_password
         }
 
     def verify_email(self, token: str) -> Tuple[bool, Optional[str]]:
@@ -355,15 +357,91 @@ class AuthService:
 
         return True, None
 
+    def set_password(
+        self,
+        user_id: str,
+        new_password: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        """
+        Set a password for an OAuth-only user who has not yet set one.
+
+        Preconditions:
+        - User must exist and be active (not deleted)
+        - User must be an OAuth user (provider is not None)
+        - User must not already have a custom password (has_custom_password is False)
+
+        After setting a password, the user can authenticate via both OAuth
+        and email/password. Subsequent password changes require the
+        reset-password flow.
+
+        Args:
+            user_id: User ID (from JWT token, already authenticated)
+            new_password: The password the user wants to set
+            ip_address: Client IP (for audit)
+            user_agent: Client user agent (for audit)
+
+        Returns:
+            Tuple of (success, error_code, data)
+            Error codes: USER_NOT_FOUND, NOT_OAUTH_USER, PASSWORD_ALREADY_SET,
+                         or password validation error message
+        """
+        # Step 1: Look up user
+        auth_user = self.auth_repo.get_by_user_id(user_id)
+        if not auth_user:
+            return False, "USER_NOT_FOUND", None
+
+        # Step 2: Must be an OAuth user
+        if auth_user.provider is None:
+            return False, "NOT_OAUTH_USER", None
+
+        # Step 3: Must not already have a custom password
+        if auth_user.has_custom_password:
+            return False, "PASSWORD_ALREADY_SET", None
+
+        # Step 4: Validate password strength
+        valid, message = validate_password_strength(new_password)
+        if not valid:
+            return False, message, None
+
+        # Step 5: Hash and update
+        password_hash = hash_password(new_password)
+        self.auth_repo.update_password(user_id, password_hash)
+        self.auth_repo.set_custom_password_flag(user_id, True)
+
+        # Step 6: Audit
+        self._audit(
+            event_type=AuditEventType.password_change,
+            user_id=UUID(user_id),
+            resource_type="auth_user",
+            resource_id=user_id,
+            operation=AuditOperation.update,
+            changes={
+                "action": "set_password_for_oauth_user",
+                "provider": auth_user.provider,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            legal_basis="contract"
+        )
+
+        return True, None, {
+            "message": "Password set successfully. You can now login with email and password.",
+            "user_id": user_id,
+            "email": auth_user.email
+        }
+
     def request_password_reset(self, email: str) -> Tuple[bool, Optional[str]]:
         """
         Request password reset email.
 
         Process:
         1. Find auth user by email
-        2. Generate secure reset token
-        3. Store token with 1-hour expiry
-        4. Send reset email (async via Celery)
+        2. Skip OAuth users who never set a custom password
+        3. Generate secure reset token
+        4. Store token with 1-hour expiry
+        5. Send reset email (async via Celery)
 
         Note: Always returns success even if email doesn't exist (security best practice)
 
@@ -377,6 +455,12 @@ class AuthService:
         auth_user = self.auth_repo.get_by_email(email)
         if not auth_user:
             # Return success even if email doesn't exist (prevent email enumeration)
+            return True, None
+
+        # Skip OAuth users who have never set a password.
+        # Their password_hash is a random placeholder, so resetting it
+        # would be meaningless. They should use set-password instead.
+        if auth_user.provider is not None and not auth_user.has_custom_password:
             return True, None
 
         # Generate secure reset token

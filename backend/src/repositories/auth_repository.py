@@ -164,7 +164,8 @@ class AuthRepository:
             email=email,
             password_hash=password_hash,
             user_id=user_id,
-            is_email_verified=False
+            is_email_verified=False,
+            has_custom_password=True
         )
         self.db.add(auth_user)
         self.db.commit()
@@ -266,6 +267,19 @@ class AuthRepository:
             auth_user.reset_token_expires_at = None
             self.db.commit()
     
+    def set_custom_password_flag(self, user_id: str, value: bool) -> None:
+        """
+        Set the has_custom_password flag for a user.
+
+        Args:
+            user_id: User ID from base_profiles
+            value: True if user has explicitly set a password
+        """
+        auth_user = self.get_by_user_id(user_id)
+        if auth_user:
+            auth_user.has_custom_password = value
+            self.db.commit()
+
     def update_password(self, user_id: str, password_hash: str) -> None:
         """
         Update user password hash.
