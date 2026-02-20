@@ -231,6 +231,21 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: "/admin/users/soft-deleted",
+    name: "admin-soft-deleted-users",
+    component: () =>
+      import("@/views/admin/AdminSoftDeletedUsersView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: "Soft-Deleted Users",
+      breadcrumb: {
+        parent: "/admin/oauth/clients",
+        parentLabel: "nav.adminOAuthClients",
+      },
+    },
+  },
+  {
     path: "/:pathMatch(.*)*",
     name: "not-found",
     component: () => import("@/views/NotFoundView.vue"),

@@ -151,6 +151,13 @@ async function handleLogout() {
             >
               {{ t("nav.adminAuditVerify") }}
             </router-link>
+            <router-link
+              to="/admin/users/soft-deleted"
+              class="admin-menu-item"
+              @click="closeAdminMenu"
+            >
+              {{ t("nav.adminSoftDeletedUsers") }}
+            </router-link>
           </div>
         </Transition>
       </div>
@@ -264,6 +271,12 @@ async function handleLogout() {
                   class="mobile-nav-link mobile-nav-sub"
                 >
                   {{ t("nav.adminAuditVerify") }}
+                </router-link>
+                <router-link
+                  to="/admin/users/soft-deleted"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.adminSoftDeletedUsers") }}
                 </router-link>
               </div>
             </Transition>

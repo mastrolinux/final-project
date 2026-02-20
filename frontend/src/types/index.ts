@@ -10,3 +10,4 @@ export * from "./oauth.types";
 export * from "./admin-oauth.types";
 export * from "./audit.types";
 export * from "./privacy.types";
+export * from "./admin-users.types";
