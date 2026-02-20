@@ -1,219 +1,248 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
-import { contextService, profileService, getErrorMessage } from '@/services'
-import { CONTEXT_TYPE_META, type ContextProfileResponse, type ResolvedProfileResponse } from '@/types'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseModal from '@/components/common/BaseModal.vue'
-import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
-import AvatarUpload from '@/components/profile/AvatarUpload.vue'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAuthStore, useProfileStore, useUiStore } from "@/stores";
+import { contextService, profileService, getErrorMessage } from "@/services";
+import {
+  CONTEXT_TYPE_META,
+  type ContextProfileResponse,
+  type ResolvedProfileResponse,
+} from "@/types";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import BaseInput from "@/components/common/BaseInput.vue";
+import BaseModal from "@/components/common/BaseModal.vue";
+import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
+import AvatarUpload from "@/components/profile/AvatarUpload.vue";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-const uiStore = useUiStore()
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const uiStore = useUiStore();
 
-const contextId = computed(() => route.params.id as string)
-const context = ref<ContextProfileResponse | null>(null)
-const resolvedProfile = ref<ResolvedProfileResponse | null>(null)
-const isLoading = ref(true)
-const isEditing = ref(false)
-const isSaving = ref(false)
-const isDeleting = ref(false)
-const isUploadingAvatar = ref(false)
-const error = ref<string | null>(null)
-const showDeleteConfirm = ref(false)
+const contextId = computed(() => route.params.id as string);
+const context = ref<ContextProfileResponse | null>(null);
+const resolvedProfile = ref<ResolvedProfileResponse | null>(null);
+const isLoading = ref(true);
+const isEditing = ref(false);
+const isSaving = ref(false);
+const isDeleting = ref(false);
+const isUploadingAvatar = ref(false);
+const error = ref<string | null>(null);
+const showDeleteConfirm = ref(false);
 
 const editForm = ref({
-  context_name: '',
-  display_name_override: '',
-  email_override: '',
-  phone_override: '',
-  bio: '',
-  is_active: true
-})
+  context_name: "",
+  display_name_override: "",
+  email_override: "",
+  phone_override: "",
+  bio: "",
+  is_active: true,
+});
 
 // Non-deprecated identity names for the "pick from names" chips
 const availableNames = computed(() =>
-  profileStore.identityNames.filter((n) => !n.is_deprecated)
-)
+  profileStore.identityNames.filter((n) => !n.is_deprecated),
+);
 
 function resolveNameValue(nameValue: Record<string, string>): string {
-  const lang = navigator.language.split('-')[0]
-  return nameValue[lang] ?? nameValue['en'] ?? Object.values(nameValue)[0] ?? ''
+  const lang = navigator.language.split("-")[0];
+  return (
+    nameValue[lang] ?? nameValue["en"] ?? Object.values(nameValue)[0] ?? ""
+  );
 }
 
 function pickName(resolved: string) {
-  editForm.value.display_name_override = resolved
+  editForm.value.display_name_override = resolved;
 }
 
 onMounted(async () => {
-  await loadContext()
+  await loadContext();
   // Load identity names for the "pick from names" chips
   if (authStore.userId && profileStore.identityNames.length === 0) {
     try {
-      const names = await profileService.getNames(authStore.userId)
-      profileStore.setIdentityNames(names)
+      const names = await profileService.getNames(authStore.userId);
+      profileStore.setIdentityNames(names);
     } catch {
       // Non-critical: chips won't show, text input still works
     }
   }
-})
+});
 
 async function loadContext() {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     const [ctx, resolved] = await Promise.all([
       contextService.get(authStore.userId, contextId.value),
-      contextService.getResolved(authStore.userId, contextId.value)
-    ])
-    context.value = ctx
-    resolvedProfile.value = resolved
-    resetEditForm()
+      contextService.getResolved(authStore.userId, contextId.value),
+    ]);
+    context.value = ctx;
+    resolvedProfile.value = resolved;
+    resetEditForm();
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function resetEditForm() {
-  if (!context.value) return
+  if (!context.value) return;
   editForm.value = {
     context_name: context.value.context_name,
-    display_name_override: context.value.display_name_override || '',
-    email_override: context.value.email_override || '',
-    phone_override: context.value.phone_override || '',
-    bio: context.value.bio || '',
-    is_active: context.value.is_active
-  }
+    display_name_override: context.value.display_name_override || "",
+    email_override: context.value.email_override || "",
+    phone_override: context.value.phone_override || "",
+    bio: context.value.bio || "",
+    is_active: context.value.is_active,
+  };
 }
 
 function startEditing() {
-  resetEditForm()
-  isEditing.value = true
+  resetEditForm();
+  isEditing.value = true;
 }
 
 function cancelEditing() {
-  isEditing.value = false
-  resetEditForm()
+  isEditing.value = false;
+  resetEditForm();
 }
 
 async function saveChanges() {
-  if (!authStore.userId || !context.value) return
+  if (!authStore.userId || !context.value) return;
 
-  isSaving.value = true
-  error.value = null
+  isSaving.value = true;
+  error.value = null;
 
   try {
-    const updatedContext = await contextService.update(authStore.userId, contextId.value, {
-      context_name: editForm.value.context_name,
-      display_name_override: editForm.value.display_name_override || null,
-      email_override: editForm.value.email_override || null,
-      phone_override: editForm.value.phone_override || null,
-      bio: editForm.value.bio || null,
-      is_active: editForm.value.is_active
-    })
-    context.value = updatedContext
+    const updatedContext = await contextService.update(
+      authStore.userId,
+      contextId.value,
+      {
+        context_name: editForm.value.context_name,
+        display_name_override: editForm.value.display_name_override || null,
+        email_override: editForm.value.email_override || null,
+        phone_override: editForm.value.phone_override || null,
+        bio: editForm.value.bio || null,
+        is_active: editForm.value.is_active,
+      },
+    );
+    context.value = updatedContext;
 
     // Reload resolved profile to reflect changes
-    resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
+    resolvedProfile.value = await contextService.getResolved(
+      authStore.userId,
+      contextId.value,
+    );
 
-    profileStore.updateContext(updatedContext)
-    isEditing.value = false
+    profileStore.updateContext(updatedContext);
+    isEditing.value = false;
     uiStore.addNotification({
-      type: 'success',
-      message: t('context.updateSuccess')
-    })
+      type: "success",
+      message: t("context.updateSuccess"),
+    });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
 }
 
 async function deleteContext() {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isDeleting.value = true
-  error.value = null
+  isDeleting.value = true;
+  error.value = null;
 
   try {
-    await contextService.delete(authStore.userId, contextId.value)
-    profileStore.removeContext(contextId.value)
+    await contextService.delete(authStore.userId, contextId.value);
+    profileStore.removeContext(contextId.value);
     uiStore.addNotification({
-      type: 'success',
-      message: t('context.deleteSuccess')
-    })
-    router.push({ name: 'contexts' })
+      type: "success",
+      message: t("context.deleteSuccess"),
+    });
+    router.push({ name: "contexts" });
   } catch (err) {
-    error.value = getErrorMessage(err)
-    showDeleteConfirm.value = false
+    error.value = getErrorMessage(err);
+    showDeleteConfirm.value = false;
   } finally {
-    isDeleting.value = false
+    isDeleting.value = false;
   }
 }
 
 async function handleContextAvatarUpload(file: File) {
-  if (!authStore.userId || !context.value) return
+  if (!authStore.userId || !context.value) return;
 
-  isUploadingAvatar.value = true
-  error.value = null
+  isUploadingAvatar.value = true;
+  error.value = null;
   try {
     const result = await contextService.uploadAvatar(
       authStore.userId,
       contextId.value,
-      file
-    )
+      file,
+    );
     // Update local context ref
     context.value = {
       ...context.value,
       avatar_override_url: result.avatar_url,
-      avatar_override_thumbnail_url: result.avatar_thumbnail_url
-    }
+      avatar_override_thumbnail_url: result.avatar_thumbnail_url,
+    };
     // Update store
-    profileStore.setContextAvatar(contextId.value, result.avatar_url, result.avatar_thumbnail_url)
+    profileStore.setContextAvatar(
+      contextId.value,
+      result.avatar_url,
+      result.avatar_thumbnail_url,
+    );
     // Reload resolved profile to reflect inheritance change
-    resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
-    uiStore.addNotification({ type: 'success', message: t('context.avatar.uploadSuccess') })
+    resolvedProfile.value = await contextService.getResolved(
+      authStore.userId,
+      contextId.value,
+    );
+    uiStore.addNotification({
+      type: "success",
+      message: t("context.avatar.uploadSuccess"),
+    });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isUploadingAvatar.value = false
+    isUploadingAvatar.value = false;
   }
 }
 
 async function handleContextAvatarRemove() {
-  if (!authStore.userId || !context.value) return
+  if (!authStore.userId || !context.value) return;
 
-  isUploadingAvatar.value = true
-  error.value = null
+  isUploadingAvatar.value = true;
+  error.value = null;
   try {
-    await contextService.deleteAvatar(authStore.userId, contextId.value)
+    await contextService.deleteAvatar(authStore.userId, contextId.value);
     context.value = {
       ...context.value,
       avatar_override_url: null,
-      avatar_override_thumbnail_url: null
-    }
-    profileStore.clearContextAvatar(contextId.value)
-    resolvedProfile.value = await contextService.getResolved(authStore.userId, contextId.value)
-    uiStore.addNotification({ type: 'success', message: t('context.avatar.removeSuccess') })
+      avatar_override_thumbnail_url: null,
+    };
+    profileStore.clearContextAvatar(contextId.value);
+    resolvedProfile.value = await contextService.getResolved(
+      authStore.userId,
+      contextId.value,
+    );
+    uiStore.addNotification({
+      type: "success",
+      message: t("context.avatar.removeSuccess"),
+    });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isUploadingAvatar.value = false
+    isUploadingAvatar.value = false;
   }
 }
 </script>
@@ -227,7 +256,7 @@ async function handleContextAvatarRemove() {
 
       <div v-if="isLoading" class="loading-container">
         <div class="spinner spinner-lg loading-spinner"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <div v-else-if="error && !context" class="alert alert-error alert-spaced">
@@ -246,19 +275,34 @@ async function handleContextAvatarRemove() {
                     <BaseBadge :variant="context.context_type" size="md">
                       {{ CONTEXT_TYPE_META[context.context_type]?.label }}
                     </BaseBadge>
-                    <BaseBadge v-if="!context.is_active" variant="warning" size="sm">
-                      {{ t('context.inactive') }}
+                    <BaseBadge
+                      v-if="!context.is_active"
+                      variant="warning"
+                      size="sm"
+                    >
+                      {{ t("context.inactive") }}
                     </BaseBadge>
                   </div>
                   <h1 class="context-title">{{ context.context_name }}</h1>
-                  <p class="context-meta">Created {{ new Date(context.created_at).toLocaleDateString() }}</p>
+                  <p class="context-meta">
+                    Created
+                    {{ new Date(context.created_at).toLocaleDateString() }}
+                  </p>
                 </div>
                 <div v-if="!isEditing" class="action-buttons">
-                  <BaseButton variant="secondary" size="sm" @click="startEditing">
-                    {{ t('common.edit') }}
+                  <BaseButton
+                    variant="secondary"
+                    size="sm"
+                    @click="startEditing"
+                  >
+                    {{ t("common.edit") }}
                   </BaseButton>
-                  <BaseButton variant="danger" size="sm" @click="showDeleteConfirm = true">
-                    {{ t('common.delete') }}
+                  <BaseButton
+                    variant="danger"
+                    size="sm"
+                    @click="showDeleteConfirm = true"
+                  >
+                    {{ t("common.delete") }}
                   </BaseButton>
                 </div>
               </div>
@@ -268,14 +312,21 @@ async function handleContextAvatarRemove() {
             <BaseCard v-if="!isEditing && resolvedProfile">
               <template #header>
                 <h2 class="card-heading">Resolved Profile</h2>
-                <p class="resolved-subtitle">What applications see when using this context</p>
+                <p class="resolved-subtitle">
+                  What applications see when using this context
+                </p>
               </template>
 
               <div class="fields-list">
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Avatar</label>
-                    <BaseBadge v-if="context.avatar_override_url" variant="info" size="sm">Custom</BaseBadge>
+                    <BaseBadge
+                      v-if="context.avatar_override_url"
+                      variant="info"
+                      size="sm"
+                      >Custom</BaseBadge
+                    >
                   </div>
                   <AvatarDisplay
                     :src="resolvedProfile.avatar_url"
@@ -287,37 +338,82 @@ async function handleContextAvatarRemove() {
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Display Name</label>
-                    <BaseBadge v-if="context.display_name_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else-if="resolvedProfile.display_name" variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge
+                      v-if="context.display_name_override"
+                      variant="info"
+                      size="sm"
+                      >Custom</BaseBadge
+                    >
+                    <BaseBadge
+                      v-else-if="resolvedProfile.display_name"
+                      variant="neutral"
+                      size="sm"
+                      >Inherited</BaseBadge
+                    >
                   </div>
-                  <div class="field-value-text">{{ resolvedProfile.display_name || 'Not set' }}</div>
+                  <div class="field-value-text">
+                    {{ resolvedProfile.display_name || "Not set" }}
+                  </div>
                 </div>
 
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Email</label>
-                    <BaseBadge v-if="context.email_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else-if="resolvedProfile.email" variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge
+                      v-if="context.email_override"
+                      variant="info"
+                      size="sm"
+                      >Custom</BaseBadge
+                    >
+                    <BaseBadge
+                      v-else-if="resolvedProfile.email"
+                      variant="neutral"
+                      size="sm"
+                      >Inherited</BaseBadge
+                    >
                   </div>
-                  <div class="field-value-text">{{ resolvedProfile.email || 'Not set' }}</div>
+                  <div class="field-value-text">
+                    {{ resolvedProfile.email || "Not set" }}
+                  </div>
                 </div>
 
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Phone</label>
-                    <BaseBadge v-if="context.phone_override" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else-if="resolvedProfile.phone" variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge
+                      v-if="context.phone_override"
+                      variant="info"
+                      size="sm"
+                      >Custom</BaseBadge
+                    >
+                    <BaseBadge
+                      v-else-if="resolvedProfile.phone"
+                      variant="neutral"
+                      size="sm"
+                      >Inherited</BaseBadge
+                    >
                   </div>
-                  <div class="field-value-text">{{ resolvedProfile.phone || 'Not set' }}</div>
+                  <div class="field-value-text">
+                    {{ resolvedProfile.phone || "Not set" }}
+                  </div>
                 </div>
 
                 <div class="field-group">
                   <div class="field-header">
                     <label class="field-label-sm">Bio</label>
-                    <BaseBadge v-if="context.bio" variant="info" size="sm">Custom</BaseBadge>
-                    <BaseBadge v-else-if="resolvedProfile.bio" variant="neutral" size="sm">Inherited</BaseBadge>
+                    <BaseBadge v-if="context.bio" variant="info" size="sm"
+                      >Custom</BaseBadge
+                    >
+                    <BaseBadge
+                      v-else-if="resolvedProfile.bio"
+                      variant="neutral"
+                      size="sm"
+                      >Inherited</BaseBadge
+                    >
                   </div>
-                  <div class="field-value-bio">{{ resolvedProfile.bio || 'Not set' }}</div>
+                  <div class="field-value-bio">
+                    {{ resolvedProfile.bio || "Not set" }}
+                  </div>
                 </div>
               </div>
             </BaseCard>
@@ -346,8 +442,13 @@ async function handleContextAvatarRemove() {
                     :placeholder="t('context.optionalField')"
                   />
 
-                  <div v-if="availableNames.length > 0" class="name-chips-section chips-spaced">
-                    <span class="chips-label">{{ t('context.pickFromNames') }}</span>
+                  <div
+                    v-if="availableNames.length > 0"
+                    class="name-chips-section chips-spaced"
+                  >
+                    <span class="chips-label">{{
+                      t("context.pickFromNames")
+                    }}</span>
                     <div class="name-chips">
                       <button
                         v-for="name in availableNames"
@@ -356,8 +457,12 @@ async function handleContextAvatarRemove() {
                         class="name-chip"
                         @click="pickName(resolveNameValue(name.name_value))"
                       >
-                        <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
-                        <span class="chip-name-text">{{ resolveNameValue(name.name_value) }}</span>
+                        <BaseBadge variant="primary" size="sm">{{
+                          name.name_type
+                        }}</BaseBadge>
+                        <span class="chip-name-text">{{
+                          resolveNameValue(name.name_value)
+                        }}</span>
                       </button>
                     </div>
                   </div>
@@ -379,7 +484,9 @@ async function handleContextAvatarRemove() {
                   />
 
                   <div class="form-group textarea-group">
-                    <label for="bio" class="textarea-label">{{ t('context.bio') }}</label>
+                    <label for="bio" class="textarea-label">{{
+                      t("context.bio")
+                    }}</label>
                     <textarea
                       id="bio"
                       v-model="editForm.bio"
@@ -390,10 +497,15 @@ async function handleContextAvatarRemove() {
                   </div>
 
                   <div class="form-group avatar-override-group">
-                    <label class="textarea-label">{{ t('context.avatar.override') }}</label>
+                    <label class="textarea-label">{{
+                      t("context.avatar.override")
+                    }}</label>
                     <AvatarUpload
                       :currentUrl="context?.avatar_override_url"
-                      :name="editForm.display_name_override || profileStore.displayName"
+                      :name="
+                        editForm.display_name_override ||
+                        profileStore.displayName
+                      "
                       :isUploading="isUploadingAvatar"
                       @upload="handleContextAvatarUpload"
                       @remove="handleContextAvatarRemove"
@@ -403,17 +515,27 @@ async function handleContextAvatarRemove() {
 
                 <div class="form-group">
                   <label class="checkbox-group">
-                    <input type="checkbox" v-model="editForm.is_active" class="checkbox-input" />
-                    <span class="checkbox-text">{{ t('context.isActive') }}</span>
+                    <input
+                      type="checkbox"
+                      v-model="editForm.is_active"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-text">{{
+                      t("context.isActive")
+                    }}</span>
                   </label>
                 </div>
 
                 <div class="form-actions">
-                  <BaseButton variant="ghost" @click="cancelEditing" :disabled="isSaving">
-                    {{ t('common.cancel') }}
+                  <BaseButton
+                    variant="ghost"
+                    @click="cancelEditing"
+                    :disabled="isSaving"
+                  >
+                    {{ t("common.cancel") }}
                   </BaseButton>
                   <BaseButton type="submit" :loading="isSaving">
-                    {{ t('common.save') }}
+                    {{ t("common.save") }}
                   </BaseButton>
                 </div>
               </form>
@@ -438,15 +560,21 @@ async function handleContextAvatarRemove() {
               <div class="legend-items">
                 <div class="legend-row">
                   <BaseBadge variant="neutral" size="sm">Inherited</BaseBadge>
-                  <span class="legend-desc">Value comes from your base profile</span>
+                  <span class="legend-desc"
+                    >Value comes from your base profile</span
+                  >
                 </div>
                 <div class="legend-row">
                   <BaseBadge variant="info" size="sm">Custom</BaseBadge>
-                  <span class="legend-desc">Value is specific to this context</span>
+                  <span class="legend-desc"
+                    >Value is specific to this context</span
+                  >
                 </div>
                 <div class="legend-row">
                   <span class="legend-no-badge">No badge</span>
-                  <span class="legend-desc">Not set in base profile or this context</span>
+                  <span class="legend-desc"
+                    >Not set in base profile or this context</span
+                  >
                 </div>
               </div>
             </BaseCard>
@@ -461,21 +589,26 @@ async function handleContextAvatarRemove() {
         @close="showDeleteConfirm = false"
       >
         <p class="modal-message">
-          {{ t('context.deleteConfirmMessage') }}
+          {{ t("context.deleteConfirmMessage") }}
         </p>
         <div class="delete-warning">
           <p class="delete-warning-text">
-            <strong>Warning:</strong> Any applications using this context will lose access to your identity information.
+            <strong>Warning:</strong> Any applications using this context will
+            lose access to your identity information.
           </p>
         </div>
 
         <template #footer>
           <div class="modal-actions">
             <BaseButton variant="ghost" @click="showDeleteConfirm = false">
-              {{ t('common.cancel') }}
+              {{ t("common.cancel") }}
             </BaseButton>
-            <BaseButton variant="danger" :loading="isDeleting" @click="deleteContext">
-              {{ t('common.delete') }}
+            <BaseButton
+              variant="danger"
+              :loading="isDeleting"
+              @click="deleteContext"
+            >
+              {{ t("common.delete") }}
             </BaseButton>
           </div>
         </template>

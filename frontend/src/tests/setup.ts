@@ -3,17 +3,17 @@
  * Configures global test utilities and mocks.
  */
 
-import { config } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, vi } from 'vitest'
+import { config } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, vi } from "vitest";
 
 // Create fresh Pinia instance for each test
 beforeEach(() => {
-  setActivePinia(createPinia())
-})
+  setActivePinia(createPinia());
+});
 
 // Mock matchMedia for components that use media queries
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
@@ -23,74 +23,74 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
-  }))
-})
+    dispatchEvent: vi.fn(),
+  })),
+});
 
 // Mock localStorage
 const localStorageMock = (() => {
-  let store: Record<string, string> = {}
+  let store: Record<string, string> = {};
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
     setItem: vi.fn((key: string, value: string) => {
-      store[key] = value
+      store[key] = value;
     }),
     removeItem: vi.fn((key: string) => {
-      delete store[key]
+      delete store[key];
     }),
     clear: vi.fn(() => {
-      store = {}
+      store = {};
     }),
     get length() {
-      return Object.keys(store).length
+      return Object.keys(store).length;
     },
-    key: vi.fn((index: number) => Object.keys(store)[index] ?? null)
-  }
-})()
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+  };
+})();
 
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
-})
+Object.defineProperty(window, "localStorage", {
+  value: localStorageMock,
+});
 
 // Mock sessionStorage
 const sessionStorageMock = (() => {
-  let store: Record<string, string> = {}
+  let store: Record<string, string> = {};
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
     setItem: vi.fn((key: string, value: string) => {
-      store[key] = value
+      store[key] = value;
     }),
     removeItem: vi.fn((key: string) => {
-      delete store[key]
+      delete store[key];
     }),
     clear: vi.fn(() => {
-      store = {}
+      store = {};
     }),
     get length() {
-      return Object.keys(store).length
+      return Object.keys(store).length;
     },
-    key: vi.fn((index: number) => Object.keys(store)[index] ?? null)
-  }
-})()
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+  };
+})();
 
-Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock
-})
+Object.defineProperty(window, "sessionStorage", {
+  value: sessionStorageMock,
+});
 
 // Configure Vue Test Utils globally
 config.global.stubs = {
   // Stub router-link and router-view by default
   RouterLink: {
-    template: '<a><slot /></a>'
+    template: "<a><slot /></a>",
   },
   RouterView: {
-    template: '<div><slot /></div>'
-  }
-}
+    template: "<div><slot /></div>",
+  },
+};
 
 // Clear all mocks after each test
 beforeEach(() => {
-  vi.clearAllMocks()
-  localStorageMock.clear()
-  sessionStorageMock.clear()
-})
+  vi.clearAllMocks();
+  localStorageMock.clear();
+  sessionStorageMock.clear();
+});

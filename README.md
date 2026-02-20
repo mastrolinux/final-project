@@ -1,5 +1,7 @@
 # Identity and Profile Management API - Final Project
 
+![CI](https://github.com/mastrolinux/final-project/actions/workflows/ci.yml/badge.svg)
+
 > **Academic Thesis Project**: A comprehensive demonstration of context-aware digital identity management with independently deployable backend and frontend services.
 
 ## Project Overview

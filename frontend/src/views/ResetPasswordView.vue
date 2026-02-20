@@ -1,62 +1,62 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { authService, getErrorMessage } from '@/services'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { authService, getErrorMessage } from "@/services";
 
-const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
-const token = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const isLoading = ref(false)
-const isSuccess = ref(false)
-const error = ref<string | null>(null)
-const validationError = ref<string | null>(null)
+const token = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const isLoading = ref(false);
+const isSuccess = ref(false);
+const error = ref<string | null>(null);
+const validationError = ref<string | null>(null);
 
 onMounted(() => {
-  token.value = (route.query.token as string) || ''
+  token.value = (route.query.token as string) || "";
   if (!token.value) {
-    error.value = t('auth.invalidResetToken')
+    error.value = t("auth.invalidResetToken");
   }
-})
+});
 
 function validatePassword(): boolean {
-  validationError.value = null
+  validationError.value = null;
 
   if (password.value.length < 8) {
-    validationError.value = t('auth.passwordTooShort')
-    return false
+    validationError.value = t("auth.passwordTooShort");
+    return false;
   }
 
   if (password.value !== confirmPassword.value) {
-    validationError.value = t('auth.passwordsDoNotMatch')
-    return false
+    validationError.value = t("auth.passwordsDoNotMatch");
+    return false;
   }
 
-  return true
+  return true;
 }
 
 async function handleSubmit() {
-  if (!validatePassword()) return
+  if (!validatePassword()) return;
 
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
-    await authService.resetPassword(token.value, password.value)
-    isSuccess.value = true
+    await authService.resetPassword(token.value, password.value);
+    isSuccess.value = true;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function goToLogin() {
-  router.push({ name: 'login' })
+  router.push({ name: "login" });
 }
 </script>
 
@@ -67,27 +67,27 @@ function goToLogin() {
         <div class="card-body">
           <div v-if="isSuccess" class="success-state text-center">
             <div class="success-icon">✓</div>
-            <h1>{{ t('auth.passwordReset') }}</h1>
-            <p class="text-secondary">{{ t('auth.passwordResetSuccess') }}</p>
+            <h1>{{ t("auth.passwordReset") }}</h1>
+            <p class="text-secondary">{{ t("auth.passwordResetSuccess") }}</p>
             <button class="btn btn-primary mt-4" @click="goToLogin">
-              {{ t('auth.goToLogin') }}
+              {{ t("auth.goToLogin") }}
             </button>
           </div>
 
           <template v-else-if="!token">
             <div class="error-state text-center">
               <div class="error-icon">!</div>
-              <h1>{{ t('auth.invalidLink') }}</h1>
-              <p class="text-secondary">{{ t('auth.invalidResetToken') }}</p>
+              <h1>{{ t("auth.invalidLink") }}</h1>
+              <p class="text-secondary">{{ t("auth.invalidResetToken") }}</p>
               <router-link to="/forgot-password" class="btn btn-outline mt-4">
-                {{ t('auth.requestNewLink') }}
+                {{ t("auth.requestNewLink") }}
               </router-link>
             </div>
           </template>
 
           <template v-else>
-            <h1 class="form-title">{{ t('auth.resetPassword') }}</h1>
-            <p class="form-description">{{ t('auth.resetPasswordMessage') }}</p>
+            <h1 class="form-title">{{ t("auth.resetPassword") }}</h1>
+            <p class="form-description">{{ t("auth.resetPasswordMessage") }}</p>
 
             <form @submit.prevent="handleSubmit" class="auth-form">
               <div v-if="error" class="alert alert-error">
@@ -99,7 +99,9 @@ function goToLogin() {
               </div>
 
               <div class="form-group">
-                <label for="password" class="form-label">{{ t('auth.newPassword') }}</label>
+                <label for="password" class="form-label">{{
+                  t("auth.newPassword")
+                }}</label>
                 <input
                   id="password"
                   v-model="password"
@@ -114,7 +116,7 @@ function goToLogin() {
 
               <div class="form-group">
                 <label for="confirm-password" class="form-label">{{
-                  t('auth.confirmPassword')
+                  t("auth.confirmPassword")
                 }}</label>
                 <input
                   id="confirm-password"
@@ -127,8 +129,12 @@ function goToLogin() {
                 />
               </div>
 
-              <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
-                {{ isLoading ? t('common.saving') : t('auth.resetPassword') }}
+              <button
+                type="submit"
+                class="btn btn-primary btn-block"
+                :disabled="isLoading"
+              >
+                {{ isLoading ? t("common.saving") : t("auth.resetPassword") }}
               </button>
             </form>
           </template>

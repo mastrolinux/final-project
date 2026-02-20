@@ -1,70 +1,70 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useUiStore } from '@/stores'
-import { oauthService, getErrorMessage } from '@/services'
-import type { OAuthConsent } from '@/types'
-import ConsentCard from '@/components/oauth/ConsentCard.vue'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseEmptyState from '@/components/common/BaseEmptyState.vue'
-import { ShieldCheckIcon } from '@heroicons/vue/24/outline'
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useAuthStore, useUiStore } from "@/stores";
+import { oauthService, getErrorMessage } from "@/services";
+import type { OAuthConsent } from "@/types";
+import ConsentCard from "@/components/oauth/ConsentCard.vue";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseEmptyState from "@/components/common/BaseEmptyState.vue";
+import { ShieldCheckIcon } from "@heroicons/vue/24/outline";
 
-const { t } = useI18n()
-const authStore = useAuthStore()
-const uiStore = useUiStore()
+const { t } = useI18n();
+const authStore = useAuthStore();
+const uiStore = useUiStore();
 
-const consents = ref<OAuthConsent[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const revokeTarget = ref<OAuthConsent | null>(null)
-const isRevoking = ref(false)
+const consents = ref<OAuthConsent[]>([]);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const revokeTarget = ref<OAuthConsent | null>(null);
+const isRevoking = ref(false);
 
 async function loadConsents(): Promise<void> {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
-    const userId = authStore.userId
-    if (!userId) throw new Error('User not authenticated')
-    consents.value = await oauthService.getConsents(userId)
+    const userId = authStore.userId;
+    if (!userId) throw new Error("User not authenticated");
+    consents.value = await oauthService.getConsents(userId);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-onMounted(loadConsents)
+onMounted(loadConsents);
 
 function handleRevokeClick(consent: OAuthConsent): void {
-  revokeTarget.value = consent
+  revokeTarget.value = consent;
 }
 
 function cancelRevoke(): void {
-  revokeTarget.value = null
+  revokeTarget.value = null;
 }
 
 async function confirmRevoke(): Promise<void> {
-  if (!revokeTarget.value) return
+  if (!revokeTarget.value) return;
 
-  const target = revokeTarget.value
-  isRevoking.value = true
+  const target = revokeTarget.value;
+  isRevoking.value = true;
 
   try {
-    const userId = authStore.userId
-    if (!userId) throw new Error('User not authenticated')
-    await oauthService.revokeConsent(target.client_id, userId)
-    revokeTarget.value = null
+    const userId = authStore.userId;
+    if (!userId) throw new Error("User not authenticated");
+    await oauthService.revokeConsent(target.client_id, userId);
+    revokeTarget.value = null;
     uiStore.addNotification({
-      type: 'success',
-      message: t('oauth.revokeSuccess', { client: target.client_name })
-    })
-    await loadConsents()
+      type: "success",
+      message: t("oauth.revokeSuccess", { client: target.client_name }),
+    });
+    await loadConsents();
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isRevoking.value = false
+    isRevoking.value = false;
   }
 }
 </script>
@@ -76,20 +76,24 @@ async function confirmRevoke(): Promise<void> {
         <div class="header-content">
           <div class="breadcrumb">
             <router-link to="/settings" class="breadcrumb-link">
-              {{ t('nav.settings') }}
+              {{ t("nav.settings") }}
             </router-link>
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">{{ t('oauth.connectedApps') }}</span>
+            <span class="breadcrumb-current">{{
+              t("oauth.connectedApps")
+            }}</span>
           </div>
-          <h1 class="page-title">{{ t('oauth.connectedApps') }}</h1>
-          <p class="page-description">{{ t('oauth.connectedAppsDescription') }}</p>
+          <h1 class="page-title">{{ t("oauth.connectedApps") }}</h1>
+          <p class="page-description">
+            {{ t("oauth.connectedAppsDescription") }}
+          </p>
         </div>
       </div>
 
       <!-- Loading -->
       <div v-if="isLoading" class="loading-state">
         <div class="spinner spinner-lg"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <!-- Error -->
@@ -125,16 +129,28 @@ async function confirmRevoke(): Promise<void> {
     <!-- Revoke confirmation modal -->
     <div v-if="revokeTarget" class="modal-overlay" @click.self="cancelRevoke">
       <div class="confirm-dialog">
-        <h3 class="confirm-title">{{ t('oauth.revokeConfirmTitle') }}</h3>
+        <h3 class="confirm-title">{{ t("oauth.revokeConfirmTitle") }}</h3>
         <p class="confirm-text">
-          {{ t('oauth.revokeConfirmMessage', { client: revokeTarget.client_name }) }}
+          {{
+            t("oauth.revokeConfirmMessage", {
+              client: revokeTarget.client_name,
+            })
+          }}
         </p>
         <div class="confirm-actions">
-          <BaseButton variant="secondary" :disabled="isRevoking" @click="cancelRevoke">
-            {{ t('common.cancel') }}
+          <BaseButton
+            variant="secondary"
+            :disabled="isRevoking"
+            @click="cancelRevoke"
+          >
+            {{ t("common.cancel") }}
           </BaseButton>
-          <BaseButton variant="danger" :loading="isRevoking" @click="confirmRevoke">
-            {{ t('oauth.revokeAccess') }}
+          <BaseButton
+            variant="danger"
+            :loading="isRevoking"
+            @click="confirmRevoke"
+          >
+            {{ t("oauth.revokeAccess") }}
           </BaseButton>
         </div>
       </div>
