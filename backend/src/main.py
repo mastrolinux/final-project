@@ -11,7 +11,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
-from src.core.storage import SupabaseStorageClient, configure_storage_client
+from src.core.encryption import configure_encryption_service
+from src.core.storage import (
+    SupabaseDocumentStorageClient,
+    SupabaseStorageClient,
+    configure_document_storage_client,
+    configure_storage_client,
+)
 from src.api.v1.router import api_router
 
 # Initialize FastAPI app
@@ -41,6 +47,18 @@ if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY:
             public_url=settings.SUPABASE_PUBLIC_URL,
         )
     )
+    # Configure private storage for encrypted verification documents
+    configure_document_storage_client(
+        SupabaseDocumentStorageClient(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_KEY,
+            public_url=settings.SUPABASE_PUBLIC_URL,
+        )
+    )
+
+# Configure encryption service for document encryption at rest
+if settings.DOCUMENT_ENCRYPTION_KEY:
+    configure_encryption_service(settings.DOCUMENT_ENCRYPTION_KEY)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")

@@ -99,7 +99,7 @@ def create_context_profile(
     - **bio**: Optional context-specific biography
     
     **Business Rules:**
-    - Pseudonymous accounts cannot create legal or healthcare contexts
+    - Only verified accounts can create legal or healthcare contexts
     - Context (user_id, context_type, context_name) must be unique
     
     **Example Use Case:**
@@ -128,7 +128,7 @@ def create_context_profile(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(e)
             )
-        elif "cannot create" in str(e).lower():
+        elif "cannot create" in str(e).lower() or "only verified" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=str(e)

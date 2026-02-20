@@ -20,6 +20,11 @@ from src.models.oauth import (
     ConsentMethod
 )
 from src.models.audit import AuditLog, AuditOperation, AuditEventType
+from src.models.verification import (
+    VerificationDocument,
+    DocumentType,
+    VerificationStatus,
+)
 
 __all__ = [
     "BaseProfile",
@@ -39,5 +44,8 @@ __all__ = [
     "AuditLog",
     "AuditOperation",
     "AuditEventType",
+    "VerificationDocument",
+    "DocumentType",
+    "VerificationStatus",
 ]
 
