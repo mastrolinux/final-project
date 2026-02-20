@@ -12,6 +12,7 @@
     "admin": "Admin",
     "adminOAuthClients": "OAuth Clients",
     "adminAuditVerify": "Audit Integrity",
+    "adminSoftDeletedUsers": "Deleted Users",
     "login": "Login",
     "register": "Register",
     "logout": "Logout"

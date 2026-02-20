@@ -456,3 +456,22 @@ class PrivacyService:
             retention_days,
         )
         return purged_count
+
+    def list_soft_deleted_users(
+        self, offset: int = 0, limit: int = 20
+    ) -> tuple:
+        """
+        List all soft-deleted users with pagination.
+
+        Args:
+            offset: Number of records to skip
+            limit: Maximum number of records to return
+
+        Returns:
+            Tuple of (list of AuthUser, total count)
+        """
+        users = self.auth_repo.get_all_soft_deleted_users(
+            offset=offset, limit=limit
+        )
+        total = self.auth_repo.count_soft_deleted_users()
+        return users, total
