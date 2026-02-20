@@ -35,6 +35,8 @@ export interface LoginResponse {
   is_email_verified: boolean
   account_type: AccountType
   is_admin: boolean
+  provider: string | null
+  has_custom_password: boolean
 }
 
 export interface RefreshTokenRequest {
@@ -67,6 +69,8 @@ export interface AuthUser {
   is_email_verified: boolean
   account_type: AccountType
   is_admin: boolean
+  provider: string | null
+  has_custom_password: boolean
 }
 
 /**
@@ -121,4 +125,20 @@ export interface AccountRecoverableDetail {
   account_recoverable: boolean
   permanent_deletion_date: string
   restore_endpoint: string
+}
+
+/**
+ * Request to set a password for an OAuth-only user.
+ */
+export interface SetPasswordRequest {
+  new_password: string
+}
+
+/**
+ * Response after successfully setting a password.
+ */
+export interface SetPasswordResponse {
+  message: string
+  user_id: string
+  email: string
 }
