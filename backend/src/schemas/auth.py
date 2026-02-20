@@ -25,7 +25,7 @@ class RegisterRequest(BaseModel):
         ...,
         min_length=8,
         max_length=128,
-        description="Password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+        description="Password (min 8 chars, must not be a commonly used password)"
     )
     preferred_name: str = Field(
         ...,
@@ -125,6 +125,8 @@ class LoginResponse(BaseModel):
     is_email_verified: bool = Field(..., description="Email verification status")
     account_type: str = Field(..., description="Account type (verified/unverified/pseudonymous)")
     is_admin: bool = Field(..., description="Admin status")
+    provider: Optional[str] = Field(None, description="OAuth provider name (null for email/password users)")
+    has_custom_password: bool = Field(..., description="Whether the user has set a custom password")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -137,7 +139,9 @@ class LoginResponse(BaseModel):
                 "email": "user@example.com",
                 "is_email_verified": True,
                 "account_type": "verified",
-                "is_admin": False
+                "is_admin": False,
+                "provider": None,
+                "has_custom_password": True
             }]
         }
     )
@@ -225,7 +229,7 @@ class ResetPasswordRequest(BaseModel):
         ...,
         min_length=8,
         max_length=128,
-        description="New password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)"
+        description="New password (min 8 chars, must not be a commonly used password)"
     )
     
     model_config = ConfigDict(
@@ -392,4 +396,42 @@ class RestoreAccountConfirmResponse(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     restored_at: datetime = Field(..., description="Restoration timestamp")
+
+
+# --- Set Password Schemas (OAuth users adding password auth) ---
+
+
+class SetPasswordRequest(BaseModel):
+    """Request to set a password for an OAuth-only user."""
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password (min 8 chars, must not be a commonly used password)"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{
+                "new_password": "SecurePass123!"
+            }]
+        }
+    )
+
+
+class SetPasswordResponse(BaseModel):
+    """Response after successfully setting a password."""
+    message: str = Field(..., description="Success message")
+    user_id: str = Field(..., description="User ID")
+    email: str = Field(..., description="User email (can now be used for login)")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{
+                "message": "Password set successfully. You can now login with email and password.",
+                "user_id": "123e4567-e89b-12d3-a456-426614174000",
+                "email": "user@example.com"
+            }]
+        }
+    )
 
