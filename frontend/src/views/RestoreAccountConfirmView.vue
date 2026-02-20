@@ -196,7 +196,7 @@ function goToLogin() {
                   minlength="8"
                   autocomplete="new-password"
                 />
-                <p class="form-hint">Minimum 8 characters with uppercase, lowercase, and number</p>
+                <p class="form-hint">Minimum 8 characters. Avoid common passwords.</p>
               </div>
 
               <div class="form-group">
