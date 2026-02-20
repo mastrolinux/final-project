@@ -153,7 +153,7 @@ class PrivacyService:
             }
 
         # Build consent export (exclude IP and user_agent for privacy)
-        consents_export = []
+        consents_export: list[dict] = []
         for consent in oauth_consents:
             consents_export.append({
                 "id": consent.id,

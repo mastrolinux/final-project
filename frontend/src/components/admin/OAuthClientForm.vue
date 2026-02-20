@@ -1,147 +1,154 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import type { OAuthClientCreate, OAuthClientUpdate, OAuthClientResponse, ScopeInfo } from '@/types'
-import { adminOAuthService } from '@/services'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import { PlusIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, watch, onMounted } from "vue";
+import type {
+  OAuthClientCreate,
+  OAuthClientUpdate,
+  OAuthClientResponse,
+  ScopeInfo,
+} from "@/types";
+import { adminOAuthService } from "@/services";
+import BaseInput from "@/components/common/BaseInput.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
 
 const props = withDefaults(
   defineProps<{
-    mode: 'create' | 'edit'
-    initialData?: OAuthClientResponse
-    isLoading?: boolean
+    mode: "create" | "edit";
+    initialData?: OAuthClientResponse;
+    isLoading?: boolean;
   }>(),
   {
-    isLoading: false
-  }
-)
+    isLoading: false,
+  },
+);
 
 const emit = defineEmits<{
-  submit: [data: OAuthClientCreate | OAuthClientUpdate]
-  cancel: []
-}>()
+  submit: [data: OAuthClientCreate | OAuthClientUpdate];
+  cancel: [];
+}>();
 
 // Default scopes for new clients (OIDC standard + basic profile)
-const DEFAULT_SCOPES = ['openid', 'profile:read:basic']
+const DEFAULT_SCOPES = ["openid", "profile:read:basic"];
 
 // Form state
-const clientId = ref('')
-const clientName = ref('')
-const clientDescription = ref('')
-const clientUri = ref('')
-const redirectUris = ref<string[]>([''])
-const selectedScopes = ref<string[]>([])
-const isConfidential = ref(false)
-const isFirstParty = ref(false)
-const isActive = ref(true)
+const clientId = ref("");
+const clientName = ref("");
+const clientDescription = ref("");
+const clientUri = ref("");
+const redirectUris = ref<string[]>([""]);
+const selectedScopes = ref<string[]>([]);
+const isConfidential = ref(false);
+const isFirstParty = ref(false);
+const isActive = ref(true);
 
 // Available scopes from backend
-const availableScopes = ref<ScopeInfo[]>([])
-const scopesLoading = ref(true)
-const scopesError = ref<string | null>(null)
+const availableScopes = ref<ScopeInfo[]>([]);
+const scopesLoading = ref(true);
+const scopesError = ref<string | null>(null);
 
 // Validation errors
-const errors = ref<Record<string, string>>({})
+const errors = ref<Record<string, string>>({});
 
 // Fetch available scopes on mount
 onMounted(async () => {
   try {
-    const response = await adminOAuthService.fetchScopes()
-    availableScopes.value = response.scopes
+    const response = await adminOAuthService.fetchScopes();
+    availableScopes.value = response.scopes;
 
     // Pre-select default scopes for new clients
-    if (props.mode === 'create' && selectedScopes.value.length === 0) {
+    if (props.mode === "create" && selectedScopes.value.length === 0) {
       selectedScopes.value = DEFAULT_SCOPES.filter((scope: string) =>
-        response.scopes.some((s: ScopeInfo) => s.scope_name === scope)
-      )
+        response.scopes.some((s: ScopeInfo) => s.scope_name === scope),
+      );
     }
   } catch (err) {
-    scopesError.value = 'Failed to load available scopes'
-    console.error('Failed to fetch scopes:', err)
+    scopesError.value = "Failed to load available scopes";
+    console.error("Failed to fetch scopes:", err);
   } finally {
-    scopesLoading.value = false
+    scopesLoading.value = false;
   }
-})
+});
 
 // Initialize form with existing data for edit mode
 watch(
   () => props.initialData,
   (data) => {
-    if (data && props.mode === 'edit') {
-      clientId.value = data.client_id
-      clientName.value = data.client_name
-      clientDescription.value = data.client_description || ''
-      clientUri.value = data.client_uri || ''
-      redirectUris.value = data.redirect_uris.length > 0 ? [...data.redirect_uris] : ['']
-      selectedScopes.value = [...data.allowed_scopes]
-      isConfidential.value = data.is_confidential
-      isFirstParty.value = data.is_first_party
-      isActive.value = data.is_active
+    if (data && props.mode === "edit") {
+      clientId.value = data.client_id;
+      clientName.value = data.client_name;
+      clientDescription.value = data.client_description || "";
+      clientUri.value = data.client_uri || "";
+      redirectUris.value =
+        data.redirect_uris.length > 0 ? [...data.redirect_uris] : [""];
+      selectedScopes.value = [...data.allowed_scopes];
+      isConfidential.value = data.is_confidential;
+      isFirstParty.value = data.is_first_party;
+      isActive.value = data.is_active;
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 function toggleScope(scopeName: string): void {
-  const index = selectedScopes.value.indexOf(scopeName)
+  const index = selectedScopes.value.indexOf(scopeName);
   if (index === -1) {
-    selectedScopes.value.push(scopeName)
+    selectedScopes.value.push(scopeName);
   } else {
-    selectedScopes.value.splice(index, 1)
+    selectedScopes.value.splice(index, 1);
   }
 }
 
 function isScopeSelected(scopeName: string): boolean {
-  return selectedScopes.value.includes(scopeName)
+  return selectedScopes.value.includes(scopeName);
 }
 
-const isCreateMode = computed(() => props.mode === 'create')
+const isCreateMode = computed(() => props.mode === "create");
 
 function addRedirectUri(): void {
-  redirectUris.value.push('')
+  redirectUris.value.push("");
 }
 
 function removeRedirectUri(index: number): void {
   if (redirectUris.value.length > 1) {
-    redirectUris.value.splice(index, 1)
+    redirectUris.value.splice(index, 1);
   }
 }
 
 function validate(): boolean {
-  errors.value = {}
+  errors.value = {};
 
   if (isCreateMode.value && !clientId.value.trim()) {
-    errors.value.clientId = 'Client ID is required'
+    errors.value.clientId = "Client ID is required";
   } else if (isCreateMode.value && !/^[a-zA-Z0-9_-]+$/.test(clientId.value)) {
-    errors.value.clientId = 'Client ID can only contain letters, numbers, underscores, and hyphens'
+    errors.value.clientId =
+      "Client ID can only contain letters, numbers, underscores, and hyphens";
   }
 
   if (!clientName.value.trim()) {
-    errors.value.clientName = 'Client name is required'
+    errors.value.clientName = "Client name is required";
   }
 
-  const validUris = redirectUris.value.filter((uri) => uri.trim())
+  const validUris = redirectUris.value.filter((uri) => uri.trim());
   if (validUris.length === 0) {
-    errors.value.redirectUris = 'At least one redirect URI is required'
+    errors.value.redirectUris = "At least one redirect URI is required";
   } else {
     for (const uri of validUris) {
       try {
-        new URL(uri)
+        new URL(uri);
       } catch {
-        errors.value.redirectUris = 'All redirect URIs must be valid URLs'
-        break
+        errors.value.redirectUris = "All redirect URIs must be valid URLs";
+        break;
       }
     }
   }
 
-  return Object.keys(errors.value).length === 0
+  return Object.keys(errors.value).length === 0;
 }
 
 function handleSubmit(): void {
-  if (!validate()) return
+  if (!validate()) return;
 
-  const validUris = redirectUris.value.filter((uri) => uri.trim())
+  const validUris = redirectUris.value.filter((uri) => uri.trim());
 
   if (isCreateMode.value) {
     const data: OAuthClientCreate = {
@@ -150,11 +157,12 @@ function handleSubmit(): void {
       client_description: clientDescription.value.trim() || undefined,
       client_uri: clientUri.value.trim() || undefined,
       redirect_uris: validUris,
-      allowed_scopes: selectedScopes.value.length > 0 ? [...selectedScopes.value] : undefined,
+      allowed_scopes:
+        selectedScopes.value.length > 0 ? [...selectedScopes.value] : undefined,
       is_confidential: isConfidential.value,
-      is_first_party: isFirstParty.value
-    }
-    emit('submit', data)
+      is_first_party: isFirstParty.value,
+    };
+    emit("submit", data);
   } else {
     const data: OAuthClientUpdate = {
       client_name: clientName.value.trim(),
@@ -163,9 +171,9 @@ function handleSubmit(): void {
       redirect_uris: validUris,
       allowed_scopes: [...selectedScopes.value],
       is_first_party: isFirstParty.value,
-      is_active: isActive.value
-    }
-    emit('submit', data)
+      is_active: isActive.value,
+    };
+    emit("submit", data);
   }
 }
 </script>
@@ -312,25 +320,15 @@ function handleSubmit(): void {
 
     <div class="checkbox-group">
       <label class="checkbox-label">
-        <input
-          v-model="isFirstParty"
-          type="checkbox"
-          :disabled="isLoading"
-        />
+        <input v-model="isFirstParty" type="checkbox" :disabled="isLoading" />
         <span>First Party Application</span>
       </label>
-      <p class="checkbox-hint">
-        First-party apps can skip the consent screen
-      </p>
+      <p class="checkbox-hint">First-party apps can skip the consent screen</p>
     </div>
 
     <div v-if="!isCreateMode" class="checkbox-group">
       <label class="checkbox-label">
-        <input
-          v-model="isActive"
-          type="checkbox"
-          :disabled="isLoading"
-        />
+        <input v-model="isActive" type="checkbox" :disabled="isLoading" />
         <span>Active</span>
       </label>
       <p class="checkbox-hint">
@@ -347,12 +345,8 @@ function handleSubmit(): void {
       >
         Cancel
       </BaseButton>
-      <BaseButton
-        variant="primary"
-        type="submit"
-        :loading="isLoading"
-      >
-        {{ isCreateMode ? 'Create Client' : 'Save Changes' }}
+      <BaseButton variant="primary" type="submit" :loading="isLoading">
+        {{ isCreateMode ? "Create Client" : "Save Changes" }}
       </BaseButton>
     </div>
   </form>
@@ -405,7 +399,9 @@ function handleSubmit(): void {
   background-color: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .redirect-uri-row .form-input:focus {
@@ -505,14 +501,14 @@ function handleSubmit(): void {
   cursor: pointer;
 }
 
-.checkbox-label input[type='checkbox'] {
+.checkbox-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
   accent-color: var(--color-primary-600);
   cursor: pointer;
 }
 
-.checkbox-label input[type='checkbox']:disabled {
+.checkbox-label input[type="checkbox"]:disabled {
   cursor: not-allowed;
 }
 
@@ -570,7 +566,7 @@ function handleSubmit(): void {
   background-color: var(--bg-tertiary);
 }
 
-.scope-checkbox input[type='checkbox'] {
+.scope-checkbox input[type="checkbox"] {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
@@ -579,7 +575,7 @@ function handleSubmit(): void {
   cursor: pointer;
 }
 
-.scope-checkbox input[type='checkbox']:disabled {
+.scope-checkbox input[type="checkbox"]:disabled {
   cursor: not-allowed;
 }
 
@@ -608,7 +604,7 @@ function handleSubmit(): void {
 }
 
 .scope-sensitive .scope-name::after {
-  content: ' (sensitive)';
+  content: " (sensitive)";
   font-weight: var(--font-weight-normal);
   font-size: var(--font-size-xs);
 }

@@ -20,6 +20,8 @@ from src.repositories.profile_repository import ProfileRepository
 class TestSocialAuthAuthorizeEndpoint:
     """Test POST /api/v1/auth/social/{provider}/authorize endpoint."""
 
+    @patch('src.core.config.settings.GOOGLE_CLIENT_SECRET', 'test-client-secret')
+    @patch('src.core.config.settings.GOOGLE_CLIENT_ID', 'test-client-id')
     def test_google_authorize_success(self, client):
         """Test successful authorization URL generation for Google."""
         response = client.post("/api/v1/auth/social/google/authorize")

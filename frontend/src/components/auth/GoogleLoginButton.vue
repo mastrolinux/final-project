@@ -1,33 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { authService, getErrorMessage } from '@/services'
+import { ref } from "vue";
+import { authService, getErrorMessage } from "@/services";
 
 const emit = defineEmits<{
-  error: [message: string]
-}>()
+  error: [message: string];
+}>();
 
-const isLoading = ref(false)
+const isLoading = ref(false);
 
 async function handleGoogleLogin() {
-  isLoading.value = true
+  isLoading.value = true;
 
   try {
     // Request authorization URL from backend
-    const { authorization_url, state, code_verifier } = await authService.getOAuthAuthorizationUrl(
-      'google'
-    )
+    const { authorization_url, state, code_verifier } =
+      await authService.getOAuthAuthorizationUrl("google");
 
     // Store PKCE verifier and state in sessionStorage (NOT localStorage)
     // These are single-use values for security
     // Use prefixed keys to avoid conflicts with OAuth 2.1 server flow
-    sessionStorage.setItem('social_oauth_code_verifier', code_verifier)
-    sessionStorage.setItem('social_oauth_state', state)
+    sessionStorage.setItem("social_oauth_code_verifier", code_verifier);
+    sessionStorage.setItem("social_oauth_state", state);
 
     // Redirect to Google OAuth page
-    window.location.href = authorization_url
+    window.location.href = authorization_url;
   } catch (error) {
-    isLoading.value = false
-    emit('error', getErrorMessage(error))
+    isLoading.value = false;
+    emit("error", getErrorMessage(error));
   }
 }
 </script>

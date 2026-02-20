@@ -1,94 +1,102 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useProfileStore } from '@/stores'
-import { authService } from '@/services'
-import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAuthStore, useProfileStore } from "@/stores";
+import { authService } from "@/services";
+import ThemeToggle from "@/components/common/ThemeToggle.vue";
+import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
 import {
   ChevronDownIcon,
   Bars3Icon,
   XMarkIcon,
-} from '@heroicons/vue/24/outline'
+} from "@heroicons/vue/24/outline";
 
-const router = useRouter()
-const route = useRoute()
-const { t } = useI18n()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
+const router = useRouter();
+const route = useRoute();
+const { t } = useI18n();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 
-const isAuthenticated = computed(() => authStore.isAuthenticated)
-const isAdmin = computed(() => authStore.isAdmin)
-const displayName = computed(() => profileStore.displayName || authStore.user?.email || '')
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const isAdmin = computed(() => authStore.isAdmin);
+const displayName = computed(
+  () => profileStore.displayName || authStore.user?.email || "",
+);
 
-const adminMenuOpen = ref(false)
-const adminMenuRef = ref<HTMLElement | null>(null)
+const adminMenuOpen = ref(false);
+const adminMenuRef = ref<HTMLElement | null>(null);
 
-const mobileMenuOpen = ref(false)
-const mobileAdminOpen = ref(false)
+const mobileMenuOpen = ref(false);
+const mobileAdminOpen = ref(false);
 
 function toggleAdminMenu() {
-  adminMenuOpen.value = !adminMenuOpen.value
+  adminMenuOpen.value = !adminMenuOpen.value;
 }
 
 function closeAdminMenu() {
-  adminMenuOpen.value = false
+  adminMenuOpen.value = false;
 }
 
 function toggleMobileMenu() {
-  mobileMenuOpen.value = !mobileMenuOpen.value
+  mobileMenuOpen.value = !mobileMenuOpen.value;
   if (!mobileMenuOpen.value) {
-    mobileAdminOpen.value = false
+    mobileAdminOpen.value = false;
   }
 }
 
 function closeMobileMenu() {
-  mobileMenuOpen.value = false
-  mobileAdminOpen.value = false
+  mobileMenuOpen.value = false;
+  mobileAdminOpen.value = false;
 }
 
 function toggleMobileAdmin() {
-  mobileAdminOpen.value = !mobileAdminOpen.value
+  mobileAdminOpen.value = !mobileAdminOpen.value;
 }
 
 function handleClickOutside(event: MouseEvent) {
-  if (adminMenuRef.value && !adminMenuRef.value.contains(event.target as Node)) {
-    adminMenuOpen.value = false
+  if (
+    adminMenuRef.value &&
+    !adminMenuRef.value.contains(event.target as Node)
+  ) {
+    adminMenuOpen.value = false;
   }
 }
 
 function handleEscape(event: KeyboardEvent) {
-  if (event.key === 'Escape' && mobileMenuOpen.value) {
-    closeMobileMenu()
+  if (event.key === "Escape" && mobileMenuOpen.value) {
+    closeMobileMenu();
   }
 }
 
 // Close mobile menu on route change
-watch(() => route.fullPath, () => {
-  closeMobileMenu()
-})
+watch(
+  () => route.fullPath,
+  () => {
+    closeMobileMenu();
+  },
+);
 
 // Prevent body scroll when mobile menu is open
 watch(mobileMenuOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-})
+  document.body.style.overflow = open ? "hidden" : "";
+});
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-  document.addEventListener('keydown', handleEscape)
-})
+  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("keydown", handleEscape);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('keydown', handleEscape)
-  document.body.style.overflow = ''
-})
+  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("keydown", handleEscape);
+  document.body.style.overflow = "";
+});
 
 async function handleLogout() {
-  closeMobileMenu()
-  await authService.logout()
-  router.push({ name: 'home' })
+  closeMobileMenu();
+  await authService.logout();
+  router.push({ name: "home" });
 }
 </script>
 
@@ -96,22 +104,22 @@ async function handleLogout() {
   <header class="app-header">
     <div class="header-left">
       <router-link to="/" class="logo">
-        <span class="logo-text">{{ t('app.name') }}</span>
+        <span class="logo-text">{{ t("app.name") }}</span>
       </router-link>
     </div>
 
     <nav class="header-nav" v-if="isAuthenticated">
       <router-link to="/profile" class="nav-link">
-        {{ t('nav.profile') }}
+        {{ t("nav.profile") }}
       </router-link>
       <router-link to="/contexts" class="nav-link">
-        {{ t('nav.contexts') }}
+        {{ t("nav.contexts") }}
       </router-link>
       <router-link to="/settings" class="nav-link">
-        {{ t('nav.settings') }}
+        {{ t("nav.settings") }}
       </router-link>
       <router-link to="/audit" class="nav-link">
-        {{ t('nav.audit') }}
+        {{ t("nav.audit") }}
       </router-link>
 
       <!-- Admin dropdown -->
@@ -121,8 +129,11 @@ async function handleLogout() {
           :class="{ 'admin-trigger-open': adminMenuOpen }"
           @click="toggleAdminMenu"
         >
-          {{ t('nav.admin') }}
-          <ChevronDownIcon class="chevron-icon" :class="{ 'chevron-open': adminMenuOpen }" />
+          {{ t("nav.admin") }}
+          <ChevronDownIcon
+            class="chevron-icon"
+            :class="{ 'chevron-open': adminMenuOpen }"
+          />
         </button>
         <Transition name="dropdown">
           <div v-if="adminMenuOpen" class="admin-menu">
@@ -131,14 +142,14 @@ async function handleLogout() {
               class="admin-menu-item"
               @click="closeAdminMenu"
             >
-              {{ t('nav.adminOAuthClients') }}
+              {{ t("nav.adminOAuthClients") }}
             </router-link>
             <router-link
               to="/admin/audit/verify"
               class="admin-menu-item"
               @click="closeAdminMenu"
             >
-              {{ t('nav.adminAuditVerify') }}
+              {{ t("nav.adminAuditVerify") }}
             </router-link>
           </div>
         </Transition>
@@ -157,16 +168,16 @@ async function handleLogout() {
           />
           <span class="user-name">{{ displayName }}</span>
           <button class="btn btn-ghost btn-sm" @click="handleLogout">
-            {{ t('nav.logout') }}
+            {{ t("nav.logout") }}
           </button>
         </div>
       </template>
       <template v-else>
         <router-link to="/login" class="btn btn-ghost btn-sm">
-          {{ t('nav.login') }}
+          {{ t("nav.login") }}
         </router-link>
         <router-link to="/register" class="btn btn-primary btn-sm">
-          {{ t('nav.register') }}
+          {{ t("nav.register") }}
         </router-link>
       </template>
 
@@ -195,10 +206,19 @@ async function handleLogout() {
 
     <!-- Mobile drawer panel -->
     <Transition name="drawer">
-      <nav v-if="mobileMenuOpen" class="mobile-drawer" role="navigation" aria-label="Mobile navigation">
+      <nav
+        v-if="mobileMenuOpen"
+        class="mobile-drawer"
+        role="navigation"
+        aria-label="Mobile navigation"
+      >
         <div class="mobile-drawer-header">
-          <span class="mobile-drawer-title">{{ t('app.name') }}</span>
-          <button class="mobile-close-btn" @click="closeMobileMenu" aria-label="Close menu">
+          <span class="mobile-drawer-title">{{ t("app.name") }}</span>
+          <button
+            class="mobile-close-btn"
+            @click="closeMobileMenu"
+            aria-label="Close menu"
+          >
             <XMarkIcon class="mobile-menu-icon" />
           </button>
         </div>
@@ -206,23 +226,26 @@ async function handleLogout() {
         <div class="mobile-drawer-body" v-if="isAuthenticated">
           <div class="mobile-nav-section">
             <router-link to="/profile" class="mobile-nav-link">
-              {{ t('nav.profile') }}
+              {{ t("nav.profile") }}
             </router-link>
             <router-link to="/contexts" class="mobile-nav-link">
-              {{ t('nav.contexts') }}
+              {{ t("nav.contexts") }}
             </router-link>
             <router-link to="/settings" class="mobile-nav-link">
-              {{ t('nav.settings') }}
+              {{ t("nav.settings") }}
             </router-link>
             <router-link to="/audit" class="mobile-nav-link">
-              {{ t('nav.audit') }}
+              {{ t("nav.audit") }}
             </router-link>
           </div>
 
           <!-- Admin section (mobile) -->
           <div v-if="isAdmin" class="mobile-nav-section mobile-admin-section">
-            <button class="mobile-nav-link mobile-admin-trigger" @click="toggleMobileAdmin">
-              <span>{{ t('nav.admin') }}</span>
+            <button
+              class="mobile-nav-link mobile-admin-trigger"
+              @click="toggleMobileAdmin"
+            >
+              <span>{{ t("nav.admin") }}</span>
               <ChevronDownIcon
                 class="chevron-icon"
                 :class="{ 'chevron-open': mobileAdminOpen }"
@@ -230,11 +253,17 @@ async function handleLogout() {
             </button>
             <Transition name="expand">
               <div v-if="mobileAdminOpen" class="mobile-admin-items">
-                <router-link to="/admin/oauth/clients" class="mobile-nav-link mobile-nav-sub">
-                  {{ t('nav.adminOAuthClients') }}
+                <router-link
+                  to="/admin/oauth/clients"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.adminOAuthClients") }}
                 </router-link>
-                <router-link to="/admin/audit/verify" class="mobile-nav-link mobile-nav-sub">
-                  {{ t('nav.adminAuditVerify') }}
+                <router-link
+                  to="/admin/audit/verify"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.adminAuditVerify") }}
                 </router-link>
               </div>
             </Transition>
@@ -244,10 +273,10 @@ async function handleLogout() {
         <div class="mobile-drawer-body" v-else>
           <div class="mobile-nav-section">
             <router-link to="/login" class="mobile-nav-link">
-              {{ t('nav.login') }}
+              {{ t("nav.login") }}
             </router-link>
             <router-link to="/register" class="mobile-nav-link">
-              {{ t('nav.register') }}
+              {{ t("nav.register") }}
             </router-link>
           </div>
         </div>
@@ -262,7 +291,7 @@ async function handleLogout() {
             <span class="mobile-user-name">{{ displayName }}</span>
           </div>
           <button class="mobile-logout-btn" @click="handleLogout">
-            {{ t('nav.logout') }}
+            {{ t("nav.logout") }}
           </button>
         </div>
       </nav>
@@ -403,7 +432,9 @@ async function handleLogout() {
 /* Dropdown transition */
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .dropdown-enter-from,
@@ -445,7 +476,9 @@ async function handleLogout() {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .mobile-menu-btn:hover {
@@ -461,7 +494,9 @@ async function handleLogout() {
 /* Icon swap transition */
 .icon-swap-enter-active,
 .icon-swap-leave-active {
-  transition: opacity 100ms ease, transform 100ms ease;
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 
 .icon-swap-enter-from {
@@ -547,7 +582,9 @@ async function handleLogout() {
   background-color: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .mobile-close-btn:hover {
@@ -590,7 +627,9 @@ async function handleLogout() {
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .mobile-nav-link:hover {
@@ -633,7 +672,9 @@ async function handleLogout() {
 /* Expand transition for admin subitems */
 .expand-enter-active,
 .expand-leave-active {
-  transition: max-height var(--transition-normal), opacity var(--transition-normal);
+  transition:
+    max-height var(--transition-normal),
+    opacity var(--transition-normal);
   max-height: 200px;
 }
 
@@ -680,7 +721,10 @@ async function handleLogout() {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .mobile-logout-btn:hover {

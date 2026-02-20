@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
+import { useI18n } from "vue-i18n";
 
-const { t } = useI18n()
+const { t } = useI18n();
 </script>
 
 <template>
   <div class="not-found-view">
     <div class="container container-sm text-center">
       <div class="error-code">404</div>
-      <h1>{{ t('errors.pageNotFound') }}</h1>
-      <p class="text-secondary">{{ t('errors.pageNotFoundMessage') }}</p>
+      <h1>{{ t("errors.pageNotFound") }}</h1>
+      <p class="text-secondary">{{ t("errors.pageNotFoundMessage") }}</p>
       <router-link to="/" class="btn btn-primary mt-6">
-        {{ t('common.backToHome') }}
+        {{ t("common.backToHome") }}
       </router-link>
     </div>
   </div>

@@ -7,33 +7,38 @@
  * - Resolved endpoint merges base + context with inheritance engine
  */
 
-import api from './api'
+import api from "./api";
 import type {
   ContextProfileResponse,
   ContextProfileCreate,
   ContextProfileUpdate,
   ResolvedProfileResponse,
   AvatarResponse,
-  AvatarDeleteResponse
-} from '@/types'
+  AvatarDeleteResponse,
+} from "@/types";
 
 export const contextService = {
   /**
    * Get all context profiles for a user.
    */
   async list(userId: string): Promise<ContextProfileResponse[]> {
-    const response = await api.get<ContextProfileResponse[]>(`/profiles/${userId}/contexts`)
-    return response.data
+    const response = await api.get<ContextProfileResponse[]>(
+      `/profiles/${userId}/contexts`,
+    );
+    return response.data;
   },
 
   /**
    * Get a specific context profile (raw, with overrides only).
    */
-  async get(userId: string, contextId: string): Promise<ContextProfileResponse> {
+  async get(
+    userId: string,
+    contextId: string,
+  ): Promise<ContextProfileResponse> {
     const response = await api.get<ContextProfileResponse>(
-      `/profiles/${userId}/contexts/${contextId}`
-    )
-    return response.data
+      `/profiles/${userId}/contexts/${contextId}`,
+    );
+    return response.data;
   },
 
   /**
@@ -42,9 +47,15 @@ export const contextService = {
    * Note: Pseudonymous accounts cannot create legal or healthcare contexts.
    * This restriction is enforced by the backend and returns 403.
    */
-  async create(userId: string, data: ContextProfileCreate): Promise<ContextProfileResponse> {
-    const response = await api.post<ContextProfileResponse>(`/profiles/${userId}/contexts`, data)
-    return response.data
+  async create(
+    userId: string,
+    data: ContextProfileCreate,
+  ): Promise<ContextProfileResponse> {
+    const response = await api.post<ContextProfileResponse>(
+      `/profiles/${userId}/contexts`,
+      data,
+    );
+    return response.data;
   },
 
   /**
@@ -56,20 +67,20 @@ export const contextService = {
   async update(
     userId: string,
     contextId: string,
-    data: ContextProfileUpdate
+    data: ContextProfileUpdate,
   ): Promise<ContextProfileResponse> {
     const response = await api.patch<ContextProfileResponse>(
       `/profiles/${userId}/contexts/${contextId}`,
-      data
-    )
-    return response.data
+      data,
+    );
+    return response.data;
   },
 
   /**
    * Delete a context profile (soft delete).
    */
   async delete(userId: string, contextId: string): Promise<void> {
-    await api.delete(`/profiles/${userId}/contexts/${contextId}`)
+    await api.delete(`/profiles/${userId}/contexts/${contextId}`);
   },
 
   /**
@@ -82,11 +93,14 @@ export const contextService = {
    *
    * Returns 410 Gone if context has expired (valid_to < now).
    */
-  async getResolved(userId: string, contextId: string): Promise<ResolvedProfileResponse> {
+  async getResolved(
+    userId: string,
+    contextId: string,
+  ): Promise<ResolvedProfileResponse> {
     const response = await api.get<ResolvedProfileResponse>(
-      `/profiles/${userId}/contexts/${contextId}/resolved`
-    )
-    return response.data
+      `/profiles/${userId}/contexts/${contextId}/resolved`,
+    );
+    return response.data;
   },
 
   /**
@@ -97,16 +111,16 @@ export const contextService = {
   async uploadAvatar(
     userId: string,
     contextId: string,
-    file: File
+    file: File,
   ): Promise<AvatarResponse> {
-    const formData = new FormData()
-    formData.append('file', file)
+    const formData = new FormData();
+    formData.append("file", file);
     const response = await api.post<AvatarResponse>(
       `/profiles/${userId}/contexts/${contextId}/avatar`,
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    )
-    return response.data
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data;
   },
 
   /**
@@ -115,13 +129,13 @@ export const contextService = {
    */
   async deleteAvatar(
     userId: string,
-    contextId: string
+    contextId: string,
   ): Promise<AvatarDeleteResponse> {
     const response = await api.delete<AvatarDeleteResponse>(
-      `/profiles/${userId}/contexts/${contextId}/avatar`
-    )
-    return response.data
-  }
-}
+      `/profiles/${userId}/contexts/${contextId}/avatar`,
+    );
+    return response.data;
+  },
+};
 
-export default contextService
+export default contextService;
