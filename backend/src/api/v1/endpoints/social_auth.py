@@ -228,7 +228,7 @@ async def callback(
         email_verified = claims.get("email_verified", False)
 
         # Authenticate or create user
-        access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin = service.authenticate_or_create_user(
+        access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin, oauth_provider, has_custom_password = service.authenticate_or_create_user(
             provider=provider,
             provider_id=provider_id,
             email=email,
@@ -248,7 +248,9 @@ async def callback(
             email=email,
             is_email_verified=is_email_verified,
             account_type=account_type,
-            is_admin=is_admin
+            is_admin=is_admin,
+            provider=oauth_provider,
+            has_custom_password=has_custom_password
         )
 
     except OAuthStateValidationError as e:

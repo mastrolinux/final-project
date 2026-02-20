@@ -101,6 +101,9 @@ class AuthUser(Base, TimestampMixin, SoftDeleteMixin):
 
     # Admin flag - grants access to admin endpoints
     is_admin = Column(Boolean, nullable=False, default=False)
+
+    # Password explicitly set by user (vs. random hash for OAuth users)
+    has_custom_password = Column(Boolean, nullable=False, default=False)
     
     # Relationship to base profile
     # base_profile = relationship("BaseProfile", back_populates="auth_user")
