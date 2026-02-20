@@ -69,3 +69,13 @@ api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
 from src.api.v1.endpoints import avatars
 api_router.include_router(avatars.router, tags=["Avatars"])
 
+# Include Verification endpoints (ID Document Upload)
+from src.api.v1.endpoints import verification
+api_router.include_router(verification.router, tags=["Verification"])
+
+# Include Admin Verification endpoints (requires admin privileges)
+from src.api.v1.endpoints import admin_verification
+api_router.include_router(
+    admin_verification.router, prefix="/admin", tags=["Admin - Verification"]
+)
+
