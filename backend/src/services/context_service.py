@@ -208,11 +208,12 @@ class ContextService:
         if not base_profile:
             raise ContextServiceError(f"Profile {user_id} not found")
         
-        # Business rule: Pseudonymous accounts cannot create legal or healthcare contexts
-        if base_profile.account_type == AccountType.pseudonymous:
-            if context_type in [ContextType.legal, ContextType.healthcare]:
+        # Business rule: Only verified accounts can create legal or healthcare contexts
+        if context_type in [ContextType.legal, ContextType.healthcare]:
+            if base_profile.account_type != AccountType.verified:
                 raise ContextServiceError(
-                    f"Pseudonymous accounts cannot create {context_type.value} contexts"
+                    f"Only verified accounts can create {context_type.value} contexts. "
+                    f"Current account type: {base_profile.account_type.value}"
                 )
         
         # Check for duplicate context (user_id, context_type, context_name)
