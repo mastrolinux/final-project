@@ -100,10 +100,10 @@ class TestContextCreation:
                 context_type=ContextType.legal,
                 context_name="Government"
             )
-        
-        assert "cannot create" in str(exc_info.value).lower()
+
+        assert "only verified" in str(exc_info.value).lower()
         assert "legal" in str(exc_info.value).lower()
-    
+
     def test_pseudonymous_cannot_create_healthcare_context(
         self,
         context_service: ContextService,
@@ -116,8 +116,40 @@ class TestContextCreation:
                 context_type=ContextType.healthcare,
                 context_name="Hospital"
             )
-        
-        assert "cannot create" in str(exc_info.value).lower()
+
+        assert "only verified" in str(exc_info.value).lower()
+        assert "healthcare" in str(exc_info.value).lower()
+
+    def test_unverified_cannot_create_legal_context(
+        self,
+        context_service: ContextService,
+        sample_unverified_profile: BaseProfile
+    ):
+        """Test unverified accounts cannot create legal contexts"""
+        with pytest.raises(ContextServiceError) as exc_info:
+            context_service.create_context_profile(
+                user_id=sample_unverified_profile.user_id,
+                context_type=ContextType.legal,
+                context_name="Government"
+            )
+
+        assert "only verified" in str(exc_info.value).lower()
+        assert "legal" in str(exc_info.value).lower()
+
+    def test_unverified_cannot_create_healthcare_context(
+        self,
+        context_service: ContextService,
+        sample_unverified_profile: BaseProfile
+    ):
+        """Test unverified accounts cannot create healthcare contexts"""
+        with pytest.raises(ContextServiceError) as exc_info:
+            context_service.create_context_profile(
+                user_id=sample_unverified_profile.user_id,
+                context_type=ContextType.healthcare,
+                context_name="Hospital"
+            )
+
+        assert "only verified" in str(exc_info.value).lower()
         assert "healthcare" in str(exc_info.value).lower()
     
     def test_duplicate_context_fails(
