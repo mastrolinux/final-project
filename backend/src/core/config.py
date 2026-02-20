@@ -212,7 +212,7 @@ class Settings(BaseSettings):
 
 # Global settings instance
 try:
-    settings = Settings()
+    settings = Settings()  # type: ignore[call-arg]  # reads from env vars
     logger.info(f"Configuration loaded successfully for {settings.ENVIRONMENT} environment")
 except Exception as e:
     logger.error(f"Failed to load configuration: {e}")
