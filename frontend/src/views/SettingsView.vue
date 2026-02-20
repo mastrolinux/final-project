@@ -1,224 +1,233 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useUiStore } from '@/stores'
-import { authService, privacyService, getErrorMessage } from '@/services'
-import { setLocale, SUPPORTED_LOCALES, LOCALE_NAMES, type SupportedLocale } from '@/locales'
-import type { DeletionStatus } from '@/types'
-import axios from 'axios'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAuthStore, useUiStore } from "@/stores";
+import { authService, privacyService, getErrorMessage } from "@/services";
+import {
+  setLocale,
+  SUPPORTED_LOCALES,
+  LOCALE_NAMES,
+  type SupportedLocale,
+} from "@/locales";
+import type { DeletionStatus } from "@/types";
+import axios from "axios";
 
-const { t, locale } = useI18n()
-const router = useRouter()
-const authStore = useAuthStore()
-const uiStore = useUiStore()
+const { t, locale } = useI18n();
+const router = useRouter();
+const authStore = useAuthStore();
+const uiStore = useUiStore();
 
 // Deletion status (fetched on mount)
-const deletionStatus = ref<DeletionStatus>('active')
-const deletionScheduledAt = ref<string | null>(null)
-const permanentDeletionDate = ref<string | null>(null)
+const deletionStatus = ref<DeletionStatus>("active");
+const deletionScheduledAt = ref<string | null>(null);
+const permanentDeletionDate = ref<string | null>(null);
 
 onMounted(async () => {
   try {
-    const status = await privacyService.getDeletionStatus()
-    deletionStatus.value = status.status
-    deletionScheduledAt.value = status.deletion_scheduled_at
-    permanentDeletionDate.value = status.permanent_deletion_date
+    const status = await privacyService.getDeletionStatus();
+    deletionStatus.value = status.status;
+    deletionScheduledAt.value = status.deletion_scheduled_at;
+    permanentDeletionDate.value = status.permanent_deletion_date;
   } catch {
     // Silently ignore - banner just won't show
   }
-})
+});
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(locale.value, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 const currentLocale = computed({
   get: () => locale.value as SupportedLocale,
   set: (value: SupportedLocale) => {
-    setLocale(value)
+    setLocale(value);
     uiStore.addNotification({
-      type: 'success',
-      message: t('settings.languageChanged')
-    })
-  }
-})
+      type: "success",
+      message: t("settings.languageChanged"),
+    });
+  },
+});
 
 const currentTheme = computed({
   get: () => uiStore.theme,
-  set: (value: 'light' | 'dark' | 'system') => {
-    uiStore.setTheme(value)
+  set: (value: "light" | "dark" | "system") => {
+    uiStore.setTheme(value);
     uiStore.addNotification({
-      type: 'success',
-      message: t('settings.themeChanged')
-    })
-  }
-})
+      type: "success",
+      message: t("settings.themeChanged"),
+    });
+  },
+});
 
 // Computed: OAuth user who has not yet set a custom password
 const showSetPassword = computed(
-  () => authStore.isOAuthUser && !authStore.hasCustomPassword
-)
+  () => authStore.isOAuthUser && !authStore.hasCustomPassword,
+);
 
 const providerLabel = computed(() => {
-  const p = authStore.user?.provider
-  if (!p) return ''
-  return p.charAt(0).toUpperCase() + p.slice(1)
-})
+  const p = authStore.user?.provider;
+  if (!p) return "";
+  return p.charAt(0).toUpperCase() + p.slice(1);
+});
 
 // Set password form (OAuth users without custom password)
-const setPasswordForm = ref({ newPassword: '', confirmPassword: '' })
-const isSettingPassword = ref(false)
-const setPasswordError = ref<string | null>(null)
-const setPasswordSuccess = ref(false)
+const setPasswordForm = ref({ newPassword: "", confirmPassword: "" });
+const isSettingPassword = ref(false);
+const setPasswordError = ref<string | null>(null);
+const setPasswordSuccess = ref(false);
 
 async function handleSetPassword() {
-  setPasswordError.value = null
-  setPasswordSuccess.value = false
+  setPasswordError.value = null;
+  setPasswordSuccess.value = false;
 
   if (setPasswordForm.value.newPassword.length < 8) {
-    setPasswordError.value = t('auth.passwordTooShort')
-    return
+    setPasswordError.value = t("auth.passwordTooShort");
+    return;
   }
 
-  if (setPasswordForm.value.newPassword !== setPasswordForm.value.confirmPassword) {
-    setPasswordError.value = t('auth.passwordsDoNotMatch')
-    return
+  if (
+    setPasswordForm.value.newPassword !== setPasswordForm.value.confirmPassword
+  ) {
+    setPasswordError.value = t("auth.passwordsDoNotMatch");
+    return;
   }
 
-  isSettingPassword.value = true
+  isSettingPassword.value = true;
 
   try {
-    await authService.setPassword(setPasswordForm.value.newPassword)
-    setPasswordSuccess.value = true
-    setPasswordForm.value = { newPassword: '', confirmPassword: '' }
+    await authService.setPassword(setPasswordForm.value.newPassword);
+    setPasswordSuccess.value = true;
+    setPasswordForm.value = { newPassword: "", confirmPassword: "" };
     uiStore.addNotification({
-      type: 'success',
-      message: t('settings.setPasswordSuccess', { provider: providerLabel.value })
-    })
+      type: "success",
+      message: t("settings.setPasswordSuccess", {
+        provider: providerLabel.value,
+      }),
+    });
   } catch (err) {
-    setPasswordError.value = getErrorMessage(err)
+    setPasswordError.value = getErrorMessage(err);
   } finally {
-    isSettingPassword.value = false
+    isSettingPassword.value = false;
   }
 }
 
 // Password change form (users who already have a password)
 const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-const isChangingPassword = ref(false)
-const passwordError = ref<string | null>(null)
-const passwordSuccess = ref(false)
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+const isChangingPassword = ref(false);
+const passwordError = ref<string | null>(null);
+const passwordSuccess = ref(false);
 
 async function handlePasswordChange() {
-  passwordError.value = null
-  passwordSuccess.value = false
+  passwordError.value = null;
+  passwordSuccess.value = false;
 
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    passwordError.value = t('auth.passwordsDoNotMatch')
-    return
+    passwordError.value = t("auth.passwordsDoNotMatch");
+    return;
   }
 
   if (passwordForm.value.newPassword.length < 8) {
-    passwordError.value = t('auth.passwordTooShort')
-    return
+    passwordError.value = t("auth.passwordTooShort");
+    return;
   }
 
-  isChangingPassword.value = true
+  isChangingPassword.value = true;
 
   try {
     await authService.changePassword(
       passwordForm.value.currentPassword,
-      passwordForm.value.newPassword
-    )
-    passwordSuccess.value = true
+      passwordForm.value.newPassword,
+    );
+    passwordSuccess.value = true;
     passwordForm.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    }
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
     uiStore.addNotification({
-      type: 'success',
-      message: t('settings.passwordChanged')
-    })
+      type: "success",
+      message: t("settings.passwordChanged"),
+    });
   } catch (err) {
-    passwordError.value = getErrorMessage(err)
+    passwordError.value = getErrorMessage(err);
   } finally {
-    isChangingPassword.value = false
+    isChangingPassword.value = false;
   }
 }
 
 // Resend verification email
-const isResendingVerification = ref(false)
-const resendVerificationSuccess = ref(false)
+const isResendingVerification = ref(false);
+const resendVerificationSuccess = ref(false);
 
 async function handleResendVerification() {
-  if (!authStore.userEmail) return
-  isResendingVerification.value = true
-  resendVerificationSuccess.value = false
+  if (!authStore.userEmail) return;
+  isResendingVerification.value = true;
+  resendVerificationSuccess.value = false;
 
   try {
-    await authService.resendVerificationEmail(authStore.userEmail)
-    resendVerificationSuccess.value = true
+    await authService.resendVerificationEmail(authStore.userEmail);
+    resendVerificationSuccess.value = true;
     uiStore.addNotification({
-      type: 'success',
-      message: t('auth.verificationEmailSent')
-    })
+      type: "success",
+      message: t("auth.verificationEmailSent"),
+    });
   } catch (err) {
     uiStore.addNotification({
-      type: 'error',
-      message: getErrorMessage(err)
-    })
+      type: "error",
+      message: getErrorMessage(err),
+    });
   } finally {
-    isResendingVerification.value = false
+    isResendingVerification.value = false;
   }
 }
 
 // Account deletion
-const showDeleteConfirm = ref(false)
-const deleteConfirmation = ref('')
-const isDeleting = ref(false)
-const deleteError = ref<string | null>(null)
+const showDeleteConfirm = ref(false);
+const deleteConfirmation = ref("");
+const isDeleting = ref(false);
+const deleteError = ref<string | null>(null);
 const deletionResult = ref<{
-  deletionDate: string
-  permanentDate: string
-} | null>(null)
+  deletionDate: string;
+  permanentDate: string;
+} | null>(null);
 
-const canDelete = computed(() => deleteConfirmation.value === 'DELETE')
+const canDelete = computed(() => deleteConfirmation.value === "DELETE");
 
 async function handleDeleteAccount() {
-  if (!canDelete.value) return
+  if (!canDelete.value) return;
 
-  isDeleting.value = true
-  deleteError.value = null
+  isDeleting.value = true;
+  deleteError.value = null;
 
   try {
-    const result = await privacyService.requestDeletion()
-    showDeleteConfirm.value = false
+    const result = await privacyService.requestDeletion();
+    showDeleteConfirm.value = false;
     deletionResult.value = {
       deletionDate: result.deletion_scheduled_at,
-      permanentDate: result.permanent_deletion_date
-    }
+      permanentDate: result.permanent_deletion_date,
+    };
     // Log out after a short delay so the user can see the confirmation
     setTimeout(() => {
-      authStore.logout()
-      router.push({ name: 'home' })
-    }, 5000)
+      authStore.logout();
+      router.push({ name: "home" });
+    }, 5000);
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.status === 409) {
-      deleteError.value = t('settings.deletion.alreadyDeleted')
+      deleteError.value = t("settings.deletion.alreadyDeleted");
     } else {
-      deleteError.value = getErrorMessage(err)
+      deleteError.value = getErrorMessage(err);
     }
   } finally {
-    isDeleting.value = false
+    isDeleting.value = false;
   }
 }
 </script>
@@ -227,8 +236,8 @@ async function handleDeleteAccount() {
   <div class="settings-view">
     <div class="container container-lg">
       <div class="page-header">
-        <h1 class="page-title">{{ t('settings.title') }}</h1>
-        <p class="page-description">{{ t('settings.description') }}</p>
+        <h1 class="page-title">{{ t("settings.title") }}</h1>
+        <p class="page-description">{{ t("settings.description") }}</p>
       </div>
 
       <!-- Deletion status banner -->
@@ -236,42 +245,58 @@ async function handleDeleteAccount() {
         v-if="deletionStatus === 'scheduled' && permanentDeletionDate"
         class="alert alert-warning deletion-banner mb-6"
       >
-        <p>{{ t('settings.deletion.scheduledBanner', { date: formatDate(permanentDeletionDate) }) }}</p>
+        <p>
+          {{
+            t("settings.deletion.scheduledBanner", {
+              date: formatDate(permanentDeletionDate),
+            })
+          }}
+        </p>
         <router-link to="/restore-account" class="btn btn-sm btn-outline mt-2">
-          {{ t('settings.deletion.restoreLink') }}
+          {{ t("settings.deletion.restoreLink") }}
         </router-link>
       </div>
 
       <!-- Deletion result confirmation (shown after successful deletion request) -->
       <div v-if="deletionResult" class="card card-danger deletion-result mb-6">
         <div class="card-body">
-          <h2 class="mb-2">{{ t('settings.deletion.scheduled') }}</h2>
-          <p class="text-secondary mb-4">{{ t('settings.deletion.scheduledMessage') }}</p>
+          <h2 class="mb-2">{{ t("settings.deletion.scheduled") }}</h2>
+          <p class="text-secondary mb-4">
+            {{ t("settings.deletion.scheduledMessage") }}
+          </p>
           <div class="deletion-dates">
             <div class="deletion-date-row">
-              <span class="text-secondary">{{ t('settings.deletion.deletionDate') }}</span>
+              <span class="text-secondary">{{
+                t("settings.deletion.deletionDate")
+              }}</span>
               <span>{{ formatDate(deletionResult.deletionDate) }}</span>
             </div>
             <div class="deletion-date-row">
-              <span class="text-secondary">{{ t('settings.deletion.permanentDate') }}</span>
+              <span class="text-secondary">{{
+                t("settings.deletion.permanentDate")
+              }}</span>
               <span>{{ formatDate(deletionResult.permanentDate) }}</span>
             </div>
           </div>
-          <p class="text-secondary mt-4">{{ t('settings.deletion.graceMessage') }}</p>
-          <p class="text-secondary mt-2">{{ t('settings.deletion.logoutNotice') }}</p>
+          <p class="text-secondary mt-4">
+            {{ t("settings.deletion.graceMessage") }}
+          </p>
+          <p class="text-secondary mt-2">
+            {{ t("settings.deletion.logoutNotice") }}
+          </p>
         </div>
       </div>
 
       <!-- Appearance Settings -->
       <section class="settings-section card">
         <div class="card-header">
-          <h2>{{ t('settings.appearance') }}</h2>
+          <h2>{{ t("settings.appearance") }}</h2>
         </div>
         <div class="card-body">
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.language') }}</h3>
-              <p>{{ t('settings.languageDescription') }}</p>
+              <h3>{{ t("settings.language") }}</h3>
+              <p>{{ t("settings.languageDescription") }}</p>
             </div>
             <select v-model="currentLocale" class="form-select">
               <option v-for="loc in SUPPORTED_LOCALES" :key="loc" :value="loc">
@@ -282,13 +307,13 @@ async function handleDeleteAccount() {
 
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.theme') }}</h3>
-              <p>{{ t('settings.themeDescription') }}</p>
+              <h3>{{ t("settings.theme") }}</h3>
+              <p>{{ t("settings.themeDescription") }}</p>
             </div>
             <select v-model="currentTheme" class="form-select">
-              <option value="system">{{ t('settings.themeSystem') }}</option>
-              <option value="light">{{ t('settings.themeLight') }}</option>
-              <option value="dark">{{ t('settings.themeDark') }}</option>
+              <option value="system">{{ t("settings.themeSystem") }}</option>
+              <option value="light">{{ t("settings.themeLight") }}</option>
+              <option value="dark">{{ t("settings.themeDark") }}</option>
             </select>
           </div>
         </div>
@@ -297,14 +322,18 @@ async function handleDeleteAccount() {
       <!-- Security Settings -->
       <section class="settings-section card">
         <div class="card-header">
-          <h2>{{ t('settings.security') }}</h2>
+          <h2>{{ t("settings.security") }}</h2>
         </div>
         <div class="card-body">
           <!-- Set Password (OAuth users who have not set a password yet) -->
           <div v-if="showSetPassword" class="setting-block">
-            <h3>{{ t('settings.setPassword') }}</h3>
+            <h3>{{ t("settings.setPassword") }}</h3>
             <p class="text-secondary mb-4">
-              {{ t('settings.setPasswordDescription', { provider: providerLabel }) }}
+              {{
+                t("settings.setPasswordDescription", {
+                  provider: providerLabel,
+                })
+              }}
             </p>
 
             <form @submit.prevent="handleSetPassword" class="password-form">
@@ -313,11 +342,15 @@ async function handleDeleteAccount() {
               </div>
 
               <div v-if="setPasswordSuccess" class="alert alert-success">
-                {{ t('settings.setPasswordSuccess', { provider: providerLabel }) }}
+                {{
+                  t("settings.setPasswordSuccess", { provider: providerLabel })
+                }}
               </div>
 
               <div class="form-group">
-                <label for="set-new-password" class="form-label">{{ t('settings.newPassword') }}</label>
+                <label for="set-new-password" class="form-label">{{
+                  t("settings.newPassword")
+                }}</label>
                 <input
                   id="set-new-password"
                   v-model="setPasswordForm.newPassword"
@@ -331,7 +364,7 @@ async function handleDeleteAccount() {
 
               <div class="form-group">
                 <label for="set-confirm-password" class="form-label">{{
-                  t('auth.confirmPassword')
+                  t("auth.confirmPassword")
                 }}</label>
                 <input
                   id="set-confirm-password"
@@ -343,16 +376,26 @@ async function handleDeleteAccount() {
                 />
               </div>
 
-              <button type="submit" class="btn btn-primary" :disabled="isSettingPassword">
-                {{ isSettingPassword ? t('common.saving') : t('settings.setPasswordButton') }}
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="isSettingPassword"
+              >
+                {{
+                  isSettingPassword
+                    ? t("common.saving")
+                    : t("settings.setPasswordButton")
+                }}
               </button>
             </form>
           </div>
 
           <!-- Change Password (users who already have a password) -->
           <div v-else class="setting-block">
-            <h3>{{ t('settings.changePassword') }}</h3>
-            <p class="text-secondary mb-4">{{ t('settings.changePasswordDescription') }}</p>
+            <h3>{{ t("settings.changePassword") }}</h3>
+            <p class="text-secondary mb-4">
+              {{ t("settings.changePasswordDescription") }}
+            </p>
 
             <form @submit.prevent="handlePasswordChange" class="password-form">
               <div v-if="passwordError" class="alert alert-error">
@@ -360,12 +403,12 @@ async function handleDeleteAccount() {
               </div>
 
               <div v-if="passwordSuccess" class="alert alert-success">
-                {{ t('settings.passwordChanged') }}
+                {{ t("settings.passwordChanged") }}
               </div>
 
               <div class="form-group">
                 <label for="current-password" class="form-label">{{
-                  t('settings.currentPassword')
+                  t("settings.currentPassword")
                 }}</label>
                 <input
                   id="current-password"
@@ -378,7 +421,9 @@ async function handleDeleteAccount() {
               </div>
 
               <div class="form-group">
-                <label for="new-password" class="form-label">{{ t('settings.newPassword') }}</label>
+                <label for="new-password" class="form-label">{{
+                  t("settings.newPassword")
+                }}</label>
                 <input
                   id="new-password"
                   v-model="passwordForm.newPassword"
@@ -392,7 +437,7 @@ async function handleDeleteAccount() {
 
               <div class="form-group">
                 <label for="confirm-new-password" class="form-label">{{
-                  t('auth.confirmPassword')
+                  t("auth.confirmPassword")
                 }}</label>
                 <input
                   id="confirm-new-password"
@@ -404,8 +449,16 @@ async function handleDeleteAccount() {
                 />
               </div>
 
-              <button type="submit" class="btn btn-primary" :disabled="isChangingPassword">
-                {{ isChangingPassword ? t('common.saving') : t('settings.updatePassword') }}
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="isChangingPassword"
+              >
+                {{
+                  isChangingPassword
+                    ? t("common.saving")
+                    : t("settings.updatePassword")
+                }}
               </button>
             </form>
           </div>
@@ -415,12 +468,12 @@ async function handleDeleteAccount() {
       <!-- Account Information -->
       <section class="settings-section card">
         <div class="card-header">
-          <h2>{{ t('settings.account') }}</h2>
+          <h2>{{ t("settings.account") }}</h2>
         </div>
         <div class="card-body">
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('common.email') }}</h3>
+              <h3>{{ t("common.email") }}</h3>
               <p>{{ authStore.userEmail }}</p>
             </div>
             <div class="setting-actions">
@@ -430,22 +483,30 @@ async function handleDeleteAccount() {
                 :disabled="isResendingVerification || resendVerificationSuccess"
                 @click="handleResendVerification"
               >
-                {{ isResendingVerification ? t('common.sending') : t('auth.resendVerification') }}
+                {{
+                  isResendingVerification
+                    ? t("common.sending")
+                    : t("auth.resendVerification")
+                }}
               </button>
               <span
                 :class="[
                   'badge',
-                  authStore.isEmailVerified ? 'badge-success' : 'badge-warning'
+                  authStore.isEmailVerified ? 'badge-success' : 'badge-warning',
                 ]"
               >
-                {{ authStore.isEmailVerified ? t('auth.verified') : t('auth.unverified') }}
+                {{
+                  authStore.isEmailVerified
+                    ? t("auth.verified")
+                    : t("auth.unverified")
+                }}
               </span>
             </div>
           </div>
 
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.accountType') }}</h3>
+              <h3>{{ t("settings.accountType") }}</h3>
               <p>{{ t(`account.types.${authStore.accountType}`) }}</p>
             </div>
           </div>
@@ -455,26 +516,26 @@ async function handleDeleteAccount() {
       <!-- Privacy & Data -->
       <section class="settings-section card">
         <div class="card-header">
-          <h2>{{ t('settings.privacyData') }}</h2>
+          <h2>{{ t("settings.privacyData") }}</h2>
         </div>
         <div class="card-body">
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.privacyData') }}</h3>
-              <p>{{ t('settings.privacyDataDescription') }}</p>
+              <h3>{{ t("settings.privacyData") }}</h3>
+              <p>{{ t("settings.privacyDataDescription") }}</p>
             </div>
             <router-link to="/settings/data-export" class="btn btn-primary">
-              {{ t('settings.viewExportData') }}
+              {{ t("settings.viewExportData") }}
             </router-link>
           </div>
 
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.connectedApps') }}</h3>
-              <p>{{ t('settings.connectedAppsDescription') }}</p>
+              <h3>{{ t("settings.connectedApps") }}</h3>
+              <p>{{ t("settings.connectedAppsDescription") }}</p>
             </div>
             <router-link to="/settings/consents" class="btn btn-primary">
-              {{ t('settings.manageConnectedApps') }}
+              {{ t("settings.manageConnectedApps") }}
             </router-link>
           </div>
         </div>
@@ -483,36 +544,45 @@ async function handleDeleteAccount() {
       <!-- Danger Zone -->
       <section v-if="!deletionResult" class="settings-section card card-danger">
         <div class="card-header">
-          <h2>{{ t('settings.dangerZone') }}</h2>
+          <h2>{{ t("settings.dangerZone") }}</h2>
         </div>
         <div class="card-body">
           <div class="setting-row">
             <div class="setting-info">
-              <h3>{{ t('settings.deleteAccount') }}</h3>
-              <p>{{ t('settings.deleteAccountWarning') }}</p>
+              <h3>{{ t("settings.deleteAccount") }}</h3>
+              <p>{{ t("settings.deleteAccountWarning") }}</p>
             </div>
-            <button class="btn btn-danger-outline" @click="showDeleteConfirm = true">
-              {{ t('settings.deleteAccount') }}
+            <button
+              class="btn btn-danger-outline"
+              @click="showDeleteConfirm = true"
+            >
+              {{ t("settings.deleteAccount") }}
             </button>
           </div>
         </div>
       </section>
 
       <!-- Delete confirmation modal -->
-      <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+      <div
+        v-if="showDeleteConfirm"
+        class="modal-overlay"
+        @click.self="showDeleteConfirm = false"
+      >
         <div class="modal">
           <div class="modal-header">
-            <h2>{{ t('settings.deleteAccountConfirmTitle') }}</h2>
+            <h2>{{ t("settings.deleteAccountConfirmTitle") }}</h2>
           </div>
           <div class="modal-body">
-            <p class="mb-4">{{ t('settings.deleteAccountConfirmMessage') }}</p>
+            <p class="mb-4">{{ t("settings.deleteAccountConfirmMessage") }}</p>
 
             <div v-if="deleteError" class="alert alert-error mb-4">
               {{ deleteError }}
             </div>
 
             <div class="form-group">
-              <label class="form-label">{{ t('settings.typeDeleteToConfirm') }}</label>
+              <label class="form-label">{{
+                t("settings.typeDeleteToConfirm")
+              }}</label>
               <input
                 v-model="deleteConfirmation"
                 type="text"
@@ -523,14 +593,18 @@ async function handleDeleteAccount() {
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline" @click="showDeleteConfirm = false">
-              {{ t('common.cancel') }}
+              {{ t("common.cancel") }}
             </button>
             <button
               class="btn btn-danger"
               :disabled="!canDelete || isDeleting"
               @click="handleDeleteAccount"
             >
-              {{ isDeleting ? t('common.deleting') : t('settings.permanentlyDelete') }}
+              {{
+                isDeleting
+                  ? t("common.deleting")
+                  : t("settings.permanentlyDelete")
+              }}
             </button>
           </div>
         </div>

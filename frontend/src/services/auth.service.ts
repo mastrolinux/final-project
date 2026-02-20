@@ -2,9 +2,9 @@
  * Authentication service for registration, login, logout, and token management.
  */
 
-import api, { getErrorMessage } from './api'
-import { useAuthStore } from '@/stores/auth.store'
-import { useProfileStore } from '@/stores/profile.store'
+import api, { getErrorMessage } from "./api";
+import { useAuthStore } from "@/stores/auth.store";
+import { useProfileStore } from "@/stores/profile.store";
 import type {
   RegisterRequest,
   RegisterResponse,
@@ -13,16 +13,16 @@ import type {
   RefreshTokenResponse,
   RestoreAccountResponse,
   RestoreAccountConfirmResponse,
-  SetPasswordResponse
-} from '@/types'
+  SetPasswordResponse,
+} from "@/types";
 
 export const authService = {
   /**
    * Register a new user account.
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await api.post<RegisterResponse>('/auth/register', data)
-    return response.data
+    const response = await api.post<RegisterResponse>("/auth/register", data);
+    return response.data;
   },
 
   /**
@@ -30,10 +30,10 @@ export const authService = {
    * Sets tokens and user data in auth store on success.
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/login', data)
-    const authStore = useAuthStore()
-    authStore.setUser(response.data)
-    return response.data
+    const response = await api.post<LoginResponse>("/auth/login", data);
+    const authStore = useAuthStore();
+    authStore.setUser(response.data);
+    return response.data;
   },
 
   /**
@@ -41,17 +41,17 @@ export const authService = {
    * Clears tokens from auth store and profile data.
    */
   async logout(): Promise<void> {
-    const authStore = useAuthStore()
-    const profileStore = useProfileStore()
+    const authStore = useAuthStore();
+    const profileStore = useProfileStore();
 
     try {
       // Notify backend to invalidate tokens
-      await api.post('/auth/logout')
+      await api.post("/auth/logout");
     } catch {
       // Ignore errors - we still want to clear local state
     } finally {
-      authStore.logout()
-      profileStore.clearProfile()
+      authStore.logout();
+      profileStore.clearProfile();
     }
   },
 
@@ -60,52 +60,61 @@ export const authService = {
    * Called automatically by API interceptor on 401.
    */
   async refresh(refreshToken: string): Promise<RefreshTokenResponse> {
-    const response = await api.post<RefreshTokenResponse>('/auth/refresh', {
-      refresh_token: refreshToken
-    })
-    const authStore = useAuthStore()
-    authStore.setTokens(response.data.access_token, response.data.refresh_token)
-    return response.data
+    const response = await api.post<RefreshTokenResponse>("/auth/refresh", {
+      refresh_token: refreshToken,
+    });
+    const authStore = useAuthStore();
+    authStore.setTokens(
+      response.data.access_token,
+      response.data.refresh_token,
+    );
+    return response.data;
   },
 
   /**
    * Verify email with token from verification link.
    */
   async verifyEmail(token: string): Promise<void> {
-    await api.post('/auth/verify-email', { token })
-    const authStore = useAuthStore()
-    authStore.updateUser({ is_email_verified: true })
+    await api.post("/auth/verify-email", { token });
+    const authStore = useAuthStore();
+    authStore.updateUser({ is_email_verified: true });
   },
 
   /**
    * Request password reset email.
    */
   async requestPasswordReset(email: string): Promise<void> {
-    await api.post('/auth/request-reset', { email })
+    await api.post("/auth/request-reset", { email });
   },
 
   /**
    * Reset password with token from reset email.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    await api.post('/auth/reset-password', { token, new_password: newPassword })
+    await api.post("/auth/reset-password", {
+      token,
+      new_password: newPassword,
+    });
   },
 
   /**
    * Resend email verification link.
    */
   async resendVerificationEmail(email: string): Promise<void> {
-    await api.post('/auth/resend-verification', { email })
+    await api.post("/auth/resend-verification", { email });
   },
 
   /**
    * Change password for authenticated user.
    */
-  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await api.post('/auth/change-password', {
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    await api.post("/auth/change-password", {
       current_password: currentPassword,
-      new_password: newPassword
-    })
+      new_password: newPassword,
+    });
   },
 
   /**
@@ -114,21 +123,26 @@ export const authService = {
    * Updates has_custom_password in the auth store on success.
    */
   async setPassword(newPassword: string): Promise<SetPasswordResponse> {
-    const response = await api.post<SetPasswordResponse>('/auth/set-password', {
-      new_password: newPassword
-    })
-    const authStore = useAuthStore()
-    authStore.updateUser({ has_custom_password: true })
-    return response.data
+    const response = await api.post<SetPasswordResponse>("/auth/set-password", {
+      new_password: newPassword,
+    });
+    const authStore = useAuthStore();
+    authStore.updateUser({ has_custom_password: true });
+    return response.data;
   },
 
   /**
    * Request account restoration for a soft-deleted account.
    * Always returns 202 regardless of whether the email exists (enumeration prevention).
    */
-  async requestAccountRestoration(email: string): Promise<RestoreAccountResponse> {
-    const response = await api.post<RestoreAccountResponse>('/auth/restore-account', { email })
-    return response.data
+  async requestAccountRestoration(
+    email: string,
+  ): Promise<RestoreAccountResponse> {
+    const response = await api.post<RestoreAccountResponse>(
+      "/auth/restore-account",
+      { email },
+    );
+    return response.data;
   },
 
   /**
@@ -137,34 +151,34 @@ export const authService = {
    */
   async confirmAccountRestoration(
     token: string,
-    newPassword?: string
+    newPassword?: string,
   ): Promise<RestoreAccountConfirmResponse> {
-    const payload: { token: string; new_password?: string } = { token }
+    const payload: { token: string; new_password?: string } = { token };
     if (newPassword) {
-      payload.new_password = newPassword
+      payload.new_password = newPassword;
     }
     const response = await api.post<RestoreAccountConfirmResponse>(
-      '/auth/restore-account/confirm',
-      payload
-    )
-    return response.data
+      "/auth/restore-account/confirm",
+      payload,
+    );
+    return response.data;
   },
 
   /**
    * Exchange OAuth authorization code for tokens.
    */
   async exchangeOAuthCode(params: {
-    code: string
-    code_verifier?: string
-    redirect_uri: string
+    code: string;
+    code_verifier?: string;
+    redirect_uri: string;
   }): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/oauth/token', {
-      grant_type: 'authorization_code',
+    const response = await api.post<LoginResponse>("/oauth/token", {
+      grant_type: "authorization_code",
       code: params.code,
       code_verifier: params.code_verifier,
-      redirect_uri: params.redirect_uri
-    })
-    return response.data
+      redirect_uri: params.redirect_uri,
+    });
+    return response.data;
   },
 
   /**
@@ -172,22 +186,22 @@ export const authService = {
    * Attempts to restore session using stored refresh token.
    */
   async initializeAuth(): Promise<boolean> {
-    const authStore = useAuthStore()
+    const authStore = useAuthStore();
 
     if (!authStore.hasStoredSession()) {
-      authStore.setInitialized(true)
-      return false
+      authStore.setInitialized(true);
+      return false;
     }
 
     try {
-      await this.refresh(authStore.refreshToken!)
-      authStore.setInitialized(true)
-      return true
+      await this.refresh(authStore.refreshToken!);
+      authStore.setInitialized(true);
+      return true;
     } catch (error) {
-      console.warn('Failed to restore session:', getErrorMessage(error))
-      authStore.logout()
-      authStore.setInitialized(true)
-      return false
+      console.warn("Failed to restore session:", getErrorMessage(error));
+      authStore.logout();
+      authStore.setInitialized(true);
+      return false;
     }
   },
 
@@ -196,21 +210,21 @@ export const authService = {
    * Returns authorization URL, state, and code_verifier to be stored in sessionStorage.
    */
   async getOAuthAuthorizationUrl(provider: string): Promise<{
-    authorization_url: string
-    state: string
-    code_verifier: string
+    authorization_url: string;
+    state: string;
+    code_verifier: string;
   }> {
     const response = await api.post<{
-      authorization_url: string
-      state: string
-      code_verifier: string
-      message: string
-    }>(`/auth/social/${provider}/authorize`)
+      authorization_url: string;
+      state: string;
+      code_verifier: string;
+      message: string;
+    }>(`/auth/social/${provider}/authorize`);
     return {
       authorization_url: response.data.authorization_url,
       state: response.data.state,
-      code_verifier: response.data.code_verifier
-    }
+      code_verifier: response.data.code_verifier,
+    };
   },
 
   /**
@@ -218,11 +232,11 @@ export const authService = {
    * Exchanges authorization code for JWT tokens.
    */
   async handleOAuthCallback(params: {
-    provider: string
-    code: string
-    state: string
-    code_verifier: string
-    expected_state: string
+    provider: string;
+    code: string;
+    state: string;
+    code_verifier: string;
+    expected_state: string;
   }): Promise<LoginResponse> {
     const response = await api.get<LoginResponse>(
       `/auth/social/${params.provider}/callback`,
@@ -231,14 +245,14 @@ export const authService = {
           code: params.code,
           state: params.state,
           code_verifier: params.code_verifier,
-          expected_state: params.expected_state
-        }
-      }
-    )
-    const authStore = useAuthStore()
-    authStore.setUser(response.data)
-    return response.data
-  }
-}
+          expected_state: params.expected_state,
+        },
+      },
+    );
+    const authStore = useAuthStore();
+    authStore.setUser(response.data);
+    return response.data;
+  },
+};
 
-export default authService
+export default authService;

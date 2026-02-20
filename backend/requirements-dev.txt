@@ -1,0 +1,13 @@
+# Development and CI tool dependencies
+# Usage: pip install -r requirements-dev.txt
+#
+# Includes all production dependencies plus type checking tools.
+# Ruff and bandit can be added in a later iteration.
+
+-r requirements.txt
+
+# Type checking
+mypy>=1.8.0
+
+# Type stubs (reduce ignore-missing-imports noise)
+types-redis>=4.6.0

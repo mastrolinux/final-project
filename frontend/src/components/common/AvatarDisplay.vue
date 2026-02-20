@@ -6,46 +6,46 @@
  * Renders an <img> when `src` is truthy, otherwise renders a <div>
  * with computed initials derived from the `name` prop.
  */
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = withDefaults(
   defineProps<{
     /** Avatar image URL (null falls back to initials). */
-    src?: string | null
+    src?: string | null;
     /** Display name used to derive initials for the fallback. */
-    name?: string
+    name?: string;
     /** Size variant matching the existing .avatar CSS classes. */
-    size?: 'sm' | 'md' | 'lg' | 'xl'
+    size?: "sm" | "md" | "lg" | "xl";
   }>(),
   {
     src: null,
-    name: '',
-    size: 'md'
-  }
-)
+    name: "",
+    size: "md",
+  },
+);
 
 const initials = computed(() => {
-  const n = props.name || 'U'
+  const n = props.name || "U";
   return n
-    .split(' ')
+    .split(" ")
     .map((part) => part[0])
-    .join('')
+    .join("")
     .toUpperCase()
-    .slice(0, 2)
-})
+    .slice(0, 2);
+});
 
 const sizeClass = computed(() => {
   switch (props.size) {
-    case 'sm':
-      return 'avatar-display-sm'
-    case 'lg':
-      return 'avatar-display-lg'
-    case 'xl':
-      return 'avatar-display-xl'
+    case "sm":
+      return "avatar-display-sm";
+    case "lg":
+      return "avatar-display-lg";
+    case "xl":
+      return "avatar-display-xl";
     default:
-      return 'avatar-display-md'
+      return "avatar-display-md";
   }
-})
+});
 </script>
 
 <template>

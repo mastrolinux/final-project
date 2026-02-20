@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string | number | null
-    label?: string
-    id: string
-    type?: string
-    placeholder?: string
-    error?: string
-    hint?: string
-    disabled?: boolean
-    required?: boolean
+    modelValue: string | number | null;
+    label?: string;
+    id: string;
+    type?: string;
+    placeholder?: string;
+    error?: string;
+    hint?: string;
+    disabled?: boolean;
+    required?: boolean;
   }>(),
   {
-    type: 'text',
-    modelValue: '',
+    type: "text",
+    modelValue: "",
     disabled: false,
-    required: false
-  }
-)
+    required: false,
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
-}>()
+  (e: "update:modelValue", value: string | number): void;
+}>();
 
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  emit('update:modelValue', target.value)
-}
+  const target = event.target as HTMLInputElement;
+  emit("update:modelValue", target.value);
+};
 
 const describedBy = computed(() => {
-  const ids = []
-  if (props.hint) ids.push(`${props.id}-hint`)
-  if (props.error) ids.push(`${props.id}-error`)
-  return ids.length ? ids.join(' ') : undefined
-})
+  const ids = [];
+  if (props.hint) ids.push(`${props.id}-hint`);
+  if (props.error) ids.push(`${props.id}-error`);
+  return ids.length ? ids.join(" ") : undefined;
+});
 </script>
 
 <template>
@@ -44,7 +44,7 @@ const describedBy = computed(() => {
       {{ label }}
       <span v-if="required" class="text-error" aria-hidden="true">*</span>
     </label>
-    
+
     <input
       :id="id"
       :type="type"
@@ -92,7 +92,9 @@ const describedBy = computed(() => {
   background-clip: padding-box;
   border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .form-input:focus {
