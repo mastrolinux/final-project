@@ -288,7 +288,7 @@ class SocialAuthService:
         email_verified: bool = False,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
-    ) -> Tuple[str, str, str, bool, str, bool, bool]:
+    ) -> Tuple[str, str, str, bool, str, bool, bool, str, bool]:
         """
         Authenticate existing OAuth user or create new account.
 
@@ -308,7 +308,8 @@ class SocialAuthService:
             user_agent: Optional user agent for audit
 
         Returns:
-            Tuple of (access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin)
+            Tuple of (access_token, refresh_token, user_id, is_new_user, account_type,
+                       is_email_verified, is_admin, provider, has_custom_password)
 
         Raises:
             AccountLinkingError: If account linking fails
@@ -347,7 +348,7 @@ class SocialAuthService:
                 legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
             )
 
-            return access_token, refresh_token, user_id_str, False, account_type, existing_oauth_user.is_email_verified, is_admin
+            return access_token, refresh_token, user_id_str, False, account_type, existing_oauth_user.is_email_verified, is_admin, provider, existing_oauth_user.has_custom_password
 
         # Check for soft-deleted OAuth account (restoration needed)
         deleted_oauth_user = self.auth_repo.get_by_provider_including_deleted(provider, provider_id)
@@ -442,4 +443,4 @@ class SocialAuthService:
             legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
         )
 
-        return access_token, refresh_token, user_id_str, True, account_type.value, email_verified, is_admin
+        return access_token, refresh_token, user_id_str, True, account_type.value, email_verified, is_admin, provider, False

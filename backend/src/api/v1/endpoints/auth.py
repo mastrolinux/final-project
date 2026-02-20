@@ -24,8 +24,11 @@ from src.schemas.auth import (
     RefreshTokenRequest, RefreshTokenResponse,
     RestoreAccountRequest, RestoreAccountResponse,
     RestoreAccountConfirmRequest, RestoreAccountConfirmResponse,
+    SetPasswordRequest, SetPasswordResponse,
 )
 from src.core.redis_client import TokenBlacklist, get_blacklist
+from src.api.dependencies.auth import get_current_user
+from src.models.auth import AuthUser
 
 
 router = APIRouter()
@@ -68,12 +71,10 @@ def register(
     4. Sends verification email via Mailpit/SMTP (async)
     5. Returns user data with verification pending
     
-    **Password Requirements:**
+    **Password Requirements (NIST SP 800-63B):**
     - Minimum 8 characters
-    - At least 1 uppercase letter
-    - At least 1 lowercase letter
-    - At least 1 digit
-    
+    - Must not be a commonly used password
+
     **Email Verification:**
     - User receives email with verification link
     - Link expires in 24 hours
@@ -427,12 +428,10 @@ def reset_password(
     4. Updates password in database
     5. Clears reset token
     
-    **Password Requirements:**
+    **Password Requirements (NIST SP 800-63B):**
     - Minimum 8 characters
-    - At least 1 uppercase letter
-    - At least 1 lowercase letter
-    - At least 1 digit
-    
+    - Must not be a commonly used password
+
     **Token:**
     - Sent via email during password reset request
     - Expires in 1 hour
@@ -733,4 +732,88 @@ def confirm_restore_account(
             )
 
     return RestoreAccountConfirmResponse(**data)
+
+
+@router.post(
+    "/set-password",
+    response_model=SetPasswordResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Set Password for OAuth User",
+    description=(
+        "Allows an OAuth-registered user (Google, etc.) to set a password "
+        "so they can also login via email/password. Requires JWT authentication. "
+        "Can only be used once per user; after setting a password, use "
+        "reset-password to change it."
+    ),
+)
+def set_password(
+    request: SetPasswordRequest,
+    http_request: Request,
+    current_user: AuthUser = Depends(get_current_user),
+    service: AuthService = Depends(get_auth_service),
+):
+    """
+    Set Password for OAuth User
+
+    Allows an OAuth-registered user to add password-based authentication.
+    After setting a password, the user can login via both OAuth and
+    email/password.
+
+    **Preconditions:**
+    - User must be authenticated (JWT access token required)
+    - User must have registered via OAuth (provider is not None)
+    - User must not have already set a custom password
+
+    **Password Requirements (NIST SP 800-63B):**
+    - Minimum 8 characters
+    - Must not be a commonly used password
+
+    **Errors:**
+    - 400: Not an OAuth user, or weak password
+    - 401: Not authenticated
+    - 409: Password already set (use reset-password instead)
+    """
+    ip_address = http_request.client.host if http_request.client else None
+    user_agent = http_request.headers.get("user-agent")
+
+    success, error_code, data = service.set_password(
+        user_id=str(current_user.user_id),
+        new_password=request.new_password,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+
+    if not success:
+        if error_code == "USER_NOT_FOUND":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        elif error_code == "NOT_OAUTH_USER":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "detail": (
+                        "Password can only be set for OAuth-registered users. "
+                        "Use reset-password to change an existing password."
+                    ),
+                    "code": "NOT_OAUTH_USER",
+                }
+            )
+        elif error_code == "PASSWORD_ALREADY_SET":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "detail": "Password already set. Use reset-password to change it.",
+                    "code": "PASSWORD_ALREADY_SET",
+                }
+            )
+        else:
+            # Password validation error
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_code
+            )
+
+    return SetPasswordResponse(**data)
 

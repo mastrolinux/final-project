@@ -12,7 +12,8 @@ import type {
   LoginResponse,
   RefreshTokenResponse,
   RestoreAccountResponse,
-  RestoreAccountConfirmResponse
+  RestoreAccountConfirmResponse,
+  SetPasswordResponse
 } from '@/types'
 
 export const authService = {
@@ -105,6 +106,20 @@ export const authService = {
       current_password: currentPassword,
       new_password: newPassword
     })
+  },
+
+  /**
+   * Set a password for an OAuth-only user who has not yet set one.
+   * After setting a password, the user can login via both OAuth and email/password.
+   * Updates has_custom_password in the auth store on success.
+   */
+  async setPassword(newPassword: string): Promise<SetPasswordResponse> {
+    const response = await api.post<SetPasswordResponse>('/auth/set-password', {
+      new_password: newPassword
+    })
+    const authStore = useAuthStore()
+    authStore.updateUser({ has_custom_password: true })
+    return response.data
   },
 
   /**
