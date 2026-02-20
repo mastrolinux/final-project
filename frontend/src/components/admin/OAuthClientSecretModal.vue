@@ -1,48 +1,56 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import BaseModal from '@/components/common/BaseModal.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import { ClipboardDocumentIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import { ref } from "vue";
+import BaseModal from "@/components/common/BaseModal.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import {
+  ClipboardDocumentIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/vue/24/outline";
 
 const props = defineProps<{
-  isOpen: boolean
-  clientId: string
-  clientSecret: string | null
-}>()
+  isOpen: boolean;
+  clientId: string;
+  clientSecret: string | null;
+}>();
 
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
-const copied = ref(false)
+const copied = ref(false);
 
 async function copySecret(): Promise<void> {
-  if (!props.clientSecret) return
+  if (!props.clientSecret) return;
 
   try {
-    await navigator.clipboard.writeText(props.clientSecret)
-    copied.value = true
+    await navigator.clipboard.writeText(props.clientSecret);
+    copied.value = true;
     setTimeout(() => {
-      copied.value = false
-    }, 2000)
+      copied.value = false;
+    }, 2000);
   } catch (err) {
-    console.error('Failed to copy secret:', err)
+    console.error("Failed to copy secret:", err);
   }
 }
 
 function handleClose(): void {
-  emit('close')
+  emit("close");
 }
 </script>
 
 <template>
-  <BaseModal :is-open="isOpen" title="Client Created Successfully" @close="handleClose">
+  <BaseModal
+    :is-open="isOpen"
+    title="Client Created Successfully"
+    @close="handleClose"
+  >
     <div class="secret-modal-content">
       <div class="warning-banner">
         <ExclamationTriangleIcon class="warning-icon" />
         <div class="warning-text">
-          <strong>Important:</strong> The client secret is shown only once.
-          Copy and store it securely before closing this dialog.
+          <strong>Important:</strong> The client secret is shown only once. Copy
+          and store it securely before closing this dialog.
         </div>
       </div>
 
@@ -54,7 +62,9 @@ function handleClose(): void {
       <div v-if="clientSecret" class="secret-section">
         <label class="secret-label">Client Secret</label>
         <div class="secret-row">
-          <code class="secret-value secret-value-monospace">{{ clientSecret }}</code>
+          <code class="secret-value secret-value-monospace">{{
+            clientSecret
+          }}</code>
           <button
             type="button"
             class="copy-btn"
@@ -63,7 +73,7 @@ function handleClose(): void {
           >
             <CheckIcon v-if="copied" class="copy-icon" />
             <ClipboardDocumentIcon v-else class="copy-icon" />
-            {{ copied ? 'Copied!' : 'Copy' }}
+            {{ copied ? "Copied!" : "Copy" }}
           </button>
         </div>
       </div>

@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
-    size?: 'sm' | 'md' | 'lg'
-    type?: 'button' | 'submit' | 'reset'
-    disabled?: boolean
-    loading?: boolean
-    block?: boolean
+    variant?: "primary" | "secondary" | "danger" | "ghost";
+    size?: "sm" | "md" | "lg";
+    type?: "button" | "submit" | "reset";
+    disabled?: boolean;
+    loading?: boolean;
+    block?: boolean;
   }>(),
   {
-    variant: 'primary',
-    size: 'md',
-    type: 'button',
+    variant: "primary",
+    size: "md",
+    type: "button",
     disabled: false,
     loading: false,
-    block: false
-  }
-)
+    block: false,
+  },
+);
 
 const classes = computed(() => {
   return [
-    'btn',
+    "btn",
     `btn-${props.variant}`,
     `btn-${props.size}`,
     {
-      'w-full': props.block,
-      'is-loading': props.loading,
-      'is-disabled': props.disabled || props.loading
-    }
-  ]
-})
+      "w-full": props.block,
+      "is-loading": props.loading,
+      "is-disabled": props.disabled || props.loading,
+    },
+  ];
+});
 </script>
 
 <template>
@@ -55,7 +55,9 @@ const classes = computed(() => {
 
 .btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary-500);
+  box-shadow:
+    0 0 0 2px var(--bg-primary),
+    0 0 0 4px var(--color-primary-500);
 }
 
 .btn.is-disabled {
@@ -75,7 +77,9 @@ const classes = computed(() => {
 }
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-primary-700);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transform: translateY(-1px);
 }
 
@@ -94,11 +98,15 @@ const classes = computed(() => {
 }
 .btn-danger:hover:not(:disabled) {
   background-color: var(--color-error-700);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transform: translateY(-1px);
 }
 .btn-danger:focus-visible {
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-error-500);
+  box-shadow:
+    0 0 0 2px var(--bg-primary),
+    0 0 0 4px var(--color-error-500);
 }
 
 .btn-ghost {

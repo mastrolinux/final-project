@@ -1,79 +1,81 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { authService, getErrorMessage } from '@/services'
-import { useUiStore } from '@/stores'
-import type { AccountType } from '@/types'
-import axios from 'axios'
-import GoogleLoginButton from '@/components/auth/GoogleLoginButton.vue'
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { authService, getErrorMessage } from "@/services";
+import { useUiStore } from "@/stores";
+import type { AccountType } from "@/types";
+import axios from "axios";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton.vue";
 
-const { t } = useI18n()
-const uiStore = useUiStore()
+const { t } = useI18n();
+const uiStore = useUiStore();
 
-const preferredNameInput = ref<HTMLInputElement | null>(null)
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const preferredName = ref('')
-const accountType = ref<AccountType>('unverified')
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const success = ref(false)
+const preferredNameInput = ref<HTMLInputElement | null>(null);
+const email = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const preferredName = ref("");
+const accountType = ref<AccountType>("unverified");
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const success = ref(false);
 
 // Account recoverable state (409 with ACCOUNT_RECOVERABLE)
 const accountRecoverable = ref<{
-  permanentDeletionDate: string
-} | null>(null)
+  permanentDeletionDate: string;
+} | null>(null);
 
 onMounted(() => {
-  preferredNameInput.value?.focus()
-})
+  preferredNameInput.value?.focus();
+});
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 async function handleSubmit() {
-  error.value = null
-  accountRecoverable.value = null
+  error.value = null;
+  accountRecoverable.value = null;
 
   if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match'
-    return
+    error.value = "Passwords do not match";
+    return;
   }
 
-  isLoading.value = true
+  isLoading.value = true;
 
   try {
     await authService.register({
       email: email.value,
       password: password.value,
       preferred_name: preferredName.value,
-      account_type: accountType.value
-    })
+      account_type: accountType.value,
+    });
 
-    success.value = true
-    uiStore.showSuccess('Account created! Please check your email to verify your account.')
+    success.value = true;
+    uiStore.showSuccess(
+      "Account created! Please check your email to verify your account.",
+    );
   } catch (err) {
     // Handle 409 ACCOUNT_RECOVERABLE structured response
     if (
       axios.isAxiosError(err) &&
       err.response?.status === 409 &&
-      err.response?.data?.detail?.code === 'ACCOUNT_RECOVERABLE'
+      err.response?.data?.detail?.code === "ACCOUNT_RECOVERABLE"
     ) {
-      const detail = err.response.data.detail
+      const detail = err.response.data.detail;
       accountRecoverable.value = {
-        permanentDeletionDate: detail.permanent_deletion_date
-      }
+        permanentDeletionDate: detail.permanent_deletion_date,
+      };
     } else {
-      error.value = getErrorMessage(err)
+      error.value = getErrorMessage(err);
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
@@ -83,22 +85,29 @@ async function handleSubmit() {
     <div class="auth-card card">
       <div class="card-body">
         <div class="auth-header">
-          <h1>{{ t('auth.register') }}</h1>
-          <p class="text-secondary">{{ t('app.tagline') }}</p>
+          <h1>{{ t("auth.register") }}</h1>
+          <p class="text-secondary">{{ t("app.tagline") }}</p>
         </div>
 
         <!-- Account recoverable card -->
         <div v-if="accountRecoverable" class="recoverable-card">
           <div class="recoverable-icon">!</div>
-          <h2>{{ t('auth.restore.accountRecoverable') }}</h2>
+          <h2>{{ t("auth.restore.accountRecoverable") }}</h2>
           <p class="text-secondary">
-            {{ t('auth.restore.accountRecoverableMessage', { date: formatDate(accountRecoverable.permanentDeletionDate) }) }}
+            {{
+              t("auth.restore.accountRecoverableMessage", {
+                date: formatDate(accountRecoverable.permanentDeletionDate),
+              })
+            }}
           </p>
           <router-link to="/restore-account" class="btn btn-primary mt-4">
-            {{ t('auth.restore.restoreAccount') }}
+            {{ t("auth.restore.restoreAccount") }}
           </router-link>
-          <button class="btn btn-outline mt-2" @click="accountRecoverable = null">
-            {{ t('auth.restore.backToLogin') }}
+          <button
+            class="btn btn-outline mt-2"
+            @click="accountRecoverable = null"
+          >
+            {{ t("auth.restore.backToLogin") }}
           </button>
         </div>
 
@@ -106,7 +115,7 @@ async function handleSubmit() {
           <p><strong>Account created successfully!</strong></p>
           <p>Please check your email to verify your account.</p>
           <router-link to="/login" class="btn btn-primary mt-4">
-            {{ t('auth.signIn') }}
+            {{ t("auth.signIn") }}
           </router-link>
         </div>
 
@@ -115,7 +124,7 @@ async function handleSubmit() {
           <div class="social-register-section">
             <GoogleLoginButton @error="error = $event" />
             <div class="divider">
-              <span>{{ t('auth.orContinueWith') }}</span>
+              <span>{{ t("auth.orContinueWith") }}</span>
             </div>
           </div>
 
@@ -125,7 +134,7 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label for="preferredName">{{ t('auth.preferredName') }}</label>
+              <label for="preferredName">{{ t("auth.preferredName") }}</label>
               <input
                 id="preferredName"
                 ref="preferredNameInput"
@@ -138,7 +147,7 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label for="email">{{ t('auth.email') }}</label>
+              <label for="email">{{ t("auth.email") }}</label>
               <input
                 id="email"
                 v-model="email"
@@ -150,7 +159,7 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label for="password">{{ t('auth.password') }}</label>
+              <label for="password">{{ t("auth.password") }}</label>
               <input
                 id="password"
                 v-model="password"
@@ -160,11 +169,15 @@ async function handleSubmit() {
                 autocomplete="new-password"
                 :disabled="isLoading"
               />
-              <p class="form-hint">Minimum 8 characters. Avoid common passwords.</p>
+              <p class="form-hint">
+                Minimum 8 characters. Avoid common passwords.
+              </p>
             </div>
 
             <div class="form-group">
-              <label for="confirmPassword">{{ t('auth.confirmPassword') }}</label>
+              <label for="confirmPassword">{{
+                t("auth.confirmPassword")
+              }}</label>
               <input
                 id="confirmPassword"
                 v-model="confirmPassword"
@@ -176,11 +189,16 @@ async function handleSubmit() {
             </div>
 
             <div class="form-group">
-              <label>{{ t('auth.accountType.label') }}</label>
+              <label>{{ t("auth.accountType.label") }}</label>
               <div class="radio-group">
                 <label class="radio-label">
-                  <input type="radio" v-model="accountType" value="unverified" :disabled="isLoading" />
-                  <span>{{ t('auth.accountType.unverified') }}</span>
+                  <input
+                    type="radio"
+                    v-model="accountType"
+                    value="unverified"
+                    :disabled="isLoading"
+                  />
+                  <span>{{ t("auth.accountType.unverified") }}</span>
                 </label>
                 <label class="radio-label">
                   <input
@@ -189,21 +207,25 @@ async function handleSubmit() {
                     value="pseudonymous"
                     :disabled="isLoading"
                   />
-                  <span>{{ t('auth.accountType.pseudonymous') }}</span>
+                  <span>{{ t("auth.accountType.pseudonymous") }}</span>
                 </label>
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block" :disabled="isLoading">
+            <button
+              type="submit"
+              class="btn btn-primary btn-block"
+              :disabled="isLoading"
+            >
               <span v-if="isLoading" class="spinner spinner-sm"></span>
-              {{ t('auth.createAccount') }}
+              {{ t("auth.createAccount") }}
             </button>
           </form>
 
           <div class="auth-footer">
             <p class="text-secondary text-sm">
-              {{ t('auth.hasAccount') }}
-              <router-link to="/login">{{ t('auth.login') }}</router-link>
+              {{ t("auth.hasAccount") }}
+              <router-link to="/login">{{ t("auth.login") }}</router-link>
             </p>
           </div>
         </template>
@@ -237,7 +259,7 @@ async function handleSubmit() {
 
 .divider::before,
 .divider::after {
-  content: '';
+  content: "";
   flex: 1;
   border-bottom: 1px solid var(--color-gray-300);
 }
@@ -282,7 +304,7 @@ async function handleSubmit() {
   outline-offset: -2px;
 }
 
-.radio-label input[type='radio'] {
+.radio-label input[type="radio"] {
   width: auto;
   accent-color: var(--color-primary-600);
 }

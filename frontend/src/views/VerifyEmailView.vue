@@ -1,62 +1,62 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '@/stores'
-import { authService, getErrorMessage } from '@/services'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAuthStore } from "@/stores";
+import { authService, getErrorMessage } from "@/services";
 
-const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 
-const isLoading = ref(false)
-const isVerified = ref(false)
-const error = ref<string | null>(null)
-const isResending = ref(false)
-const resendSuccess = ref(false)
+const isLoading = ref(false);
+const isVerified = ref(false);
+const error = ref<string | null>(null);
+const isResending = ref(false);
+const resendSuccess = ref(false);
 
 onMounted(async () => {
-  const token = route.query.token as string
+  const token = route.query.token as string;
   if (token) {
-    await verifyEmail(token)
+    await verifyEmail(token);
   }
-})
+});
 
 async function verifyEmail(token: string) {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
-    await authService.verifyEmail(token)
-    isVerified.value = true
-    authStore.setEmailVerified(true)
+    await authService.verifyEmail(token);
+    isVerified.value = true;
+    authStore.setEmailVerified(true);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function resendVerification() {
-  if (!authStore.userEmail) return
+  if (!authStore.userEmail) return;
 
-  isResending.value = true
-  error.value = null
-  resendSuccess.value = false
+  isResending.value = true;
+  error.value = null;
+  resendSuccess.value = false;
 
   try {
-    await authService.resendVerificationEmail(authStore.userEmail)
-    resendSuccess.value = true
+    await authService.resendVerificationEmail(authStore.userEmail);
+    resendSuccess.value = true;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isResending.value = false
+    isResending.value = false;
   }
 }
 
 function goToProfile() {
-  router.push({ name: 'profile' })
+  router.push({ name: "profile" });
 }
 </script>
 
@@ -67,31 +67,31 @@ function goToProfile() {
         <div class="card-body text-center">
           <div v-if="isLoading" class="loading-state">
             <div class="spinner"></div>
-            <p>{{ t('auth.verifyingEmail') }}</p>
+            <p>{{ t("auth.verifyingEmail") }}</p>
           </div>
 
           <div v-else-if="isVerified" class="success-state">
             <div class="success-icon">✓</div>
-            <h1>{{ t('auth.emailVerified') }}</h1>
-            <p class="text-secondary">{{ t('auth.emailVerifiedMessage') }}</p>
+            <h1>{{ t("auth.emailVerified") }}</h1>
+            <p class="text-secondary">{{ t("auth.emailVerifiedMessage") }}</p>
             <button class="btn btn-primary mt-4" @click="goToProfile">
-              {{ t('auth.goToProfile') }}
+              {{ t("auth.goToProfile") }}
             </button>
           </div>
 
           <div v-else-if="error" class="error-state">
             <div class="error-icon">!</div>
-            <h1>{{ t('auth.verificationFailed') }}</h1>
+            <h1>{{ t("auth.verificationFailed") }}</h1>
             <p class="text-secondary">{{ error }}</p>
           </div>
 
           <div v-else class="pending-state">
             <div class="pending-icon">✉</div>
-            <h1>{{ t('auth.verifyYourEmail') }}</h1>
-            <p class="text-secondary">{{ t('auth.verifyEmailMessage') }}</p>
+            <h1>{{ t("auth.verifyYourEmail") }}</h1>
+            <p class="text-secondary">{{ t("auth.verifyEmailMessage") }}</p>
 
             <div v-if="resendSuccess" class="alert alert-success mt-4">
-              {{ t('auth.verificationEmailSent') }}
+              {{ t("auth.verificationEmailSent") }}
             </div>
 
             <button
@@ -100,7 +100,9 @@ function goToProfile() {
               :disabled="isResending"
               @click="resendVerification"
             >
-              {{ isResending ? t('common.sending') : t('auth.resendVerification') }}
+              {{
+                isResending ? t("common.sending") : t("auth.resendVerification")
+              }}
             </button>
           </div>
         </div>

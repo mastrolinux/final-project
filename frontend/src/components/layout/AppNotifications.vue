@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { useUiStore, type Notification } from '@/stores'
+import { useUiStore, type Notification } from "@/stores";
 
-const uiStore = useUiStore()
+const uiStore = useUiStore();
 
-function getNotificationClass(type: Notification['type']): string {
-  return `notification notification-${type}`
+function getNotificationClass(type: Notification["type"]): string {
+  return `notification notification-${type}`;
 }
 
 function handleClose(id: string) {
-  uiStore.removeNotification(id)
+  uiStore.removeNotification(id);
 }
 </script>
 
