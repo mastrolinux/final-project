@@ -14,6 +14,7 @@ export default [
       "**/coverage/**",
       "**/node_modules/**",
       "**/*.d.ts",
+      "*.config.js",
     ],
   },
   ...pluginVue.configs["flat/essential"],
