@@ -8,7 +8,7 @@ Handles CRUD operations and authentication-specific queries.
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.models.auth import AuthUser
 
@@ -456,6 +456,37 @@ class AuthRepository:
         )
         result = self.db.execute(stmt)
         return list(result.scalars().all())
+
+    def get_all_soft_deleted_users(
+        self, offset: int = 0, limit: int = 20
+    ) -> List[AuthUser]:
+        """
+        Get all soft-deleted users with pagination.
+
+        Args:
+            offset: Number of records to skip
+            limit: Maximum number of records to return
+
+        Returns:
+            List of soft-deleted AuthUser records ordered by deletion date
+        """
+        stmt = (
+            select(AuthUser)
+            .where(AuthUser.deleted_at.isnot(None))
+            .order_by(AuthUser.deleted_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    def count_soft_deleted_users(self) -> int:
+        """Count all soft-deleted users."""
+        stmt = select(func.count()).select_from(AuthUser).where(
+            AuthUser.deleted_at.isnot(None)
+        )
+        result = self.db.execute(stmt)
+        return result.scalar() or 0
 
     def hard_delete(self, user_id: str) -> bool:
         """
