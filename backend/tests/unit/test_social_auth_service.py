@@ -286,7 +286,8 @@ class TestAuthenticateOrCreateUser:
             provider="google",
             provider_id="google-123",
             is_email_verified=True,
-            is_admin=False
+            is_admin=False,
+            has_custom_password=False
         )
         mock_auth_repo.get_by_provider = Mock(return_value=existing_user)
         mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
@@ -300,7 +301,8 @@ class TestAuthenticateOrCreateUser:
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
         (access_token, refresh_token, user_id, is_new_user,
-         account_type, is_email_verified, is_admin) = service.authenticate_or_create_user(
+         account_type, is_email_verified, is_admin,
+         ret_provider, has_custom_password) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-123",
             email="user@gmail.com",
@@ -315,6 +317,8 @@ class TestAuthenticateOrCreateUser:
         assert account_type == "verified"
         assert is_email_verified is True
         assert is_admin is False
+        assert ret_provider == "google"
+        assert has_custom_password is False
         mock_auth_repo.update_last_login.assert_called_once()
         mock_profile_repo.get_profile_by_id.assert_called_once()
 
@@ -376,7 +380,8 @@ class TestAuthenticateOrCreateUser:
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
         (access_token, refresh_token, user_id, is_new_user,
-         account_type, is_email_verified, is_admin) = service.authenticate_or_create_user(
+         account_type, is_email_verified, is_admin,
+         ret_provider, has_custom_password) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-new",
             email="newuser@gmail.com",
@@ -391,6 +396,8 @@ class TestAuthenticateOrCreateUser:
         assert account_type == "verified"
         assert is_email_verified is True
         assert is_admin is False
+        assert ret_provider == "google"
+        assert has_custom_password is False
 
         # Verify profile and auth user created
         mock_profile_repo.create_profile.assert_called_once()

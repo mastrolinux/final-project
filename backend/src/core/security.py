@@ -5,6 +5,7 @@ Implements Argon2id password hashing and JWT token management.
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import pathlib
 import uuid
 
 from passlib.context import CryptContext
@@ -64,34 +65,39 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+# Common password blocklist (NIST SP 800-63B Section 5.1.1.2)
+# Source: SecLists 10k-most-common.txt
+# Loaded once at module import; frozenset provides O(1) lookup.
+_COMMON_PASSWORDS_PATH = pathlib.Path(__file__).parent / "common_passwords.txt"
+_COMMON_PASSWORDS: frozenset[str] = frozenset(
+    line.strip().lower()
+    for line in _COMMON_PASSWORDS_PATH.read_text().splitlines()
+    if line.strip()
+)
+
+
 def validate_password_strength(password: str) -> tuple[bool, str]:
     """
-    Validate password meets minimum security requirements.
-    
+    Validate password per NIST SP 800-63B Section 5.1.1.2.
+
     Requirements:
     - Minimum 8 characters
-    - At least 1 uppercase letter
-    - At least 1 lowercase letter
-    - At least 1 digit
-    
+    - Not in common/breached password list (case-insensitive)
+    - No composition rules (uppercase/lowercase/digit not required)
+    - All printable characters and Unicode accepted
+
     Args:
         password: Password to validate
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """
     if len(password) < 8:
         return False, "Password must be at least 8 characters"
-    
-    if not any(c.isupper() for c in password):
-        return False, "Password must contain at least one uppercase letter"
-    
-    if not any(c.islower() for c in password):
-        return False, "Password must contain at least one lowercase letter"
-    
-    if not any(c.isdigit() for c in password):
-        return False, "Password must contain at least one digit"
-    
+
+    if password.lower() in _COMMON_PASSWORDS:
+        return False, "This password is too common. Please choose a different password"
+
     return True, "Password meets requirements"
 
 

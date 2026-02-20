@@ -54,37 +54,46 @@ class TestPasswordHashing:
 
 
 class TestPasswordValidation:
-    """Test password strength validation."""
-    
+    """Test password validation per NIST SP 800-63B."""
+
     def test_validate_password_strength_valid_password(self):
-        """Test validation passes for strong password."""
-        valid, message = validate_password_strength("SecurePass123!")
+        """Test validation passes for a non-common password."""
+        valid, message = validate_password_strength("myuniquephrase42")
         assert valid is True
         assert "meets requirements" in message
-    
+
     def test_validate_password_strength_too_short(self):
         """Test validation fails for short password."""
         valid, message = validate_password_strength("Short1!")
         assert valid is False
         assert "at least 8 characters" in message
-    
-    def test_validate_password_strength_no_uppercase(self):
-        """Test validation fails without uppercase letter."""
-        valid, message = validate_password_strength("lowercase123!")
+
+    def test_validate_password_strength_common_password(self):
+        """Test validation rejects a commonly used password."""
+        valid, message = validate_password_strength("password1")
         assert valid is False
-        assert "uppercase" in message
-    
-    def test_validate_password_strength_no_lowercase(self):
-        """Test validation fails without lowercase letter."""
-        valid, message = validate_password_strength("UPPERCASE123!")
+        assert "too common" in message
+
+    def test_validate_password_strength_common_password_case_insensitive(self):
+        """Test common password check is case-insensitive."""
+        valid, message = validate_password_strength("Password1")
         assert valid is False
-        assert "lowercase" in message
-    
-    def test_validate_password_strength_no_digit(self):
-        """Test validation fails without digit."""
-        valid, message = validate_password_strength("NoDigitsHere!")
-        assert valid is False
-        assert "digit" in message
+        assert "too common" in message
+
+    def test_validate_password_strength_no_composition_rules(self):
+        """Test passwords without mixed case or digits are accepted (NIST SP 800-63B)."""
+        valid, message = validate_password_strength("correcthorsebatterystaple")
+        assert valid is True
+
+    def test_validate_password_strength_all_digits_accepted(self):
+        """Test all-digit passwords are accepted if not in common list."""
+        valid, message = validate_password_strength("83729104562")
+        assert valid is True
+
+    def test_validate_password_strength_unicode_accepted(self):
+        """Test Unicode characters are accepted in passwords."""
+        valid, message = validate_password_strength("sicheresPasswort2026")
+        assert valid is True
 
 
 class TestJWTTokens:
@@ -825,4 +834,204 @@ class TestRefreshAccessToken:
         new_refresh_data = verify_token(data["refresh_token"], token_type="refresh")
         assert new_refresh_data is not None
         assert new_refresh_data.user_id == "00000000-0000-0000-0000-000000000123"
+
+
+class TestSetPassword:
+    """Test AuthService.set_password for OAuth users adding password-based login."""
+
+    @pytest.fixture
+    def mock_auth_repo(self):
+        """Mock authentication repository."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_profile_repo(self):
+        """Mock profile repository."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_audit_service(self):
+        """Mock audit service."""
+        return Mock()
+
+    @pytest.fixture
+    def auth_service(self, mock_auth_repo, mock_profile_repo, mock_audit_service):
+        """Create AuthService with mocked repositories and audit service."""
+        return AuthService(mock_auth_repo, mock_profile_repo, audit_service=mock_audit_service)
+
+    def _make_oauth_user(self, has_custom_password=False):
+        """Helper to create a mock OAuth user."""
+        mock_user = Mock()
+        mock_user.user_id = "00000000-0000-0000-0000-000000000123"
+        mock_user.email = "oauth@example.com"
+        mock_user.provider = "google"
+        mock_user.provider_id = "google-12345"
+        mock_user.has_custom_password = has_custom_password
+        return mock_user
+
+    def _make_email_user(self):
+        """Helper to create a mock email/password user."""
+        mock_user = Mock()
+        mock_user.user_id = "00000000-0000-0000-0000-000000000456"
+        mock_user.email = "email@example.com"
+        mock_user.provider = None
+        mock_user.provider_id = None
+        mock_user.has_custom_password = True
+        return mock_user
+
+    def test_set_password_success_for_oauth_user(self, auth_service, mock_auth_repo, mock_audit_service):
+        """Test OAuth user can set a password for the first time."""
+        mock_user = self._make_oauth_user(has_custom_password=False)
+        mock_auth_repo.get_by_user_id.return_value = mock_user
+
+        success, error_code, data = auth_service.set_password(
+            user_id="00000000-0000-0000-0000-000000000123",
+            new_password="SecurePass123!"
+        )
+
+        assert success is True
+        assert error_code is None
+        assert data is not None
+        assert data["message"] == "Password set successfully. You can now login with email and password."
+        assert data["user_id"] == "00000000-0000-0000-0000-000000000123"
+        assert data["email"] == "oauth@example.com"
+
+        # Verify password was updated
+        mock_auth_repo.update_password.assert_called_once()
+        # Verify flag was set
+        mock_auth_repo.set_custom_password_flag.assert_called_once_with(
+            "00000000-0000-0000-0000-000000000123", True
+        )
+        # Verify audit logged
+        mock_audit_service.log_event.assert_called_once()
+
+    def test_set_password_fails_user_not_found(self, auth_service, mock_auth_repo):
+        """Test set_password fails when user does not exist."""
+        mock_auth_repo.get_by_user_id.return_value = None
+
+        success, error_code, data = auth_service.set_password(
+            user_id="nonexistent-user",
+            new_password="SecurePass123!"
+        )
+
+        assert success is False
+        assert error_code == "USER_NOT_FOUND"
+        assert data is None
+
+    def test_set_password_fails_not_oauth_user(self, auth_service, mock_auth_repo):
+        """Test set_password rejects email/password users (must use reset-password)."""
+        mock_user = self._make_email_user()
+        mock_auth_repo.get_by_user_id.return_value = mock_user
+
+        success, error_code, data = auth_service.set_password(
+            user_id="00000000-0000-0000-0000-000000000456",
+            new_password="SecurePass123!"
+        )
+
+        assert success is False
+        assert error_code == "NOT_OAUTH_USER"
+        assert data is None
+
+    def test_set_password_fails_password_already_set(self, auth_service, mock_auth_repo):
+        """Test set_password rejects duplicate password set (must use reset-password)."""
+        mock_user = self._make_oauth_user(has_custom_password=True)
+        mock_auth_repo.get_by_user_id.return_value = mock_user
+
+        success, error_code, data = auth_service.set_password(
+            user_id="00000000-0000-0000-0000-000000000123",
+            new_password="SecurePass123!"
+        )
+
+        assert success is False
+        assert error_code == "PASSWORD_ALREADY_SET"
+        assert data is None
+
+    def test_set_password_fails_weak_password(self, auth_service, mock_auth_repo):
+        """Test set_password rejects passwords that do not meet strength requirements."""
+        mock_user = self._make_oauth_user(has_custom_password=False)
+        mock_auth_repo.get_by_user_id.return_value = mock_user
+
+        success, error_code, data = auth_service.set_password(
+            user_id="00000000-0000-0000-0000-000000000123",
+            new_password="weak"
+        )
+
+        assert success is False
+        assert "Password must" in error_code
+        assert data is None
+
+    def test_set_password_audit_includes_provider(self, auth_service, mock_auth_repo, mock_audit_service):
+        """Test audit event records the OAuth provider name."""
+        mock_user = self._make_oauth_user(has_custom_password=False)
+        mock_auth_repo.get_by_user_id.return_value = mock_user
+
+        auth_service.set_password(
+            user_id="00000000-0000-0000-0000-000000000123",
+            new_password="SecurePass123!",
+            ip_address="127.0.0.1",
+            user_agent="test-agent"
+        )
+
+        mock_audit_service.log_event.assert_called_once()
+        call_kwargs = mock_audit_service.log_event.call_args[1]
+        assert call_kwargs["changes"]["provider"] == "google"
+        assert call_kwargs["changes"]["action"] == "set_password_for_oauth_user"
+        assert call_kwargs["ip_address"] == "127.0.0.1"
+        assert call_kwargs["user_agent"] == "test-agent"
+
+
+class TestRequestPasswordResetGuard:
+    """Test that request_password_reset skips OAuth users without custom passwords."""
+
+    @pytest.fixture
+    def mock_auth_repo(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_profile_repo(self):
+        return Mock()
+
+    @pytest.fixture
+    def auth_service(self, mock_auth_repo, mock_profile_repo):
+        return AuthService(mock_auth_repo, mock_profile_repo)
+
+    @patch('src.services.auth_service.send_password_reset_email')
+    def test_request_password_reset_skips_oauth_user_without_custom_password(
+        self, mock_send_email, auth_service, mock_auth_repo
+    ):
+        """Test that password reset email is not sent to OAuth users who never set a password."""
+        mock_user = Mock()
+        mock_user.user_id = "00000000-0000-0000-0000-000000000123"
+        mock_user.provider = "google"
+        mock_user.has_custom_password = False
+        mock_auth_repo.get_by_email.return_value = mock_user
+
+        success, error = auth_service.request_password_reset("oauth@example.com")
+
+        assert success is True
+        assert error is None
+        # No reset token should be set
+        mock_auth_repo.set_reset_token.assert_not_called()
+        # No email should be sent
+        mock_send_email.delay.assert_not_called()
+
+    @patch('src.services.auth_service.send_password_reset_email')
+    def test_request_password_reset_works_for_oauth_user_with_custom_password(
+        self, mock_send_email, auth_service, mock_auth_repo
+    ):
+        """Test that password reset works for OAuth users who have set a password."""
+        mock_user = Mock()
+        mock_user.user_id = "00000000-0000-0000-0000-000000000123"
+        mock_user.provider = "google"
+        mock_user.has_custom_password = True
+        mock_auth_repo.get_by_email.return_value = mock_user
+
+        success, error = auth_service.request_password_reset("oauth@example.com")
+
+        assert success is True
+        assert error is None
+        # Reset token should be set
+        mock_auth_repo.set_reset_token.assert_called_once()
+        # Email should be sent
+        mock_send_email.delay.assert_called_once()
 
