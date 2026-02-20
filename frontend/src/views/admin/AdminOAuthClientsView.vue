@@ -1,81 +1,81 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { adminOAuthService, getErrorMessage } from '@/services'
-import type { OAuthClientResponse } from '@/types'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import OAuthClientCard from '@/components/admin/OAuthClientCard.vue'
-import { PlusIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { adminOAuthService, getErrorMessage } from "@/services";
+import type { OAuthClientResponse } from "@/types";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import OAuthClientCard from "@/components/admin/OAuthClientCard.vue";
+import { PlusIcon, Cog6ToothIcon } from "@heroicons/vue/24/outline";
 
-const router = useRouter()
+const router = useRouter();
 
-const clients = ref<OAuthClientResponse[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const includeInactive = ref(false)
-const page = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
-const deleteConfirm = ref<string | null>(null)
-const isDeleting = ref(false)
+const clients = ref<OAuthClientResponse[]>([]);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const includeInactive = ref(false);
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const deleteConfirm = ref<string | null>(null);
+const isDeleting = ref(false);
 
 async function loadClients(): Promise<void> {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     const response = await adminOAuthService.listClients(
       page.value,
       pageSize.value,
-      includeInactive.value
-    )
-    clients.value = response.clients
-    total.value = response.total
+      includeInactive.value,
+    );
+    clients.value = response.clients;
+    total.value = response.total;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-onMounted(loadClients)
+onMounted(loadClients);
 
 function navigateToCreate(): void {
-  router.push({ name: 'admin-oauth-client-create' })
+  router.push({ name: "admin-oauth-client-create" });
 }
 
 function handleEdit(clientId: string): void {
-  router.push({ name: 'admin-oauth-client-edit', params: { clientId } })
+  router.push({ name: "admin-oauth-client-edit", params: { clientId } });
 }
 
 function handleDeleteClick(clientId: string): void {
-  deleteConfirm.value = clientId
+  deleteConfirm.value = clientId;
 }
 
 function cancelDelete(): void {
-  deleteConfirm.value = null
+  deleteConfirm.value = null;
 }
 
 async function confirmDelete(): Promise<void> {
-  if (!deleteConfirm.value) return
+  if (!deleteConfirm.value) return;
 
-  isDeleting.value = true
+  isDeleting.value = true;
   try {
-    await adminOAuthService.deleteClient(deleteConfirm.value)
-    await loadClients()
-    deleteConfirm.value = null
+    await adminOAuthService.deleteClient(deleteConfirm.value);
+    await loadClients();
+    deleteConfirm.value = null;
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isDeleting.value = false
+    isDeleting.value = false;
   }
 }
 
 async function toggleInactive(): Promise<void> {
-  includeInactive.value = !includeInactive.value
-  page.value = 1
-  await loadClients()
+  includeInactive.value = !includeInactive.value;
+  page.value = 1;
+  await loadClients();
 }
 </script>
 
@@ -122,8 +122,8 @@ async function toggleInactive(): Promise<void> {
           </div>
           <h3 class="empty-title">No OAuth clients</h3>
           <p class="empty-description">
-            Create your first OAuth client to allow third-party applications
-            to integrate with your identity service.
+            Create your first OAuth client to allow third-party applications to
+            integrate with your identity service.
           </p>
           <BaseButton variant="primary" @click="navigateToCreate">
             <PlusIcon class="btn-icon" />
@@ -154,14 +154,22 @@ async function toggleInactive(): Promise<void> {
       <div class="confirm-dialog">
         <h3 class="confirm-title">Delete OAuth Client?</h3>
         <p class="confirm-text">
-          This will deactivate the client <strong>{{ deleteConfirm }}</strong>.
-          Existing tokens will continue to work until they expire.
+          This will deactivate the client <strong>{{ deleteConfirm }}</strong
+          >. Existing tokens will continue to work until they expire.
         </p>
         <div class="confirm-actions">
-          <BaseButton variant="secondary" :disabled="isDeleting" @click="cancelDelete">
+          <BaseButton
+            variant="secondary"
+            :disabled="isDeleting"
+            @click="cancelDelete"
+          >
             Cancel
           </BaseButton>
-          <BaseButton variant="danger" :loading="isDeleting" @click="confirmDelete">
+          <BaseButton
+            variant="danger"
+            :loading="isDeleting"
+            @click="confirmDelete"
+          >
             Delete Client
           </BaseButton>
         </div>
@@ -215,7 +223,7 @@ async function toggleInactive(): Promise<void> {
   cursor: pointer;
 }
 
-.filter-checkbox input[type='checkbox'] {
+.filter-checkbox input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: var(--color-primary-600);

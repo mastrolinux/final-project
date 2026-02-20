@@ -1,42 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { useAuthStore, useProfileStore } from '@/stores'
-import { contextService, getErrorMessage } from '@/services'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import { CONTEXT_TYPE_META } from '@/types'
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useAuthStore, useProfileStore } from "@/stores";
+import { contextService, getErrorMessage } from "@/services";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import { CONTEXT_TYPE_META } from "@/types";
 
-const { t } = useI18n()
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
+const { t } = useI18n();
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
   try {
-    const contexts = await contextService.list(authStore.userId)
-    profileStore.setContexts(contexts)
+    const contexts = await contextService.list(authStore.userId);
+    profileStore.setContexts(contexts);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 const navigateToCreate = () => {
-  router.push({ name: 'context-create' })
-}
+  router.push({ name: "context-create" });
+};
 
 const navigateToDetail = (id: string) => {
-  router.push({ name: 'context-detail', params: { id } })
-}
+  router.push({ name: "context-detail", params: { id } });
+};
 </script>
 
 <template>
@@ -44,17 +44,17 @@ const navigateToDetail = (id: string) => {
     <div class="container container-lg">
       <div class="contexts-header">
         <div>
-          <h1 class="page-title">{{ t('context.title') }}</h1>
-          <p class="page-description">{{ t('context.description') }}</p>
+          <h1 class="page-title">{{ t("context.title") }}</h1>
+          <p class="page-description">{{ t("context.description") }}</p>
         </div>
         <BaseButton variant="primary" @click="navigateToCreate">
-          {{ t('context.create') }}
+          {{ t("context.create") }}
         </BaseButton>
       </div>
 
       <div v-if="isLoading" class="loading-container">
         <div class="spinner spinner-lg loading-spinner"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <div v-else-if="error" class="alert alert-error alert-spaced">
@@ -63,15 +63,14 @@ const navigateToDetail = (id: string) => {
 
       <div v-else-if="profileStore.contexts.length === 0" class="empty-state">
         <BaseCard class="empty-card">
-          <div class="empty-icon">
-            📇
-          </div>
+          <div class="empty-icon">📇</div>
           <h3 class="empty-title">No contexts yet</h3>
           <p class="empty-description">
-            Create your first identity context to share different information with different applications.
+            Create your first identity context to share different information
+            with different applications.
           </p>
           <BaseButton variant="primary" @click="navigateToCreate">
-            {{ t('context.create') }}
+            {{ t("context.create") }}
           </BaseButton>
         </BaseCard>
       </div>
@@ -88,17 +87,20 @@ const navigateToDetail = (id: string) => {
           @keydown.enter="navigateToDetail(context.id)"
           @keydown.space.prevent="navigateToDetail(context.id)"
         >
-          <BaseCard class="context-card-item" :style="{ borderLeftColor: `var(--color-${CONTEXT_TYPE_META[context.context_type].color}-500)` }">
+          <BaseCard
+            class="context-card-item"
+            :style="{
+              borderLeftColor: `var(--color-${CONTEXT_TYPE_META[context.context_type].color}-500)`,
+            }"
+          >
             <div class="card-badges">
               <BaseBadge :variant="context.context_type">
                 {{ CONTEXT_TYPE_META[context.context_type]?.label }}
               </BaseBadge>
               <BaseBadge v-if="!context.is_active" variant="warning">
-                {{ t('context.inactive') }}
+                {{ t("context.inactive") }}
               </BaseBadge>
-              <BaseBadge v-else variant="success" size="sm">
-                Active
-              </BaseBadge>
+              <BaseBadge v-else variant="success" size="sm"> Active </BaseBadge>
             </div>
 
             <h3 class="card-title">{{ context.context_name }}</h3>
@@ -106,13 +108,18 @@ const navigateToDetail = (id: string) => {
             <div class="override-list">
               <div v-if="context.display_name_override" class="override-row">
                 <span class="override-label">Name</span>
-                <span class="override-value">{{ context.display_name_override }}</span>
+                <span class="override-value">{{
+                  context.display_name_override
+                }}</span>
               </div>
               <div v-if="context.email_override" class="override-row">
                 <span class="override-label">Email</span>
                 <span class="override-value">{{ context.email_override }}</span>
               </div>
-              <div v-if="!context.display_name_override && !context.email_override" class="override-fallback">
+              <div
+                v-if="!context.display_name_override && !context.email_override"
+                class="override-fallback"
+              >
                 Inherits all fields
               </div>
             </div>
@@ -211,7 +218,9 @@ const navigateToDetail = (id: string) => {
 }
 
 .context-card-wrapper:focus-visible > :deep(.card) {
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary-500);
+  box-shadow:
+    0 0 0 2px var(--bg-primary),
+    0 0 0 4px var(--color-primary-500);
 }
 
 .context-card-item {

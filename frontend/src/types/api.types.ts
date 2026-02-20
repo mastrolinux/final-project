@@ -3,36 +3,36 @@
  */
 
 export interface ApiError {
-  detail: string | ApiErrorDetail
+  detail: string | ApiErrorDetail;
 }
 
 export interface ApiErrorDetail {
-  code: string
-  message: string
-  field?: string
+  code: string;
+  message: string;
+  field?: string;
 }
 
 export interface ValidationError {
-  detail: ValidationErrorItem[]
+  detail: ValidationErrorItem[];
 }
 
 export interface ValidationErrorItem {
-  loc: (string | number)[]
-  msg: string
-  type: string
+  loc: (string | number)[];
+  msg: string;
+  type: string;
 }
 
 export interface OAuthError {
-  error: string
-  error_description?: string
+  error: string;
+  error_description?: string;
 }
 
 export interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  size: number
-  pages: number
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
 }
 
 /**
@@ -50,5 +50,5 @@ export const HTTP_STATUS = {
   GONE: 410,
   UNPROCESSABLE_ENTITY: 422,
   INTERNAL_SERVER_ERROR: 500,
-  SERVICE_UNAVAILABLE: 503
-} as const
+  SERVICE_UNAVAILABLE: 503,
+} as const;

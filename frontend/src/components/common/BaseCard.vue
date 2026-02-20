@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
-  noPadding?: boolean
-}>()
+  noPadding?: boolean;
+}>();
 </script>
 
 <template>
@@ -9,7 +9,7 @@ defineProps<{
     <div v-if="$slots.header" class="card-header">
       <slot name="header" />
     </div>
-    
+
     <div class="card-body" :class="{ 'p-0': noPadding }">
       <slot />
     </div>

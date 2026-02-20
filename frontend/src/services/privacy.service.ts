@@ -4,8 +4,12 @@
  * and deletion status for the authenticated user.
  */
 
-import api from './api'
-import type { DataExportResponse, DeletionRequestResponse, DeletionStatusResponse } from '@/types'
+import api from "./api";
+import type {
+  DataExportResponse,
+  DeletionRequestResponse,
+  DeletionStatusResponse,
+} from "@/types";
 
 export default {
   /**
@@ -14,8 +18,8 @@ export default {
    * authentication metadata, OAuth consents, and GDPR information.
    */
   async exportUserData(): Promise<DataExportResponse> {
-    const response = await api.get<DataExportResponse>('/privacy/export')
-    return response.data
+    const response = await api.get<DataExportResponse>("/privacy/export");
+    return response.data;
   },
 
   /**
@@ -23,8 +27,10 @@ export default {
    * Initiates a 30-day grace period before permanent purge.
    */
   async requestDeletion(): Promise<DeletionRequestResponse> {
-    const response = await api.post<DeletionRequestResponse>('/privacy/deletion-request')
-    return response.data
+    const response = await api.post<DeletionRequestResponse>(
+      "/privacy/deletion-request",
+    );
+    return response.data;
   },
 
   /**
@@ -32,7 +38,9 @@ export default {
    * Returns 'active', 'scheduled' (with dates), or 'purged'.
    */
   async getDeletionStatus(): Promise<DeletionStatusResponse> {
-    const response = await api.get<DeletionStatusResponse>('/privacy/deletion-status')
-    return response.data
-  }
-}
+    const response = await api.get<DeletionStatusResponse>(
+      "/privacy/deletion-status",
+    );
+    return response.data;
+  },
+};

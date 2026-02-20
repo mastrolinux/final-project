@@ -5,124 +5,124 @@
  * Validates file size (5 MB) and MIME type (JPEG, PNG, WebP) before displaying
  * a preview. Emits upload/remove events to let the parent coordinate with the API.
  */
-import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import AvatarDisplay from '@/components/common/AvatarDisplay.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
+import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const props = withDefaults(
   defineProps<{
     /** Current avatar URL (null when no avatar is set). */
-    currentUrl?: string | null
+    currentUrl?: string | null;
     /** Display name for the initials fallback. */
-    name?: string
+    name?: string;
     /** Whether an upload operation is in progress. */
-    isUploading?: boolean
+    isUploading?: boolean;
     /**
      * When true, selecting a file emits @upload immediately without a
      * confirmation step.  Use this in forms where the actual upload is
      * deferred until the parent submits (e.g. context creation).
      */
-    deferred?: boolean
+    deferred?: boolean;
   }>(),
   {
     currentUrl: null,
-    name: '',
+    name: "",
     isUploading: false,
-    deferred: false
-  }
-)
+    deferred: false,
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'upload', file: File): void
-  (e: 'remove'): void
-}>()
+  (e: "upload", file: File): void;
+  (e: "remove"): void;
+}>();
 
-const { t } = useI18n()
+const { t } = useI18n();
 
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const previewUrl = ref<string | null>(null)
-const selectedFile = ref<File | null>(null)
-const validationError = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const previewUrl = ref<string | null>(null);
+const selectedFile = ref<File | null>(null);
+const validationError = ref<string | null>(null);
 
-const displayUrl = computed(() => previewUrl.value || props.currentUrl)
-const hasAvatar = computed(() => !!props.currentUrl)
-const hasPreview = computed(() => !!previewUrl.value)
+const displayUrl = computed(() => previewUrl.value || props.currentUrl);
+const hasAvatar = computed(() => !!props.currentUrl);
+const hasPreview = computed(() => !!previewUrl.value);
 
 function openFilePicker() {
-  fileInputRef.value?.click()
+  fileInputRef.value?.click();
 }
 
 function handleFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
 
   // Reset previous state
-  validationError.value = null
-  clearPreview()
+  validationError.value = null;
+  clearPreview();
 
   // Validate MIME type
   if (!ACCEPTED_TYPES.includes(file.type)) {
-    validationError.value = t('profile.avatar.invalidFormat')
-    input.value = ''
-    return
+    validationError.value = t("profile.avatar.invalidFormat");
+    input.value = "";
+    return;
   }
 
   // Validate file size
   if (file.size > MAX_FILE_SIZE) {
-    validationError.value = t('profile.avatar.fileTooLarge')
-    input.value = ''
-    return
+    validationError.value = t("profile.avatar.fileTooLarge");
+    input.value = "";
+    return;
   }
 
   // Show local preview
-  selectedFile.value = file
-  previewUrl.value = URL.createObjectURL(file)
+  selectedFile.value = file;
+  previewUrl.value = URL.createObjectURL(file);
 
   // In deferred mode, emit immediately so the parent can store
   // the file for upload after form submission.
   if (props.deferred) {
-    emit('upload', file)
+    emit("upload", file);
   }
 }
 
 function confirmUpload() {
   if (selectedFile.value) {
-    emit('upload', selectedFile.value)
+    emit("upload", selectedFile.value);
     // Clear preview after emitting (parent handles success/error)
-    clearPreview()
+    clearPreview();
   }
 }
 
 function cancelPreview() {
-  clearPreview()
+  clearPreview();
   if (fileInputRef.value) {
-    fileInputRef.value.value = ''
+    fileInputRef.value.value = "";
   }
 }
 
 function clearPreview() {
   if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value)
+    URL.revokeObjectURL(previewUrl.value);
   }
-  previewUrl.value = null
-  selectedFile.value = null
+  previewUrl.value = null;
+  selectedFile.value = null;
 }
 
 function handleDeferredRemove() {
-  clearPreview()
+  clearPreview();
   if (fileInputRef.value) {
-    fileInputRef.value.value = ''
+    fileInputRef.value.value = "";
   }
-  emit('remove')
+  emit("remove");
 }
 
 function handleRemove() {
-  emit('remove')
+  emit("remove");
 }
 </script>
 
@@ -130,11 +130,7 @@ function handleRemove() {
   <div class="avatar-upload">
     <div class="avatar-upload-preview">
       <div class="avatar-upload-image-wrapper">
-        <AvatarDisplay
-          :src="displayUrl"
-          :name="name"
-          size="xl"
-        />
+        <AvatarDisplay :src="displayUrl" :name="name" size="xl" />
         <div v-if="isUploading" class="avatar-upload-overlay">
           <div class="spinner spinner-sm"></div>
         </div>
@@ -160,10 +156,10 @@ function handleRemove() {
       <template v-if="hasPreview && deferred && !isUploading">
         <div class="avatar-upload-actions">
           <BaseButton variant="secondary" size="sm" @click="openFilePicker">
-            {{ t('profile.avatar.change') }}
+            {{ t("profile.avatar.change") }}
           </BaseButton>
           <BaseButton variant="ghost" size="sm" @click="handleDeferredRemove">
-            {{ t('profile.avatar.remove') }}
+            {{ t("profile.avatar.remove") }}
           </BaseButton>
         </div>
       </template>
@@ -172,10 +168,10 @@ function handleRemove() {
       <template v-else-if="hasPreview && !isUploading">
         <div class="avatar-upload-actions">
           <BaseButton size="sm" @click="confirmUpload">
-            {{ t('profile.avatar.upload') }}
+            {{ t("profile.avatar.upload") }}
           </BaseButton>
           <BaseButton variant="ghost" size="sm" @click="cancelPreview">
-            {{ t('common.cancel') }}
+            {{ t("common.cancel") }}
           </BaseButton>
         </div>
       </template>
@@ -183,12 +179,12 @@ function handleRemove() {
       <!-- Normal mode: change or remove -->
       <template v-else-if="!isUploading">
         <div class="avatar-upload-actions">
-          <BaseButton
-            variant="secondary"
-            size="sm"
-            @click="openFilePicker"
-          >
-            {{ hasAvatar ? t('profile.avatar.change') : t('profile.avatar.upload') }}
+          <BaseButton variant="secondary" size="sm" @click="openFilePicker">
+            {{
+              hasAvatar
+                ? t("profile.avatar.change")
+                : t("profile.avatar.upload")
+            }}
           </BaseButton>
           <BaseButton
             v-if="hasAvatar"
@@ -196,14 +192,14 @@ function handleRemove() {
             size="sm"
             @click="handleRemove"
           >
-            {{ t('profile.avatar.remove') }}
+            {{ t("profile.avatar.remove") }}
           </BaseButton>
         </div>
       </template>
 
       <!-- Uploading state -->
       <template v-else>
-        <p class="avatar-upload-status">{{ t('profile.avatar.uploading') }}</p>
+        <p class="avatar-upload-status">{{ t("profile.avatar.uploading") }}</p>
       </template>
     </div>
   </div>

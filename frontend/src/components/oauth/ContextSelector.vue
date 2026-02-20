@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { ContextProfileResponse } from '@/types'
-import { CheckIcon } from '@heroicons/vue/24/solid'
+import type { ContextProfileResponse } from "@/types";
+import { CheckIcon } from "@heroicons/vue/24/solid";
 
 defineProps<{
-  contexts: ContextProfileResponse[]
-  modelValue: string | null
-}>()
+  contexts: ContextProfileResponse[];
+  modelValue: string | null;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-}>()
+  (e: "update:modelValue", value: string): void;
+}>();
 
 function selectContext(id: string) {
-  emit('update:modelValue', id)
+  emit("update:modelValue", id);
 }
 </script>
 
@@ -31,8 +31,12 @@ function selectContext(id: string) {
           <span class="context-type badge">{{ context.context_type }}</span>
         </div>
         <div class="context-details">
-          <span class="detail">{{ context.display_name_override || 'Inherited Name' }}</span>
-          <span class="detail text-secondary">{{ context.email_override || 'Inherited Email' }}</span>
+          <span class="detail">{{
+            context.display_name_override || "Inherited Name"
+          }}</span>
+          <span class="detail text-secondary">{{
+            context.email_override || "Inherited Email"
+          }}</span>
         </div>
       </div>
       <div class="selection-indicator">
