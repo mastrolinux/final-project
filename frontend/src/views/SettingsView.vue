@@ -59,7 +59,55 @@ const currentTheme = computed({
   }
 })
 
-// Password change form
+// Computed: OAuth user who has not yet set a custom password
+const showSetPassword = computed(
+  () => authStore.isOAuthUser && !authStore.hasCustomPassword
+)
+
+const providerLabel = computed(() => {
+  const p = authStore.user?.provider
+  if (!p) return ''
+  return p.charAt(0).toUpperCase() + p.slice(1)
+})
+
+// Set password form (OAuth users without custom password)
+const setPasswordForm = ref({ newPassword: '', confirmPassword: '' })
+const isSettingPassword = ref(false)
+const setPasswordError = ref<string | null>(null)
+const setPasswordSuccess = ref(false)
+
+async function handleSetPassword() {
+  setPasswordError.value = null
+  setPasswordSuccess.value = false
+
+  if (setPasswordForm.value.newPassword.length < 8) {
+    setPasswordError.value = t('auth.passwordTooShort')
+    return
+  }
+
+  if (setPasswordForm.value.newPassword !== setPasswordForm.value.confirmPassword) {
+    setPasswordError.value = t('auth.passwordsDoNotMatch')
+    return
+  }
+
+  isSettingPassword.value = true
+
+  try {
+    await authService.setPassword(setPasswordForm.value.newPassword)
+    setPasswordSuccess.value = true
+    setPasswordForm.value = { newPassword: '', confirmPassword: '' }
+    uiStore.addNotification({
+      type: 'success',
+      message: t('settings.setPasswordSuccess', { provider: providerLabel.value })
+    })
+  } catch (err) {
+    setPasswordError.value = getErrorMessage(err)
+  } finally {
+    isSettingPassword.value = false
+  }
+}
+
+// Password change form (users who already have a password)
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
@@ -252,7 +300,57 @@ async function handleDeleteAccount() {
           <h2>{{ t('settings.security') }}</h2>
         </div>
         <div class="card-body">
-          <div class="setting-block">
+          <!-- Set Password (OAuth users who have not set a password yet) -->
+          <div v-if="showSetPassword" class="setting-block">
+            <h3>{{ t('settings.setPassword') }}</h3>
+            <p class="text-secondary mb-4">
+              {{ t('settings.setPasswordDescription', { provider: providerLabel }) }}
+            </p>
+
+            <form @submit.prevent="handleSetPassword" class="password-form">
+              <div v-if="setPasswordError" class="alert alert-error">
+                {{ setPasswordError }}
+              </div>
+
+              <div v-if="setPasswordSuccess" class="alert alert-success">
+                {{ t('settings.setPasswordSuccess', { provider: providerLabel }) }}
+              </div>
+
+              <div class="form-group">
+                <label for="set-new-password" class="form-label">{{ t('settings.newPassword') }}</label>
+                <input
+                  id="set-new-password"
+                  v-model="setPasswordForm.newPassword"
+                  type="password"
+                  class="form-input"
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="set-confirm-password" class="form-label">{{
+                  t('auth.confirmPassword')
+                }}</label>
+                <input
+                  id="set-confirm-password"
+                  v-model="setPasswordForm.confirmPassword"
+                  type="password"
+                  class="form-input"
+                  required
+                  autocomplete="new-password"
+                />
+              </div>
+
+              <button type="submit" class="btn btn-primary" :disabled="isSettingPassword">
+                {{ isSettingPassword ? t('common.saving') : t('settings.setPasswordButton') }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Change Password (users who already have a password) -->
+          <div v-else class="setting-block">
             <h3>{{ t('settings.changePassword') }}</h3>
             <p class="text-secondary mb-4">{{ t('settings.changePasswordDescription') }}</p>
 

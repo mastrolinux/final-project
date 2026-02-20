@@ -160,7 +160,7 @@ async function handleSubmit() {
                 autocomplete="new-password"
                 :disabled="isLoading"
               />
-              <p class="form-hint">Minimum 8 characters with uppercase, lowercase, and number</p>
+              <p class="form-hint">Minimum 8 characters. Avoid common passwords.</p>
             </div>
 
             <div class="form-group">
