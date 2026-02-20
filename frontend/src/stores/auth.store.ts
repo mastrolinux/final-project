@@ -58,6 +58,8 @@ export const useAuthStore = defineStore('auth', () => {
   const accountType = computed(() => user.value?.account_type ?? null)
   const userEmail = computed(() => user.value?.email ?? null)
   const isAdmin = computed(() => user.value?.is_admin ?? false)
+  const isOAuthUser = computed(() => !!user.value?.provider)
+  const hasCustomPassword = computed(() => user.value?.has_custom_password ?? false)
 
   // Actions
   function setTokens(access: string, refresh: string): void {
@@ -74,7 +76,9 @@ export const useAuthStore = defineStore('auth', () => {
       email: loginResponse.email,
       is_email_verified: loginResponse.is_email_verified,
       account_type: loginResponse.account_type,
-      is_admin: loginResponse.is_admin
+      is_admin: loginResponse.is_admin,
+      provider: loginResponse.provider ?? null,
+      has_custom_password: loginResponse.has_custom_password ?? false
     }
     user.value = userData
     localStorage.setItem(REFRESH_TOKEN_KEY, loginResponse.refresh_token)
@@ -135,6 +139,8 @@ export const useAuthStore = defineStore('auth', () => {
     accountType,
     userEmail,
     isAdmin,
+    isOAuthUser,
+    hasCustomPassword,
 
     // Actions
     setTokens,
