@@ -12,6 +12,7 @@
     "admin": "Admin",
     "adminOAuthClients": "Client OAuth",
     "adminAuditVerify": "Integrita audit",
+    "adminSoftDeletedUsers": "Utenti eliminati",
     "login": "Accedi",
     "register": "Registrati",
     "logout": "Esci"
