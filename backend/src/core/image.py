@@ -116,7 +116,7 @@ def _resize_and_encode_webp(
     Converts RGBA images to RGB (WebP lossy does not support alpha at quality < 100
     in all decoders, and avatars do not require transparency).
     """
-    resized = img.resize(size, Image.LANCZOS)
+    resized = img.resize(size, Image.LANCZOS)  # type: ignore[attr-defined]
     if resized.mode in ("RGBA", "LA", "P"):
         resized = resized.convert("RGB")
 
