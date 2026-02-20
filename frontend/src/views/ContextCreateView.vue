@@ -1,75 +1,79 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useAuthStore, useProfileStore, useUiStore } from '@/stores'
-import { contextService, profileService, getErrorMessage } from '@/services'
-import { CONTEXT_TYPES, CONTEXT_TYPE_META, type ContextType } from '@/types'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import AvatarUpload from '@/components/profile/AvatarUpload.vue'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+import { ref, computed, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useAuthStore, useProfileStore, useUiStore } from "@/stores";
+import { contextService, profileService, getErrorMessage } from "@/services";
+import { CONTEXT_TYPES, CONTEXT_TYPE_META, type ContextType } from "@/types";
+import BaseInput from "@/components/common/BaseInput.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import AvatarUpload from "@/components/profile/AvatarUpload.vue";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const { t } = useI18n()
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-const uiStore = useUiStore()
+const { t } = useI18n();
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const uiStore = useUiStore();
 
-const isSubmitting = ref(false)
-const error = ref<string | null>(null)
-const pendingAvatarFile = ref<File | null>(null)
+const isSubmitting = ref(false);
+const error = ref<string | null>(null);
+const pendingAvatarFile = ref<File | null>(null);
 
 const form = reactive({
-  context_type: 'professional' as ContextType,
-  context_name: '',
-  display_name_override: '',
-  email_override: '',
-  phone_override: '',
-  bio: '',
-  is_active: true
-})
+  context_type: "professional" as ContextType,
+  context_name: "",
+  display_name_override: "",
+  email_override: "",
+  phone_override: "",
+  bio: "",
+  is_active: true,
+});
 
 // Pseudonymous accounts cannot create legal or healthcare contexts
 const availableContextTypes = computed(() => {
-  if (authStore.accountType === 'pseudonymous') {
-    return CONTEXT_TYPES.filter((type) => type !== 'legal' && type !== 'healthcare')
+  if (authStore.accountType === "pseudonymous") {
+    return CONTEXT_TYPES.filter(
+      (type) => type !== "legal" && type !== "healthcare",
+    );
   }
-  return CONTEXT_TYPES
-})
+  return CONTEXT_TYPES;
+});
 
 // Non-deprecated identity names for the "pick from names" chips
 const availableNames = computed(() =>
-  profileStore.identityNames.filter((n) => !n.is_deprecated)
-)
+  profileStore.identityNames.filter((n) => !n.is_deprecated),
+);
 
 function resolveNameValue(nameValue: Record<string, string>): string {
-  const lang = navigator.language.split('-')[0]
-  return nameValue[lang] ?? nameValue['en'] ?? Object.values(nameValue)[0] ?? ''
+  const lang = navigator.language.split("-")[0];
+  return (
+    nameValue[lang] ?? nameValue["en"] ?? Object.values(nameValue)[0] ?? ""
+  );
 }
 
 function pickName(resolved: string) {
-  form.display_name_override = resolved
+  form.display_name_override = resolved;
 }
 
 onMounted(async () => {
   if (authStore.userId && profileStore.identityNames.length === 0) {
     try {
-      const names = await profileService.getNames(authStore.userId)
-      profileStore.setIdentityNames(names)
+      const names = await profileService.getNames(authStore.userId);
+      profileStore.setIdentityNames(names);
     } catch {
       // Non-critical: chips won't show, text input still works
     }
   }
-})
+});
 
 async function handleSubmit() {
-  if (!authStore.userId) return
+  if (!authStore.userId) return;
 
-  isSubmitting.value = true
-  error.value = null
+  isSubmitting.value = true;
+  error.value = null;
 
   try {
     const newContext = await contextService.create(authStore.userId, {
@@ -79,10 +83,10 @@ async function handleSubmit() {
       email_override: form.email_override || undefined,
       phone_override: form.phone_override || undefined,
       bio: form.bio || undefined,
-      is_active: form.is_active
-    })
+      is_active: form.is_active,
+    });
 
-    profileStore.addContext(newContext)
+    profileStore.addContext(newContext);
 
     // Upload pending avatar if the user selected one during creation.
     // The upload requires a context ID, so it runs after create succeeds.
@@ -91,45 +95,49 @@ async function handleSubmit() {
         const result = await contextService.uploadAvatar(
           authStore.userId,
           newContext.id,
-          pendingAvatarFile.value
-        )
-        profileStore.setContextAvatar(newContext.id, result.avatar_url, result.avatar_thumbnail_url)
+          pendingAvatarFile.value,
+        );
+        profileStore.setContextAvatar(
+          newContext.id,
+          result.avatar_url,
+          result.avatar_thumbnail_url,
+        );
       } catch {
         // Context was created successfully but avatar upload failed.
         // User can retry from the context detail page.
         uiStore.addNotification({
-          type: 'warning',
-          message: t('context.avatar.uploadFailed')
-        })
-        router.push({ name: 'context-detail', params: { id: newContext.id } })
-        return
+          type: "warning",
+          message: t("context.avatar.uploadFailed"),
+        });
+        router.push({ name: "context-detail", params: { id: newContext.id } });
+        return;
       }
     }
 
     uiStore.addNotification({
-      type: 'success',
-      message: t('context.createSuccess')
-    })
+      type: "success",
+      message: t("context.createSuccess"),
+    });
 
-    router.push({ name: 'context-detail', params: { id: newContext.id } })
+    router.push({ name: "context-detail", params: { id: newContext.id } });
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
 }
 
 function handleAvatarSelect(file: File) {
-  pendingAvatarFile.value = file
+  pendingAvatarFile.value = file;
 }
 
 function handleAvatarClear() {
-  pendingAvatarFile.value = null
+  pendingAvatarFile.value = null;
 }
 
 const handleCancel = () => {
-  router.back()
-}
+  router.back();
+};
 </script>
 
 <template>
@@ -137,8 +145,8 @@ const handleCancel = () => {
     <div class="container container-lg">
       <AppBreadcrumb />
       <div class="page-header">
-        <h1 class="page-title">{{ t('context.createNew') }}</h1>
-        <p class="page-description">{{ t('context.createDescription') }}</p>
+        <h1 class="page-title">{{ t("context.createNew") }}</h1>
+        <p class="page-description">{{ t("context.createDescription") }}</p>
       </div>
 
       <div v-if="error" class="alert alert-error create-error">
@@ -152,13 +160,15 @@ const handleCancel = () => {
             <form @submit.prevent="handleSubmit">
               <!-- Context Type Selection -->
               <div class="form-section">
-                <label class="section-label">{{ t('context.type') }}</label>
+                <label class="section-label">{{ t("context.type") }}</label>
                 <div class="type-grid">
                   <div
                     v-for="contextType in availableContextTypes"
                     :key="contextType"
                     class="context-type-card"
-                    :class="{ 'is-selected': form.context_type === contextType }"
+                    :class="{
+                      'is-selected': form.context_type === contextType,
+                    }"
                     @click="form.context_type = contextType"
                   >
                     <div class="card-content">
@@ -173,16 +183,30 @@ const handleCancel = () => {
                           {{ t(`context.typeDescriptions.${contextType}`) }}
                         </div>
                       </div>
-                      <div v-if="form.context_type === contextType" class="card-check">
-                        <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                      <div
+                        v-if="form.context_type === contextType"
+                        class="card-check"
+                      >
+                        <svg
+                          class="check-icon"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </div>
-                <p v-if="authStore.accountType === 'pseudonymous'" class="pseudo-warning">
-                  {{ t('context.pseudonymousRestriction') }}
+                <p
+                  v-if="authStore.accountType === 'pseudonymous'"
+                  class="pseudo-warning"
+                >
+                  {{ t("context.pseudonymousRestriction") }}
                 </p>
               </div>
 
@@ -200,20 +224,28 @@ const handleCancel = () => {
 
                 <div class="form-group">
                   <label class="checkbox-group">
-                    <input type="checkbox" v-model="form.is_active" class="checkbox-input" />
-                    <span class="checkbox-text">{{ t('context.isActive') }}</span>
+                    <input
+                      type="checkbox"
+                      v-model="form.is_active"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-text">{{
+                      t("context.isActive")
+                    }}</span>
                   </label>
-                  <p class="checkbox-hint">{{ t('context.isActiveHint') }}</p>
+                  <p class="checkbox-hint">{{ t("context.isActiveHint") }}</p>
                 </div>
               </div>
 
               <!-- Overrides -->
               <div class="form-section">
                 <div class="overrides-header">
-                  <h3 class="section-heading">{{ t('context.overrides') }}</h3>
+                  <h3 class="section-heading">{{ t("context.overrides") }}</h3>
                   <span class="optional-badge">Optional</span>
                 </div>
-                <p class="overrides-description">{{ t('context.overridesDescription') }}</p>
+                <p class="overrides-description">
+                  {{ t("context.overridesDescription") }}
+                </p>
 
                 <BaseInput
                   v-model="form.display_name_override"
@@ -222,8 +254,13 @@ const handleCancel = () => {
                   :placeholder="t('context.optionalField')"
                 />
 
-                <div v-if="availableNames.length > 0" class="name-chips-section">
-                  <span class="chips-label">{{ t('context.pickFromNames') }}</span>
+                <div
+                  v-if="availableNames.length > 0"
+                  class="name-chips-section"
+                >
+                  <span class="chips-label">{{
+                    t("context.pickFromNames")
+                  }}</span>
                   <div class="name-chips">
                     <button
                       v-for="name in availableNames"
@@ -232,8 +269,12 @@ const handleCancel = () => {
                       class="name-chip"
                       @click="pickName(resolveNameValue(name.name_value))"
                     >
-                      <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
-                      <span class="chip-name-text">{{ resolveNameValue(name.name_value) }}</span>
+                      <BaseBadge variant="primary" size="sm">{{
+                        name.name_type
+                      }}</BaseBadge>
+                      <span class="chip-name-text">{{
+                        resolveNameValue(name.name_value)
+                      }}</span>
                     </button>
                   </div>
                 </div>
@@ -255,7 +296,9 @@ const handleCancel = () => {
                 />
 
                 <div class="form-group">
-                  <label for="bio" class="textarea-label">{{ t('context.bio') }}</label>
+                  <label for="bio" class="textarea-label">{{
+                    t("context.bio")
+                  }}</label>
                   <textarea
                     id="bio"
                     v-model="form.bio"
@@ -266,10 +309,14 @@ const handleCancel = () => {
                 </div>
 
                 <div class="form-group avatar-override-group">
-                  <label class="textarea-label">{{ t('context.avatar.override') }}</label>
+                  <label class="textarea-label">{{
+                    t("context.avatar.override")
+                  }}</label>
                   <AvatarUpload
                     :currentUrl="null"
-                    :name="form.display_name_override || profileStore.displayName"
+                    :name="
+                      form.display_name_override || profileStore.displayName
+                    "
                     :isUploading="isSubmitting"
                     deferred
                     @upload="handleAvatarSelect"
@@ -279,11 +326,15 @@ const handleCancel = () => {
               </div>
 
               <div class="form-footer">
-                <BaseButton variant="ghost" @click="handleCancel" :disabled="isSubmitting">
-                  {{ t('common.cancel') }}
+                <BaseButton
+                  variant="ghost"
+                  @click="handleCancel"
+                  :disabled="isSubmitting"
+                >
+                  {{ t("common.cancel") }}
                 </BaseButton>
                 <BaseButton type="submit" :loading="isSubmitting">
-                  {{ t('context.create') }}
+                  {{ t("context.create") }}
                 </BaseButton>
               </div>
             </form>
@@ -295,7 +346,8 @@ const handleCancel = () => {
           <BaseCard class="help-card">
             <h3 class="help-title">About Contexts</h3>
             <p class="help-text">
-              Contexts allow you to present different sides of your identity to different applications.
+              Contexts allow you to present different sides of your identity to
+              different applications.
             </p>
             <ul class="help-list">
               <li>Override your name and email</li>
@@ -530,7 +582,9 @@ const handleCancel = () => {
   font-size: var(--font-size-sm);
   color: var(--text-primary);
   background-color: var(--bg-primary);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .textarea-field:focus {

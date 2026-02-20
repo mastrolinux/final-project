@@ -1,24 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = withDefaults(
   defineProps<{
-    variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'professional' | 'social' | 'legal' | 'healthcare' | 'family' | 'custom'
-    size?: 'sm' | 'md'
+    variant?:
+      | "primary"
+      | "success"
+      | "warning"
+      | "error"
+      | "info"
+      | "neutral"
+      | "professional"
+      | "social"
+      | "legal"
+      | "healthcare"
+      | "family"
+      | "custom";
+    size?: "sm" | "md";
   }>(),
   {
-    variant: 'neutral',
-    size: 'md'
-  }
-)
+    variant: "neutral",
+    size: "md",
+  },
+);
 
 const classes = computed(() => {
-  return [
-    'badge',
-    `badge-${props.variant}`,
-    `badge-${props.size}`
-  ]
-})
+  return ["badge", `badge-${props.variant}`, `badge-${props.size}`];
+});
 </script>
 
 <template>

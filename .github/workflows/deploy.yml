@@ -1,16 +1,17 @@
 # Continuous Deployment to Render.com
 #
-# Triggers on push to main branch when backend, frontend, or render.yaml changes.
-# Calls Render deploy hooks to trigger builds for each service.
-# The Redis key-value instance runs continuously and has no deploy hook.
+# Triggers on push to main when backend, frontend, or render.yaml changes.
+# Runs the CI workflow first, then applies Supabase migrations, then deploys.
+#
+# Job chain: CI passes -> migrations applied -> services deployed.
+# If any step fails, subsequent steps do not run.
 #
 # Required GitHub repository secrets:
 #   RENDER_DEPLOY_HOOK_API      - Deploy hook URL for identity-api web service
 #   RENDER_DEPLOY_HOOK_WORKER   - Deploy hook URL for identity-celery-worker
 #   RENDER_DEPLOY_HOOK_FRONTEND - Deploy hook URL for identity-frontend static site
-#
-# CI (tests, linting) is handled by a separate workflow (see MAS-89).
-# To add a CI gate, add a test job and use `needs: test` on the deploy job.
+#   SUPABASE_ACCESS_TOKEN       - Personal access token for Supabase CLI
+#   SUPABASE_PROJECT_REF        - Supabase project reference ID
 
 name: Deploy to Render
 
@@ -26,8 +27,39 @@ on:
   workflow_dispatch:
 
 jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
+  migrate:
+    name: Apply Migrations
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        working-directory: backend
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Push pending migrations
+        working-directory: backend
+        run: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
   deploy:
-    name: Deploy to Render
+    name: Deploy Services
+    needs: migrate
     runs-on: ubuntu-latest
 
     steps:

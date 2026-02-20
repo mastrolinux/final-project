@@ -11,6 +11,7 @@ services:
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
+      - ./mypy.ini:/app/mypy.ini
     env_file:
       - .env
     environment:

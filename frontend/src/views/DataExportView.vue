@@ -1,72 +1,72 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { getErrorMessage } from '@/services'
-import privacyService from '@/services/privacy.service'
-import type { DataExportResponse } from '@/types'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
-import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue'
+import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { getErrorMessage } from "@/services";
+import privacyService from "@/services/privacy.service";
+import type { DataExportResponse } from "@/types";
+import BaseButton from "@/components/common/BaseButton.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import { ArrowDownTrayIcon } from "@heroicons/vue/24/outline";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 
-const { t } = useI18n()
+const { t } = useI18n();
 
-const exportData = ref<DataExportResponse | null>(null)
-const rawJson = ref<string>('')
-const isLoading = ref(true)
-const isDownloading = ref(false)
-const error = ref<string | null>(null)
+const exportData = ref<DataExportResponse | null>(null);
+const rawJson = ref<string>("");
+const isLoading = ref(true);
+const isDownloading = ref(false);
+const error = ref<string | null>(null);
 
 async function loadExport() {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
   try {
-    const data = await privacyService.exportUserData()
-    exportData.value = data
-    rawJson.value = JSON.stringify(data, null, 2)
+    const data = await privacyService.exportUserData();
+    exportData.value = data;
+    rawJson.value = JSON.stringify(data, null, 2);
   } catch (err) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function downloadJson() {
-  if (!rawJson.value) return
-  isDownloading.value = true
+  if (!rawJson.value) return;
+  isDownloading.value = true;
   try {
-    const blob = new Blob([rawJson.value], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const timestamp = new Date().toISOString().slice(0, 10)
-    link.href = url
-    link.download = `identity-data-export-${timestamp}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    const blob = new Blob([rawJson.value], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `identity-data-export-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   } finally {
-    isDownloading.value = false
+    isDownloading.value = false;
   }
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return t('privacy.values.notSet')
-  return new Date(dateStr).toLocaleString()
+  if (!dateStr) return t("privacy.values.notSet");
+  return new Date(dateStr).toLocaleString();
 }
 
 function formatBool(val: boolean): string {
-  return val ? t('privacy.values.yes') : t('privacy.values.no')
+  return val ? t("privacy.values.yes") : t("privacy.values.no");
 }
 
 /** Map name_value JSONB to readable string. */
 function formatNameValue(val: Record<string, string>): string {
   return Object.entries(val)
     .map(([lang, name]) => `${lang}: ${name}`)
-    .join(', ')
+    .join(", ");
 }
 
-onMounted(loadExport)
+onMounted(loadExport);
 </script>
 
 <template>
@@ -77,8 +77,8 @@ onMounted(loadExport)
       <!-- Header -->
       <div class="page-header export-header">
         <div>
-          <h1 class="page-title">{{ t('privacy.title') }}</h1>
-          <p class="page-description">{{ t('privacy.description') }}</p>
+          <h1 class="page-title">{{ t("privacy.title") }}</h1>
+          <p class="page-description">{{ t("privacy.description") }}</p>
         </div>
         <BaseButton
           v-if="exportData"
@@ -87,14 +87,16 @@ onMounted(loadExport)
           :disabled="isDownloading"
         >
           <ArrowDownTrayIcon class="btn-icon" />
-          {{ isDownloading ? t('privacy.downloading') : t('privacy.downloadJson') }}
+          {{
+            isDownloading ? t("privacy.downloading") : t("privacy.downloadJson")
+          }}
         </BaseButton>
       </div>
 
       <!-- Loading -->
       <div v-if="isLoading" class="loading-state">
         <div class="spinner spinner-lg"></div>
-        <p class="loading-text">{{ t('common.loading') }}</p>
+        <p class="loading-text">{{ t("common.loading") }}</p>
       </div>
 
       <!-- Error -->
@@ -105,15 +107,15 @@ onMounted(loadExport)
         <!-- Export metadata bar -->
         <div class="export-meta-bar">
           <span class="meta-item">
-            <span class="meta-label">{{ t('privacy.exportedAt') }}:</span>
+            <span class="meta-label">{{ t("privacy.exportedAt") }}:</span>
             {{ formatDate(exportData.export_metadata.exported_at) }}
           </span>
           <span class="meta-item">
-            <span class="meta-label">{{ t('privacy.formatVersion') }}:</span>
+            <span class="meta-label">{{ t("privacy.formatVersion") }}:</span>
             {{ exportData.export_metadata.format_version }}
           </span>
           <span class="meta-item">
-            <span class="meta-label">{{ t('privacy.legalBasis') }}:</span>
+            <span class="meta-label">{{ t("privacy.legalBasis") }}:</span>
             {{ exportData.export_metadata.legal_basis }}
           </span>
         </div>
@@ -121,45 +123,82 @@ onMounted(loadExport)
         <!-- Profile Section -->
         <details class="export-section" open>
           <summary class="section-summary section-profile">
-            <h2>{{ t('privacy.sections.profile') }}</h2>
+            <h2>{{ t("privacy.sections.profile") }}</h2>
           </summary>
           <div class="section-body">
             <div class="fields-grid">
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.userId') }}</span>
-                <code class="field-value field-value-mono">{{ exportData.profile.user_id }}</code>
+                <span class="field-label">{{
+                  t("privacy.profile.userId")
+                }}</span>
+                <code class="field-value field-value-mono">{{
+                  exportData.profile.user_id
+                }}</code>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.accountType') }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.accountType")
+                }}</span>
                 <span class="field-value">
-                  <BaseBadge :variant="exportData.profile.account_type === 'verified' ? 'success' : 'neutral'" size="sm">
+                  <BaseBadge
+                    :variant="
+                      exportData.profile.account_type === 'verified'
+                        ? 'success'
+                        : 'neutral'
+                    "
+                    size="sm"
+                  >
                     {{ exportData.profile.account_type }}
                   </BaseBadge>
                 </span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.legalName') }}</span>
-                <span class="field-value">{{ exportData.profile.legal_name || t('privacy.values.notSet') }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.legalName")
+                }}</span>
+                <span class="field-value">{{
+                  exportData.profile.legal_name || t("privacy.values.notSet")
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.primaryEmail') }}</span>
-                <span class="field-value">{{ exportData.profile.primary_email }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.primaryEmail")
+                }}</span>
+                <span class="field-value">{{
+                  exportData.profile.primary_email
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.primaryPhone') }}</span>
-                <span class="field-value">{{ exportData.profile.primary_phone || t('privacy.values.notSet') }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.primaryPhone")
+                }}</span>
+                <span class="field-value">{{
+                  exportData.profile.primary_phone || t("privacy.values.notSet")
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.preferredLanguage') }}</span>
-                <span class="field-value">{{ exportData.profile.preferred_language }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.preferredLanguage")
+                }}</span>
+                <span class="field-value">{{
+                  exportData.profile.preferred_language
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.createdAt') }}</span>
-                <span class="field-value">{{ formatDate(exportData.profile.created_at) }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.createdAt")
+                }}</span>
+                <span class="field-value">{{
+                  formatDate(exportData.profile.created_at)
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.profile.updatedAt') }}</span>
-                <span class="field-value">{{ formatDate(exportData.profile.updated_at) }}</span>
+                <span class="field-label">{{
+                  t("privacy.profile.updatedAt")
+                }}</span>
+                <span class="field-value">{{
+                  formatDate(exportData.profile.updated_at)
+                }}</span>
               </div>
             </div>
           </div>
@@ -169,13 +208,18 @@ onMounted(loadExport)
         <details class="export-section">
           <summary class="section-summary section-names">
             <h2>
-              {{ t('privacy.sections.identityNames') }}
-              <span class="section-count">{{ exportData.identity_names.length }}</span>
+              {{ t("privacy.sections.identityNames") }}
+              <span class="section-count">{{
+                exportData.identity_names.length
+              }}</span>
             </h2>
           </summary>
           <div class="section-body">
-            <div v-if="exportData.identity_names.length === 0" class="section-empty">
-              {{ t('privacy.values.notSet') }}
+            <div
+              v-if="exportData.identity_names.length === 0"
+              class="section-empty"
+            >
+              {{ t("privacy.values.notSet") }}
             </div>
             <div v-else class="name-cards">
               <div
@@ -185,13 +229,30 @@ onMounted(loadExport)
                 :class="{ 'name-card-deprecated': name.is_deprecated }"
               >
                 <div class="name-card-header">
-                  <BaseBadge variant="primary" size="sm">{{ name.name_type }}</BaseBadge>
-                  <BaseBadge v-if="name.is_primary" variant="success" size="sm">{{ t('privacy.names.primary') }}</BaseBadge>
-                  <BaseBadge v-if="name.is_deprecated" variant="warning" size="sm">{{ t('privacy.names.deprecated') }}</BaseBadge>
+                  <BaseBadge variant="primary" size="sm">{{
+                    name.name_type
+                  }}</BaseBadge>
+                  <BaseBadge
+                    v-if="name.is_primary"
+                    variant="success"
+                    size="sm"
+                    >{{ t("privacy.names.primary") }}</BaseBadge
+                  >
+                  <BaseBadge
+                    v-if="name.is_deprecated"
+                    variant="warning"
+                    size="sm"
+                    >{{ t("privacy.names.deprecated") }}</BaseBadge
+                  >
                 </div>
-                <div class="name-card-value">{{ formatNameValue(name.name_value) }}</div>
+                <div class="name-card-value">
+                  {{ formatNameValue(name.name_value) }}
+                </div>
                 <div class="name-card-meta">
-                  <span>{{ t('privacy.names.visibility') }}: {{ name.visibility_level }}</span>
+                  <span
+                    >{{ t("privacy.names.visibility") }}:
+                    {{ name.visibility_level }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -202,13 +263,18 @@ onMounted(loadExport)
         <details class="export-section">
           <summary class="section-summary section-contexts">
             <h2>
-              {{ t('privacy.sections.contextProfiles') }}
-              <span class="section-count">{{ exportData.context_profiles.length }}</span>
+              {{ t("privacy.sections.contextProfiles") }}
+              <span class="section-count">{{
+                exportData.context_profiles.length
+              }}</span>
             </h2>
           </summary>
           <div class="section-body">
-            <div v-if="exportData.context_profiles.length === 0" class="section-empty">
-              {{ t('privacy.values.notSet') }}
+            <div
+              v-if="exportData.context_profiles.length === 0"
+              class="section-empty"
+            >
+              {{ t("privacy.values.notSet") }}
             </div>
             <div v-else class="context-cards">
               <div
@@ -217,30 +283,44 @@ onMounted(loadExport)
                 class="context-card-export"
               >
                 <div class="context-card-header">
-                  <BaseBadge :variant="(ctx.context_type as any)" size="sm">{{ ctx.context_type }}</BaseBadge>
+                  <BaseBadge :variant="ctx.context_type as any" size="sm">{{
+                    ctx.context_type
+                  }}</BaseBadge>
                   <BaseBadge
                     :variant="ctx.is_active ? 'success' : 'neutral'"
                     size="sm"
                   >
-                    {{ ctx.is_active ? t('privacy.contexts.active') : t('privacy.contexts.inactive') }}
+                    {{
+                      ctx.is_active
+                        ? t("privacy.contexts.active")
+                        : t("privacy.contexts.inactive")
+                    }}
                   </BaseBadge>
                 </div>
                 <h3 class="context-card-name">{{ ctx.context_name }}</h3>
                 <div class="context-card-fields">
                   <div v-if="ctx.display_name_override" class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.contexts.displayName') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.contexts.displayName") }}:</span
+                    >
                     {{ ctx.display_name_override }}
                   </div>
                   <div v-if="ctx.email_override" class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.contexts.email') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.contexts.email") }}:</span
+                    >
                     {{ ctx.email_override }}
                   </div>
                   <div v-if="ctx.phone_override" class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.contexts.phone') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.contexts.phone") }}:</span
+                    >
                     {{ ctx.phone_override }}
                   </div>
                   <div v-if="ctx.bio" class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.contexts.bio') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.contexts.bio") }}:</span
+                    >
                     {{ ctx.bio }}
                   </div>
                 </div>
@@ -252,40 +332,67 @@ onMounted(loadExport)
         <!-- Authentication Section -->
         <details class="export-section">
           <summary class="section-summary section-auth">
-            <h2>{{ t('privacy.sections.authentication') }}</h2>
+            <h2>{{ t("privacy.sections.authentication") }}</h2>
           </summary>
           <div class="section-body">
             <div v-if="!exportData.authentication" class="section-empty">
-              {{ t('privacy.auth.noAuthData') }}
+              {{ t("privacy.auth.noAuthData") }}
             </div>
             <div v-else class="fields-grid">
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.email') }}</span>
-                <span class="field-value">{{ exportData.authentication.email }}</span>
+                <span class="field-label">{{ t("privacy.auth.email") }}</span>
+                <span class="field-value">{{
+                  exportData.authentication.email
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.emailVerified') }}</span>
+                <span class="field-label">{{
+                  t("privacy.auth.emailVerified")
+                }}</span>
                 <span class="field-value">
-                  <BaseBadge :variant="exportData.authentication.is_email_verified ? 'success' : 'warning'" size="sm">
-                    {{ formatBool(exportData.authentication.is_email_verified) }}
+                  <BaseBadge
+                    :variant="
+                      exportData.authentication.is_email_verified
+                        ? 'success'
+                        : 'warning'
+                    "
+                    size="sm"
+                  >
+                    {{
+                      formatBool(exportData.authentication.is_email_verified)
+                    }}
                   </BaseBadge>
                 </span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.lastLogin') }}</span>
-                <span class="field-value">{{ formatDate(exportData.authentication.last_login_at) }}</span>
+                <span class="field-label">{{
+                  t("privacy.auth.lastLogin")
+                }}</span>
+                <span class="field-value">{{
+                  formatDate(exportData.authentication.last_login_at)
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.passwordChanged') }}</span>
-                <span class="field-value">{{ formatDate(exportData.authentication.password_changed_at) }}</span>
+                <span class="field-label">{{
+                  t("privacy.auth.passwordChanged")
+                }}</span>
+                <span class="field-value">{{
+                  formatDate(exportData.authentication.password_changed_at)
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.isAdmin') }}</span>
-                <span class="field-value">{{ formatBool(exportData.authentication.is_admin) }}</span>
+                <span class="field-label">{{ t("privacy.auth.isAdmin") }}</span>
+                <span class="field-value">{{
+                  formatBool(exportData.authentication.is_admin)
+                }}</span>
               </div>
               <div class="field-item">
-                <span class="field-label">{{ t('privacy.auth.createdAt') }}</span>
-                <span class="field-value">{{ formatDate(exportData.authentication.created_at) }}</span>
+                <span class="field-label">{{
+                  t("privacy.auth.createdAt")
+                }}</span>
+                <span class="field-value">{{
+                  formatDate(exportData.authentication.created_at)
+                }}</span>
               </div>
             </div>
           </div>
@@ -295,13 +402,18 @@ onMounted(loadExport)
         <details class="export-section">
           <summary class="section-summary section-consents">
             <h2>
-              {{ t('privacy.sections.oauthConsents') }}
-              <span class="section-count">{{ exportData.oauth_consents.length }}</span>
+              {{ t("privacy.sections.oauthConsents") }}
+              <span class="section-count">{{
+                exportData.oauth_consents.length
+              }}</span>
             </h2>
           </summary>
           <div class="section-body">
-            <div v-if="exportData.oauth_consents.length === 0" class="section-empty">
-              {{ t('privacy.consents.noConsents') }}
+            <div
+              v-if="exportData.oauth_consents.length === 0"
+              class="section-empty"
+            >
+              {{ t("privacy.consents.noConsents") }}
             </div>
             <div v-else class="consent-cards">
               <div
@@ -315,26 +427,39 @@ onMounted(loadExport)
                     :variant="consent.withdrawn_at ? 'error' : 'success'"
                     size="sm"
                   >
-                    {{ consent.withdrawn_at ? 'Withdrawn' : 'Active' }}
+                    {{ consent.withdrawn_at ? "Withdrawn" : "Active" }}
                   </BaseBadge>
                 </div>
                 <div class="consent-card-fields">
                   <div class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.consents.scopes') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.consents.scopes") }}:</span
+                    >
                     <span class="scopes-list">
-                      <code v-for="scope in consent.granted_scopes" :key="scope" class="scope-tag">{{ scope }}</code>
+                      <code
+                        v-for="scope in consent.granted_scopes"
+                        :key="scope"
+                        class="scope-tag"
+                        >{{ scope }}</code
+                      >
                     </span>
                   </div>
                   <div class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.consents.method') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.consents.method") }}:</span
+                    >
                     {{ consent.consent_method }}
                   </div>
                   <div class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.consents.grantedAt') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.consents.grantedAt") }}:</span
+                    >
                     {{ formatDate(consent.granted_at) }}
                   </div>
                   <div v-if="consent.withdrawn_at" class="field-inline">
-                    <span class="field-label-sm">{{ t('privacy.consents.withdrawnAt') }}:</span>
+                    <span class="field-label-sm"
+                      >{{ t("privacy.consents.withdrawnAt") }}:</span
+                    >
                     {{ formatDate(consent.withdrawn_at) }}
                   </div>
                 </div>
@@ -346,14 +471,18 @@ onMounted(loadExport)
         <!-- GDPR Information Section -->
         <details class="export-section">
           <summary class="section-summary section-gdpr">
-            <h2>{{ t('privacy.sections.gdprInfo') }}</h2>
+            <h2>{{ t("privacy.sections.gdprInfo") }}</h2>
           </summary>
           <div class="section-body gdpr-body">
             <!-- Processing Purposes -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.processingPurposes') }}</h3>
+              <h3>{{ t("privacy.gdpr.processingPurposes") }}</h3>
               <ul class="gdpr-list">
-                <li v-for="(purpose, i) in exportData.gdpr_metadata.processing_purposes" :key="i">
+                <li
+                  v-for="(purpose, i) in exportData.gdpr_metadata
+                    .processing_purposes"
+                  :key="i"
+                >
                   {{ purpose }}
                 </li>
               </ul>
@@ -361,14 +490,17 @@ onMounted(loadExport)
 
             <!-- Retention Periods -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.retentionPeriods') }}</h3>
+              <h3>{{ t("privacy.gdpr.retentionPeriods") }}</h3>
               <div class="retention-grid">
                 <div
-                  v-for="(period, key) in exportData.gdpr_metadata.retention_periods"
+                  v-for="(period, key) in exportData.gdpr_metadata
+                    .retention_periods"
                   :key="key"
                   class="retention-item"
                 >
-                  <span class="retention-key">{{ key.replace(/_/g, ' ') }}</span>
+                  <span class="retention-key">{{
+                    key.replace(/_/g, " ")
+                  }}</span>
                   <span class="retention-value">{{ period }}</span>
                 </div>
               </div>
@@ -376,9 +508,13 @@ onMounted(loadExport)
 
             <!-- Data Subject Rights -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.dataSubjectRights') }}</h3>
+              <h3>{{ t("privacy.gdpr.dataSubjectRights") }}</h3>
               <ul class="gdpr-list">
-                <li v-for="(right, i) in exportData.gdpr_metadata.data_subject_rights" :key="i">
+                <li
+                  v-for="(right, i) in exportData.gdpr_metadata
+                    .data_subject_rights"
+                  :key="i"
+                >
                   {{ right }}
                 </li>
               </ul>
@@ -386,9 +522,12 @@ onMounted(loadExport)
 
             <!-- Data Sources -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.dataSources') }}</h3>
+              <h3>{{ t("privacy.gdpr.dataSources") }}</h3>
               <ul class="gdpr-list">
-                <li v-for="(source, i) in exportData.gdpr_metadata.data_sources" :key="i">
+                <li
+                  v-for="(source, i) in exportData.gdpr_metadata.data_sources"
+                  :key="i"
+                >
                   {{ source }}
                 </li>
               </ul>
@@ -396,9 +535,13 @@ onMounted(loadExport)
 
             <!-- Recipients -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.recipients') }}</h3>
+              <h3>{{ t("privacy.gdpr.recipients") }}</h3>
               <ul class="gdpr-list">
-                <li v-for="(recipient, i) in exportData.gdpr_metadata.recipients_or_categories" :key="i">
+                <li
+                  v-for="(recipient, i) in exportData.gdpr_metadata
+                    .recipients_or_categories"
+                  :key="i"
+                >
                   {{ recipient }}
                 </li>
               </ul>
@@ -406,7 +549,7 @@ onMounted(loadExport)
 
             <!-- Automated Decision-Making -->
             <div class="gdpr-block">
-              <h3>{{ t('privacy.gdpr.automatedDecisions') }}</h3>
+              <h3>{{ t("privacy.gdpr.automatedDecisions") }}</h3>
               <p>{{ exportData.gdpr_metadata.automated_decision_making }}</p>
             </div>
           </div>
@@ -519,12 +662,24 @@ onMounted(loadExport)
 }
 
 /* Section accent colors */
-.section-profile { border-left-color: var(--color-primary-500); }
-.section-names { border-left-color: var(--color-info-500); }
-.section-contexts { border-left-color: #a855f7; }
-.section-auth { border-left-color: var(--color-success-500); }
-.section-consents { border-left-color: #f59e0b; }
-.section-gdpr { border-left-color: var(--color-gray-500); }
+.section-profile {
+  border-left-color: var(--color-primary-500);
+}
+.section-names {
+  border-left-color: var(--color-info-500);
+}
+.section-contexts {
+  border-left-color: #a855f7;
+}
+.section-auth {
+  border-left-color: var(--color-success-500);
+}
+.section-consents {
+  border-left-color: #f59e0b;
+}
+.section-gdpr {
+  border-left-color: var(--color-gray-500);
+}
 
 .section-body {
   padding: var(--spacing-5);

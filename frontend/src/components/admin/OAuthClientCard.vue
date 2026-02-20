@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { OAuthClientResponse } from '@/types'
-import BaseCard from '@/components/common/BaseCard.vue'
-import BaseBadge from '@/components/common/BaseBadge.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { computed } from "vue";
+import type { OAuthClientResponse } from "@/types";
+import BaseCard from "@/components/common/BaseCard.vue";
+import BaseBadge from "@/components/common/BaseBadge.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
+import { PencilIcon, TrashIcon } from "@heroicons/vue/24/outline";
 
 const props = defineProps<{
-  client: OAuthClientResponse
-}>()
+  client: OAuthClientResponse;
+}>();
 
 const emit = defineEmits<{
-  edit: [clientId: string]
-  delete: [clientId: string]
-}>()
+  edit: [clientId: string];
+  delete: [clientId: string];
+}>();
 
 const clientType = computed(() => {
-  return props.client.is_confidential ? 'Confidential' : 'Public'
-})
+  return props.client.is_confidential ? "Confidential" : "Public";
+});
 
 const statusVariant = computed(() => {
-  return props.client.is_active ? 'success' : 'error'
-})
+  return props.client.is_active ? "success" : "error";
+});
 
 const statusLabel = computed(() => {
-  return props.client.is_active ? 'Active' : 'Inactive'
-})
+  return props.client.is_active ? "Active" : "Inactive";
+});
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 </script>
 

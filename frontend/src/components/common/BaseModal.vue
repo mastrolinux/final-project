@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  TransitionChild,
+  TransitionRoot,
+} from "@headlessui/vue";
 
 defineProps<{
-  isOpen: boolean
-  title?: string
-  maxWidth?: string
-}>()
+  isOpen: boolean;
+  title?: string;
+  maxWidth?: string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'close'): void
-}>()
+  (e: "close"): void;
+}>();
 
 const handleClose = () => {
-  emit('close')
-}
+  emit("close");
+};
 </script>
 
 <template>
