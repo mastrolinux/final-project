@@ -41,6 +41,7 @@ export interface ProfileResponse {
   preferred_language: string;
   avatar_url: string | null;
   avatar_thumbnail_url: string | null;
+  email_verification_pending?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

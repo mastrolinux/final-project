@@ -11,9 +11,12 @@ from sqlalchemy.orm import Session
 
 from src.core.database import get_db
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.auth_repository import AuthRepository
 from src.repositories.audit_repository import AuditRepository
 from src.services.profile_service import ProfileService, ProfileServiceError
 from src.services.audit_service import AuditService
+from src.api.dependencies.auth import require_verified_user
+from src.models.auth import AuthUser
 from src.schemas.profile import (
     ProfileCreate,
     ProfileUpdate,
@@ -30,9 +33,14 @@ router = APIRouter()
 def get_profile_service(db: Session = Depends(get_db)) -> ProfileService:
     """Dependency to get ProfileService instance with audit logging."""
     repository = ProfileRepository(db)
+    auth_repo = AuthRepository(db)
     audit_repo = AuditRepository(db)
     audit_service = AuditService(audit_repo)
-    return ProfileService(repository, audit_service=audit_service)
+    return ProfileService(
+        repository,
+        audit_service=audit_service,
+        auth_repository=auth_repo
+    )
 
 
 @router.post("/profiles", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -86,7 +94,8 @@ def get_profile(
 def update_profile(
     user_id: UUID,
     update_data: ProfileUpdate,
-    service: ProfileService = Depends(get_profile_service)
+    service: ProfileService = Depends(get_profile_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Update profile fields
@@ -98,7 +107,11 @@ def update_profile(
     """
     try:
         profile = service.update_profile(user_id, update_data)
-        return profile
+        response = ProfileResponse.model_validate(profile)
+        # Propagate the transient flag set by the service layer
+        if getattr(profile, "email_verification_pending", False):
+            response.email_verification_pending = True
+        return response
     except ProfileServiceError as e:
         if "not found" in str(e).lower():
             raise HTTPException(
@@ -114,7 +127,8 @@ def update_profile(
 @router.delete("/profiles/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_profile(
     user_id: UUID,
-    service: ProfileService = Depends(get_profile_service)
+    service: ProfileService = Depends(get_profile_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Soft delete a profile
@@ -139,7 +153,8 @@ def delete_profile(
 def add_identity_name(
     user_id: UUID,
     name_data: IdentityNameCreate,
-    service: ProfileService = Depends(get_profile_service)
+    service: ProfileService = Depends(get_profile_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Add an identity name to a profile
@@ -184,7 +199,8 @@ def update_identity_name(
     user_id: UUID,
     name_id: UUID,
     update_data: IdentityNameUpdate,
-    service: ProfileService = Depends(get_profile_service)
+    service: ProfileService = Depends(get_profile_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Update an identity name
@@ -214,7 +230,8 @@ def update_identity_name(
 def delete_identity_name(
     user_id: UUID,
     name_id: UUID,
-    service: ProfileService = Depends(get_profile_service)
+    service: ProfileService = Depends(get_profile_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Delete an identity name

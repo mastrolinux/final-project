@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from src.core.types import UNSET, _Unset
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.auth_repository import AuthRepository
 from src.models.context import ContextProfile, ContextType
 from src.models.profile import BaseProfile, IdentityName, AccountType
 from src.models.audit import AuditEventType, AuditOperation
@@ -106,7 +107,8 @@ class ContextService:
         self,
         context_repository: ContextRepository,
         profile_repository: ProfileRepository,
-        audit_service: Optional["AuditService"] = None
+        audit_service: Optional["AuditService"] = None,
+        auth_repository: Optional[AuthRepository] = None
     ):
         """
         Initialize service with repositories
@@ -115,10 +117,12 @@ class ContextService:
             context_repository: ContextRepository instance
             profile_repository: ProfileRepository instance
             audit_service: Optional audit service for event logging
+            auth_repository: Optional auth repository for email verification checks
         """
         self.context_repo = context_repository
         self.profile_repo = profile_repository
         self.audit_service = audit_service
+        self.auth_repo = auth_repository
     
     def _resolve_multilingual_name(
         self,
@@ -207,13 +211,24 @@ class ContextService:
         base_profile = self.profile_repo.get_profile_by_id(user_id)
         if not base_profile:
             raise ContextServiceError(f"Profile {user_id} not found")
-        
-        # Business rule: Only verified accounts can create legal or healthcare contexts
+
+        # Business rule: email must be verified before creating any context
+        if self.auth_repo is not None:
+            auth_user = self.auth_repo.get_by_user_id(str(user_id))
+            if auth_user and not auth_user.is_email_verified:
+                raise ContextServiceError(
+                    "Email verification required before creating context profiles",
+                    status_code=403
+                )
+
+        # Business rule: Only identity-verified accounts (government ID
+        # reviewed by admin) can create legal or healthcare contexts
         if context_type in [ContextType.legal, ContextType.healthcare]:
             if base_profile.account_type != AccountType.verified:
                 raise ContextServiceError(
-                    f"Only verified accounts can create {context_type.value} contexts. "
-                    f"Current account type: {base_profile.account_type.value}"
+                    f"Only identity-verified accounts can create {context_type.value} contexts. "
+                    "Upload an identity document and wait for admin approval.",
+                    status_code=403
                 )
         
         # Check for duplicate context (user_id, context_type, context_name)

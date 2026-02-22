@@ -174,6 +174,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/SocialAuthCallbackView.vue"),
     meta: { title: "Social Login" },
   },
+  // Verification
+  {
+    path: "/verification",
+    name: "verification",
+    component: () => import("@/views/VerificationView.vue"),
+    meta: {
+      requiresAuth: true,
+      title: "Identity Verification",
+      breadcrumb: { parent: "/profile", parentLabel: "nav.profile" },
+    },
+    beforeEnter: (_to, _from, next) => {
+      const authStore = useAuthStore();
+      if (authStore.accountType === "pseudonymous") {
+        next("/profile");
+      } else {
+        next();
+      }
+    },
+  },
   // Audit trail (any authenticated user)
   {
     path: "/audit",
@@ -242,6 +261,36 @@ const routes: RouteRecordRaw[] = [
       breadcrumb: {
         parent: "/admin/oauth/clients",
         parentLabel: "nav.adminOAuthClients",
+      },
+    },
+  },
+  {
+    path: "/admin/verifications",
+    name: "admin-verifications",
+    component: () =>
+      import("@/views/admin/AdminVerificationsView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: "Verification Queue",
+      breadcrumb: {
+        parent: "/admin/oauth/clients",
+        parentLabel: "nav.adminOAuthClients",
+      },
+    },
+  },
+  {
+    path: "/admin/verifications/:documentId",
+    name: "admin-verification-review",
+    component: () =>
+      import("@/views/admin/AdminVerificationReviewView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: "Review Document",
+      breadcrumb: {
+        parent: "/admin/verifications",
+        parentLabel: "nav.adminVerifications",
       },
     },
   },

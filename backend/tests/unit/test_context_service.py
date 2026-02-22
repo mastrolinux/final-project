@@ -101,7 +101,7 @@ class TestContextCreation:
                 context_name="Government"
             )
 
-        assert "only verified" in str(exc_info.value).lower()
+        assert "identity-verified" in str(exc_info.value).lower()
         assert "legal" in str(exc_info.value).lower()
 
     def test_pseudonymous_cannot_create_healthcare_context(
@@ -117,7 +117,7 @@ class TestContextCreation:
                 context_name="Hospital"
             )
 
-        assert "only verified" in str(exc_info.value).lower()
+        assert "identity-verified" in str(exc_info.value).lower()
         assert "healthcare" in str(exc_info.value).lower()
 
     def test_unverified_cannot_create_legal_context(
@@ -133,7 +133,7 @@ class TestContextCreation:
                 context_name="Government"
             )
 
-        assert "only verified" in str(exc_info.value).lower()
+        assert "identity-verified" in str(exc_info.value).lower()
         assert "legal" in str(exc_info.value).lower()
 
     def test_unverified_cannot_create_healthcare_context(
@@ -149,7 +149,7 @@ class TestContextCreation:
                 context_name="Hospital"
             )
 
-        assert "only verified" in str(exc_info.value).lower()
+        assert "identity-verified" in str(exc_info.value).lower()
         assert "healthcare" in str(exc_info.value).lower()
     
     def test_duplicate_context_fails(

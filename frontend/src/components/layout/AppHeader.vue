@@ -118,6 +118,13 @@ async function handleLogout() {
       <router-link to="/settings" class="nav-link">
         {{ t("nav.settings") }}
       </router-link>
+      <router-link
+        v-if="authStore.accountType !== 'pseudonymous'"
+        to="/verification"
+        class="nav-link"
+      >
+        {{ t("nav.verification") }}
+      </router-link>
       <router-link to="/audit" class="nav-link">
         {{ t("nav.audit") }}
       </router-link>
@@ -157,6 +164,13 @@ async function handleLogout() {
               @click="closeAdminMenu"
             >
               {{ t("nav.adminSoftDeletedUsers") }}
+            </router-link>
+            <router-link
+              to="/admin/verifications"
+              class="admin-menu-item"
+              @click="closeAdminMenu"
+            >
+              {{ t("nav.adminVerifications") }}
             </router-link>
           </div>
         </Transition>
@@ -241,6 +255,13 @@ async function handleLogout() {
             <router-link to="/settings" class="mobile-nav-link">
               {{ t("nav.settings") }}
             </router-link>
+            <router-link
+              v-if="authStore.accountType !== 'pseudonymous'"
+              to="/verification"
+              class="mobile-nav-link"
+            >
+              {{ t("nav.verification") }}
+            </router-link>
             <router-link to="/audit" class="mobile-nav-link">
               {{ t("nav.audit") }}
             </router-link>
@@ -277,6 +298,12 @@ async function handleLogout() {
                   class="mobile-nav-link mobile-nav-sub"
                 >
                   {{ t("nav.adminSoftDeletedUsers") }}
+                </router-link>
+                <router-link
+                  to="/admin/verifications"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.adminVerifications") }}
                 </router-link>
               </div>
             </Transition>
