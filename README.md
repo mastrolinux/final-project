@@ -247,17 +247,18 @@ git push
 
 ## Documentation
 
-### For Developers
+### Development
 - [Backend Setup](backend/README.md) - API development
 - [API Docs](http://localhost:8000/docs) - OpenAPI/Swagger
 
-### For Thesis Review
+### Architectural And Background
 - [Architecture](architecture/) - Complete system design
 - [Quarto Thesis](index.qmd) - Thesis introduction
 - [References](references.bib) - Bibliography
 
-### For DevOps
+### Deploy
 - [Deployment](render.yaml) - Service configuration
+- [Github Actions](.github/workflows/)
 
 ## Monorepo Benefits
 

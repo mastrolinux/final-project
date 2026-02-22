@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
-from src.api.dependencies.auth import get_current_user
+from src.api.dependencies.auth import get_current_user, require_verified_user
 from src.models.auth import AuthUser
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.context_repository import ContextRepository
@@ -95,7 +95,7 @@ def export_user_data(
 )
 def request_deletion(
     request: Request,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: AuthUser = Depends(require_verified_user),
     service: PrivacyService = Depends(get_privacy_service),
 ):
     """Request account deletion with 30-day retention period."""

@@ -22,6 +22,8 @@ from src.repositories.audit_repository import AuditRepository
 from src.services.avatar_service import AvatarService, AvatarServiceError
 from src.services.audit_service import AuditService
 from src.schemas.avatar import AvatarResponse, AvatarDeleteResponse
+from src.api.dependencies.auth import require_verified_user
+from src.models.auth import AuthUser
 
 
 router = APIRouter()
@@ -52,6 +54,7 @@ async def upload_base_avatar(
     user_id: UUID,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, or WebP, max 5 MB)"),
     service: AvatarService = Depends(get_avatar_service),
+    _current_user: AuthUser = Depends(require_verified_user),
 ):
     """
     Upload or replace the base profile avatar.
@@ -85,6 +88,7 @@ async def upload_base_avatar(
 def delete_base_avatar(
     user_id: UUID,
     service: AvatarService = Depends(get_avatar_service),
+    _current_user: AuthUser = Depends(require_verified_user),
 ):
     """
     Delete the base profile avatar.
@@ -113,6 +117,7 @@ async def upload_context_avatar(
     context_id: UUID,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, or WebP, max 5 MB)"),
     service: AvatarService = Depends(get_avatar_service),
+    _current_user: AuthUser = Depends(require_verified_user),
 ):
     """
     Upload or replace a context-specific avatar override.
@@ -137,6 +142,7 @@ def delete_context_avatar(
     user_id: UUID,
     context_id: UUID,
     service: AvatarService = Depends(get_avatar_service),
+    _current_user: AuthUser = Depends(require_verified_user),
 ):
     """
     Delete a context-specific avatar override.
