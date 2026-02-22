@@ -57,9 +57,7 @@ async function handleSubmit() {
     });
 
     success.value = true;
-    uiStore.showSuccess(
-      "Account created! Please check your email to verify your account.",
-    );
+    uiStore.showSuccess(t("auth.registerSuccessToast"));
   } catch (err) {
     // Handle 409 ACCOUNT_RECOVERABLE structured response
     if (
@@ -112,8 +110,8 @@ async function handleSubmit() {
         </div>
 
         <div v-else-if="success" class="alert alert-success">
-          <p><strong>Account created successfully!</strong></p>
-          <p>Please check your email to verify your account.</p>
+          <p><strong>{{ t("auth.registerSuccessTitle") }}</strong></p>
+          <p>{{ t("auth.registerSuccessMessage") }}</p>
           <router-link to="/login" class="btn btn-primary mt-4">
             {{ t("auth.signIn") }}
           </router-link>
@@ -198,7 +196,10 @@ async function handleSubmit() {
                     value="unverified"
                     :disabled="isLoading"
                   />
-                  <span>{{ t("auth.accountType.unverified") }}</span>
+                  <div class="radio-content">
+                    <span>{{ t("auth.accountType.unverified") }}</span>
+                    <small class="radio-description">{{ t("auth.accountType.unverifiedDescription") }}</small>
+                  </div>
                 </label>
                 <label class="radio-label">
                   <input
@@ -207,7 +208,10 @@ async function handleSubmit() {
                     value="pseudonymous"
                     :disabled="isLoading"
                   />
-                  <span>{{ t("auth.accountType.pseudonymous") }}</span>
+                  <div class="radio-content">
+                    <span>{{ t("auth.accountType.pseudonymous") }}</span>
+                    <small class="radio-description">{{ t("auth.accountType.pseudonymousDescription") }}</small>
+                  </div>
                 </label>
               </div>
             </div>
@@ -285,7 +289,7 @@ async function handleSubmit() {
 
 .radio-label {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-2);
   cursor: pointer;
   font-weight: var(--font-weight-normal);
@@ -293,6 +297,18 @@ async function handleSubmit() {
   padding: var(--spacing-2);
   border-radius: var(--radius-md);
   transition: background-color var(--transition-fast);
+}
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.radio-description {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-top: 2px;
 }
 
 .radio-label:hover {
@@ -306,6 +322,7 @@ async function handleSubmit() {
 
 .radio-label input[type="radio"] {
   width: auto;
+  margin-top: 3px;
   accent-color: var(--color-primary-600);
 }
 

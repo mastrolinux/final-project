@@ -22,7 +22,7 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from src.api.dependencies.auth import get_current_user
+from src.api.dependencies.auth import get_current_user, require_verified_user
 from src.core.database import get_db
 from src.core.encryption import EncryptionService, get_encryption_service
 from src.core.storage import StorageClient, get_document_storage_client
@@ -83,7 +83,7 @@ async def upload_verification_document(
     document_type: DocumentType = Form(
         ..., description="Type of document: passport or national_id"
     ),
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: AuthUser = Depends(require_verified_user),
     service: VerificationService = Depends(get_verification_service),
 ):
     """

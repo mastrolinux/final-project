@@ -1,38 +1,40 @@
 {
   "app": {
-    "name": "Gestione Identita",
-    "tagline": "Sistema di identita multi-contesto orientato alla privacy"
+    "name": "Gestione identit\u00e0",
+    "tagline": "Sistema di identit\u00e0 multi-contesto orientato alla privacy"
   },
   "nav": {
     "home": "Home",
     "profile": "Profilo",
     "contexts": "Contesti",
     "settings": "Impostazioni",
-    "audit": "Registro attivita",
+    "audit": "Registro attivit\u00e0",
     "admin": "Admin",
     "adminOAuthClients": "Client OAuth",
-    "adminAuditVerify": "Integrita audit",
+    "adminAuditVerify": "Integrit\u00e0 audit",
     "adminSoftDeletedUsers": "Utenti eliminati",
+    "verification": "Verifica",
+    "adminVerifications": "Verifiche",
     "login": "Accedi",
     "register": "Registrati",
     "logout": "Esci"
   },
   "home": {
-    "title": "Sistema di Gestione Identita",
-    "subtitle": "Gestione sicura e privacy-first delle identita su contesti multipli",
+    "title": "Sistema di gestione identit\u00e0",
+    "subtitle": "Gestione sicura e privacy-first delle identit\u00e0 su contesti multipli",
     "cta": {
       "getStarted": "Inizia ora",
-      "learnMore": "Scopri di piu"
+      "learnMore": "Scopri di pi\u00f9"
     },
     "features": {
-      "title": "Perche sceglierci",
+      "title": "Perch\u00e9 sceglierci",
       "privacy": {
         "title": "Privacy by Design",
         "description": "Costruito con principi ispirati al GDPR per la massima protezione dei dati"
       },
       "contexts": {
-        "title": "Identita multi-contesto",
-        "description": "Gestisci diverse identita per uso professionale, sociale e personale"
+        "title": "Identit\u00e0 multi-contesto",
+        "description": "Gestisci diverse identit\u00e0 per uso professionale, sociale e personale"
       },
       "security": {
         "title": "Sicurezza enterprise",
@@ -54,7 +56,7 @@
     "preferredNamePlaceholder": "Come preferisci essere chiamato?",
     "forgotPassword": "Password dimenticata?",
     "noAccount": "Non hai un account?",
-    "hasAccount": "Hai gia un account?",
+    "hasAccount": "Hai gi\u00e0 un account?",
     "createAccount": "Crea account",
     "signIn": "Accedi",
     "signOut": "Esci",
@@ -69,9 +71,9 @@
     "verifyEmailSent": "Abbiamo inviato un link di verifica a {email}",
     "verifyingEmail": "Verifica email in corso...",
     "emailVerified": "Email verificata",
-    "emailVerifiedMessage": "La tua email e stata verificata con successo. Ora puoi accedere a tutte le funzionalita.",
+    "emailVerifiedMessage": "La tua email \u00e8 stata verificata con successo. Ora puoi accedere a tutte le funzionalit\u00e0.",
     "verificationFailed": "Verifica fallita",
-    "verificationEmailSent": "Una nuova email di verifica e stata inviata.",
+    "verificationEmailSent": "Una nuova email di verifica \u00e8 stata inviata.",
     "resendVerification": "Reinvia email di verifica",
     "goToProfile": "Vai al profilo",
     "goToLogin": "Vai al login",
@@ -85,9 +87,9 @@
     "resetPasswordMessage": "Inserisci la tua nuova password qui sotto.",
     "newPassword": "Nuova password",
     "passwordReset": "Password reimpostata",
-    "passwordResetSuccess": "La tua password e stata reimpostata con successo. Ora puoi accedere con la nuova password.",
+    "passwordResetSuccess": "La tua password \u00e8 stata reimpostata con successo. Ora puoi accedere con la nuova password.",
     "invalidLink": "Link non valido",
-    "invalidResetToken": "Questo link di reset password non e valido o e scaduto.",
+    "invalidResetToken": "Questo link di reset password non \u00e8 valido o \u00e8 scaduto.",
     "requestNewLink": "Richiedi nuovo link",
     "passwordTooShort": "La password deve contenere almeno 8 caratteri",
     "passwordsDoNotMatch": "Le password non corrispondono",
@@ -96,11 +98,11 @@
     "accountType": {
       "label": "Tipo di account",
       "verified": "Verificato",
-      "unverified": "Non verificato",
+      "unverified": "Standard",
       "pseudonymous": "Pseudonimo",
-      "verifiedDescription": "Accesso completo con verifica email",
-      "unverifiedDescription": "Accesso limitato fino alla verifica email",
-      "pseudonymousDescription": "Account anonimo con alcune restrizioni"
+      "verifiedDescription": "Accesso completo dopo la revisione del documento di identit\u00e0",
+      "unverifiedDescription": "Account standard, possibilit\u00e0 di verificare l'identit\u00e0 per sbloccare tutte le funzionalit\u00e0",
+      "pseudonymousDescription": "Account anonimo, non pu\u00f2 accedere ai contesti legali o sanitari"
     },
     "restore": {
       "title": "Ripristina account",
@@ -111,26 +113,33 @@
       "confirmTitle": "Imposta nuova password",
       "confirmDescription": "Scegli una nuova password per il tuo account ripristinato.",
       "confirmSuccess": "Account ripristinato",
-      "confirmSuccessMessage": "Il tuo account e stato ripristinato. Ora puoi accedere con la tua nuova password.",
+      "confirmSuccessMessage": "Il tuo account \u00e8 stato ripristinato. Ora puoi accedere con la tua nuova password.",
       "invalidToken": "Token non valido o scaduto",
-      "invalidTokenMessage": "Questo link di ripristino non e valido o e scaduto.",
+      "invalidTokenMessage": "Questo link di ripristino non \u00e8 valido o \u00e8 scaduto.",
       "requestNewToken": "Richiedi nuovo link di ripristino",
       "permanentlyDeleted": "Account eliminato permanentemente",
-      "permanentlyDeletedMessage": "Il periodo di grazia di 30 giorni e scaduto e questo account e stato eliminato permanentemente. Puoi registrare un nuovo account.",
+      "permanentlyDeletedMessage": "Il periodo di grazia di 30 giorni \u00e8 scaduto e questo account \u00e8 stato eliminato permanentemente. Puoi registrare un nuovo account.",
       "backToLogin": "Torna al login",
       "accountDeleted": "Account programmato per l'eliminazione",
-      "accountDeletedMessage": "Il tuo account e programmato per l'eliminazione. Sara cancellato permanentemente il {date}.",
+      "accountDeletedMessage": "Il tuo account \u00e8 programmato per l'eliminazione. Sar\u00e0 cancellato permanentemente il {date}.",
       "recoveryInstructions": "Puoi ripristinare il tuo account entro il periodo di grazia richiedendo un link di ripristino.",
       "restoreMyAccount": "Ripristina il mio account",
-      "accountRecoverable": "L'account puo essere ripristinato",
-      "accountRecoverableMessage": "Un account con questa email esiste e puo essere ripristinato fino al {date}.",
+      "accountRecoverable": "L'account pu\u00f2 essere ripristinato",
+      "accountRecoverableMessage": "Un account con questa email esiste e pu\u00f2 essere ripristinato fino al {date}.",
       "restoreAccount": "Ripristina account"
-    }
+    },
+    "emailVerificationBanner": "Verifica il tuo indirizzo email per sbloccare tutte le funzionalita.",
+    "emailVerificationBannerResend": "Reinvia email di verifica",
+    "emailVerificationBannerResent": "Email di verifica inviata!",
+    "emailVerificationRequired": "Devi verificare la tua email prima di poter salvare le modifiche. Controlla la tua casella di posta o reinvia l'email di verifica.",
+    "registerSuccessTitle": "Account creato con successo!",
+    "registerSuccessMessage": "Controlla la tua email per verificare il tuo account.",
+    "registerSuccessToast": "Account creato! Controlla la tua email per verificare il tuo account."
   },
   "account": {
     "types": {
       "verified": "Account verificato",
-      "unverified": "Account non verificato",
+      "unverified": "Account standard",
       "pseudonymous": "Account pseudonimo"
     }
   },
@@ -147,6 +156,8 @@
     "saveChanges": "Salva modifiche",
     "cancel": "Annulla",
     "viewContexts": "Vedi contesti",
+    "emailChangeWarning": "La modifica dell'email richiede una nuova verifica",
+    "emailVerificationSent": "Email aggiornata. Un'email di verifica \u00e8 stata inviata al nuovo indirizzo.",
     "avatar": {
       "title": "Foto profilo",
       "upload": "Carica",
@@ -160,18 +171,18 @@
     }
   },
   "context": {
-    "title": "Contesti di identita",
-    "description": "Gestisci diversi contesti di identita per vari aspetti della tua vita",
+    "title": "Contesti di identit\u00e0",
+    "description": "Gestisci diversi contesti di identit\u00e0 per vari aspetti della tua vita",
     "viewContext": "Vedi contesto: {name}",
     "create": "Crea contesto",
     "createNew": "Crea nuovo contesto",
-    "createDescription": "Crea un nuovo contesto di identita per uno scopo o dominio specifico",
+    "createDescription": "Crea un nuovo contesto di identit\u00e0 per uno scopo o dominio specifico",
     "createSuccess": "Contesto creato con successo",
     "edit": "Modifica contesto",
     "delete": "Elimina contesto",
     "deleteSuccess": "Contesto eliminato con successo",
     "deleteConfirmTitle": "Eliminare il contesto?",
-    "deleteConfirmMessage": "Sei sicuro di voler eliminare questo contesto? Questa azione non puo essere annullata.",
+    "deleteConfirmMessage": "Sei sicuro di voler eliminare questo contesto? Questa azione non pu\u00f2 essere annullata.",
     "updateSuccess": "Contesto aggiornato con successo",
     "switch": "Cambia contesto",
     "active": "Attivo",
@@ -192,7 +203,7 @@
     "optionalField": "Opzionale",
     "overrides": "Override del profilo",
     "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
-    "pickFromNames": "Scegli dai tuoi nomi di identita",
+    "pickFromNames": "Scegli dai tuoi nomi di identit\u00e0",
     "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
     "types": {
       "professional": "Professionale",
@@ -203,8 +214,8 @@
       "custom": "Personalizzato"
     },
     "typeDescriptions": {
-      "professional": "Identita per lavoro, affari e carriera",
-      "social": "Social media e comunita online",
+      "professional": "Identit\u00e0 per lavoro, affari e carriera",
+      "social": "Social media e comunit\u00e0 online",
       "legal": "Documenti ufficiali e questioni legali",
       "healthcare": "Cartelle cliniche e operatori sanitari",
       "family": "Famiglia e relazioni personali",
@@ -229,7 +240,7 @@
     "avatar": {
       "override": "Override avatar",
       "uploadSuccess": "Avatar del contesto caricato con successo",
-      "uploadFailed": "Contesto creato, ma il caricamento dell'avatar non e' riuscito. Puoi riprovare dalla pagina di dettaglio.",
+      "uploadFailed": "Contesto creato, ma il caricamento dell'avatar non \u00e8 riuscito. Puoi riprovare dalla pagina di dettaglio.",
       "removeSuccess": "Avatar del contesto rimosso con successo"
     }
   },
@@ -257,21 +268,21 @@
     "accountType": "Tipo di account",
     "dangerZone": "Zona pericolosa",
     "deleteAccount": "Elimina account",
-    "deleteAccountWarning": "Il tuo account entrera in un periodo di grazia di 30 giorni. Dopo tale termine, tutti i dati saranno cancellati permanentemente.",
+    "deleteAccountWarning": "Il tuo account entrer\u00e0 in un periodo di grazia di 30 giorni. Dopo tale termine, tutti i dati saranno cancellati permanentemente.",
     "deleteAccountConfirmTitle": "Eliminare il tuo account?",
     "deleteAccountConfirmMessage": "Il tuo account e tutti i dati associati saranno eliminati temporaneamente. Hai 30 giorni per ripristinarlo prima della cancellazione permanente.",
     "typeDeleteToConfirm": "Scrivi DELETE per confermare",
     "permanentlyDelete": "Elimina account",
     "deletion": {
-      "scheduledBanner": "Il tuo account e programmato per l'eliminazione il {date}. Puoi ripristinarlo effettuando nuovamente l'accesso.",
+      "scheduledBanner": "Il tuo account \u00e8 programmato per l'eliminazione il {date}. Puoi ripristinarlo effettuando nuovamente l'accesso.",
       "restoreLink": "Ripristina account",
       "scheduled": "Eliminazione programmata",
-      "scheduledMessage": "Il tuo account e stato programmato per l'eliminazione.",
+      "scheduledMessage": "Il tuo account \u00e8 stato programmato per l'eliminazione.",
       "deletionDate": "Eliminato il",
       "permanentDate": "Cancellazione permanente il",
       "graceMessage": "Hai 30 giorni per ripristinare il tuo account. Dopo tale data, tutti i dati saranno cancellati permanentemente.",
       "logoutNotice": "Verrai disconnesso a breve.",
-      "alreadyDeleted": "L'account e gia programmato per l'eliminazione"
+      "alreadyDeleted": "L'account \u00e8 gi\u00e0 programmato per l'eliminazione"
     },
     "privacyData": "Privacy e dati",
     "privacyDataDescription": "Scarica una copia di tutti i dati personali detenuti da questo sistema, come previsto dall'Articolo 15 del GDPR.",
@@ -288,7 +299,7 @@
     "legalBasis": "Base giuridica",
     "sections": {
       "profile": "Profilo",
-      "identityNames": "Nomi di identita",
+      "identityNames": "Nomi di identit\u00e0",
       "contextProfiles": "Profili di contesto",
       "authentication": "Autenticazione",
       "oauthConsents": "Consensi OAuth",
@@ -309,7 +320,7 @@
       "value": "Valore",
       "primary": "Principale",
       "deprecated": "Deprecato",
-      "visibility": "Visibilita"
+      "visibility": "Visibilit\u00e0"
     },
     "contexts": {
       "type": "Tipo",
@@ -340,7 +351,7 @@
       "noConsents": "Nessun consenso OAuth registrato."
     },
     "gdpr": {
-      "processingPurposes": "Finalita del trattamento",
+      "processingPurposes": "Finalit\u00e0 del trattamento",
       "retentionPeriods": "Periodi di conservazione",
       "dataSubjectRights": "I tuoi diritti",
       "dataSources": "Fonti dei dati",
@@ -348,7 +359,7 @@
       "automatedDecisions": "Processo decisionale automatizzato"
     },
     "values": {
-      "yes": "Si",
+      "yes": "S\u00ec",
       "no": "No",
       "notSet": "Non impostato"
     }
@@ -359,8 +370,8 @@
     "deny": "Nega",
     "allow": "Consenti accesso",
     "clientWantsAccess": "{client} vuole accedere al tuo account",
-    "selectContext": "Seleziona contesto di identita",
-    "selectContextDescription": "Scegli quale profilo di identita vuoi condividere con questa applicazione.",
+    "selectContext": "Seleziona contesto di identit\u00e0",
+    "selectContextDescription": "Scegli quale profilo di identit\u00e0 vuoi condividere con questa applicazione.",
     "scopes": "Permessi richiesti",
     "processing": "Elaborazione...",
     "processingMessage": "Attendi il completamento dell'autenticazione.",
@@ -382,7 +393,7 @@
     "continue": "Continua",
     "detection": {
       "title": "Abbiamo rilevato: {pattern}",
-      "confirm": "Si, e corretto",
+      "confirm": "S\u00ec, \u00e8 corretto",
       "chooseDifferent": "No, scelgo un formato diverso",
       "keepSimple": "Mantieni semplice - usa come inserito"
     },
@@ -396,7 +407,7 @@
     }
   },
   "audit": {
-    "title": "Registro attivita",
+    "title": "Registro attivit\u00e0",
     "description": "Rivedi lo storico delle azioni eseguite sul tuo account",
     "filters": {
       "eventType": "Tipo di evento",
@@ -442,12 +453,12 @@
       "showing": "{count} di {total} voci"
     },
     "verify": {
-      "title": "Integrita del registro di audit",
+      "title": "Integrit\u00e0 del registro di audit",
       "description": "Verifica la catena di hash crittografica delle voci del registro di audit per rilevare manomissioni",
       "backToAdmin": "Torna all'admin",
       "entriesLabel": "Voci da verificare",
       "entriesHint": "Numero di voci recenti da controllare (1 - 10.000)",
-      "runButton": "Verifica integrita",
+      "runButton": "Verifica integrit\u00e0",
       "verifying": "Verifica in corso...",
       "limitError": "Inserisci un numero tra 1 e 10.000",
       "chainValid": "Catena di hash valida",
@@ -455,7 +466,90 @@
       "entriesVerified": "Voci verificate",
       "errorDetails": "Dettagli errore",
       "validExplanation": "Tutte le {count} voci del registro di audit hanno un collegamento valido nella catena di hash. Nessuna manomissione rilevata.",
-      "invalidExplanation": "La verifica della catena di hash e fallita, indicando una possibile manomissione delle voci del registro di audit."
+      "invalidExplanation": "La verifica della catena di hash \u00e8 fallita, indicando una possibile manomissione delle voci del registro di audit."
+    }
+  },
+  "verification": {
+    "title": "Verifica dell'identit\u00e0",
+    "description": "Carica un documento di identit\u00e0 rilasciato dal governo per verificare il tuo account. Gli account verificati possono creare profili di contesto legali e sanitari.",
+    "loading": "Caricamento stato di verifica...",
+    "accountType": "Stato account",
+    "accountTypes": {
+      "verified": "Verificato",
+      "unverified": "Standard",
+      "pseudonymous": "Pseudonimo"
+    },
+    "statusExplain": {
+      "verified": "La tua identit\u00e0 \u00e8 stata verificata. Hai accesso completo a tutti i tipi di contesto, inclusi quelli legali e sanitari.",
+      "unverified": "Carica un documento di identit\u00e0 per sbloccare i profili di contesto legali e sanitari.",
+      "pseudonymous": "Gli account pseudonimi non possono creare contesti legali o sanitari. La verifica dell'identit\u00e0 \u00e8 disponibile per gli account standard."
+    },
+    "status": {
+      "pending": "In attesa",
+      "under_review": "In revisione",
+      "verified": "Verificato",
+      "rejected": "Rifiutato"
+    },
+    "documentTypes": {
+      "passport": "Passaporto",
+      "nationalId": "Carta d'identit\u00e0"
+    },
+    "upload": {
+      "title": "Carica documento",
+      "documentType": "Tipo di documento",
+      "dropZoneText": "Clicca per selezionare o trascina un file",
+      "dropZoneHint": "PDF, JPEG o PNG fino a 10 MB",
+      "invalidFormat": "Formato non supportato. Accettati: PDF, JPEG, PNG",
+      "fileTooLarge": "Il file supera il limite di 10 MB",
+      "changeFile": "Cambia",
+      "submit": "Carica documento",
+      "success": "Documento caricato con successo. Sar\u00e0 esaminato da un amministratore.",
+      "pendingExists": "Hai gi\u00e0 un documento in attesa di revisione. Attendi che la richiesta corrente venga elaborata prima di caricare un nuovo documento."
+    },
+    "document": {
+      "filename": "File",
+      "fileSize": "Dimensione",
+      "format": "Formato",
+      "expiryDate": "Scadenza",
+      "expired": "Scaduto",
+      "expiringSoon": "In scadenza",
+      "reviewedOn": "Revisionato il {date}",
+      "rejectionReason": "Motivo del rifiuto"
+    },
+    "documents": {
+      "title": "Documenti inviati"
+    },
+    "admin": {
+      "title": "Coda di verifica",
+      "description": "Documenti di identit\u00e0 inviati dagli utenti per la revisione.",
+      "loading": "Caricamento verifiche in attesa...",
+      "pendingCount": "{count} documento/i in attesa di revisione",
+      "emptyTitle": "Nessuna verifica in attesa",
+      "emptyDescription": "Tutti i documenti inviati sono stati revisionati. Le nuove richieste appariranno qui.",
+      "unknownUser": "Utente sconosciuto",
+      "submittedOn": "Inviato il",
+      "review": "Revisiona",
+      "reviewTitle": "Revisiona documento",
+      "backToQueue": "Torna alla coda",
+      "loadingDocument": "Caricamento dettagli documento...",
+      "documentDetails": "Dettagli documento",
+      "userId": "ID utente",
+      "reviewFormTitle": "Decisione di revisione",
+      "approve": "Approva",
+      "reject": "Rifiuta",
+      "expiryDate": "Data di scadenza del documento",
+      "expiryHint": "Imposta la data in cui il documento scade e l'utente dovr\u00e0 ripetere la verifica. Lascia vuoto se il documento non scade.",
+      "rejectionReason": "Motivo del rifiuto",
+      "rejectionReasonPlaceholder": "Spiega perch\u00e9 il documento viene rifiutato...",
+      "reviewerNotes": "Note interne",
+      "reviewerNotesPlaceholder": "Note opzionali visibili solo agli amministratori...",
+      "confirmApprove": "Approva documento",
+      "confirmReject": "Rifiuta documento",
+      "alreadyReviewed": "Questo documento \u00e8 gi\u00e0 stato revisionato (stato: {status}).",
+      "reviewSuccess": {
+        "approved": "Documento approvato. L'account dell'utente \u00e8 stato promosso a verificato.",
+        "rejected": "Documento rifiutato. L'utente \u00e8 stato notificato."
+      }
     }
   },
   "common": {
@@ -473,7 +567,7 @@
     "next": "Avanti",
     "submit": "Invia",
     "confirm": "Conferma",
-    "yes": "Si",
+    "yes": "S\u00ec",
     "no": "No",
     "optional": "Opzionale",
     "required": "Obbligatorio",
@@ -487,12 +581,12 @@
     "network": "Errore di rete. Controlla la tua connessione.",
     "unauthorized": "Effettua il login per continuare.",
     "forbidden": "Non hai i permessi per questa azione.",
-    "notFound": "La risorsa richiesta non e stata trovata.",
-    "expired": "Questo contenuto e scaduto.",
+    "notFound": "La risorsa richiesta non \u00e8 stata trovata.",
+    "expired": "Questo contenuto \u00e8 scaduto.",
     "validation": "Controlla i dati inseriti.",
-    "generic": "Si e verificato un errore imprevisto. Riprova.",
+    "generic": "Si \u00e8 verificato un errore imprevisto. Riprova.",
     "pageNotFound": "Pagina non trovata",
-    "pageNotFoundMessage": "La pagina che cerchi non esiste o e stata spostata."
+    "pageNotFoundMessage": "La pagina che cerchi non esiste o \u00e8 stata spostata."
   },
   "notifications": {
     "profileUpdated": "Profilo aggiornato con successo",

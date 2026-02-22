@@ -4,6 +4,7 @@ import { useAuthStore, useUiStore } from "@/stores";
 import { authService } from "@/services";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppNotifications from "@/components/layout/AppNotifications.vue";
+import EmailVerificationBanner from "@/components/layout/EmailVerificationBanner.vue";
 
 const authStore = useAuthStore();
 const uiStore = useUiStore();
@@ -36,6 +37,7 @@ onMounted(async () => {
 <template>
   <div class="app-layout">
     <AppHeader v-if="authStore.isInitialized" />
+    <EmailVerificationBanner />
 
     <main class="app-main">
       <div v-if="isLoading" class="loading-screen">

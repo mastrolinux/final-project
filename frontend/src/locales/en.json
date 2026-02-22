@@ -13,6 +13,8 @@
     "adminOAuthClients": "OAuth Clients",
     "adminAuditVerify": "Audit Integrity",
     "adminSoftDeletedUsers": "Deleted Users",
+    "adminVerifications": "Verifications",
+    "verification": "Verification",
     "login": "Login",
     "register": "Register",
     "logout": "Logout"
@@ -96,11 +98,11 @@
     "accountType": {
       "label": "Account type",
       "verified": "Verified",
-      "unverified": "Unverified",
+      "unverified": "Standard",
       "pseudonymous": "Pseudonymous",
-      "verifiedDescription": "Full access with email verification",
-      "unverifiedDescription": "Limited access until email is verified",
-      "pseudonymousDescription": "Anonymous account with some restrictions"
+      "verifiedDescription": "Full access after identity document review",
+      "unverifiedDescription": "Standard account, can verify identity later to unlock all features",
+      "pseudonymousDescription": "Anonymous account, cannot access legal or healthcare contexts"
     },
     "restore": {
       "title": "Restore Account",
@@ -128,6 +130,13 @@
       "accountRecoverableMessage": "An account with this email exists and can be restored until {date}.",
       "restoreAccount": "Restore Account"
     },
+    "emailVerificationBanner": "Please verify your email address to unlock all features.",
+    "emailVerificationBannerResend": "Resend verification email",
+    "emailVerificationBannerResent": "Verification email sent!",
+    "emailVerificationRequired": "You need to verify your email before you can save changes. Check your inbox or resend the verification email.",
+    "registerSuccessTitle": "Account created successfully!",
+    "registerSuccessMessage": "Please check your email to verify your account.",
+    "registerSuccessToast": "Account created! Please check your email to verify your account.",
     "orContinueWith": "or continue with email",
     "social": {
       "completing": "Completing sign in...",
@@ -146,7 +155,7 @@
   "account": {
     "types": {
       "verified": "Verified Account",
-      "unverified": "Unverified Account",
+      "unverified": "Standard Account",
       "pseudonymous": "Pseudonymous Account"
     }
   },
@@ -164,6 +173,7 @@
     "cancel": "Cancel",
     "viewContexts": "View Contexts",
     "emailChangeWarning": "Changing your email will require re-verification",
+    "emailVerificationSent": "Email updated. A verification email has been sent to your new address.",
     "avatar": {
       "title": "Profile Picture",
       "upload": "Upload",
@@ -503,6 +513,89 @@
       "errorDetails": "Error details",
       "validExplanation": "All {count} audit log entries have valid hash chain linkage. No tampering detected.",
       "invalidExplanation": "The hash chain verification failed, indicating possible tampering with audit log entries."
+    }
+  },
+  "verification": {
+    "title": "Identity Verification",
+    "description": "Upload a government-issued identity document to verify your account. Verified accounts can create legal and healthcare context profiles.",
+    "loading": "Loading verification status...",
+    "accountType": "Account status",
+    "accountTypes": {
+      "verified": "Verified",
+      "unverified": "Standard",
+      "pseudonymous": "Pseudonymous"
+    },
+    "statusExplain": {
+      "verified": "Your identity has been verified. You have full access to all context types, including legal and healthcare.",
+      "unverified": "Upload an identity document to unlock legal and healthcare context profiles.",
+      "pseudonymous": "Pseudonymous accounts cannot create legal or healthcare contexts. Identity verification is available for standard accounts."
+    },
+    "status": {
+      "pending": "Pending",
+      "under_review": "Under Review",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "documentTypes": {
+      "passport": "Passport",
+      "nationalId": "National ID"
+    },
+    "upload": {
+      "title": "Upload Document",
+      "documentType": "Document type",
+      "dropZoneText": "Click to select or drag and drop a file",
+      "dropZoneHint": "PDF, JPEG, or PNG up to 10 MB",
+      "invalidFormat": "Unsupported format. Accepted: PDF, JPEG, PNG",
+      "fileTooLarge": "File exceeds the 10 MB size limit",
+      "changeFile": "Change",
+      "submit": "Upload Document",
+      "success": "Document uploaded successfully. It will be reviewed by an administrator.",
+      "pendingExists": "You already have a document pending review. Please wait for the current submission to be processed before uploading a new one."
+    },
+    "document": {
+      "filename": "File",
+      "fileSize": "Size",
+      "format": "Format",
+      "expiryDate": "Expires",
+      "expired": "Expired",
+      "expiringSoon": "Expiring soon",
+      "reviewedOn": "Reviewed on {date}",
+      "rejectionReason": "Rejection reason"
+    },
+    "documents": {
+      "title": "Submitted Documents"
+    },
+    "admin": {
+      "title": "Verification Queue",
+      "description": "Identity documents submitted by users for verification review.",
+      "loading": "Loading pending verifications...",
+      "pendingCount": "{count} document(s) awaiting review",
+      "emptyTitle": "No pending verifications",
+      "emptyDescription": "All submitted documents have been reviewed. New submissions will appear here.",
+      "unknownUser": "Unknown user",
+      "submittedOn": "Submitted",
+      "review": "Review",
+      "reviewTitle": "Review Document",
+      "backToQueue": "Back to queue",
+      "loadingDocument": "Loading document details...",
+      "documentDetails": "Document Details",
+      "userId": "User ID",
+      "reviewFormTitle": "Review Decision",
+      "approve": "Approve",
+      "reject": "Reject",
+      "expiryDate": "Document expiry date",
+      "expiryHint": "Set the date when this document expires and the user will need to re-verify. Leave empty if the document does not expire.",
+      "rejectionReason": "Rejection reason",
+      "rejectionReasonPlaceholder": "Explain why this document is being rejected...",
+      "reviewerNotes": "Internal notes",
+      "reviewerNotesPlaceholder": "Optional notes visible only to administrators...",
+      "confirmApprove": "Approve Document",
+      "confirmReject": "Reject Document",
+      "alreadyReviewed": "This document has already been reviewed (status: {status}).",
+      "reviewSuccess": {
+        "approved": "Document approved. The user's account has been promoted to verified.",
+        "rejected": "Document rejected. The user has been notified."
+      }
     }
   },
   "common": {
