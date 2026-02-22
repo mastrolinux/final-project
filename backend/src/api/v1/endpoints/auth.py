@@ -27,7 +27,7 @@ from src.schemas.auth import (
     SetPasswordRequest, SetPasswordResponse,
 )
 from src.core.redis_client import TokenBlacklist, get_blacklist
-from src.api.dependencies.auth import get_current_user
+from src.api.dependencies.auth import get_current_user, require_verified_user
 from src.models.auth import AuthUser
 
 
@@ -749,7 +749,7 @@ def confirm_restore_account(
 def set_password(
     request: SetPasswordRequest,
     http_request: Request,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: AuthUser = Depends(require_verified_user),
     service: AuthService = Depends(get_auth_service),
 ):
     """

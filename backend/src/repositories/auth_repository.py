@@ -5,6 +5,7 @@ Data access layer for auth_users table operations.
 Handles CRUD operations and authentication-specific queries.
 """
 
+import secrets
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
@@ -224,6 +225,35 @@ class AuthRepository:
             auth_user.verification_token_expires_at = None
             self.db.commit()
     
+    def update_email(self, user_id: str, new_email: str) -> Optional[str]:
+        """
+        Update email address and reset verification status.
+
+        Synchronizes auth_users.email with base_profiles.primary_email,
+        resets is_email_verified to False, and generates a new verification
+        token so the user must re-verify the new address.
+
+        Args:
+            user_id: User ID from base_profiles
+            new_email: New email address
+
+        Returns:
+            Verification token if user found, None otherwise
+        """
+        auth_user = self.get_by_user_id(user_id)
+        if not auth_user:
+            return None
+        auth_user.email = new_email
+        auth_user.is_email_verified = False
+        auth_user.email_verified_at = None
+        token = secrets.token_urlsafe(32)
+        auth_user.verification_token = token
+        auth_user.verification_token_expires_at = (
+            datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        self.db.commit()
+        return token
+
     def set_verification_token(self, user_id: str, token: str, expires_hours: int = 24) -> None:
         """
         Set email verification token.

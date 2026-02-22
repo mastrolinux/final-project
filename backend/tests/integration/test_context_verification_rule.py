@@ -57,7 +57,7 @@ class TestContextVerificationRule:
         self, context_service, sample_unverified_profile
     ):
         """An unverified account must be blocked from creating legal contexts."""
-        with pytest.raises(ContextServiceError, match="Only verified accounts"):
+        with pytest.raises(ContextServiceError, match="identity-verified accounts"):
             context_service.create_context_profile(
                 user_id=sample_unverified_profile.user_id,
                 context_type=ContextType.legal,
@@ -68,7 +68,7 @@ class TestContextVerificationRule:
         self, context_service, sample_unverified_profile
     ):
         """An unverified account must be blocked from creating healthcare contexts."""
-        with pytest.raises(ContextServiceError, match="Only verified accounts"):
+        with pytest.raises(ContextServiceError, match="identity-verified accounts"):
             context_service.create_context_profile(
                 user_id=sample_unverified_profile.user_id,
                 context_type=ContextType.healthcare,
@@ -79,7 +79,7 @@ class TestContextVerificationRule:
         self, context_service, sample_pseudonymous_profile
     ):
         """A pseudonymous account must be blocked from creating legal contexts."""
-        with pytest.raises(ContextServiceError, match="Only verified accounts"):
+        with pytest.raises(ContextServiceError, match="identity-verified accounts"):
             context_service.create_context_profile(
                 user_id=sample_pseudonymous_profile.user_id,
                 context_type=ContextType.legal,
@@ -90,7 +90,7 @@ class TestContextVerificationRule:
         self, context_service, sample_pseudonymous_profile
     ):
         """A pseudonymous account must be blocked from creating healthcare contexts."""
-        with pytest.raises(ContextServiceError, match="Only verified accounts"):
+        with pytest.raises(ContextServiceError, match="identity-verified accounts"):
             context_service.create_context_profile(
                 user_id=sample_pseudonymous_profile.user_id,
                 context_type=ContextType.healthcare,

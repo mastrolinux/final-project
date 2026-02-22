@@ -11,3 +11,4 @@ export * from "./admin-oauth.types";
 export * from "./audit.types";
 export * from "./privacy.types";
 export * from "./admin-users.types";
+export * from "./verification.types";

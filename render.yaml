@@ -86,6 +86,9 @@ envVarGroups:
         sync: false
       - key: ADMIN_USER_EMAILS
         sync: false
+      # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: DOCUMENT_ENCRYPTION_KEY
+        sync: false
 
 # =============================================================================
 # SERVICES
