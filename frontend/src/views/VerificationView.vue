@@ -69,7 +69,7 @@ onMounted(loadData);
 
 <template>
   <div class="documents-view">
-    <div class="container container-md">
+    <div class="container container-lg">
       <div class="page-header">
         <h1 class="page-title">
           {{ t("documents.title") }}
