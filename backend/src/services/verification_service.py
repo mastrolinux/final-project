@@ -551,13 +551,20 @@ class VerificationService:
             # Send approval notification email
             profile = self.profile_repo.get_profile_by_id(ctx.user_id)
             if profile and profile.primary_email:
-                from src.tasks.email_tasks import send_approval_email
+                try:
+                    from src.tasks.email_tasks import send_approval_email
 
-                send_approval_email.delay(
-                    profile.primary_email,
-                    profile.legal_name or profile.primary_email,
-                    ctx.context_name or ctx.context_type.value,
-                )
+                    send_approval_email.delay(
+                        profile.primary_email,
+                        profile.legal_name or profile.primary_email,
+                        ctx.context_name or ctx.context_type.value,
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to queue approval email for context %s",
+                        context_id,
+                        exc_info=True,
+                    )
 
         else:
             updated_ctx = self.context_repo.update_verification_status(
@@ -580,14 +587,21 @@ class VerificationService:
             # Send rejection notification email
             profile = self.profile_repo.get_profile_by_id(ctx.user_id)
             if profile and profile.primary_email:
-                from src.tasks.email_tasks import send_rejection_email
+                try:
+                    from src.tasks.email_tasks import send_rejection_email
 
-                send_rejection_email.delay(
-                    profile.primary_email,
-                    profile.legal_name or profile.primary_email,
-                    ctx.context_name or ctx.context_type.value,
-                    rejection_reason,
-                )
+                    send_rejection_email.delay(
+                        profile.primary_email,
+                        profile.legal_name or profile.primary_email,
+                        ctx.context_name or ctx.context_type.value,
+                        rejection_reason,
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to queue rejection email for context %s",
+                        context_id,
+                        exc_info=True,
+                    )
 
         # Audit
         if self.audit_service:
