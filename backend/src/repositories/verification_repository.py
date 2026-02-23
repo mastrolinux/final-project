@@ -110,6 +110,54 @@ class VerificationRepository:
             .first()
         )
 
+    def get_expired_verified_documents(self) -> List[VerificationDocument]:
+        """
+        Return all non-deleted, verified documents whose physical expiry
+        date has passed.
+
+        Only returns documents that:
+        - Have ``verification_status = 'verified'``
+        - Have a non-null ``document_expiry_date``
+        - Have ``document_expiry_date < date.today()``
+        - Are not soft-deleted
+
+        Used by the daily expiry task to find documents that need processing.
+        """
+        today = date.today()
+        return (
+            self.db.query(VerificationDocument)
+            .filter(
+                and_(
+                    VerificationDocument.verification_status
+                    == VerificationStatus.verified,
+                    VerificationDocument.document_expiry_date.isnot(None),
+                    VerificationDocument.document_expiry_date < today,
+                    VerificationDocument.deleted_at.is_(None),
+                )
+            )
+            .all()
+        )
+
+    def mark_document_expired(
+        self, document_id: UUID
+    ) -> Optional[VerificationDocument]:
+        """
+        Transition a document to the ``expired`` status.
+
+        Called after the expiry task has deactivated all linked contexts.
+        Prevents re-processing on subsequent runs since the daily query
+        filters on ``verification_status = 'verified'``.
+        """
+        doc = self.get_document_by_id(document_id)
+        if doc is None:
+            return None
+
+        doc.verification_status = VerificationStatus.expired
+        doc.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(doc)
+        return doc
+
     def get_documents_by_status(
         self,
         statuses: List[VerificationStatus],
