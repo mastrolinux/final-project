@@ -5,16 +5,20 @@ Business logic layer for profile management.
 Implements validation rules and account type constraints.
 """
 
+import logging
 from typing import Optional, List, Tuple, TYPE_CHECKING
 from uuid import UUID
 
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.auth_repository import AuthRepository
 from src.schemas.profile import ProfileCreate, ProfileUpdate, IdentityNameCreate, IdentityNameUpdate
 from src.models.profile import BaseProfile, IdentityName, AccountType
 from src.models.audit import AuditEventType, AuditOperation
 
 if TYPE_CHECKING:
     from src.services.audit_service import AuditService
+
+logger = logging.getLogger(__name__)
 
 
 class ProfileServiceError(Exception):
@@ -28,7 +32,8 @@ class ProfileService:
     def __init__(
         self,
         repository: ProfileRepository,
-        audit_service: Optional["AuditService"] = None
+        audit_service: Optional["AuditService"] = None,
+        auth_repository: Optional[AuthRepository] = None
     ):
         """
         Initialize service with repository
@@ -36,9 +41,11 @@ class ProfileService:
         Args:
             repository: ProfileRepository instance
             audit_service: Optional audit service for event logging
+            auth_repository: Optional auth repository for email re-verification
         """
         self.repository = repository
         self.audit_service = audit_service
+        self.auth_repo = auth_repository
     
     def create_profile(self, profile_data: ProfileCreate) -> BaseProfile:
         """
@@ -183,6 +190,7 @@ class ProfileService:
                     )
         
         # Check for duplicate email if updating email
+        email_changed = False
         if update_data.primary_email:
             if update_data.primary_email != existing.primary_email:
                 duplicate = self.repository.get_profile_by_email(update_data.primary_email)
@@ -190,16 +198,36 @@ class ProfileService:
                     raise ProfileServiceError(
                         f"Email {update_data.primary_email} already in use"
                     )
-        
+                email_changed = True
+
         # Build update dict
         updates = {}
         for field in ['account_type', 'legal_name', 'primary_email', 'primary_phone', 'preferred_language']:
             value = getattr(update_data, field)
             if value is not None:
                 updates[field] = value
-        
+
         # Update profile
         profile = self.repository.update_profile(user_id, **updates)
+
+        # Sync auth_users email and trigger re-verification
+        if email_changed and self.auth_repo:
+            token = self.auth_repo.update_email(
+                str(user_id), update_data.primary_email
+            )
+            if token:
+                display_name = existing.legal_name or "User"
+                try:
+                    from src.tasks.email_tasks import send_verification_email
+                    send_verification_email.delay(
+                        update_data.primary_email, token, display_name
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to dispatch verification email for %s",
+                        user_id
+                    )
+            profile.email_verification_pending = True  # type: ignore[attr-defined]
 
         # Audit: profile update
         if self.audit_service:

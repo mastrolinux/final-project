@@ -11,3 +11,5 @@ export { default as adminOAuthService } from "./admin-oauth.service";
 export { default as auditService } from "./audit.service";
 export { default as privacyService } from "./privacy.service";
 export { default as adminUsersService } from "./admin-users.service";
+export { default as verificationService } from "./verification.service";
+export { default as adminVerificationService } from "./admin-verification.service";

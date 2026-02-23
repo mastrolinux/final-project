@@ -17,6 +17,7 @@ from sqlalchemy.orm import relationship
 
 from src.core.database import Base
 from src.models.profile import UUID, TimestampMixin, SoftDeleteMixin, TemporalMixin
+from src.models.verification import VerificationStatus
 
 
 class ContextType(str, enum.Enum):
@@ -83,17 +84,42 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
 
     # Status
     is_active = Column(Boolean, nullable=False, default=True)
-    
+    verification_status = Column(
+        SQLEnum(VerificationStatus, name="verification_status", create_type=False),
+        nullable=True,
+    )
+    rejection_reason = Column(Text, nullable=True)
+
     # Relationships
     base_profile = relationship(
         "BaseProfile",
         foreign_keys=[user_id],
         backref="context_profiles"
     )
+    document_id = Column(
+        UUID(),
+        ForeignKey("verification_documents.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    document = relationship(
+        "VerificationDocument",
+        foreign_keys=[document_id],
+    )
 
     def __repr__(self) -> str:
         return f"<ContextProfile(id={self.id}, user_id={self.user_id}, type={self.context_type}, name={self.context_name})>"
     
+    @property
+    def requires_verification(self) -> bool:
+        """Return True if this context type requires identity verification."""
+        return self.context_type in (ContextType.legal, ContextType.healthcare)
+
+    @property
+    def is_identity_verified(self) -> bool:
+        """Return True if this context has been identity-verified by an admin."""
+        return self.verification_status == VerificationStatus.verified
+
     def has_overrides(self) -> bool:
         """Check if this context has any field overrides"""
         return any([
