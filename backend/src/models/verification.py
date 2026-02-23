@@ -40,6 +40,7 @@ class VerificationStatus(str, enum.Enum):
     under_review = "under_review"
     verified = "verified"
     rejected = "rejected"
+    expired = "expired"
 
 
 class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
