@@ -66,12 +66,14 @@ class SupabaseStorageClient:
         self._client = create_client(supabase_url, supabase_key)
         self._supabase_url = supabase_url.rstrip("/")
         self._public_url = public_url.rstrip("/") if public_url else ""
+        self._bucket_confirmed = False
         self._ensure_bucket()
 
     def _ensure_bucket(self) -> None:
         """Create the avatars bucket if it does not already exist."""
         try:
             self._client.storage.get_bucket(self.BUCKET)
+            self._bucket_confirmed = True
             logger.info("Storage bucket '%s' exists", self.BUCKET)
         except Exception:
             try:
@@ -79,16 +81,19 @@ class SupabaseStorageClient:
                     self.BUCKET,
                     options={"public": True},
                 )
+                self._bucket_confirmed = True
                 logger.info("Created storage bucket '%s'", self.BUCKET)
             except Exception as exc:
                 logger.warning(
                     "Could not create bucket '%s': %s. "
-                    "Uploads will fail until the bucket is created manually.",
+                    "Will retry on first upload.",
                     self.BUCKET, exc,
                 )
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
         """Upload to Supabase Storage, overwriting any existing object at the path."""
+        if not self._bucket_confirmed:
+            self._ensure_bucket()
         self._client.storage.from_(self.BUCKET).upload(
             path,
             data,
@@ -147,12 +152,14 @@ class SupabaseDocumentStorageClient:
         self._client = create_client(supabase_url, supabase_key)
         self._supabase_url = supabase_url.rstrip("/")
         self._public_url = public_url.rstrip("/") if public_url else ""
+        self._bucket_confirmed = False
         self._ensure_bucket()
 
     def _ensure_bucket(self) -> None:
         """Create the private bucket if it does not already exist."""
         try:
             self._client.storage.get_bucket(self.BUCKET)
+            self._bucket_confirmed = True
             logger.info("Storage bucket '%s' exists", self.BUCKET)
         except Exception:
             try:
@@ -160,16 +167,19 @@ class SupabaseDocumentStorageClient:
                     self.BUCKET,
                     options={"public": False},
                 )
+                self._bucket_confirmed = True
                 logger.info("Created private storage bucket '%s'", self.BUCKET)
             except Exception as exc:
                 logger.warning(
                     "Could not create bucket '%s': %s. "
-                    "Uploads will fail until the bucket is created manually.",
+                    "Will retry on first upload.",
                     self.BUCKET, exc,
                 )
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
         """Upload encrypted bytes to the private bucket."""
+        if not self._bucket_confirmed:
+            self._ensure_bucket()
         self._client.storage.from_(self.BUCKET).upload(
             path,
             data,

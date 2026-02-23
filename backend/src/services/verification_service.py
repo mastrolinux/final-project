@@ -77,8 +77,8 @@ class VerificationService:
         self,
         verification_repo: VerificationRepository,
         profile_repo: ProfileRepository,
-        storage: StorageClient,
-        encryption: EncryptionService,
+        storage: Optional[StorageClient] = None,
+        encryption: Optional[EncryptionService] = None,
         audit_service: Optional[AuditService] = None,
         context_repo: Optional[ContextRepository] = None,
     ) -> None:
@@ -851,3 +851,134 @@ class VerificationService:
                 )
 
         return result
+
+    # ------------------------------------------------------------------
+    # Automatic document expiry
+    # ------------------------------------------------------------------
+
+    def process_expired_documents(self) -> Dict:
+        """
+        Find all verified documents past their expiry date, deactivate
+        linked contexts, mark documents as expired, send notifications,
+        and log audit events.
+
+        For each expired document the method:
+        1. Deactivates all active contexts linked to the document
+           (``is_active=False``, ``verification_status=pending``)
+        2. Unlinks the document from each affected context
+        3. Logs an audit event per deactivated context
+        4. Marks the document as ``expired`` to prevent re-processing
+        5. Sends a single notification email per user listing the
+           affected context names
+
+        Returns:
+            Dict with ``expired_documents`` and ``deactivated_contexts``
+            counts.
+
+        Raises:
+            VerificationServiceError: If context_repo is not configured.
+        """
+        if self.context_repo is None:
+            raise VerificationServiceError(
+                "Context repository not configured", status_code=500
+            )
+
+        expired_docs = (
+            self.verification_repo.get_expired_verified_documents()
+        )
+        deactivated_count = 0
+
+        for doc in expired_docs:
+            contexts = self.context_repo.get_active_contexts_by_document_id(
+                doc.id
+            )
+
+            for ctx in contexts:
+                # Deactivate the context and reset to pending verification
+                self.context_repo.update_verification_status(
+                    context_id=ctx.id,
+                    verification_status=VerificationStatus.pending,
+                    is_active=False,
+                )
+
+                # Unlink the expired document
+                self.verification_repo.unlink_document_from_context(
+                    ctx.id, doc.id
+                )
+                deactivated_count += 1
+
+                # Audit each deactivated context
+                if self.audit_service:
+                    try:
+                        self.audit_service.log_event(
+                            event_type=AuditEventType.document_expiry,
+                            user_id=ctx.user_id,
+                            actor_id=None,
+                            resource_type="context_profile",
+                            resource_id=str(ctx.id),
+                            operation=AuditOperation.update,
+                            changes={
+                                "reason": "document_expired",
+                                "document_id": str(doc.id),
+                                "document_expiry_date": str(
+                                    doc.document_expiry_date
+                                ),
+                                "previous_verification_status": (
+                                    ctx.verification_status.value
+                                    if ctx.verification_status
+                                    else None
+                                ),
+                            },
+                            legal_basis="legitimate_interest",
+                        )
+                    except Exception:
+                        logger.warning(
+                            "Audit logging failed for document expiry "
+                            "context %s",
+                            ctx.id,
+                            exc_info=True,
+                        )
+
+                logger.info(
+                    "Context %s deactivated: document %s expired on %s",
+                    ctx.id, doc.id, doc.document_expiry_date,
+                )
+
+            # Mark the document as expired to prevent re-processing
+            self.verification_repo.mark_document_expired(doc.id)
+
+            # Send one notification email per user
+            context_names = [
+                c.context_name or c.context_type.value for c in contexts
+            ]
+            if context_names:
+                profile = self.profile_repo.get_profile_by_id(doc.user_id)
+                if profile and profile.primary_email:
+                    try:
+                        from src.tasks.email_tasks import (
+                            send_document_expiry_email,
+                        )
+
+                        send_document_expiry_email.delay(
+                            profile.primary_email,
+                            profile.legal_name or profile.primary_email,
+                            context_names,
+                            str(doc.document_expiry_date),
+                        )
+                    except Exception:
+                        logger.warning(
+                            "Failed to queue expiry email for document %s",
+                            doc.id,
+                            exc_info=True,
+                        )
+
+        logger.info(
+            "Document expiry check complete: %d documents, %d contexts "
+            "deactivated",
+            len(expired_docs), deactivated_count,
+        )
+
+        return {
+            "expired_documents": len(expired_docs),
+            "deactivated_contexts": deactivated_count,
+        }

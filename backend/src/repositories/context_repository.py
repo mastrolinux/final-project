@@ -319,6 +319,33 @@ class ContextRepository:
             .all()
         )
 
+    def get_active_contexts_by_document_id(
+        self, document_id: UUID
+    ) -> List[ContextProfile]:
+        """
+        Return all active, non-deleted contexts linked to the given document.
+
+        Used by the expiry task to find contexts that need deactivation
+        when their backing verification document expires.
+
+        Args:
+            document_id: Verification document ID
+
+        Returns:
+            List of active context profiles linked to the document
+        """
+        return (
+            self.db.query(ContextProfile)
+            .filter(
+                and_(
+                    ContextProfile.document_id == str(document_id),
+                    ContextProfile.is_active == True,
+                    ContextProfile.deleted_at.is_(None),
+                )
+            )
+            .all()
+        )
+
     def restore_user_contexts(self, user_id: UUID) -> int:
         """
         Restore all soft-deleted context profiles for a user.
