@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Admin view listing verification documents pending review.
+ * Admin view listing context profiles pending verification review.
  *
- * Displays a queue of submitted identity documents that administrators
- * can review, approve, or reject.
+ * Displays a queue of contexts with linked identity documents that
+ * administrators can review, approve, or reject.
  */
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -12,21 +12,21 @@ import { adminVerificationService, getErrorMessage } from "@/services";
 import BaseCard from "@/components/common/BaseCard.vue";
 import AdminVerificationCard from "@/components/admin/AdminVerificationCard.vue";
 import { DocumentCheckIcon } from "@heroicons/vue/24/outline";
-import type { AdminVerificationListItem } from "@/types";
+import type { AdminContextVerificationItem } from "@/types";
 
 const router = useRouter();
 const { t } = useI18n();
 
-const documents = ref<AdminVerificationListItem[]>([]);
+const contexts = ref<AdminContextVerificationItem[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
-async function loadDocuments(): Promise<void> {
+async function loadContexts(): Promise<void> {
   isLoading.value = true;
   error.value = null;
 
   try {
-    documents.value = await adminVerificationService.listPendingDocuments();
+    contexts.value = await adminVerificationService.listPendingContexts();
   } catch (err) {
     error.value = getErrorMessage(err);
   } finally {
@@ -34,14 +34,14 @@ async function loadDocuments(): Promise<void> {
   }
 }
 
-function handleReview(documentId: string): void {
+function handleReview(contextId: string): void {
   router.push({
     name: "admin-verification-review",
-    params: { documentId },
+    params: { contextId },
   });
 }
 
-onMounted(loadDocuments);
+onMounted(loadContexts);
 </script>
 
 <template>
@@ -58,11 +58,11 @@ onMounted(loadDocuments);
         </div>
       </div>
 
-      <div v-if="!isLoading && documents.length > 0" class="summary-bar">
+      <div v-if="!isLoading && contexts.length > 0" class="summary-bar">
         <span class="summary-text">
           {{
             t("verification.admin.pendingCount", {
-              count: documents.length,
+              count: contexts.length,
             })
           }}
         </span>
@@ -82,7 +82,7 @@ onMounted(loadDocuments);
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="documents.length === 0" class="empty-state">
+      <div v-else-if="contexts.length === 0" class="empty-state">
         <BaseCard class="empty-card">
           <div class="empty-icon">
             <DocumentCheckIcon class="icon-lg" />
@@ -96,12 +96,12 @@ onMounted(loadDocuments);
         </BaseCard>
       </div>
 
-      <!-- Document queue -->
+      <!-- Context queue -->
       <div v-else class="documents-queue">
         <AdminVerificationCard
-          v-for="doc in documents"
-          :key="doc.id"
-          :document="doc"
+          v-for="ctx in contexts"
+          :key="ctx.context_id"
+          :context="ctx"
           @review="handleReview"
         />
       </div>

@@ -145,20 +145,49 @@ class AdminVerificationReview(BaseModel):
     )
 
 
-class AdminVerificationListItem(BaseModel):
+class AdminContextVerificationItem(BaseModel):
     """
-    Document entry enriched with the submitting user's display name
-    for the admin pending-review list.
+    Context entry for the admin pending-verification list.
+
+    The admin review unit is now the context profile, not the document.
+    Each item represents a legal/healthcare context awaiting verification,
+    enriched with the user's display name and linked document count.
     """
 
-    id: UUID
+    context_id: UUID
+    context_type: str
+    context_name: str
+    display_name_override: Optional[str] = None
+    email_override: Optional[str] = None
+    verification_status: str
     user_id: UUID
     user_display_name: Optional[str] = None
-    document_type: DocumentType
-    verification_status: VerificationStatus
-    original_filename: str
-    file_size_bytes: int
-    content_type: str
+    document_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminContextVerificationDetail(BaseModel):
+    """
+    Full context details with linked documents for the admin review page.
+
+    Shows the context's identity claims alongside all linked documents,
+    enabling the admin to compare document content against claimed fields.
+    """
+
+    context_id: UUID
+    context_type: str
+    context_name: str
+    display_name_override: Optional[str] = None
+    email_override: Optional[str] = None
+    phone_override: Optional[str] = None
+    bio: Optional[str] = None
+    verification_status: str
+    rejection_reason: Optional[str] = None
+    user_id: UUID
+    user_display_name: Optional[str] = None
+    documents: list[VerificationDocumentResponse]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

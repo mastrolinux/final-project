@@ -46,12 +46,14 @@ class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
     """
     Identity verification document uploaded by a user.
 
-    Each document passes through a state machine:
-        pending -> under_review -> verified | rejected
-
     Documents are encrypted at rest using Fernet before storage.
     The ``storage_path`` column references the encrypted blob in the
     ``verification-documents`` private bucket.
+
+    Documents are linked to context profiles via a direct FK
+    (``context_profiles.document_id``). Each context references at most
+    one document; a single document can still be referenced by multiple
+    contexts.
     """
 
     __tablename__ = "verification_documents"

@@ -1,13 +1,15 @@
 """
 Verification Document Endpoints (User-Facing)
 
-REST API endpoints for uploading identity documents and checking
-verification status. All endpoints require authentication and
-enforce resource-owner authorization (users can only access their
-own documents).
+REST API endpoints for uploading identity documents, checking
+verification status, and managing context-document links.
+
+All endpoints require authentication and enforce resource-owner
+authorization (users can only access their own documents).
 """
 
 import logging
+from datetime import date
 from typing import List
 from uuid import UUID
 
@@ -17,6 +19,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Response,
     UploadFile,
     status,
 )
@@ -29,6 +32,7 @@ from src.core.storage import StorageClient, get_document_storage_client
 from src.models.auth import AuthUser
 from src.models.verification import DocumentType
 from src.repositories.audit_repository import AuditRepository
+from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.repositories.verification_repository import VerificationRepository
 from src.schemas.verification import (
@@ -54,6 +58,7 @@ def get_verification_service(
     """Dependency to build a VerificationService with all collaborators."""
     verification_repo = VerificationRepository(db)
     profile_repo = ProfileRepository(db)
+    context_repo = ContextRepository(db)
     audit_repo = AuditRepository(db)
     audit_service = AuditService(audit_repo)
     return VerificationService(
@@ -62,6 +67,7 @@ def get_verification_service(
         storage=storage,
         encryption=encryption,
         audit_service=audit_service,
+        context_repo=context_repo,
     )
 
 
@@ -83,6 +89,9 @@ async def upload_verification_document(
     document_type: DocumentType = Form(
         ..., description="Type of document: passport or national_id"
     ),
+    document_expiry_date: date = Form(
+        ..., description="Physical document expiry date (YYYY-MM-DD)"
+    ),
     current_user: AuthUser = Depends(require_verified_user),
     service: VerificationService = Depends(get_verification_service),
 ):
@@ -92,6 +101,9 @@ async def upload_verification_document(
     The document is validated (magic bytes, size), encrypted with Fernet,
     and stored in a private bucket. Only metadata is returned in the
     response; the encrypted content is never exposed via the API.
+
+    To associate the document with a context, call the link endpoint
+    after upload.
     """
     # Resource-owner check
     if str(current_user.user_id) != str(user_id):
@@ -113,6 +125,7 @@ async def upload_verification_document(
             filename=file.filename or "document",
             claimed_content_type=file.content_type or "",
             document_type=document_type,
+            document_expiry_date=document_expiry_date,
         )
         return doc
     except VerificationServiceError as exc:
@@ -186,5 +199,136 @@ async def list_verification_documents(
 
     try:
         return service.get_user_documents(user_id)
+    except VerificationServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+
+# ------------------------------------------------------------------
+# Document download (decrypted for the owning user)
+# ------------------------------------------------------------------
+
+
+@router.get(
+    "/profiles/{user_id}/verification-documents/{document_id}/download",
+)
+async def download_own_document(
+    user_id: UUID,
+    document_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    service: VerificationService = Depends(get_verification_service),
+):
+    """
+    Download and decrypt an owned verification document.
+
+    Returns the original document bytes with appropriate content type
+    and security headers. Only the document owner can access this.
+    """
+    if str(current_user.user_id) != str(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only download your own documents",
+        )
+
+    try:
+        plaintext, content_type = service.download_document_for_owner(
+            document_id=document_id,
+            owner_id=user_id,
+        )
+    except VerificationServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+    return Response(
+        content=plaintext,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": "inline",
+            "Content-Security-Policy": "default-src 'none'",
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+# ------------------------------------------------------------------
+# Context-document linking
+# ------------------------------------------------------------------
+
+
+@router.get(
+    "/profiles/{user_id}/contexts/{context_id}/documents",
+    response_model=List[VerificationDocumentResponse],
+)
+async def list_context_documents(
+    user_id: UUID,
+    context_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    service: VerificationService = Depends(get_verification_service),
+):
+    """List all verification documents linked to a context profile."""
+    if str(current_user.user_id) != str(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own documents",
+        )
+
+    try:
+        return service.get_documents_for_context(user_id, context_id)
+    except VerificationServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+
+@router.post(
+    "/profiles/{user_id}/contexts/{context_id}/documents/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def link_document_to_context(
+    user_id: UUID,
+    context_id: UUID,
+    document_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    service: VerificationService = Depends(get_verification_service),
+):
+    """
+    Link an existing verification document to a context profile.
+
+    The document and context must both belong to the requesting user,
+    and the context must require verification (legal or healthcare type).
+    """
+    if str(current_user.user_id) != str(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only link your own documents",
+        )
+
+    try:
+        service.link_document_to_context(user_id, context_id, document_id)
+    except VerificationServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+
+@router.delete(
+    "/profiles/{user_id}/contexts/{context_id}/documents/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def unlink_document_from_context(
+    user_id: UUID,
+    context_id: UUID,
+    document_id: UUID,
+    current_user: AuthUser = Depends(get_current_user),
+    service: VerificationService = Depends(get_verification_service),
+):
+    """
+    Remove the link between a verification document and a context profile.
+
+    The document itself is not deleted; only the association is removed.
+    """
+    if str(current_user.user_id) != str(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only unlink your own documents",
+        )
+
+    try:
+        service.unlink_document_from_context(user_id, context_id, document_id)
     except VerificationServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)

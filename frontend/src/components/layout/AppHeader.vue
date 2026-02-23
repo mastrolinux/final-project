@@ -120,10 +120,10 @@ async function handleLogout() {
       </router-link>
       <router-link
         v-if="authStore.accountType !== 'pseudonymous'"
-        to="/verification"
+        to="/documents"
         class="nav-link"
       >
-        {{ t("nav.verification") }}
+        {{ t("nav.documents") }}
       </router-link>
       <router-link to="/audit" class="nav-link">
         {{ t("nav.audit") }}
@@ -257,10 +257,10 @@ async function handleLogout() {
             </router-link>
             <router-link
               v-if="authStore.accountType !== 'pseudonymous'"
-              to="/verification"
+              to="/documents"
               class="mobile-nav-link"
             >
-              {{ t("nav.verification") }}
+              {{ t("nav.documents") }}
             </router-link>
             <router-link to="/audit" class="mobile-nav-link">
               {{ t("nav.audit") }}
