@@ -45,7 +45,9 @@ describe("contextService", () => {
 
       const result = await contextService.list(userId);
 
-      expect(api.get).toHaveBeenCalledWith(`/profiles/${userId}/contexts`);
+      expect(api.get).toHaveBeenCalledWith(`/profiles/${userId}/contexts`, {
+        params: { include_inactive: true },
+      });
       expect(result).toHaveLength(1);
       expect(result[0].context_type).toBe("professional");
     });
