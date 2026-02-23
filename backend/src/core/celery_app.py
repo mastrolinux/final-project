@@ -26,7 +26,9 @@ celery_app.conf.update(
     task_routes={
         "send_verification_email": {"queue": "emails"},
         "send_password_reset_email": {"queue": "emails"},
-        "send_restoration_email": {"queue": "emails"}
+        "send_restoration_email": {"queue": "emails"},
+        "send_rejection_email": {"queue": "emails"},
+        "send_approval_email": {"queue": "emails"}
     },
     task_track_started=True,
     task_time_limit=30 * 60,  # 30 minutes max per task

@@ -24,6 +24,7 @@ export const contextService = {
   async list(userId: string): Promise<ContextProfileResponse[]> {
     const response = await api.get<ContextProfileResponse[]>(
       `/profiles/${userId}/contexts`,
+      { params: { include_inactive: true } },
     );
     return response.data;
   },
