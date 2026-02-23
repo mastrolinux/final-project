@@ -1,27 +1,28 @@
 /**
- * Admin verification service for document review operations.
+ * Admin verification service for context review operations.
  *
- * Provides endpoints for listing pending documents, viewing details,
- * and approving or rejecting verification submissions.
+ * Provides endpoints for listing pending contexts, viewing context
+ * details with linked documents, and approving or rejecting
+ * verification submissions.
  */
 
 import api from "./api";
 import type {
-  AdminVerificationListItem,
+  AdminContextVerificationItem,
+  AdminContextVerificationDetail,
   AdminVerificationReview,
-  VerificationDocumentResponse,
 } from "@/types";
 
 export default {
   /**
-   * List documents awaiting admin review (pending or under_review).
+   * List contexts awaiting admin review (pending or under_review).
    */
-  async listPendingDocuments(
+  async listPendingContexts(
     limit: number = 50,
     offset: number = 0,
-  ): Promise<AdminVerificationListItem[]> {
-    const response = await api.get<AdminVerificationListItem[]>(
-      "/admin/verifications/pending",
+  ): Promise<AdminContextVerificationItem[]> {
+    const response = await api.get<AdminContextVerificationItem[]>(
+      "/admin/verifications/contexts/pending",
       {
         params: { limit, offset },
       },
@@ -30,25 +31,42 @@ export default {
   },
 
   /**
-   * Get full details of a single verification document.
+   * Get full details of a context verification request with linked documents.
    */
-  async getDocument(documentId: string): Promise<VerificationDocumentResponse> {
-    const response = await api.get<VerificationDocumentResponse>(
-      `/admin/verifications/${documentId}`,
+  async getContextVerification(
+    contextId: string,
+  ): Promise<AdminContextVerificationDetail> {
+    const response = await api.get<AdminContextVerificationDetail>(
+      `/admin/verifications/contexts/${contextId}`,
     );
     return response.data;
   },
 
   /**
-   * Approve or reject a verification document.
+   * Approve or reject a context verification request.
    */
-  async reviewDocument(
-    documentId: string,
+  async reviewContext(
+    contextId: string,
     review: AdminVerificationReview,
-  ): Promise<VerificationDocumentResponse> {
-    const response = await api.patch<VerificationDocumentResponse>(
-      `/admin/verifications/${documentId}`,
+  ): Promise<AdminContextVerificationDetail> {
+    const response = await api.patch<AdminContextVerificationDetail>(
+      `/admin/verifications/contexts/${contextId}`,
       review,
+    );
+    return response.data;
+  },
+
+  /**
+   * Download the decrypted verification document for admin review.
+   *
+   * Returns a Blob containing the original document bytes.
+   */
+  async downloadDocument(documentId: string): Promise<Blob> {
+    const response = await api.get(
+      `/admin/verifications/${documentId}/download`,
+      {
+        responseType: "blob",
+      },
     );
     return response.data;
   },

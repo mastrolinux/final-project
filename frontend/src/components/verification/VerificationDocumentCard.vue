@@ -1,12 +1,15 @@
 <script setup lang="ts">
 /**
  * Displays a single verification document with its status, metadata,
- * and optional rejection reason or expiry date.
+ * optional rejection reason or expiry date, and inline document preview.
  */
-import { computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useAuthStore } from "@/stores/auth.store";
+import { verificationService, getErrorMessage } from "@/services";
 import BaseCard from "@/components/common/BaseCard.vue";
 import BaseBadge from "@/components/common/BaseBadge.vue";
+import BaseButton from "@/components/common/BaseButton.vue";
 import type { VerificationDocumentResponse } from "@/types";
 
 const props = defineProps<{
@@ -14,6 +17,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 type BadgeVariant = "primary" | "success" | "warning" | "error" | "info" | "neutral";
 
@@ -77,6 +81,56 @@ const isExpired = computed(() => {
   if (!props.document.document_expiry_date) return false;
   return new Date(props.document.document_expiry_date) < new Date();
 });
+
+// Preview state
+const previewUrl = ref<string | null>(null);
+const isLoadingPreview = ref(false);
+const previewError = ref<string | null>(null);
+
+const isImage = computed(() =>
+  props.document.content_type.startsWith("image/"),
+);
+
+const isPdf = computed(
+  () => props.document.content_type === "application/pdf",
+);
+
+async function togglePreview() {
+  if (previewUrl.value) {
+    closePreview();
+    return;
+  }
+
+  if (!authStore.userId) return;
+  isLoadingPreview.value = true;
+  previewError.value = null;
+
+  try {
+    const blob = await verificationService.downloadDocument(
+      authStore.userId,
+      String(props.document.id),
+    );
+    previewUrl.value = URL.createObjectURL(blob);
+  } catch (err) {
+    previewError.value = getErrorMessage(err);
+  } finally {
+    isLoadingPreview.value = false;
+  }
+}
+
+function closePreview() {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = null;
+  }
+  previewError.value = null;
+}
+
+onUnmounted(() => {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+  }
+});
 </script>
 
 <template>
@@ -94,7 +148,43 @@ const isExpired = computed(() => {
           {{ t(`verification.status.${document.verification_status}`) }}
         </BaseBadge>
       </div>
-      <span class="document-date">{{ formattedDate }}</span>
+      <div class="document-header-actions">
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          :loading="isLoadingPreview"
+          @click="togglePreview"
+        >
+          {{
+            previewUrl
+              ? t("verification.document.closePreview")
+              : t("verification.document.viewDocument")
+          }}
+        </BaseButton>
+        <span class="document-date">{{ formattedDate }}</span>
+      </div>
+    </div>
+
+    <!-- Inline preview -->
+    <div v-if="previewUrl" class="document-preview">
+      <img
+        v-if="isImage"
+        :src="previewUrl"
+        :alt="document.original_filename"
+        class="preview-image"
+      />
+      <iframe
+        v-else-if="isPdf"
+        :src="previewUrl"
+        class="preview-pdf"
+        :title="document.original_filename"
+      ></iframe>
+    </div>
+    <div v-if="previewError" class="preview-error">
+      {{ t("verification.document.previewError") }}
+    </div>
+    <div v-if="isLoadingPreview" class="preview-loading">
+      {{ t("verification.document.loadingPreview") }}
     </div>
 
     <div class="document-details">
@@ -193,9 +283,54 @@ const isExpired = computed(() => {
   color: var(--text-primary);
 }
 
+.document-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
 .document-date {
   font-size: var(--font-size-sm);
   color: var(--text-tertiary);
+}
+
+/* Preview */
+.document-preview {
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
+  display: flex;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.preview-pdf {
+  width: 100%;
+  height: 500px;
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+.preview-error {
+  padding: var(--spacing-3) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-error-700);
+  background-color: var(--color-error-50);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.preview-loading {
+  padding: var(--spacing-3) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .document-details {

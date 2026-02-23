@@ -1,9 +1,9 @@
 """
 Admin Verification Endpoint Integration Tests
 
-Tests the full HTTP request cycle for admin document review,
-including listing pending documents and approving/rejecting
-with account type promotion.
+Tests the full HTTP request cycle for admin context verification review,
+including listing pending contexts, retrieving context details with linked
+documents, and approving/rejecting with account type promotion.
 """
 
 import io
@@ -19,7 +19,9 @@ from src.core.encryption import EncryptionService, get_encryption_service
 from src.core.security import create_access_token
 from src.core.storage import InMemoryStorageClient, get_document_storage_client
 from src.models.auth import AuthUser
+from src.models.context import ContextProfile, ContextType
 from src.models.profile import AccountType, BaseProfile
+from src.models.verification import VerificationDocument, VerificationStatus
 
 
 PDF_CONTENT = b"%PDF-1.4 test document for admin review"
@@ -114,116 +116,180 @@ def regular_token(regular_user):
 
 
 @pytest.fixture
-def uploaded_document(client_with_deps, regular_user, regular_token):
-    """Upload a document as the regular user and return its metadata."""
+def legal_context_with_document(
+    client_with_deps, regular_user, regular_token, db_session
+):
+    """
+    Create a legal context and upload + link a document to it.
+
+    Returns a dict with context_id, document_id, and user_id.
+    """
     user_id = str(regular_user.user_id)
+
+    # Create a legal context (starts pending/inactive)
+    context = ContextProfile(
+        user_id=user_id,
+        context_type=ContextType.legal,
+        context_name="Government ID",
+        display_name_override="Jane Doe",
+        verification_status=VerificationStatus.pending,
+        is_active=False,
+    )
+    db_session.add(context)
+    db_session.commit()
+    db_session.refresh(context)
+
+    # Upload a standalone document
     resp = client_with_deps.post(
         f"/api/v1/profiles/{user_id}/verification-documents",
         headers={"Authorization": f"Bearer {regular_token}"},
         files={"file": ("passport.pdf", io.BytesIO(PDF_CONTENT), "application/pdf")},
-        data={"document_type": "passport"},
+        data={"document_type": "passport", "document_expiry_date": "2030-06-15"},
     )
     assert resp.status_code == 201
-    return resp.json()
+    doc_data = resp.json()
+
+    # Link the document to the context
+    resp = client_with_deps.post(
+        f"/api/v1/profiles/{user_id}/contexts/{context.id}/documents/{doc_data['id']}",
+        headers={"Authorization": f"Bearer {regular_token}"},
+    )
+    assert resp.status_code == 204
+
+    return {
+        "context_id": str(context.id),
+        "document_id": doc_data["id"],
+        "user_id": user_id,
+    }
 
 
-class TestAdminListPending:
-    """Integration tests for GET /admin/verifications/pending."""
+class TestAdminListPendingContexts:
+    """Integration tests for GET /admin/verifications/contexts/pending."""
 
     def test_list_pending_empty(self, client_with_deps, admin_user, admin_token):
         """An empty queue must return an empty list."""
         resp = client_with_deps.get(
-            "/api/v1/admin/verifications/pending",
+            "/api/v1/admin/verifications/contexts/pending",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert resp.status_code == 200
         assert resp.json() == []
 
-    def test_list_pending_with_document(
-        self, client_with_deps, admin_user, admin_token, uploaded_document
+    def test_list_pending_with_context(
+        self, client_with_deps, admin_user, admin_token, legal_context_with_document
     ):
-        """A pending document must appear in the admin list."""
+        """A pending context with linked documents must appear in the admin list."""
         resp = client_with_deps.get(
-            "/api/v1/admin/verifications/pending",
+            "/api/v1/admin/verifications/contexts/pending",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert resp.status_code == 200
         items = resp.json()
         assert len(items) == 1
         assert items[0]["verification_status"] == "pending"
+        assert items[0]["context_type"] == "legal"
+        assert items[0]["document_count"] >= 1
 
     def test_list_pending_requires_admin(
         self, client_with_deps, regular_user, regular_token
     ):
         """Non-admin users must be rejected with 403."""
         resp = client_with_deps.get(
-            "/api/v1/admin/verifications/pending",
+            "/api/v1/admin/verifications/contexts/pending",
             headers={"Authorization": f"Bearer {regular_token}"},
         )
         assert resp.status_code == 403
 
 
-class TestAdminGetDocument:
-    """Integration tests for GET /admin/verifications/{document_id}."""
+class TestAdminGetContextVerification:
+    """Integration tests for GET /admin/verifications/contexts/{context_id}."""
 
-    def test_get_document_details(
-        self, client_with_deps, admin_user, admin_token, uploaded_document
+    def test_get_context_details(
+        self, client_with_deps, admin_user, admin_token, legal_context_with_document
     ):
-        """Admin must be able to view full document metadata."""
-        doc_id = uploaded_document["id"]
+        """Admin must be able to view full context details with linked documents."""
+        context_id = legal_context_with_document["context_id"]
         resp = client_with_deps.get(
-            f"/api/v1/admin/verifications/{doc_id}",
+            f"/api/v1/admin/verifications/contexts/{context_id}",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert resp.status_code == 200
-        assert resp.json()["id"] == doc_id
+        body = resp.json()
+        assert body["context_id"] == context_id
+        assert body["context_type"] == "legal"
+        assert body["display_name_override"] == "Jane Doe"
+        assert len(body["documents"]) >= 1
 
     def test_get_nonexistent_returns_404(
         self, client_with_deps, admin_user, admin_token
     ):
-        """Requesting a non-existent document must return 404."""
+        """Requesting a non-existent context must return 404."""
         resp = client_with_deps.get(
-            "/api/v1/admin/verifications/99999999-9999-9999-9999-999999999999",
+            "/api/v1/admin/verifications/contexts/99999999-9999-9999-9999-999999999999",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert resp.status_code == 404
 
 
-class TestAdminReview:
-    """Integration tests for PATCH /admin/verifications/{document_id}."""
+class TestAdminContextReview:
+    """Integration tests for PATCH /admin/verifications/contexts/{context_id}."""
 
-    def test_approve_document(
-        self, client_with_deps, admin_user, admin_token, uploaded_document, db_session
+    def test_approve_context(
+        self,
+        client_with_deps,
+        admin_user,
+        admin_token,
+        legal_context_with_document,
+        db_session,
     ):
-        """Approving a document must set status to verified and promote account."""
-        doc_id = uploaded_document["id"]
+        """Approving a context must set status to verified and promote account."""
+        context_id = legal_context_with_document["context_id"]
         resp = client_with_deps.patch(
-            f"/api/v1/admin/verifications/{doc_id}",
+            f"/api/v1/admin/verifications/contexts/{context_id}",
             headers={"Authorization": f"Bearer {admin_token}"},
             json={
                 "verification_status": "verified",
-                "reviewer_notes": "Passport matches profile",
+                "reviewer_notes": "Passport matches identity claims",
                 "document_expiry_date": "2030-06-15",
             },
         )
         assert resp.status_code == 200
         body = resp.json()
         assert body["verification_status"] == "verified"
-        assert body["document_expiry_date"] == "2030-06-15"
+        assert body["context_id"] == context_id
 
         # Verify the user's account type was promoted
-        profile = db_session.query(BaseProfile).filter(
-            BaseProfile.user_id == uploaded_document["user_id"]
-        ).first()
+        profile = (
+            db_session.query(BaseProfile)
+            .filter(
+                BaseProfile.user_id == legal_context_with_document["user_id"]
+            )
+            .first()
+        )
         assert profile.account_type == AccountType.verified
 
-    def test_reject_document(
-        self, client_with_deps, admin_user, admin_token, uploaded_document, db_session
+        # Verify linked documents were marked verified
+        doc = (
+            db_session.query(VerificationDocument)
+            .filter(
+                VerificationDocument.id == legal_context_with_document["document_id"]
+            )
+            .first()
+        )
+        assert doc.verification_status == VerificationStatus.verified
+
+    def test_reject_context(
+        self,
+        client_with_deps,
+        admin_user,
+        admin_token,
+        legal_context_with_document,
+        db_session,
     ):
-        """Rejecting a document must set status to rejected without promoting."""
-        doc_id = uploaded_document["id"]
+        """Rejecting a context must set status to rejected without promoting."""
+        context_id = legal_context_with_document["context_id"]
         resp = client_with_deps.patch(
-            f"/api/v1/admin/verifications/{doc_id}",
+            f"/api/v1/admin/verifications/contexts/{context_id}",
             headers={"Authorization": f"Bearer {admin_token}"},
             json={
                 "verification_status": "rejected",
@@ -236,30 +302,54 @@ class TestAdminReview:
         assert body["rejection_reason"] == "Image is blurry"
 
         # Account type must remain unverified
-        profile = db_session.query(BaseProfile).filter(
-            BaseProfile.user_id == uploaded_document["user_id"]
-        ).first()
+        profile = (
+            db_session.query(BaseProfile)
+            .filter(
+                BaseProfile.user_id == legal_context_with_document["user_id"]
+            )
+            .first()
+        )
         assert profile.account_type == AccountType.unverified
 
-    def test_reject_without_reason_returns_422(
-        self, client_with_deps, admin_user, admin_token, uploaded_document
+        # Linked documents must be marked rejected
+        doc = (
+            db_session.query(VerificationDocument)
+            .filter(
+                VerificationDocument.id == legal_context_with_document["document_id"]
+            )
+            .first()
+        )
+        assert doc.verification_status == VerificationStatus.rejected
+        assert doc.rejection_reason == "Image is blurry"
+
+    def test_reject_without_reason_returns_error(
+        self,
+        client_with_deps,
+        admin_user,
+        admin_token,
+        legal_context_with_document,
     ):
-        """Rejecting without a reason must fail validation."""
-        doc_id = uploaded_document["id"]
+        """Rejecting without a reason must fail."""
+        context_id = legal_context_with_document["context_id"]
         resp = client_with_deps.patch(
-            f"/api/v1/admin/verifications/{doc_id}",
+            f"/api/v1/admin/verifications/contexts/{context_id}",
             headers={"Authorization": f"Bearer {admin_token}"},
             json={"verification_status": "rejected"},
         )
-        assert resp.status_code == 422
+        # Schema validation or service-level error
+        assert resp.status_code in (400, 422)
 
     def test_review_requires_admin(
-        self, client_with_deps, regular_user, regular_token, uploaded_document
+        self,
+        client_with_deps,
+        regular_user,
+        regular_token,
+        legal_context_with_document,
     ):
-        """Non-admin users must not be able to review documents."""
-        doc_id = uploaded_document["id"]
+        """Non-admin users must not be able to review contexts."""
+        context_id = legal_context_with_document["context_id"]
         resp = client_with_deps.patch(
-            f"/api/v1/admin/verifications/{doc_id}",
+            f"/api/v1/admin/verifications/contexts/{context_id}",
             headers={"Authorization": f"Bearer {regular_token}"},
             json={"verification_status": "verified"},
         )

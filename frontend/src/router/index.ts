@@ -174,14 +174,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/SocialAuthCallbackView.vue"),
     meta: { title: "Social Login" },
   },
-  // Verification
+  // Documents
   {
-    path: "/verification",
-    name: "verification",
+    path: "/documents",
+    name: "documents",
     component: () => import("@/views/VerificationView.vue"),
     meta: {
       requiresAuth: true,
-      title: "Identity Verification",
+      title: "My Documents",
       breadcrumb: { parent: "/profile", parentLabel: "nav.profile" },
     },
     beforeEnter: (_to, _from, next) => {
@@ -252,8 +252,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/admin/users/soft-deleted",
     name: "admin-soft-deleted-users",
-    component: () =>
-      import("@/views/admin/AdminSoftDeletedUsersView.vue"),
+    component: () => import("@/views/admin/AdminSoftDeletedUsersView.vue"),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
@@ -267,8 +266,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/admin/verifications",
     name: "admin-verifications",
-    component: () =>
-      import("@/views/admin/AdminVerificationsView.vue"),
+    component: () => import("@/views/admin/AdminVerificationsView.vue"),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
@@ -280,14 +278,13 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/admin/verifications/:documentId",
+    path: "/admin/verifications/:contextId",
     name: "admin-verification-review",
-    component: () =>
-      import("@/views/admin/AdminVerificationReviewView.vue"),
+    component: () => import("@/views/admin/AdminVerificationReviewView.vue"),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
-      title: "Review Document",
+      title: "Review Context Verification",
       breadcrumb: {
         parent: "/admin/verifications",
         parentLabel: "nav.adminVerifications",

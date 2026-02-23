@@ -28,7 +28,10 @@ function selectContext(id: string) {
       <div class="context-info">
         <div class="context-header">
           <span class="context-name">{{ context.context_name }}</span>
-          <span class="context-type badge">{{ context.context_type }}</span>
+          <span
+            class="context-type badge"
+            :class="`badge-${context.context_type}`"
+          >{{ context.context_type }}</span>
         </div>
         <div class="context-details">
           <span class="detail">{{
@@ -99,7 +102,6 @@ function selectContext(id: string) {
   text-transform: capitalize;
   font-size: 10px;
   padding: 1px 6px;
-  background-color: var(--color-gray-100);
   border-radius: 4px;
 }
 

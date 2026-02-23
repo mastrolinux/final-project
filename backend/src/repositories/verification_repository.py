@@ -13,6 +13,7 @@ from uuid import UUID
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
+from src.models.context import ContextProfile
 from src.models.verification import (
     DocumentType,
     VerificationDocument,
@@ -40,6 +41,7 @@ class VerificationRepository:
         original_filename: str,
         file_size_bytes: int,
         content_type: str,
+        document_expiry_date: Optional[date] = None,
     ) -> VerificationDocument:
         """Persist a new verification document with status ``pending``."""
         doc = VerificationDocument(
@@ -50,6 +52,7 @@ class VerificationRepository:
             original_filename=original_filename,
             file_size_bytes=file_size_bytes,
             content_type=content_type,
+            document_expiry_date=document_expiry_date,
         )
         self.db.add(doc)
         self.db.commit()
@@ -127,6 +130,64 @@ class VerificationRepository:
             .limit(limit)
             .all()
         )
+
+    def get_documents_for_context(
+        self, context_id: UUID
+    ) -> List[VerificationDocument]:
+        """Return the document linked to a context (0 or 1 items)."""
+        ctx = (
+            self.db.query(ContextProfile)
+            .filter(ContextProfile.id == str(context_id))
+            .first()
+        )
+        if ctx is None or ctx.document_id is None:
+            return []
+        doc = self.get_document_by_id(ctx.document_id)
+        return [doc] if doc else []
+
+    # ------------------------------------------------------------------
+    # Context-document link (one document per context via FK)
+    # ------------------------------------------------------------------
+
+    def link_document_to_context(
+        self, context_id: UUID, document_id: UUID
+    ) -> None:
+        """Set a context's linked document (replaces any existing link)."""
+        ctx = (
+            self.db.query(ContextProfile)
+            .filter(ContextProfile.id == str(context_id))
+            .first()
+        )
+        if ctx is None:
+            return
+        ctx.document_id = str(document_id)
+        self.db.commit()
+
+    def unlink_document_from_context(
+        self, context_id: UUID, document_id: UUID
+    ) -> bool:
+        """Clear the context's document FK if it matches. Returns False otherwise."""
+        ctx = (
+            self.db.query(ContextProfile)
+            .filter(ContextProfile.id == str(context_id))
+            .first()
+        )
+        if ctx is None or str(ctx.document_id) != str(document_id):
+            return False
+        ctx.document_id = None
+        self.db.commit()
+        return True
+
+    def is_document_linked_to_context(
+        self, context_id: UUID, document_id: UUID
+    ) -> bool:
+        """Check whether the context references this document."""
+        ctx = (
+            self.db.query(ContextProfile)
+            .filter(ContextProfile.id == str(context_id))
+            .first()
+        )
+        return ctx is not None and str(ctx.document_id) == str(document_id)
 
     # ------------------------------------------------------------------
     # Update

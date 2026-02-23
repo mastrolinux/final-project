@@ -13,7 +13,7 @@
     "adminOAuthClients": "Client OAuth",
     "adminAuditVerify": "Integrit\u00e0 audit",
     "adminSoftDeletedUsers": "Utenti eliminati",
-    "verification": "Verifica",
+    "documents": "Documenti",
     "adminVerifications": "Verifiche",
     "login": "Accedi",
     "register": "Registrati",
@@ -205,6 +205,10 @@
     "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
     "pickFromNames": "Scegli dai tuoi nomi di identit\u00e0",
     "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
+    "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approvera.",
+    "verificationPending": "Verifica in attesa",
+    "verificationVerified": "Verificato",
+    "verificationRejected": "Verifica rifiutata",
     "types": {
       "professional": "Professionale",
       "social": "Sociale",
@@ -240,8 +244,19 @@
     "avatar": {
       "override": "Override avatar",
       "uploadSuccess": "Avatar del contesto caricato con successo",
-      "uploadFailed": "Contesto creato, ma il caricamento dell'avatar non \u00e8 riuscito. Puoi riprovare dalla pagina di dettaglio.",
+      "uploadFailed": "Contesto creato, ma il caricamento dell'avatar non e riuscito. Puoi riprovare dalla pagina di dettaglio.",
       "removeSuccess": "Avatar del contesto rimosso con successo"
+    },
+    "verification": {
+      "title": "Documenti di verifica",
+      "noDocuments": "Nessun documento collegato a questo contesto. Carica o collega un documento esistente per avviare la verifica.",
+      "unlink": "Rimuovi collegamento",
+      "linkExisting": "Collega documento esistente",
+      "linkExistingTitle": "Collega documento esistente",
+      "noUnlinkedDocuments": "Tutti i tuoi documenti sono gia collegati a questo contesto.",
+      "replaceDocument": "Sostituisci documento",
+      "replaceDocumentTitle": "Sostituisci documento",
+      "replaceDocumentWarning": "La sostituzione del documento richiedera una nuova verifica da parte di un amministratore."
     }
   },
   "settings": {
@@ -384,7 +399,8 @@
       "unauthorized_client": "Client non autorizzato",
       "server_error": "Errore del server",
       "invalid_client": "Applicazione client non valida",
-      "invalid_grant": "Grant non valido"
+      "invalid_grant": "Grant non valido",
+      "context_not_verified": "Questo contesto richiede la verifica dell'identita prima di poter essere condiviso con le applicazioni"
     }
   },
   "nameInput": {
@@ -469,21 +485,13 @@
       "invalidExplanation": "La verifica della catena di hash \u00e8 fallita, indicando una possibile manomissione delle voci del registro di audit."
     }
   },
+  "documents": {
+    "title": "I miei documenti",
+    "description": "Visualizza e gestisci i tuoi documenti di identita caricati. I documenti possono essere collegati ai contesti legali e sanitari per la verifica.",
+    "empty": "Nessun documento caricato. Carica un documento di identita rilasciato dal governo per iniziare."
+  },
   "verification": {
-    "title": "Verifica dell'identit\u00e0",
-    "description": "Carica un documento di identit\u00e0 rilasciato dal governo per verificare il tuo account. Gli account verificati possono creare profili di contesto legali e sanitari.",
-    "loading": "Caricamento stato di verifica...",
-    "accountType": "Stato account",
-    "accountTypes": {
-      "verified": "Verificato",
-      "unverified": "Standard",
-      "pseudonymous": "Pseudonimo"
-    },
-    "statusExplain": {
-      "verified": "La tua identit\u00e0 \u00e8 stata verificata. Hai accesso completo a tutti i tipi di contesto, inclusi quelli legali e sanitari.",
-      "unverified": "Carica un documento di identit\u00e0 per sbloccare i profili di contesto legali e sanitari.",
-      "pseudonymous": "Gli account pseudonimi non possono creare contesti legali o sanitari. La verifica dell'identit\u00e0 \u00e8 disponibile per gli account standard."
-    },
+    "loading": "Caricamento documenti...",
     "status": {
       "pending": "In attesa",
       "under_review": "In revisione",
@@ -502,9 +510,10 @@
       "invalidFormat": "Formato non supportato. Accettati: PDF, JPEG, PNG",
       "fileTooLarge": "Il file supera il limite di 10 MB",
       "changeFile": "Cambia",
+      "expiryDate": "Data di scadenza del documento",
+      "expiryDateHint": "Inserisci la data di scadenza stampata sul tuo documento fisico.",
       "submit": "Carica documento",
-      "success": "Documento caricato con successo. Sar\u00e0 esaminato da un amministratore.",
-      "pendingExists": "Hai gi\u00e0 un documento in attesa di revisione. Attendi che la richiesta corrente venga elaborata prima di caricare un nuovo documento."
+      "success": "Documento caricato con successo. Sara esaminato da un amministratore."
     },
     "document": {
       "filename": "File",
@@ -514,41 +523,55 @@
       "expired": "Scaduto",
       "expiringSoon": "In scadenza",
       "reviewedOn": "Revisionato il {date}",
-      "rejectionReason": "Motivo del rifiuto"
+      "rejectionReason": "Motivo del rifiuto",
+      "viewDocument": "Visualizza",
+      "closePreview": "Chiudi anteprima",
+      "previewError": "Impossibile caricare l'anteprima del documento",
+      "loadingPreview": "Caricamento anteprima..."
     },
     "documents": {
       "title": "Documenti inviati"
     },
     "admin": {
       "title": "Coda di verifica",
-      "description": "Documenti di identit\u00e0 inviati dagli utenti per la revisione.",
+      "description": "Profili contesto inviati dagli utenti per la verifica dell'identita.",
       "loading": "Caricamento verifiche in attesa...",
-      "pendingCount": "{count} documento/i in attesa di revisione",
+      "pendingCount": "{count} contesto/i in attesa di revisione",
       "emptyTitle": "Nessuna verifica in attesa",
-      "emptyDescription": "Tutti i documenti inviati sono stati revisionati. Le nuove richieste appariranno qui.",
+      "emptyDescription": "Tutte le richieste di verifica sono state esaminate. Le nuove richieste appariranno qui.",
       "unknownUser": "Utente sconosciuto",
       "submittedOn": "Inviato il",
       "review": "Revisiona",
-      "reviewTitle": "Revisiona documento",
+      "reviewTitle": "Revisiona verifica contesto",
       "backToQueue": "Torna alla coda",
-      "loadingDocument": "Caricamento dettagli documento...",
-      "documentDetails": "Dettagli documento",
+      "loadingDocument": "Caricamento dettagli verifica...",
+      "contextIdentity": "Dati di identita del contesto",
+      "compareHint": "Confronta i campi di identita sottostanti con i documenti di verifica collegati per verificare questo profilo contesto.",
+      "contextName": "Nome contesto",
+      "displayName": "Nome visualizzato",
+      "emailOverride": "Email override",
+      "phoneOverride": "Telefono override",
+      "documentCount": "{count} documento/i",
       "userId": "ID utente",
       "reviewFormTitle": "Decisione di revisione",
       "approve": "Approva",
       "reject": "Rifiuta",
-      "expiryDate": "Data di scadenza del documento",
-      "expiryHint": "Imposta la data in cui il documento scade e l'utente dovr\u00e0 ripetere la verifica. Lascia vuoto se il documento non scade.",
+      "expiryDate": "Data di scadenza dei documenti",
+      "declaredExpiry": "Scadenza dichiarata dall'utente",
+      "expiryHint": "Precompilato dalla data di scadenza dichiarata dall'utente. Modifica se la data sul documento differisce.",
       "rejectionReason": "Motivo del rifiuto",
-      "rejectionReasonPlaceholder": "Spiega perch\u00e9 il documento viene rifiutato...",
+      "rejectionReasonPlaceholder": "Spiega perche la verifica del contesto viene rifiutata...",
       "reviewerNotes": "Note interne",
       "reviewerNotesPlaceholder": "Note opzionali visibili solo agli amministratori...",
-      "confirmApprove": "Approva documento",
-      "confirmReject": "Rifiuta documento",
-      "alreadyReviewed": "Questo documento \u00e8 gi\u00e0 stato revisionato (stato: {status}).",
+      "confirmApprove": "Approva verifica",
+      "confirmReject": "Rifiuta verifica",
+      "alreadyReviewed": "Questo contesto e gia stato revisionato (stato: {status}).",
+      "documentPreview": "Anteprima documento",
+      "loadingPreview": "Caricamento anteprima del documento...",
+      "previewUnsupported": "L'anteprima non e disponibile per questo tipo di file.",
       "reviewSuccess": {
-        "approved": "Documento approvato. L'account dell'utente \u00e8 stato promosso a verificato.",
-        "rejected": "Documento rifiutato. L'utente \u00e8 stato notificato."
+        "approved": "Contesto verificato. L'account dell'utente e stato promosso a verificato.",
+        "rejected": "Verifica del contesto rifiutata. L'utente e stato notificato."
       }
     }
   },
