@@ -534,3 +534,100 @@ def send_approval_email(self, email: str, user_name: str, context_name: str):
 
     except Exception as exc:
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+
+
+@celery_app.task(name="send_document_expiry_email", bind=True, max_retries=3)
+def send_document_expiry_email(
+    self,
+    email: str,
+    user_name: str,
+    context_names: list,
+    expiry_date: str,
+):
+    """
+    Send document expiry notification via SMTP.
+
+    Informs the user that their verification document has expired
+    and lists the context profiles that were deactivated as a result.
+    Retries up to 3 times on failure with exponential backoff.
+
+    Args:
+        email: Recipient email address
+        user_name: Display name of the user
+        context_names: Names of the deactivated contexts
+        expiry_date: Document expiry date as ISO string
+    """
+    try:
+        documents_url = f"{settings.FRONTEND_URL}/documents"
+        contexts_list = ", ".join(context_names)
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Verification document expired"
+        msg["From"] = settings.SMTP_FROM_EMAIL
+        msg["To"] = email
+
+        text = f"""
+        Verification Document Expired
+
+        Hello {user_name},
+
+        Your verification document expired on {expiry_date}.
+
+        The following context profiles have been deactivated:
+        {contexts_list}
+
+        To reactivate these contexts, upload a new valid document at:
+        {documents_url}
+
+        Best regards,
+        Identity Management Team
+        """
+
+        contexts_html_items = "".join(
+            f"<li>{name}</li>" for name in context_names
+        )
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #d97706;">Verification Document Expired</h2>
+              <p>Hello {user_name},</p>
+              <p>Your verification document expired on
+                 <strong>{expiry_date}</strong>.</p>
+              <div style="background-color: #fffbeb; border-left: 4px solid #d97706;
+                          padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 8px 0; color: #92400e;">
+                  <strong>Deactivated contexts:</strong>
+                </p>
+                <ul style="margin: 0; padding-left: 20px; color: #92400e;">
+                  {contexts_html_items}
+                </ul>
+              </div>
+              <p>To reactivate these contexts, upload a new valid document:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{documents_url}"
+                   style="background-color: #d97706; color: white; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px;
+                          display: inline-block;">
+                  Upload New Document
+                </a>
+              </div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px;">
+                This is an automated notification from the Identity Management System.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        with get_smtp_connection() as server:
+            server.send_message(msg)
+
+        return {"status": "sent", "email": email}
+
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
