@@ -87,6 +87,7 @@ class AuditEventType(str, enum.Enum):
     document_review = "verification.document.review"
     document_delete = "verification.document.delete"
     document_view = "verification.document.view"
+    document_expiry = "verification.document.expiry"
 
 
 # SHA-256 of b"GENESIS" - used as previous_hash for the first entry in the chain
