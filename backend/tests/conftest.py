@@ -14,6 +14,8 @@ from sqlalchemy.pool import StaticPool
 
 from src.main import app
 from src.core.database import Base, get_db
+from src.core.security import create_access_token
+from src.models.auth import AuthUser
 from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
 from src.repositories.profile_repository import ProfileRepository
 from src.repositories.audit_repository import AuditRepository
@@ -294,4 +296,88 @@ def audit_repository(db_session: Session) -> AuditRepository:
 def audit_service(audit_repository: AuditRepository) -> AuditService:
     """Create AuditService instance for testing"""
     return AuditService(audit_repository)
+
+
+# Authentication fixtures for endpoint tests requiring JWT
+
+@pytest.fixture
+def sample_verified_auth_user(db_session: Session, sample_verified_profile: BaseProfile) -> AuthUser:
+    """Create an AuthUser with verified email for the sample verified profile."""
+    auth_user = AuthUser(
+        user_id=str(sample_verified_profile.user_id),
+        email=sample_verified_profile.primary_email,
+        password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+        is_email_verified=True,
+        is_admin=False,
+    )
+    db_session.add(auth_user)
+    db_session.commit()
+    db_session.refresh(auth_user)
+    return auth_user
+
+
+@pytest.fixture
+def verified_token(sample_verified_auth_user: AuthUser) -> str:
+    """JWT access token for the verified sample profile."""
+    return create_access_token(
+        user_id=str(sample_verified_auth_user.user_id),
+        email=sample_verified_auth_user.email,
+        account_type="verified",
+    )
+
+
+@pytest.fixture
+def sample_pseudonymous_auth_user(
+    db_session: Session, sample_pseudonymous_profile: BaseProfile
+) -> AuthUser:
+    """Create an AuthUser with verified email for the pseudonymous profile."""
+    auth_user = AuthUser(
+        user_id=str(sample_pseudonymous_profile.user_id),
+        email=sample_pseudonymous_profile.primary_email,
+        password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+        is_email_verified=True,
+        is_admin=False,
+    )
+    db_session.add(auth_user)
+    db_session.commit()
+    db_session.refresh(auth_user)
+    return auth_user
+
+
+@pytest.fixture
+def pseudonymous_token(sample_pseudonymous_auth_user: AuthUser) -> str:
+    """JWT access token for the pseudonymous sample profile."""
+    return create_access_token(
+        user_id=str(sample_pseudonymous_auth_user.user_id),
+        email=sample_pseudonymous_auth_user.email,
+        account_type="pseudonymous",
+    )
+
+
+@pytest.fixture
+def unverified_email_auth_user(
+    db_session: Session, sample_unverified_profile: BaseProfile
+) -> AuthUser:
+    """Create an AuthUser with unverified email for the unverified profile."""
+    auth_user = AuthUser(
+        user_id=str(sample_unverified_profile.user_id),
+        email=sample_unverified_profile.primary_email,
+        password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+        is_email_verified=False,
+        is_admin=False,
+    )
+    db_session.add(auth_user)
+    db_session.commit()
+    db_session.refresh(auth_user)
+    return auth_user
+
+
+@pytest.fixture
+def unverified_email_token(unverified_email_auth_user: AuthUser) -> str:
+    """JWT access token for an unverified-email user."""
+    return create_access_token(
+        user_id=str(unverified_email_auth_user.user_id),
+        email=unverified_email_auth_user.email,
+        account_type="unverified",
+    )
 

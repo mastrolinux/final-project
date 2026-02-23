@@ -89,6 +89,18 @@ const handleSave = async () => {
     );
     profileStore.setProfile(updatedProfile);
 
+    if (updatedProfile.email_verification_pending) {
+      // Email changed: reset local verification state and notify user
+      if (authStore.user) {
+        authStore.user.is_email_verified = false;
+        authStore.user.email = updates.primary_email!;
+      }
+      uiStore.addNotification({
+        type: "info",
+        message: t("profile.emailVerificationSent"),
+      });
+    }
+
     router.back();
   } catch (err) {
     error.value = getErrorMessage(err);

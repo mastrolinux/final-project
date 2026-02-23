@@ -142,6 +142,8 @@ class ContextProfileResponse(BaseModel):
     avatar_override_url: Optional[str] = None
     avatar_override_thumbnail_url: Optional[str] = None
     is_active: bool
+    verification_status: Optional[str] = None
+    rejection_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None

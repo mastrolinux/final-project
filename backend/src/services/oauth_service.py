@@ -109,6 +109,7 @@ class IntrospectionResult:
     aud: Optional[str] = None
     context_profile_id: Optional[UUID] = None
     context_type: Optional[str] = None
+    context_verified: Optional[bool] = None
 
 
 class OAuthService:
@@ -139,7 +140,25 @@ class OAuthService:
         self.profile_repo = profile_repo
         self.context_repo = context_repo
         self.audit_service = audit_service
-    
+
+    def _assert_context_verified(self, context_profile_id: Optional[UUID]) -> None:
+        """Reject the request if the context requires identity verification
+        but has not been approved by an admin.
+
+        Only legal and healthcare context types trigger this check.
+        Returns silently when context_repo is not injected, context_profile_id
+        is None, or the context type does not require verification.
+        """
+        if not context_profile_id or not self.context_repo:
+            return
+        context = self.context_repo.get_context_profile_by_id(context_profile_id)
+        if context is None:
+            return
+        if context.requires_verification and not context.is_identity_verified:
+            raise InvalidRequestError(
+                "Context requires identity verification and has not been verified"
+            )
+
 # PKCE Validation
     
     @staticmethod
@@ -458,7 +477,10 @@ class OAuthService:
         # Validate client
         client = self.get_client(client_id)
         self.validate_redirect_uri(client, redirect_uri)
-        
+
+        # Reject unverified legal/healthcare contexts
+        self._assert_context_verified(context_profile_id)
+
         # Create authorization code
         auth_code = self.oauth_repo.create_authorization_code(
             client_id=client_id,
@@ -679,6 +701,15 @@ class OAuthService:
         access_token = self.oauth_repo.get_access_token_by_raw(token)
         if access_token:
             if access_token.is_active:
+                # Resolve context verification status when a context is bound
+                context_verified = None
+                if access_token.context_profile_id and self.context_repo:
+                    ctx = self.context_repo.get_context_profile_by_id(
+                        access_token.context_profile_id
+                    )
+                    if ctx and ctx.requires_verification:
+                        context_verified = ctx.is_identity_verified
+
                 return IntrospectionResult(
                     active=True,
                     scope=access_token.scope,
@@ -688,7 +719,8 @@ class OAuthService:
                     iat=int(access_token.issued_at.timestamp()),
                     sub=str(access_token.user_id),
                     aud=access_token.client_id,
-                    context_profile_id=access_token.context_profile_id
+                    context_profile_id=access_token.context_profile_id,
+                    context_verified=context_verified
                 )
             return IntrospectionResult(active=False)
         

@@ -97,7 +97,9 @@ class TestSocialAuthCallbackEndpoint:
         assert "refresh_token" in data
         assert data["email"] == "newuser@gmail.com"
         assert data["is_email_verified"] is True
-        assert data["account_type"] == "verified"
+        # OAuth registration starts as unverified; identity verification
+        # (account_type=verified) requires admin document review
+        assert data["account_type"] == "unverified"
 
         # Verify user was created in database
         auth_repo = AuthRepository(db_session)

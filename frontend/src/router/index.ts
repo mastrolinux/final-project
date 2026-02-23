@@ -174,6 +174,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/SocialAuthCallbackView.vue"),
     meta: { title: "Social Login" },
   },
+  // Documents
+  {
+    path: "/documents",
+    name: "documents",
+    component: () => import("@/views/VerificationView.vue"),
+    meta: {
+      requiresAuth: true,
+      title: "My Documents",
+      breadcrumb: { parent: "/profile", parentLabel: "nav.profile" },
+    },
+    beforeEnter: (_to, _from, next) => {
+      const authStore = useAuthStore();
+      if (authStore.accountType === "pseudonymous") {
+        next("/profile");
+      } else {
+        next();
+      }
+    },
+  },
   // Audit trail (any authenticated user)
   {
     path: "/audit",
@@ -233,8 +252,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/admin/users/soft-deleted",
     name: "admin-soft-deleted-users",
-    component: () =>
-      import("@/views/admin/AdminSoftDeletedUsersView.vue"),
+    component: () => import("@/views/admin/AdminSoftDeletedUsersView.vue"),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
@@ -242,6 +260,34 @@ const routes: RouteRecordRaw[] = [
       breadcrumb: {
         parent: "/admin/oauth/clients",
         parentLabel: "nav.adminOAuthClients",
+      },
+    },
+  },
+  {
+    path: "/admin/verifications",
+    name: "admin-verifications",
+    component: () => import("@/views/admin/AdminVerificationsView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: "Verification Queue",
+      breadcrumb: {
+        parent: "/admin/oauth/clients",
+        parentLabel: "nav.adminOAuthClients",
+      },
+    },
+  },
+  {
+    path: "/admin/verifications/:contextId",
+    name: "admin-verification-review",
+    component: () => import("@/views/admin/AdminVerificationReviewView.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: "Review Context Verification",
+      breadcrumb: {
+        parent: "/admin/verifications",
+        parentLabel: "nav.adminVerifications",
       },
     },
   },

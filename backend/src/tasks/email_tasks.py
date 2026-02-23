@@ -361,3 +361,176 @@ def send_restoration_email(self, email: str, token: str):
 
     except Exception as exc:
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+
+
+@celery_app.task(name="send_rejection_email", bind=True, max_retries=3)
+def send_rejection_email(
+    self, email: str, user_name: str, context_name: str, rejection_reason: str
+):
+    """
+    Send verification rejection notification via SMTP.
+
+    Informs the user that their context verification was rejected
+    and includes the reason provided by the reviewer.
+    Retries up to 3 times on failure with exponential backoff.
+
+    Args:
+        email: Recipient email address
+        user_name: Display name of the user
+        context_name: Name of the rejected context
+        rejection_reason: Reviewer's reason for rejection
+    """
+    try:
+        documents_url = f"{settings.FRONTEND_URL}/documents"
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Verification request rejected"
+        msg["From"] = settings.SMTP_FROM_EMAIL
+        msg["To"] = email
+
+        text = f"""
+        Verification Request Rejected
+
+        Hello {user_name},
+
+        Your verification request for the context "{context_name}" has been rejected.
+
+        Reason: {rejection_reason}
+
+        You can upload a new document and try again at:
+        {documents_url}
+
+        If you believe this was an error, please contact support.
+
+        Best regards,
+        Identity Management Team
+        """
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #dc2626;">Verification Request Rejected</h2>
+              <p>Hello {user_name},</p>
+              <p>Your verification request for the context
+                 <strong>{context_name}</strong> has been rejected.</p>
+              <div style="background-color: #fef2f2; border-left: 4px solid #dc2626;
+                          padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #991b1b;">
+                  <strong>Reason:</strong> {rejection_reason}
+                </p>
+              </div>
+              <p>You can upload a new document and try again:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{documents_url}"
+                   style="background-color: #dc2626; color: white; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px;
+                          display: inline-block;">
+                  Upload New Document
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">
+                If you believe this was an error, please contact support.
+              </p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px;">
+                This is an automated notification from the Identity Management System.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        with get_smtp_connection() as server:
+            server.send_message(msg)
+
+        return {"status": "sent", "email": email}
+
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+
+
+@celery_app.task(name="send_approval_email", bind=True, max_retries=3)
+def send_approval_email(self, email: str, user_name: str, context_name: str):
+    """
+    Send verification approval notification via SMTP.
+
+    Informs the user that their context verification was approved
+    and their account has been promoted to verified status.
+    Retries up to 3 times on failure with exponential backoff.
+
+    Args:
+        email: Recipient email address
+        user_name: Display name of the user
+        context_name: Name of the approved context
+    """
+    try:
+        contexts_url = f"{settings.FRONTEND_URL}/contexts"
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Verification approved"
+        msg["From"] = settings.SMTP_FROM_EMAIL
+        msg["To"] = email
+
+        text = f"""
+        Verification Approved
+
+        Hello {user_name},
+
+        Your verification request for the context "{context_name}" has been approved.
+
+        Your account has been promoted to verified status. The context is now
+        active and ready to use.
+
+        View your contexts at:
+        {contexts_url}
+
+        Best regards,
+        Identity Management Team
+        """
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #059669;">Verification Approved</h2>
+              <p>Hello {user_name},</p>
+              <p>Your verification request for the context
+                 <strong>{context_name}</strong> has been approved.</p>
+              <div style="background-color: #ecfdf5; border-left: 4px solid #059669;
+                          padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #065f46;">
+                  Your account has been promoted to <strong>verified</strong> status.
+                  The context is now active and ready to use.
+                </p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{contexts_url}"
+                   style="background-color: #059669; color: white; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px;
+                          display: inline-block;">
+                  View Your Contexts
+                </a>
+              </div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px;">
+                This is an automated notification from the Identity Management System.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        with get_smtp_connection() as server:
+            server.send_message(msg)
+
+        return {"status": "sent", "email": email}
+
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)

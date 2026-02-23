@@ -379,6 +379,14 @@ class IntrospectionResponse(BaseModel):
     # Custom extension
     context_profile_id: Optional[UUID] = None
     context_type: Optional[ContextType] = None
+    context_verified: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Whether the bound context has passed identity verification. "
+            "None when no context is bound or the context type does not "
+            "require verification."
+        )
+    )
 
 
 # =============================================================================

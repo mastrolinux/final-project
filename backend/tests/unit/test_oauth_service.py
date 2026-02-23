@@ -1017,3 +1017,271 @@ class TestConsentManagement:
 
         assert len(result) == 2
         mock_oauth_repo.get_user_active_consents.assert_called_once_with(user_id)
+
+
+class TestContextVerificationGuard:
+    """Test that OAuth authorization code creation rejects unverified
+    legal/healthcare contexts while allowing other context types."""
+
+    @pytest.fixture
+    def mock_oauth_repo(self):
+        """Create mock OAuth repository."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_context_repo(self):
+        """Create mock context repository."""
+        return Mock()
+
+    @pytest.fixture
+    def oauth_service(self, mock_oauth_repo, mock_context_repo):
+        """Create OAuthService with mocked repos including context_repo."""
+        return OAuthService(mock_oauth_repo, context_repo=mock_context_repo)
+
+    @pytest.fixture
+    def sample_client(self):
+        """Create a sample OAuth client for auth code tests."""
+        client = Mock(spec=OAuthClient)
+        client.client_id = "test-client"
+        client.is_confidential = False
+        client.is_active = True
+        client.redirect_uris = ["https://example.com/callback"]
+        client.is_redirect_uri_valid = Mock(return_value=True)
+        return client
+
+    def _make_context(self, context_type, verification_status, requires_verification, is_verified):
+        """Helper to build a mock ContextProfile with verification fields."""
+        ctx = Mock()
+        ctx.context_type = context_type
+        ctx.verification_status = verification_status
+        ctx.requires_verification = requires_verification
+        ctx.is_identity_verified = is_verified
+        return ctx
+
+    def test_allows_professional_context_without_verification(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """Professional contexts do not require verification and should
+        pass through regardless of verification_status."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.professional, None, False, False
+        )
+        mock_auth_code = Mock(spec=OAuthAuthorizationCode)
+        mock_auth_code.code = "auth-code"
+        mock_oauth_repo.create_authorization_code.return_value = mock_auth_code
+
+        result = oauth_service.create_authorization_code(
+            client_id="test-client",
+            user_id=user_id,
+            redirect_uri="https://example.com/callback",
+            scope="profile:read:basic",
+            code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            code_challenge_method="S256",
+            context_profile_id=context_id
+        )
+
+        assert result == mock_auth_code
+
+    def test_allows_legal_context_when_verified(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """Legal context with verification_status=verified should be accepted."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.legal, "verified", True, True
+        )
+        mock_auth_code = Mock(spec=OAuthAuthorizationCode)
+        mock_auth_code.code = "auth-code"
+        mock_oauth_repo.create_authorization_code.return_value = mock_auth_code
+
+        result = oauth_service.create_authorization_code(
+            client_id="test-client",
+            user_id=user_id,
+            redirect_uri="https://example.com/callback",
+            scope="profile:read:basic",
+            code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            code_challenge_method="S256",
+            context_profile_id=context_id
+        )
+
+        assert result == mock_auth_code
+
+    def test_rejects_legal_context_when_pending(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """Legal context with verification_status=pending must be rejected."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.legal, "pending", True, False
+        )
+
+        with pytest.raises(InvalidRequestError) as exc_info:
+            oauth_service.create_authorization_code(
+                client_id="test-client",
+                user_id=user_id,
+                redirect_uri="https://example.com/callback",
+                scope="profile:read:basic",
+                code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                code_challenge_method="S256",
+                context_profile_id=context_id
+            )
+
+        assert "verification" in exc_info.value.error_description.lower()
+
+    def test_rejects_legal_context_when_rejected(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """Legal context with verification_status=rejected must be rejected."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.legal, "rejected", True, False
+        )
+
+        with pytest.raises(InvalidRequestError):
+            oauth_service.create_authorization_code(
+                client_id="test-client",
+                user_id=user_id,
+                redirect_uri="https://example.com/callback",
+                scope="profile:read:basic",
+                code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                code_challenge_method="S256",
+                context_profile_id=context_id
+            )
+
+    def test_rejects_healthcare_context_when_under_review(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """Healthcare context with verification_status=under_review must be rejected."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.healthcare, "under_review", True, False
+        )
+
+        with pytest.raises(InvalidRequestError):
+            oauth_service.create_authorization_code(
+                client_id="test-client",
+                user_id=user_id,
+                redirect_uri="https://example.com/callback",
+                scope="profile:read:basic",
+                code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                code_challenge_method="S256",
+                context_profile_id=context_id
+            )
+
+    def test_no_context_passes_through(
+        self, oauth_service, mock_oauth_repo, mock_context_repo, sample_client
+    ):
+        """When context_profile_id is None, no verification check occurs."""
+        user_id = uuid4()
+        mock_oauth_repo.get_active_client.return_value = sample_client
+        mock_auth_code = Mock(spec=OAuthAuthorizationCode)
+        mock_auth_code.code = "auth-code"
+        mock_oauth_repo.create_authorization_code.return_value = mock_auth_code
+
+        result = oauth_service.create_authorization_code(
+            client_id="test-client",
+            user_id=user_id,
+            redirect_uri="https://example.com/callback",
+            scope="profile:read:basic",
+            code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            code_challenge_method="S256",
+            context_profile_id=None
+        )
+
+        assert result == mock_auth_code
+        mock_context_repo.get_context_profile_by_id.assert_not_called()
+
+    def test_introspect_includes_context_verified_true_for_verified_legal(
+        self, mock_oauth_repo, mock_context_repo
+    ):
+        """Token introspection reports context_verified=True when the bound
+        legal context has been verified."""
+        service = OAuthService(mock_oauth_repo, context_repo=mock_context_repo)
+        user_id = uuid4()
+        context_id = uuid4()
+
+        access_token = Mock(spec=OAuthAccessToken)
+        access_token.is_active = True
+        access_token.scope = "profile:read:basic"
+        access_token.client_id = "test-client"
+        access_token.user_id = user_id
+        access_token.context_profile_id = context_id
+        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(timezone.utc)
+        mock_oauth_repo.get_access_token_by_raw.return_value = access_token
+
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.legal, "verified", True, True
+        )
+
+        result = service.introspect_token("some-token")
+
+        assert result.active is True
+        assert result.context_verified is True
+
+    def test_introspect_includes_context_verified_false_for_pending_legal(
+        self, mock_oauth_repo, mock_context_repo
+    ):
+        """Token introspection reports context_verified=False when the bound
+        legal context is still pending."""
+        service = OAuthService(mock_oauth_repo, context_repo=mock_context_repo)
+        user_id = uuid4()
+        context_id = uuid4()
+
+        access_token = Mock(spec=OAuthAccessToken)
+        access_token.is_active = True
+        access_token.scope = "profile:read:basic"
+        access_token.client_id = "test-client"
+        access_token.user_id = user_id
+        access_token.context_profile_id = context_id
+        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(timezone.utc)
+        mock_oauth_repo.get_access_token_by_raw.return_value = access_token
+
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.legal, "pending", True, False
+        )
+
+        result = service.introspect_token("some-token")
+
+        assert result.active is True
+        assert result.context_verified is False
+
+    def test_introspect_context_verified_none_for_professional(
+        self, mock_oauth_repo, mock_context_repo
+    ):
+        """Token introspection reports context_verified=None when the bound
+        context type does not require verification."""
+        service = OAuthService(mock_oauth_repo, context_repo=mock_context_repo)
+        user_id = uuid4()
+        context_id = uuid4()
+
+        access_token = Mock(spec=OAuthAccessToken)
+        access_token.is_active = True
+        access_token.scope = "profile:read:basic"
+        access_token.client_id = "test-client"
+        access_token.user_id = user_id
+        access_token.context_profile_id = context_id
+        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(timezone.utc)
+        mock_oauth_repo.get_access_token_by_raw.return_value = access_token
+
+        mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
+            ContextType.professional, None, False, False
+        )
+
+        result = service.introspect_token("some-token")
+
+        assert result.active is True
+        assert result.context_verified is None

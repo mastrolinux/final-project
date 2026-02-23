@@ -100,10 +100,10 @@ class TestContextCreation:
                 context_type=ContextType.legal,
                 context_name="Government"
             )
-        
-        assert "cannot create" in str(exc_info.value).lower()
+
+        assert "pseudonymous" in str(exc_info.value).lower()
         assert "legal" in str(exc_info.value).lower()
-    
+
     def test_pseudonymous_cannot_create_healthcare_context(
         self,
         context_service: ContextService,
@@ -116,9 +116,39 @@ class TestContextCreation:
                 context_type=ContextType.healthcare,
                 context_name="Hospital"
             )
-        
-        assert "cannot create" in str(exc_info.value).lower()
+
+        assert "pseudonymous" in str(exc_info.value).lower()
         assert "healthcare" in str(exc_info.value).lower()
+
+    def test_unverified_creates_legal_context_pending(
+        self,
+        context_service: ContextService,
+        sample_unverified_profile: BaseProfile
+    ):
+        """Unverified accounts can create legal contexts (starts pending/inactive)."""
+        from src.models.verification import VerificationStatus
+        context = context_service.create_context_profile(
+            user_id=sample_unverified_profile.user_id,
+            context_type=ContextType.legal,
+            context_name="Government"
+        )
+        assert context.verification_status == VerificationStatus.pending
+        assert context.is_active is False
+
+    def test_unverified_creates_healthcare_context_pending(
+        self,
+        context_service: ContextService,
+        sample_unverified_profile: BaseProfile
+    ):
+        """Unverified accounts can create healthcare contexts (starts pending/inactive)."""
+        from src.models.verification import VerificationStatus
+        context = context_service.create_context_profile(
+            user_id=sample_unverified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Hospital"
+        )
+        assert context.verification_status == VerificationStatus.pending
+        assert context.is_active is False
     
     def test_duplicate_context_fails(
         self,
