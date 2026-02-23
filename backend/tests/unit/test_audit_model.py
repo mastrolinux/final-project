@@ -23,7 +23,7 @@ class TestAuditOperation:
         expected = {
             "create", "update", "delete", "login", "logout",
             "register", "verify", "grant", "withdraw", "revoke",
-            "restore", "review"
+            "restore", "review", "read"
         }
         actual = {op.value for op in AuditOperation}
         assert actual == expected

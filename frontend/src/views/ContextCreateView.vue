@@ -208,6 +208,14 @@ const handleCancel = () => {
                 >
                   {{ t("context.pseudonymousRestriction") }}
                 </p>
+                <div
+                  v-if="form.context_type === 'legal' || form.context_type === 'healthcare'"
+                  class="verification-notice"
+                >
+                  <p class="verification-notice-text">
+                    {{ t("context.verificationNotice") }}
+                  </p>
+                </div>
               </div>
 
               <!-- Basic Info -->
@@ -425,6 +433,29 @@ const handleCancel = () => {
   margin-top: var(--spacing-2);
   font-size: var(--font-size-sm);
   color: var(--color-warning-600);
+}
+
+.verification-notice {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-warning-50);
+  border: 1px solid var(--color-warning-200);
+}
+
+:global(.dark) .verification-notice {
+  background-color: rgba(234, 179, 8, 0.08);
+  border-color: var(--color-warning-700);
+}
+
+.verification-notice-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-700);
+  margin: 0;
+}
+
+:global(.dark) .verification-notice-text {
+  color: var(--color-warning-400);
 }
 
 /* Context Type Selection Cards */

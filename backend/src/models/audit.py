@@ -30,6 +30,7 @@ class AuditOperation(str, enum.Enum):
     revoke = "revoke"
     restore = "restore"
     review = "review"
+    read = "read"
 
 
 class AuditEventType(str, enum.Enum):
@@ -85,6 +86,7 @@ class AuditEventType(str, enum.Enum):
     document_upload = "verification.document.upload"
     document_review = "verification.document.review"
     document_delete = "verification.document.delete"
+    document_view = "verification.document.view"
 
 
 # SHA-256 of b"GENESIS" - used as previous_hash for the first entry in the chain

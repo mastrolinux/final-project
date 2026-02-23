@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
- * Admin document review page.
+ * Admin context verification review page.
  *
- * Displays full document details and provides a form for administrators
- * to approve (with optional expiry date) or reject (with required reason)
- * a verification submission.
+ * Displays the context's identity claims alongside linked document
+ * previews, enabling administrators to compare document content
+ * against claimed fields before approving or rejecting.
  */
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useUiStore } from "@/stores/ui.store";
@@ -20,7 +20,7 @@ import {
   ArrowLeftIcon,
 } from "@heroicons/vue/24/outline";
 import type {
-  VerificationDocumentResponse,
+  AdminContextVerificationDetail,
   AdminVerificationReview,
 } from "@/types";
 
@@ -29,12 +29,17 @@ const router = useRouter();
 const { t } = useI18n();
 const uiStore = useUiStore();
 
-const documentId = computed(() => route.params.documentId as string);
+const contextId = computed(() => route.params.contextId as string);
 
-const document = ref<VerificationDocumentResponse | null>(null);
+const context = ref<AdminContextVerificationDetail | null>(null);
 const isLoading = ref(true);
 const isSubmitting = ref(false);
 const error = ref<string | null>(null);
+
+// Document preview state (keyed by document id)
+const previewUrls = ref<Record<string, string>>({});
+const previewLoading = ref<Record<string, boolean>>({});
+const previewErrors = ref<Record<string, string>>({});
 
 // Review form state
 const reviewAction = ref<"verified" | "rejected" | null>(null);
@@ -43,23 +48,38 @@ const documentExpiryDate = ref("");
 const rejectionReason = ref("");
 const formError = ref<string | null>(null);
 
-type BadgeVariant = "primary" | "success" | "warning" | "error" | "info" | "neutral";
+type BadgeVariant =
+  | "primary"
+  | "success"
+  | "warning"
+  | "error"
+  | "info"
+  | "neutral";
 
 const statusVariant = computed<BadgeVariant>(() => {
-  if (!document.value) return "neutral";
+  if (!context.value) return "neutral";
   const map: Record<string, BadgeVariant> = {
     pending: "warning",
     under_review: "info",
     verified: "success",
     rejected: "error",
   };
-  return map[document.value.verification_status] || "neutral";
+  return map[context.value.verification_status] || "neutral";
+});
+
+const contextTypeVariant = computed<BadgeVariant>(() => {
+  if (!context.value) return "neutral";
+  const map: Record<string, BadgeVariant> = {
+    legal: "primary",
+    healthcare: "error",
+  };
+  return map[context.value.context_type] || "neutral";
 });
 
 const isReviewable = computed(() => {
-  if (!document.value) return false;
+  if (!context.value) return false;
   return ["pending", "under_review"].includes(
-    document.value.verification_status,
+    context.value.verification_status,
   );
 });
 
@@ -70,17 +90,9 @@ const canSubmit = computed(() => {
   return true;
 });
 
-const fileSizeFormatted = computed(() => {
-  if (!document.value) return "";
-  const bytes = document.value.file_size_bytes;
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-});
-
 const formattedCreatedAt = computed(() => {
-  if (!document.value) return "";
-  return new Date(document.value.created_at).toLocaleDateString(undefined, {
+  if (!context.value) return "";
+  return new Date(context.value.created_at).toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -97,19 +109,60 @@ watch(reviewAction, (action) => {
   formError.value = null;
 });
 
-async function loadDocument(): Promise<void> {
+async function loadContext(): Promise<void> {
   isLoading.value = true;
   error.value = null;
 
   try {
-    document.value = await adminVerificationService.getDocument(
-      documentId.value,
+    context.value = await adminVerificationService.getContextVerification(
+      contextId.value,
     );
+    // Pre-fill expiry date from the earliest declared expiry
+    const declaredExpiries = context.value.documents
+      .map((d) => d.document_expiry_date)
+      .filter(Boolean)
+      .sort();
+    if (declaredExpiries.length > 0) {
+      documentExpiryDate.value = declaredExpiries[0] as string;
+    }
+
+    // Load previews for each linked document
+    for (const doc of context.value.documents) {
+      loadPreview(doc.id);
+    }
   } catch (err) {
     error.value = getErrorMessage(err);
   } finally {
     isLoading.value = false;
   }
+}
+
+async function loadPreview(documentId: string): Promise<void> {
+  previewLoading.value[documentId] = true;
+  previewErrors.value[documentId] = "";
+
+  try {
+    const blob = await adminVerificationService.downloadDocument(documentId);
+    previewUrls.value[documentId] = URL.createObjectURL(blob);
+  } catch (err) {
+    previewErrors.value[documentId] = getErrorMessage(err);
+  } finally {
+    previewLoading.value[documentId] = false;
+  }
+}
+
+function isPreviewImage(contentType: string): boolean {
+  return contentType?.startsWith("image/") ?? false;
+}
+
+function isPreviewPdf(contentType: string): boolean {
+  return contentType === "application/pdf";
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function handleSubmitReview(): Promise<void> {
@@ -129,7 +182,7 @@ async function handleSubmitReview(): Promise<void> {
   };
 
   try {
-    await adminVerificationService.reviewDocument(documentId.value, review);
+    await adminVerificationService.reviewContext(contextId.value, review);
 
     if (reviewAction.value === "verified") {
       uiStore.showSuccess(t("verification.admin.reviewSuccess.approved"));
@@ -149,7 +202,13 @@ function goBack(): void {
   router.push({ name: "admin-verifications" });
 }
 
-onMounted(loadDocument);
+onMounted(loadContext);
+
+onUnmounted(() => {
+  for (const url of Object.values(previewUrls.value)) {
+    URL.revokeObjectURL(url);
+  }
+});
 </script>
 
 <template>
@@ -178,64 +237,69 @@ onMounted(loadDocument);
         {{ error }}
       </div>
 
-      <!-- Document details and review form -->
-      <template v-else-if="document">
-        <!-- Document info card -->
-        <BaseCard class="document-detail-card">
+      <!-- Context details and review form -->
+      <template v-else-if="context">
+        <!-- Context identity card -->
+        <BaseCard class="context-identity-card">
           <template #header>
             <div class="detail-header">
               <span class="detail-header-title">
-                {{ t("verification.admin.documentDetails") }}
+                {{ t("verification.admin.contextIdentity") }}
               </span>
-              <BaseBadge :variant="statusVariant" size="sm">
-                {{ t(`verification.status.${document.verification_status}`) }}
-              </BaseBadge>
+              <div class="header-badges">
+                <BaseBadge :variant="contextTypeVariant" size="sm">
+                  {{ context.context_type }}
+                </BaseBadge>
+                <BaseBadge :variant="statusVariant" size="sm">
+                  {{ t(`verification.status.${context.verification_status}`) }}
+                </BaseBadge>
+              </div>
             </div>
           </template>
 
+          <p class="context-hint">
+            {{ t("verification.admin.compareHint") }}
+          </p>
+
           <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">
+                {{ t("verification.admin.contextName") }}
+              </span>
+              <span class="detail-value">
+                {{ context.context_name }}
+              </span>
+            </div>
+            <div v-if="context.display_name_override" class="detail-item">
+              <span class="detail-label">
+                {{ t("verification.admin.displayName") }}
+              </span>
+              <span class="detail-value detail-highlight">
+                {{ context.display_name_override }}
+              </span>
+            </div>
+            <div v-if="context.email_override" class="detail-item">
+              <span class="detail-label">
+                {{ t("verification.admin.emailOverride") }}
+              </span>
+              <span class="detail-value">
+                {{ context.email_override }}
+              </span>
+            </div>
+            <div v-if="context.phone_override" class="detail-item">
+              <span class="detail-label">
+                {{ t("verification.admin.phoneOverride") }}
+              </span>
+              <span class="detail-value">
+                {{ context.phone_override }}
+              </span>
+            </div>
             <div class="detail-item">
               <span class="detail-label">
                 {{ t("verification.admin.userId") }}
               </span>
               <span class="detail-value detail-mono">
-                {{ document.user_id }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">
-                {{ t("verification.upload.documentType") }}
-              </span>
-              <span class="detail-value">
-                {{
-                  t(
-                    `verification.documentTypes.${document.document_type === "national_id" ? "nationalId" : document.document_type}`,
-                  )
-                }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">
-                {{ t("verification.document.filename") }}
-              </span>
-              <span class="detail-value">
-                {{ document.original_filename }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">
-                {{ t("verification.document.fileSize") }}
-              </span>
-              <span class="detail-value">
-                {{ fileSizeFormatted }}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">
-                {{ t("verification.document.format") }}
-              </span>
-              <span class="detail-value">
-                {{ document.content_type }}
+                {{ context.user_id }}
               </span>
             </div>
             <div class="detail-item">
@@ -246,6 +310,75 @@ onMounted(loadDocument);
                 {{ formattedCreatedAt }}
               </span>
             </div>
+          </div>
+
+          <div v-if="context.bio" class="bio-section">
+            <span class="detail-label">Bio</span>
+            <p class="bio-text">{{ context.bio }}</p>
+          </div>
+        </BaseCard>
+
+        <!-- Document preview cards -->
+        <BaseCard
+          v-for="doc in context.documents"
+          :key="doc.id"
+          class="document-card"
+        >
+          <template #header>
+            <div class="detail-header">
+              <span class="detail-header-title">
+                {{
+                  t(
+                    `verification.documentTypes.${doc.document_type === "national_id" ? "nationalId" : doc.document_type}`,
+                  )
+                }}
+                - {{ doc.original_filename }}
+              </span>
+              <span class="file-size">
+                {{ formatFileSize(doc.file_size_bytes) }}
+              </span>
+            </div>
+          </template>
+
+          <div v-if="doc.document_expiry_date" class="declared-expiry">
+            <span class="declared-expiry-label">
+              {{ t("verification.admin.declaredExpiry") }}
+            </span>
+            <span class="declared-expiry-value">
+              {{
+                new Date(doc.document_expiry_date).toLocaleDateString(
+                  undefined,
+                  { year: "numeric", month: "short", day: "numeric" },
+                )
+              }}
+            </span>
+          </div>
+
+          <div v-if="previewLoading[doc.id]" class="preview-loading">
+            <div class="spinner spinner-md"></div>
+            <p class="loading-text">
+              {{ t("verification.admin.loadingPreview") }}
+            </p>
+          </div>
+          <div v-else-if="previewErrors[doc.id]" class="alert alert-error">
+            {{ previewErrors[doc.id] }}
+          </div>
+          <div v-else-if="previewUrls[doc.id]" class="preview-container">
+            <img
+              v-if="isPreviewImage(doc.content_type)"
+              :src="previewUrls[doc.id]"
+              :alt="doc.original_filename"
+              class="preview-image"
+            />
+            <iframe
+              v-else-if="isPreviewPdf(doc.content_type)"
+              :src="previewUrls[doc.id]"
+              class="preview-pdf"
+              title="Document preview"
+            ></iframe>
+            <p v-else class="preview-unsupported">
+              {{ t("verification.admin.previewUnsupported") }}
+            </p>
           </div>
         </BaseCard>
 
@@ -371,9 +504,7 @@ onMounted(loadDocument);
           <p class="already-reviewed-text">
             {{
               t("verification.admin.alreadyReviewed", {
-                status: t(
-                  `verification.status.${document.verification_status}`,
-                ),
+                status: t(`verification.status.${context.verification_status}`),
               })
             }}
           </p>
@@ -441,8 +572,8 @@ onMounted(loadDocument);
   color: var(--color-error-700);
 }
 
-/* Document detail card */
-.document-detail-card {
+/* Context identity card */
+.context-identity-card {
   margin-bottom: var(--spacing-6);
 }
 
@@ -452,9 +583,20 @@ onMounted(loadDocument);
   justify-content: space-between;
 }
 
+.header-badges {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
 .detail-header-title {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
+}
+
+.context-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-4) 0;
 }
 
 .detail-grid {
@@ -483,9 +625,89 @@ onMounted(loadDocument);
   word-break: break-all;
 }
 
+.detail-highlight {
+  font-weight: var(--font-weight-semibold);
+}
+
 .detail-mono {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
+}
+
+.bio-section {
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border-primary);
+}
+
+.bio-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: var(--spacing-1) 0 0 0;
+}
+
+/* Document cards */
+.document-card {
+  margin-bottom: var(--spacing-6);
+}
+
+.file-size {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.declared-expiry {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-5);
+  border-bottom: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.declared-expiry-label {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.declared-expiry-value {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+/* Document preview */
+.preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-8) 0;
+}
+
+.preview-container {
+  display: flex;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 600px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+.preview-pdf {
+  width: 100%;
+  height: 600px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.preview-unsupported {
+  text-align: center;
+  color: var(--text-tertiary);
+  padding: var(--spacing-8) 0;
 }
 
 /* Review form */

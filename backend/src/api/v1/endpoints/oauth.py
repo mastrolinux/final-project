@@ -347,23 +347,23 @@ async def submit_consent(
     consent_data: ConsentDecisionRequestBody,
     request: Request,
     current_user: AuthUser = Depends(get_current_user),
+    oauth_service: OAuthService = Depends(get_oauth_service),
     db: Session = Depends(get_db)
 ):
     """
     Process user consent decision.
-    
+
     Accepts JSON body with the consent decision from the frontend.
     User identity is obtained from JWT authentication token.
-    
+
     If approved, creates authorization code and returns redirect URL.
     If denied, returns redirect URL with access_denied error.
-    
+    Rejects consent when the selected context requires identity
+    verification but has not been verified by an admin.
+
     Returns:
         ConsentDecisionResponseBody with redirect_to URL
     """
-    audit_repo = AuditRepository(db)
-    audit_svc = AuditService(audit_repo)
-    oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
 
     # Handle denial
     if consent_data.decision == 'deny':
@@ -561,10 +561,13 @@ def introspect_token(
     
     Resource servers use this to validate tokens and get metadata.
     """
-    oauth_service = OAuthService(OAuthRepository(db))
-    
+    oauth_service = OAuthService(
+        OAuthRepository(db),
+        context_repo=ContextRepository(db)
+    )
+
     result = oauth_service.introspect_token(token, token_type_hint)
-    
+
     return IntrospectionResponse(
         active=result.active,
         scope=result.scope,
@@ -576,7 +579,8 @@ def introspect_token(
         sub=result.sub,
         aud=result.aud,
         context_profile_id=result.context_profile_id,
-        context_type=result.context_type
+        context_type=result.context_type,
+        context_verified=result.context_verified
     )
 
 
@@ -654,7 +658,7 @@ def get_userinfo(
         )
     
     # Get user profile
-    profile = profile_repo.get_by_user_id(access_token.user_id)
+    profile = profile_repo.get_profile_by_id(access_token.user_id)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -664,8 +668,29 @@ def get_userinfo(
     # Get context profile if bound
     context_profile = None
     if access_token.context_profile_id:
-        context_profile = context_repo.get_by_id(access_token.context_profile_id)
-    
+        context_profile = context_repo.get_context_profile_by_id(
+            access_token.context_profile_id
+        )
+
+    # Reject serving data from unverified legal/healthcare contexts
+    if (context_profile
+            and context_profile.requires_verification
+            and not context_profile.is_identity_verified):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "context_not_verified",
+                "message": "Context requires identity verification before use",
+                "details": {
+                    "context_id": str(access_token.context_profile_id),
+                    "verification_status": (
+                        context_profile.verification_status.value
+                        if context_profile.verification_status else "none"
+                    )
+                }
+            }
+        )
+
     # Build response based on scopes
     scopes = access_token.get_scopes_list()
     
@@ -674,7 +699,7 @@ def get_userinfo(
     # Basic profile claims
     if any(s in scopes for s in ['profile:read:basic', 'profile:read:full', 'openid']):
         # Get identity names for display name
-        names = profile_repo.get_profile_names(profile.user_id)
+        names = profile_repo.get_identity_names(profile.user_id)
         full_name = None
         given_name = None
         family_name = None

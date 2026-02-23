@@ -35,15 +35,32 @@ export interface VerificationStatusResponse {
   can_create_legal_context: boolean;
 }
 
-export interface AdminVerificationListItem {
-  id: string;
+export interface AdminContextVerificationItem {
+  context_id: string;
+  context_type: string;
+  context_name: string;
+  display_name_override: string | null;
+  email_override: string | null;
+  verification_status: VerificationStatus;
   user_id: string;
   user_display_name: string | null;
-  document_type: DocumentType;
+  document_count: number;
+  created_at: string;
+}
+
+export interface AdminContextVerificationDetail {
+  context_id: string;
+  context_type: string;
+  context_name: string;
+  display_name_override: string | null;
+  email_override: string | null;
+  phone_override: string | null;
+  bio: string | null;
   verification_status: VerificationStatus;
-  original_filename: string;
-  file_size_bytes: number;
-  content_type: string;
+  rejection_reason: string | null;
+  user_id: string;
+  user_display_name: string | null;
+  documents: VerificationDocumentResponse[];
   created_at: string;
 }
 

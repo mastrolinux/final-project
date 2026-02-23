@@ -27,7 +27,10 @@ withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "upload", payload: { file: File; documentType: DocumentType }): void;
+  (
+    e: "upload",
+    payload: { file: File; documentType: DocumentType; expiryDate: string },
+  ): void;
 }>();
 
 const { t } = useI18n();
@@ -35,6 +38,7 @@ const { t } = useI18n();
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const documentType = ref<DocumentType>("passport");
+const expiryDate = ref<string>("");
 const validationError = ref<string | null>(null);
 const isDragging = ref(false);
 
@@ -112,6 +116,7 @@ function handleDrop(event: DragEvent) {
 
 function clearFile() {
   selectedFile.value = null;
+  expiryDate.value = "";
   validationError.value = null;
   if (fileInputRef.value) {
     fileInputRef.value.value = "";
@@ -119,10 +124,11 @@ function clearFile() {
 }
 
 function handleSubmit() {
-  if (!selectedFile.value) return;
+  if (!selectedFile.value || !expiryDate.value) return;
   emit("upload", {
     file: selectedFile.value,
     documentType: documentType.value,
+    expiryDate: expiryDate.value,
   });
 }
 </script>
@@ -140,6 +146,24 @@ function handleSubmit() {
         :disabled="isUploading"
         @update:model-value="documentType = $event as DocumentType"
       />
+    </div>
+
+    <div class="upload-form-field">
+      <label class="field-label" for="expiry-date">
+        {{ t("verification.upload.expiryDate") }}
+        <span class="required">*</span>
+      </label>
+      <input
+        id="expiry-date"
+        v-model="expiryDate"
+        type="date"
+        class="form-input"
+        :min="new Date().toISOString().split('T')[0]"
+        :disabled="isUploading"
+      />
+      <p class="field-hint">
+        {{ t("verification.upload.expiryDateHint") }}
+      </p>
     </div>
 
     <!-- Drop zone / file picker -->
@@ -198,7 +222,7 @@ function handleSubmit() {
     <BaseButton
       v-if="selectedFile"
       :loading="isUploading"
-      :disabled="!selectedFile"
+      :disabled="!selectedFile || !expiryDate"
       @click="handleSubmit"
     >
       {{ t("verification.upload.submit") }}
@@ -223,6 +247,32 @@ function handleSubmit() {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
+}
+
+.field-label .required {
+  color: var(--color-error-500);
+}
+
+.field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-100);
 }
 
 /* Drop zone */

@@ -1,27 +1,34 @@
 <script setup lang="ts">
 /**
- * Admin card for a pending verification document in the review queue.
+ * Admin card for a pending context verification in the review queue.
  *
- * Displays user info, document metadata, and a link to the review page.
+ * Displays user info, context metadata, document count, and a link
+ * to the context review page.
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseCard from "@/components/common/BaseCard.vue";
 import BaseBadge from "@/components/common/BaseBadge.vue";
 import BaseButton from "@/components/common/BaseButton.vue";
-import type { AdminVerificationListItem } from "@/types";
+import type { AdminContextVerificationItem } from "@/types";
 
 const props = defineProps<{
-  document: AdminVerificationListItem;
+  context: AdminContextVerificationItem;
 }>();
 
 const emit = defineEmits<{
-  (e: "review", documentId: string): void;
+  (e: "review", contextId: string): void;
 }>();
 
 const { t } = useI18n();
 
-type BadgeVariant = "primary" | "success" | "warning" | "error" | "info" | "neutral";
+type BadgeVariant =
+  | "primary"
+  | "success"
+  | "warning"
+  | "error"
+  | "info"
+  | "neutral";
 
 const statusVariant = computed<BadgeVariant>(() => {
   const map: Record<string, BadgeVariant> = {
@@ -30,11 +37,19 @@ const statusVariant = computed<BadgeVariant>(() => {
     verified: "success",
     rejected: "error",
   };
-  return map[props.document.verification_status] || "neutral";
+  return map[props.context.verification_status] || "neutral";
+});
+
+const contextTypeVariant = computed<BadgeVariant>(() => {
+  const map: Record<string, BadgeVariant> = {
+    legal: "primary",
+    healthcare: "error",
+  };
+  return map[props.context.context_type] || "neutral";
 });
 
 const formattedDate = computed(() => {
-  return new Date(props.document.created_at).toLocaleDateString(undefined, {
+  return new Date(props.context.created_at).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -43,15 +58,8 @@ const formattedDate = computed(() => {
   });
 });
 
-const fileSizeFormatted = computed(() => {
-  const bytes = props.document.file_size_bytes;
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-});
-
 const truncatedUserId = computed(() => {
-  return props.document.user_id.substring(0, 8) + "...";
+  return props.context.user_id.substring(0, 8) + "...";
 });
 </script>
 
@@ -63,33 +71,39 @@ const truncatedUserId = computed(() => {
           <div class="user-info">
             <span class="user-name">
               {{
-                document.user_display_name ||
-                t("verification.admin.unknownUser")
+                context.user_display_name || t("verification.admin.unknownUser")
               }}
             </span>
-            <span class="user-id" :title="document.user_id">
+            <span class="user-id" :title="context.user_id">
               {{ truncatedUserId }}
             </span>
           </div>
           <BaseBadge :variant="statusVariant" size="sm">
-            {{ t(`verification.status.${document.verification_status}`) }}
+            {{ t(`verification.status.${context.verification_status}`) }}
           </BaseBadge>
         </div>
 
         <div class="card-meta">
+          <BaseBadge :variant="contextTypeVariant" size="sm">
+            {{ context.context_type }}
+          </BaseBadge>
+          <span class="meta-item">
+            {{ context.context_name }}
+          </span>
+          <template v-if="context.display_name_override">
+            <span class="meta-separator">|</span>
+            <span class="meta-item">
+              {{ context.display_name_override }}
+            </span>
+          </template>
+          <span class="meta-separator">|</span>
           <span class="meta-item">
             {{
-              t(
-                `verification.documentTypes.${document.document_type === "national_id" ? "nationalId" : document.document_type}`,
-              )
+              t("verification.admin.documentCount", {
+                count: context.document_count,
+              })
             }}
           </span>
-          <span class="meta-separator">|</span>
-          <span class="meta-item">
-            {{ document.original_filename }}
-          </span>
-          <span class="meta-separator">|</span>
-          <span class="meta-item">{{ fileSizeFormatted }}</span>
         </div>
 
         <span class="card-date">
@@ -102,7 +116,7 @@ const truncatedUserId = computed(() => {
         <BaseButton
           variant="primary"
           size="sm"
-          @click="emit('review', document.id)"
+          @click="emit('review', context.context_id)"
         >
           {{ t("verification.admin.review") }}
         </BaseButton>

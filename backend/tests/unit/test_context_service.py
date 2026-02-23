@@ -101,7 +101,7 @@ class TestContextCreation:
                 context_name="Government"
             )
 
-        assert "identity-verified" in str(exc_info.value).lower()
+        assert "pseudonymous" in str(exc_info.value).lower()
         assert "legal" in str(exc_info.value).lower()
 
     def test_pseudonymous_cannot_create_healthcare_context(
@@ -117,40 +117,38 @@ class TestContextCreation:
                 context_name="Hospital"
             )
 
-        assert "identity-verified" in str(exc_info.value).lower()
+        assert "pseudonymous" in str(exc_info.value).lower()
         assert "healthcare" in str(exc_info.value).lower()
 
-    def test_unverified_cannot_create_legal_context(
+    def test_unverified_creates_legal_context_pending(
         self,
         context_service: ContextService,
         sample_unverified_profile: BaseProfile
     ):
-        """Test unverified accounts cannot create legal contexts"""
-        with pytest.raises(ContextServiceError) as exc_info:
-            context_service.create_context_profile(
-                user_id=sample_unverified_profile.user_id,
-                context_type=ContextType.legal,
-                context_name="Government"
-            )
+        """Unverified accounts can create legal contexts (starts pending/inactive)."""
+        from src.models.verification import VerificationStatus
+        context = context_service.create_context_profile(
+            user_id=sample_unverified_profile.user_id,
+            context_type=ContextType.legal,
+            context_name="Government"
+        )
+        assert context.verification_status == VerificationStatus.pending
+        assert context.is_active is False
 
-        assert "identity-verified" in str(exc_info.value).lower()
-        assert "legal" in str(exc_info.value).lower()
-
-    def test_unverified_cannot_create_healthcare_context(
+    def test_unverified_creates_healthcare_context_pending(
         self,
         context_service: ContextService,
         sample_unverified_profile: BaseProfile
     ):
-        """Test unverified accounts cannot create healthcare contexts"""
-        with pytest.raises(ContextServiceError) as exc_info:
-            context_service.create_context_profile(
-                user_id=sample_unverified_profile.user_id,
-                context_type=ContextType.healthcare,
-                context_name="Hospital"
-            )
-
-        assert "identity-verified" in str(exc_info.value).lower()
-        assert "healthcare" in str(exc_info.value).lower()
+        """Unverified accounts can create healthcare contexts (starts pending/inactive)."""
+        from src.models.verification import VerificationStatus
+        context = context_service.create_context_profile(
+            user_id=sample_unverified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Hospital"
+        )
+        assert context.verification_status == VerificationStatus.pending
+        assert context.is_active is False
     
     def test_duplicate_context_fails(
         self,
