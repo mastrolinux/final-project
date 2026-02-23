@@ -393,7 +393,9 @@ class TestAuthenticateOrCreateUser:
         assert refresh_token is not None
         assert user_id == str(mock_profile.user_id)
         assert is_new_user is True
-        assert account_type == "verified"
+        # OAuth registration always starts as unverified; identity
+        # verification (account_type=verified) requires admin document review
+        assert account_type == "unverified"
         assert is_email_verified is True
         assert is_admin is False
         assert ret_provider == "google"

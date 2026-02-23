@@ -16,9 +16,14 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from src.core.security import create_access_token
+from src.models.auth import AuthUser
 from src.models.profile import BaseProfile, AccountType
+from src.models.context import ContextProfile, ContextType
+from src.models.verification import VerificationStatus
 from src.models.oauth import (
     OAuthClient,
+    OAuthAccessToken,
     OAuthScope,
     OAuthConsent,
     AccessLevel,
@@ -563,3 +568,340 @@ class TestOAuthErrorResponses:
         # Error may be wrapped in detail
         error_info = data.get("detail", data)
         assert error_info.get("error") in ["unsupported_grant_type", "invalid_request"]
+
+
+class TestConsentContextVerification:
+    """Test that the consent endpoint rejects unverified legal/healthcare
+    contexts and accepts verified or non-verification-required contexts."""
+
+    @pytest.fixture
+    def user_with_auth(self, db_session: Session):
+        """Create a verified user with BaseProfile and AuthUser."""
+        profile = BaseProfile(
+            account_type=AccountType.verified,
+            primary_email="consent-ctx-test@example.com",
+            preferred_language="en"
+        )
+        db_session.add(profile)
+        db_session.commit()
+        db_session.refresh(profile)
+
+        auth_user = AuthUser(
+            user_id=profile.user_id,
+            email="consent-ctx-test@example.com",
+            password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+            is_email_verified=True,
+            is_admin=False,
+        )
+        db_session.add(auth_user)
+        db_session.commit()
+        return auth_user
+
+    @pytest.fixture
+    def jwt_token(self, user_with_auth):
+        """JWT access token for the test user."""
+        return create_access_token(
+            user_id=str(user_with_auth.user_id),
+            email=user_with_auth.email,
+            account_type="verified",
+        )
+
+    @pytest.fixture
+    def auth_headers(self, jwt_token):
+        return {"Authorization": f"Bearer {jwt_token}"}
+
+    @pytest.fixture
+    def oauth_client(self, db_session: Session) -> OAuthClient:
+        client = OAuthClient(
+            client_id="ctx-verify-client",
+            client_name="Context Verify Test Client",
+            redirect_uris=["https://example.com/callback"],
+            allowed_scopes=["profile:read:basic"],
+            is_confidential=False,
+            is_active=True,
+        )
+        db_session.add(client)
+        db_session.commit()
+        db_session.refresh(client)
+        return client
+
+    @pytest.fixture
+    def sample_scopes(self, db_session: Session):
+        scope = OAuthScope(
+            scope_name="profile:read:basic",
+            description="Basic profile",
+            access_level=AccessLevel.read,
+        )
+        db_session.add(scope)
+        db_session.commit()
+        return [scope]
+
+    @staticmethod
+    def generate_pkce_pair() -> tuple[str, str]:
+        code_verifier = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).rstrip(b"=").decode()
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode()).digest()
+        ).rstrip(b"=").decode()
+        return code_verifier, code_challenge
+
+    def _consent_payload(self, oauth_client, context_id=None):
+        _, code_challenge = self.generate_pkce_pair()
+        payload = {
+            "decision": "allow",
+            "client_id": oauth_client.client_id,
+            "redirect_uri": "https://example.com/callback",
+            "response_type": "code",
+            "scope": "profile:read:basic",
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+            "remember": False,
+        }
+        if context_id:
+            payload["context_id"] = str(context_id)
+        return payload
+
+    def test_consent_rejects_unverified_legal_context(
+        self, client: TestClient, db_session: Session,
+        user_with_auth, auth_headers, oauth_client, sample_scopes,
+    ):
+        """Consent must fail when binding a legal context with pending
+        verification status."""
+        ctx = ContextProfile(
+            user_id=user_with_auth.user_id,
+            context_type=ContextType.legal,
+            context_name="Legal Pending",
+            is_active=True,
+            verification_status=VerificationStatus.pending,
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        payload = self._consent_payload(oauth_client, context_id=ctx.id)
+        response = client.post(
+            "/api/v1/oauth/consent",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "error=invalid_request" in data["redirect_to"]
+
+    def test_consent_allows_verified_legal_context(
+        self, client: TestClient, db_session: Session,
+        user_with_auth, auth_headers, oauth_client, sample_scopes,
+    ):
+        """Consent must succeed when binding a legal context that has been
+        verified by an admin."""
+        ctx = ContextProfile(
+            user_id=user_with_auth.user_id,
+            context_type=ContextType.legal,
+            context_name="Legal Verified",
+            is_active=True,
+            verification_status=VerificationStatus.verified,
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        payload = self._consent_payload(oauth_client, context_id=ctx.id)
+        response = client.post(
+            "/api/v1/oauth/consent",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "code=" in data["redirect_to"]
+        assert "error" not in data["redirect_to"]
+
+    def test_consent_allows_professional_context_without_verification(
+        self, client: TestClient, db_session: Session,
+        user_with_auth, auth_headers, oauth_client, sample_scopes,
+    ):
+        """Professional contexts do not require verification and must pass
+        through regardless."""
+        ctx = ContextProfile(
+            user_id=user_with_auth.user_id,
+            context_type=ContextType.professional,
+            context_name="Work",
+            is_active=True,
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        payload = self._consent_payload(oauth_client, context_id=ctx.id)
+        response = client.post(
+            "/api/v1/oauth/consent",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "code=" in data["redirect_to"]
+        assert "error" not in data["redirect_to"]
+
+
+class TestUserInfoContextVerification:
+    """Test that the UserInfo endpoint rejects serving data from unverified
+    legal/healthcare contexts and accepts verified or non-verification-required
+    contexts."""
+
+    @pytest.fixture
+    def user_with_profile(self, db_session: Session):
+        """Create a verified user with profile and auth record."""
+        profile = BaseProfile(
+            account_type=AccountType.verified,
+            primary_email="userinfo-ctx@example.com",
+            preferred_language="en",
+        )
+        db_session.add(profile)
+        db_session.commit()
+        db_session.refresh(profile)
+
+        auth_user = AuthUser(
+            user_id=profile.user_id,
+            email="userinfo-ctx@example.com",
+            password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+            is_email_verified=True,
+        )
+        db_session.add(auth_user)
+        db_session.commit()
+        return profile
+
+    @pytest.fixture
+    def oauth_client(self, db_session: Session) -> OAuthClient:
+        client = OAuthClient(
+            client_id="userinfo-ctx-client",
+            client_name="UserInfo Context Test",
+            redirect_uris=["https://example.com/callback"],
+            allowed_scopes=["profile:read:basic"],
+            is_active=True,
+        )
+        db_session.add(client)
+        db_session.commit()
+        db_session.refresh(client)
+        return client
+
+    def _create_access_token_record(
+        self, db_session, user_id, client_id, context_profile_id=None
+    ) -> OAuthAccessToken:
+        """Insert an active OAuth access token directly into the DB."""
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        token = OAuthAccessToken(
+            token_hash=token_hash,
+            client_id=client_id,
+            user_id=user_id,
+            scope="profile:read:basic",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            issued_at=datetime.now(timezone.utc),
+            context_profile_id=context_profile_id,
+        )
+        db_session.add(token)
+        db_session.commit()
+        db_session.refresh(token)
+        # Return both the raw token (for the Bearer header) and the record
+        token._raw = raw_token
+        return token
+
+    def test_userinfo_returns_403_for_rejected_legal_context(
+        self, client: TestClient, db_session: Session,
+        user_with_profile, oauth_client,
+    ):
+        """UserInfo must return 403 when the bound legal context has been
+        rejected after the token was issued."""
+        ctx = ContextProfile(
+            user_id=user_with_profile.user_id,
+            context_type=ContextType.legal,
+            context_name="Legal Rejected",
+            is_active=False,
+            verification_status=VerificationStatus.rejected,
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        token = self._create_access_token_record(
+            db_session, user_with_profile.user_id,
+            oauth_client.client_id, context_profile_id=ctx.id,
+        )
+
+        response = client.get(
+            "/api/v1/oauth/userinfo",
+            headers={"Authorization": f"Bearer {token._raw}"},
+        )
+
+        assert response.status_code == 403
+        data = response.json()
+        assert data["detail"]["code"] == "context_not_verified"
+
+    def test_userinfo_serves_verified_legal_context(
+        self, client: TestClient, db_session: Session,
+        user_with_profile, oauth_client,
+    ):
+        """UserInfo must serve data when the bound legal context is verified."""
+        ctx = ContextProfile(
+            user_id=user_with_profile.user_id,
+            context_type=ContextType.legal,
+            context_name="Legal Verified",
+            is_active=True,
+            verification_status=VerificationStatus.verified,
+            display_name_override="Jane Legal",
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        token = self._create_access_token_record(
+            db_session, user_with_profile.user_id,
+            oauth_client.client_id, context_profile_id=ctx.id,
+        )
+
+        response = client.get(
+            "/api/v1/oauth/userinfo",
+            headers={"Authorization": f"Bearer {token._raw}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Jane Legal"
+        assert data["context"] == "legal"
+
+    def test_userinfo_serves_professional_context_without_verification(
+        self, client: TestClient, db_session: Session,
+        user_with_profile, oauth_client,
+    ):
+        """UserInfo must serve data for professional contexts regardless of
+        verification status (they do not require it)."""
+        ctx = ContextProfile(
+            user_id=user_with_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work",
+            is_active=True,
+            display_name_override="Jane Work",
+        )
+        db_session.add(ctx)
+        db_session.commit()
+        db_session.refresh(ctx)
+
+        token = self._create_access_token_record(
+            db_session, user_with_profile.user_id,
+            oauth_client.client_id, context_profile_id=ctx.id,
+        )
+
+        response = client.get(
+            "/api/v1/oauth/userinfo",
+            headers={"Authorization": f"Bearer {token._raw}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Jane Work"
+        assert data["context"] == "professional"

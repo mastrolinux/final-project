@@ -390,8 +390,12 @@ class SocialAuthService:
             )
 
         # Create new user with OAuth credentials
-        # Determine account type based on email verification
-        account_type = AccountType.verified if email_verified else AccountType.unverified
+        # Account type starts as unverified regardless of email verification.
+        # Email verification (tracked by auth_users.is_email_verified) and
+        # identity verification (account_type=verified via admin document
+        # review) are separate concerns. Only admin approval of a government
+        # ID document promotes account_type to verified.
+        account_type = AccountType.unverified
 
         # Create base profile first
         # Note: BaseProfile model will auto-generate user_id
@@ -399,7 +403,6 @@ class SocialAuthService:
             account_type=account_type,
             primary_email=email,
             preferred_language="en",
-            legal_name=display_name if email_verified else None  # Only set legal_name if verified
         )
 
         # Get the generated user_id and ensure it's a string

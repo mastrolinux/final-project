@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+from sqlalchemy.orm import joinedload
+
 from src.models.context import ContextProfile, ContextType
+from src.models.verification import VerificationStatus
 
 
 class ContextRepository:
@@ -35,21 +38,23 @@ class ContextRepository:
         email_override: Optional[str] = None,
         phone_override: Optional[str] = None,
         bio: Optional[str] = None,
-        is_active: bool = True
+        is_active: bool = True,
+        verification_status: Optional["VerificationStatus"] = None,
     ) -> ContextProfile:
         """
-        Create a new context profile
-        
+        Create a new context profile.
+
         Args:
             user_id: User ID this context belongs to
-            context_type: Type of context (professional, social, legal, healthcare)
+            context_type: Type of context
             context_name: User-defined context name
             display_name_override: Optional display name override
             email_override: Optional email override
             phone_override: Optional phone override
             bio: Optional context-specific biography
             is_active: Whether context is active (default: True)
-            
+            verification_status: Verification state for legal/healthcare contexts
+
         Returns:
             Created context profile instance
         """
@@ -61,7 +66,8 @@ class ContextRepository:
             email_override=email_override,
             phone_override=phone_override,
             bio=bio,
-            is_active=is_active
+            is_active=is_active,
+            verification_status=verification_status,
         )
         
         self.db.add(context)
@@ -236,6 +242,82 @@ class ContextRepository:
         ).update({ContextProfile.deleted_at: now}, synchronize_session=False)
         self.db.commit()
         return count
+
+    def update_verification_status(
+        self,
+        context_id: UUID,
+        verification_status: VerificationStatus,
+        is_active: bool,
+        rejection_reason: Optional[str] = None,
+    ) -> Optional[ContextProfile]:
+        """
+        Update the verification status and active flag of a context profile.
+
+        Used by the verification service when an admin approves or rejects
+        a context verification request.
+
+        Args:
+            context_id: Context profile ID
+            verification_status: New verification status
+            is_active: Whether the context should be active
+            rejection_reason: Reason for rejection (set on reject, cleared on approve)
+
+        Returns:
+            Updated context profile, or None if not found
+        """
+        context = self.db.query(ContextProfile).filter(
+            ContextProfile.id == context_id
+        ).first()
+
+        if not context:
+            return None
+
+        context.verification_status = verification_status
+        context.is_active = is_active
+        context.rejection_reason = rejection_reason
+        context.updated_at = datetime.now(timezone.utc)
+
+        self.db.commit()
+        self.db.refresh(context)
+
+        return context
+
+    def get_contexts_pending_verification(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ContextProfile]:
+        """
+        Return contexts awaiting admin verification that have at least
+        one linked document.
+
+        Eagerly loads the base_profile relationship for display_name access.
+
+        Args:
+            limit: Maximum results to return
+            offset: Results offset for pagination
+
+        Returns:
+            List of context profiles pending verification
+        """
+        return (
+            self.db.query(ContextProfile)
+            .options(joinedload(ContextProfile.base_profile))
+            .filter(
+                and_(
+                    ContextProfile.verification_status.in_([
+                        VerificationStatus.pending,
+                        VerificationStatus.under_review,
+                    ]),
+                    ContextProfile.deleted_at.is_(None),
+                    ContextProfile.document_id.isnot(None),
+                )
+            )
+            .order_by(ContextProfile.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     def restore_user_contexts(self, user_id: UUID) -> int:
         """

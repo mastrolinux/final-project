@@ -93,6 +93,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/social/google/callback"
 
+    # Document Encryption
+    DOCUMENT_ENCRYPTION_KEY: str = ""
+
     # Admin Configuration
     # Comma-separated list of admin user emails for bootstrap
     # These users have admin access even if is_admin=false in DB

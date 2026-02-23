@@ -1,0 +1,193 @@
+"""
+Verification Document Schemas
+
+Pydantic models for request validation and response serialization
+of identity verification documents and admin review operations.
+"""
+
+from datetime import date, datetime
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from src.models.profile import AccountType
+from src.models.verification import DocumentType, VerificationStatus
+
+
+class VerificationDocumentResponse(BaseModel):
+    """
+    Public representation of a verification document.
+
+    Deliberately omits ``storage_path`` to prevent leaking
+    internal storage details in API responses.
+    """
+
+    id: UUID
+    user_id: UUID
+    document_type: DocumentType
+    verification_status: VerificationStatus
+    original_filename: str
+    file_size_bytes: int
+    content_type: str
+    document_expiry_date: Optional[date] = None
+    rejection_reason: Optional[str] = None
+    reviewer_notes: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "user_id": "11111111-1111-1111-1111-111111111111",
+                    "document_type": "passport",
+                    "verification_status": "pending",
+                    "original_filename": "passport_scan.pdf",
+                    "file_size_bytes": 2048576,
+                    "content_type": "application/pdf",
+                    "document_expiry_date": "2030-06-15",
+                    "rejection_reason": None,
+                    "reviewer_notes": None,
+                    "reviewed_at": None,
+                    "created_at": "2026-02-20T10:00:00Z",
+                    "updated_at": "2026-02-20T10:00:00Z",
+                }
+            ]
+        },
+    )
+
+
+class VerificationStatusResponse(BaseModel):
+    """
+    Summary of a user's verification state.
+
+    Combines the account type with the latest document status
+    and a derived boolean indicating whether the user can create
+    legal or healthcare context profiles.
+    """
+
+    user_id: UUID
+    account_type: AccountType
+    latest_document: Optional[VerificationDocumentResponse] = None
+    can_create_legal_context: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminVerificationReview(BaseModel):
+    """
+    Admin request body for approving or rejecting a verification document.
+
+    When ``verification_status`` is ``rejected``, the ``rejection_reason``
+    field is required. When ``verified``, ``document_expiry_date`` is
+    optional (None means the document does not expire).
+    """
+
+    verification_status: VerificationStatus = Field(
+        ...,
+        description="Target status: must be 'verified' or 'rejected'",
+    )
+    reviewer_notes: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        description="Internal notes visible to admins only",
+    )
+    document_expiry_date: Optional[date] = Field(
+        default=None,
+        description="Physical document expiry date; null means no expiry",
+    )
+    rejection_reason: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Reason for rejection (required when rejecting)",
+    )
+
+    @field_validator("verification_status")
+    @classmethod
+    def must_be_terminal_status(cls, v: VerificationStatus) -> VerificationStatus:
+        """Only verified and rejected are valid review outcomes."""
+        if v not in (VerificationStatus.verified, VerificationStatus.rejected):
+            raise ValueError(
+                "Review status must be 'verified' or 'rejected'"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def rejection_reason_required_when_rejected(self) -> "AdminVerificationReview":
+        """Ensure a rejection reason is provided when rejecting."""
+        if (
+            self.verification_status == VerificationStatus.rejected
+            and not self.rejection_reason
+        ):
+            raise ValueError(
+                "rejection_reason is required when status is 'rejected'"
+            )
+        return self
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "verification_status": "verified",
+                    "reviewer_notes": "Passport matches profile name",
+                    "document_expiry_date": "2030-06-15",
+                },
+                {
+                    "verification_status": "rejected",
+                    "rejection_reason": "Document image is not legible",
+                },
+            ]
+        },
+    )
+
+
+class AdminContextVerificationItem(BaseModel):
+    """
+    Context entry for the admin pending-verification list.
+
+    The admin review unit is now the context profile, not the document.
+    Each item represents a legal/healthcare context awaiting verification,
+    enriched with the user's display name and linked document count.
+    """
+
+    context_id: UUID
+    context_type: str
+    context_name: str
+    display_name_override: Optional[str] = None
+    email_override: Optional[str] = None
+    verification_status: str
+    user_id: UUID
+    user_display_name: Optional[str] = None
+    document_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminContextVerificationDetail(BaseModel):
+    """
+    Full context details with linked documents for the admin review page.
+
+    Shows the context's identity claims alongside all linked documents,
+    enabling the admin to compare document content against claimed fields.
+    """
+
+    context_id: UUID
+    context_type: str
+    context_name: str
+    display_name_override: Optional[str] = None
+    email_override: Optional[str] = None
+    phone_override: Optional[str] = None
+    bio: Optional[str] = None
+    verification_status: str
+    rejection_reason: Optional[str] = None
+    user_id: UUID
+    user_display_name: Optional[str] = None
+    documents: list[VerificationDocumentResponse]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

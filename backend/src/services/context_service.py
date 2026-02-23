@@ -14,8 +14,10 @@ from sqlalchemy.exc import IntegrityError
 from src.core.types import UNSET, _Unset
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.auth_repository import AuthRepository
 from src.models.context import ContextProfile, ContextType
 from src.models.profile import BaseProfile, IdentityName, AccountType
+from src.models.verification import VerificationStatus
 from src.models.audit import AuditEventType, AuditOperation
 
 if TYPE_CHECKING:
@@ -106,7 +108,8 @@ class ContextService:
         self,
         context_repository: ContextRepository,
         profile_repository: ProfileRepository,
-        audit_service: Optional["AuditService"] = None
+        audit_service: Optional["AuditService"] = None,
+        auth_repository: Optional[AuthRepository] = None
     ):
         """
         Initialize service with repositories
@@ -115,10 +118,12 @@ class ContextService:
             context_repository: ContextRepository instance
             profile_repository: ProfileRepository instance
             audit_service: Optional audit service for event logging
+            auth_repository: Optional auth repository for email verification checks
         """
         self.context_repo = context_repository
         self.profile_repo = profile_repository
         self.audit_service = audit_service
+        self.auth_repo = auth_repository
     
     def _resolve_multilingual_name(
         self,
@@ -207,12 +212,22 @@ class ContextService:
         base_profile = self.profile_repo.get_profile_by_id(user_id)
         if not base_profile:
             raise ContextServiceError(f"Profile {user_id} not found")
-        
-        # Business rule: Pseudonymous accounts cannot create legal or healthcare contexts
-        if base_profile.account_type == AccountType.pseudonymous:
-            if context_type in [ContextType.legal, ContextType.healthcare]:
+
+        # Business rule: email must be verified before creating any context
+        if self.auth_repo is not None:
+            auth_user = self.auth_repo.get_by_user_id(str(user_id))
+            if auth_user and not auth_user.is_email_verified:
                 raise ContextServiceError(
-                    f"Pseudonymous accounts cannot create {context_type.value} contexts"
+                    "Email verification required before creating context profiles",
+                    status_code=403
+                )
+
+        # Business rule: pseudonymous accounts cannot create legal/healthcare contexts
+        if context_type in [ContextType.legal, ContextType.healthcare]:
+            if base_profile.account_type == AccountType.pseudonymous:
+                raise ContextServiceError(
+                    f"Pseudonymous accounts cannot create {context_type.value} contexts.",
+                    status_code=403
                 )
         
         # Check for duplicate context (user_id, context_type, context_name)
@@ -230,6 +245,15 @@ class ContextService:
             if "@" not in email_override or "." not in email_override:
                 raise ContextServiceError("Invalid email override format")
         
+        # Legal/healthcare contexts start inactive and require verification
+        requires_verification = context_type in [
+            ContextType.legal, ContextType.healthcare
+        ]
+        initial_active = not requires_verification
+        initial_verification_status = (
+            VerificationStatus.pending if requires_verification else None
+        )
+
         # Create context profile
         try:
             context = self.context_repo.create_context_profile(
@@ -239,7 +263,9 @@ class ContextService:
                 display_name_override=display_name_override,
                 email_override=email_override,
                 phone_override=phone_override,
-                bio=bio
+                bio=bio,
+                is_active=initial_active,
+                verification_status=initial_verification_status,
             )
         except IntegrityError:
             raise ContextServiceError(
@@ -365,6 +391,20 @@ class ContextService:
         if context_name is not UNSET and context_name is not None:
             # context_name should not be cleared to None (always required)
             updates['context_name'] = context_name
+
+        # Re-verification: if identity fields change on a verified
+        # legal/healthcare context, reset verification to pending
+        identity_fields = {"display_name_override", "email_override"}
+        identity_changed = any(
+            k in identity_fields for k in updates
+        )
+        if (
+            identity_changed
+            and context.requires_verification
+            and context.verification_status == VerificationStatus.verified
+        ):
+            updates["verification_status"] = VerificationStatus.pending
+            updates["is_active"] = False
 
         # Update context
         updated_context = self.context_repo.update_context_profile(context_id, **updates)
