@@ -97,10 +97,33 @@ const navigateToDetail = (id: string) => {
               <BaseBadge :variant="context.context_type">
                 {{ CONTEXT_TYPE_META[context.context_type]?.label }}
               </BaseBadge>
-              <BaseBadge v-if="!context.is_active" variant="warning">
-                {{ t("context.inactive") }}
-              </BaseBadge>
-              <BaseBadge v-else variant="success" size="sm"> Active </BaseBadge>
+              <div class="badge-group">
+                <BaseBadge
+                  v-if="context.verification_status === 'pending'"
+                  variant="warning"
+                  size="sm"
+                >
+                  {{ t("context.verificationPending") }}
+                </BaseBadge>
+                <BaseBadge
+                  v-else-if="context.verification_status === 'verified'"
+                  variant="success"
+                  size="sm"
+                >
+                  {{ t("context.verificationVerified") }}
+                </BaseBadge>
+                <BaseBadge
+                  v-else-if="context.verification_status === 'rejected'"
+                  variant="error"
+                  size="sm"
+                >
+                  {{ t("context.verificationRejected") }}
+                </BaseBadge>
+                <BaseBadge v-else-if="!context.is_active" variant="warning" size="sm">
+                  {{ t("context.inactive") }}
+                </BaseBadge>
+                <BaseBadge v-else variant="success" size="sm"> Active </BaseBadge>
+              </div>
             </div>
 
             <h3 class="card-title">{{ context.context_name }}</h3>
@@ -239,6 +262,11 @@ const navigateToDetail = (id: string) => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: var(--spacing-4);
+}
+
+.badge-group {
+  display: flex;
+  gap: var(--spacing-1);
 }
 
 .card-title {

@@ -118,6 +118,10 @@ class ProfileResponse(BaseModel):
     preferred_language: str
     avatar_url: Optional[str] = None
     avatar_thumbnail_url: Optional[str] = None
+    email_verification_pending: bool = Field(
+        default=False,
+        description="True when the email was just changed and needs re-verification"
+    )
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None

@@ -156,7 +156,20 @@ api.interceptors.response.use(
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       const uiStore = useUiStore();
-      uiStore.showError("You do not have permission to perform this action.");
+      const detail = (error.response?.data as Record<string, unknown>)?.detail;
+      if (
+        typeof detail === "string" &&
+        detail.toLowerCase().includes("email verification required")
+      ) {
+        // Lazy import to avoid circular dependency with i18n
+        const { i18n } = await import("@/locales");
+        const t = i18n.global.t;
+        uiStore.showWarning(t("auth.emailVerificationRequired"));
+      } else {
+        uiStore.showError(
+          "You do not have permission to perform this action.",
+        );
+      }
     }
 
     return Promise.reject(error);

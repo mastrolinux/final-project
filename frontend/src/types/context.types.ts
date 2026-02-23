@@ -54,6 +54,8 @@ export interface ContextProfileResponse {
   avatar_override_url: string | null;
   avatar_override_thumbnail_url: string | null;
   is_active: boolean;
+  verification_status: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

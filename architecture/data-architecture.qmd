@@ -282,8 +282,8 @@ The system supports three account types to accommodate diverse user needs and sa
 | Account Type | Legal Name Required | Use Cases | Available Contexts |
 |--------------|---------------------|-----------|-------------------|
 | **Verified** | Yes (encrypted) | Healthcare, legal services, financial | All contexts including legal, healthcare |
-| **Unverified** | No | General social, professional networking | Social, professional, custom (no legal/healthcare) |
-| **Pseudonymous** | No | Vulnerable populations requiring anonymity | Social, custom only (highly restricted) |
+| **Standard** | No | General social, professional networking | All except legal, healthcare |
+| **Pseudonymous** | No | Vulnerable populations requiring anonymity | All except legal, healthcare |
 
 ### Rationale for Pseudonymous Support
 
@@ -306,7 +306,7 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
   "email_visible": false,
   "primary_phone": null,
   "preferred_language": "en",
-  "available_contexts": ["social"],
+  "available_contexts": ["professional", "social", "family", "custom"],
   "restricted_scopes": [
     "profile:read:basic",
     "profile:read:social"
@@ -324,20 +324,23 @@ Research demonstrates that pseudonymity is essential for vulnerable populations:
 - Legal contexts (requires legal_name)
 - Healthcare contexts (requires legal_name + date_of_birth)
 
-**Unverified Accounts** - Limited access:
+**Standard (Unverified) Accounts** - All non-sensitive contexts:
 
 - Base profile
-- Professional contexts (without credentials verification)
+- Professional contexts
 - Social contexts
+- Family contexts
 - Custom contexts
 - Cannot access: Legal, Healthcare
 
-**Pseudonymous Accounts** - Minimal access:
+**Pseudonymous Accounts** - All non-sensitive contexts:
 
 - Base profile (minimal fields)
-- Social contexts only
-- No OAuth integration with verified services
-- Cannot access: Professional with credentials, Legal, Healthcare
+- Professional contexts
+- Social contexts
+- Family contexts
+- Custom contexts
+- Cannot access: Legal, Healthcare
 
 ### Security Implications
 

@@ -69,8 +69,15 @@ onMounted(async () => {
         profileStore.setContexts(contexts);
       }
 
-      // Default to first active context or none
-      const activeContexts = profileStore.contexts.filter((c) => c.is_active);
+      // Default to first eligible context (active and, for legal/healthcare, verified)
+      const activeContexts = profileStore.contexts.filter((c) => {
+        if (!c.is_active) return false;
+        const requiresVerification =
+          c.context_type === "legal" || c.context_type === "healthcare";
+        if (requiresVerification && c.verification_status !== "verified")
+          return false;
+        return true;
+      });
       if (activeContexts.length > 0) {
         selectedContextId.value = activeContexts[0].id;
       }

@@ -150,10 +150,26 @@ class TestProfileAuditIntegration:
         })
         user_id = create_resp.json()["user_id"]
 
+        # Create auth user for JWT authentication
+        auth_user = AuthUser(
+            user_id=user_id,
+            email="audit.update@example.com",
+            password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+            is_email_verified=True,
+            is_admin=False,
+        )
+        db_session.add(auth_user)
+        db_session.commit()
+        token = create_access_token(
+            user_id=user_id, email=auth_user.email, account_type="verified"
+        )
+
         # Update profile
-        response = client.patch(f"/api/v1/profiles/{user_id}", json={
-            "preferred_language": "fr"
-        })
+        response = client.patch(
+            f"/api/v1/profiles/{user_id}",
+            json={"preferred_language": "fr"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert response.status_code == 200
 
         logs = db_session.query(AuditLog).filter(
@@ -171,8 +187,25 @@ class TestProfileAuditIntegration:
         })
         user_id = create_resp.json()["user_id"]
 
+        # Create auth user for JWT authentication
+        auth_user = AuthUser(
+            user_id=user_id,
+            email="audit.delete@example.com",
+            password_hash="$argon2id$v=19$m=65536,t=3,p=4$FAKE_HASH",
+            is_email_verified=True,
+            is_admin=False,
+        )
+        db_session.add(auth_user)
+        db_session.commit()
+        token = create_access_token(
+            user_id=user_id, email=auth_user.email, account_type="unverified"
+        )
+
         # Delete profile
-        response = client.delete(f"/api/v1/profiles/{user_id}")
+        response = client.delete(
+            f"/api/v1/profiles/{user_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert response.status_code == 204
 
         logs = db_session.query(AuditLog).filter(

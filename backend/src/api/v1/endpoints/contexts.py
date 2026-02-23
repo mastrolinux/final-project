@@ -14,9 +14,12 @@ from src.core.database import get_db
 from src.core.types import UNSET
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
+from src.repositories.auth_repository import AuthRepository
 from src.repositories.audit_repository import AuditRepository
 from src.services.context_service import ContextService, ContextServiceError
 from src.services.audit_service import AuditService
+from src.api.dependencies.auth import require_verified_user
+from src.models.auth import AuthUser
 from src.schemas.context import (
     ContextProfileCreate,
     ContextProfileUpdate,
@@ -32,9 +35,14 @@ def get_context_service(db: Session = Depends(get_db)) -> ContextService:
     """Dependency to get ContextService instance with audit logging."""
     context_repo = ContextRepository(db)
     profile_repo = ProfileRepository(db)
+    auth_repo = AuthRepository(db)
     audit_repo = AuditRepository(db)
     audit_service = AuditService(audit_repo)
-    return ContextService(context_repo, profile_repo, audit_service=audit_service)
+    return ContextService(
+        context_repo, profile_repo,
+        audit_service=audit_service,
+        auth_repository=auth_repo
+    )
 
 
 def parse_accept_language(
@@ -84,7 +92,8 @@ def parse_accept_language(
 def create_context_profile(
     user_id: UUID,
     context_data: ContextProfileCreate,
-    service: ContextService = Depends(get_context_service)
+    service: ContextService = Depends(get_context_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Create a new context profile for a user
@@ -99,7 +108,7 @@ def create_context_profile(
     - **bio**: Optional context-specific biography
     
     **Business Rules:**
-    - Pseudonymous accounts cannot create legal or healthcare contexts
+    - Only verified accounts can create legal or healthcare contexts
     - Context (user_id, context_type, context_name) must be unique
     
     **Example Use Case:**
@@ -128,7 +137,7 @@ def create_context_profile(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(e)
             )
-        elif "cannot create" in str(e).lower():
+        elif e.status_code == 403:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=str(e)
@@ -351,7 +360,8 @@ def update_context_profile(
     user_id: UUID,
     context_id: UUID,
     update_data: ContextProfileUpdate,
-    service: ContextService = Depends(get_context_service)
+    service: ContextService = Depends(get_context_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Update a context profile.
@@ -424,7 +434,8 @@ def update_context_profile(
 def delete_context_profile(
     user_id: UUID,
     context_id: UUID,
-    service: ContextService = Depends(get_context_service)
+    service: ContextService = Depends(get_context_service),
+    _current_user: AuthUser = Depends(require_verified_user)
 ):
     """
     Delete a context profile (soft delete)

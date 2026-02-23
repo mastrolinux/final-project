@@ -13,6 +13,8 @@
     "adminOAuthClients": "OAuth Clients",
     "adminAuditVerify": "Audit Integrity",
     "adminSoftDeletedUsers": "Deleted Users",
+    "adminVerifications": "Verifications",
+    "documents": "Documents",
     "login": "Login",
     "register": "Register",
     "logout": "Logout"
@@ -96,11 +98,11 @@
     "accountType": {
       "label": "Account type",
       "verified": "Verified",
-      "unverified": "Unverified",
+      "unverified": "Standard",
       "pseudonymous": "Pseudonymous",
-      "verifiedDescription": "Full access with email verification",
-      "unverifiedDescription": "Limited access until email is verified",
-      "pseudonymousDescription": "Anonymous account with some restrictions"
+      "verifiedDescription": "Full access after identity document review",
+      "unverifiedDescription": "Standard account, can verify identity later to unlock all features",
+      "pseudonymousDescription": "Anonymous account, cannot access legal or healthcare contexts"
     },
     "restore": {
       "title": "Restore Account",
@@ -128,6 +130,13 @@
       "accountRecoverableMessage": "An account with this email exists and can be restored until {date}.",
       "restoreAccount": "Restore Account"
     },
+    "emailVerificationBanner": "Please verify your email address to unlock all features.",
+    "emailVerificationBannerResend": "Resend verification email",
+    "emailVerificationBannerResent": "Verification email sent!",
+    "emailVerificationRequired": "You need to verify your email before you can save changes. Check your inbox or resend the verification email.",
+    "registerSuccessTitle": "Account created successfully!",
+    "registerSuccessMessage": "Please check your email to verify your account.",
+    "registerSuccessToast": "Account created! Please check your email to verify your account.",
     "orContinueWith": "or continue with email",
     "social": {
       "completing": "Completing sign in...",
@@ -146,7 +155,7 @@
   "account": {
     "types": {
       "verified": "Verified Account",
-      "unverified": "Unverified Account",
+      "unverified": "Standard Account",
       "pseudonymous": "Pseudonymous Account"
     }
   },
@@ -164,6 +173,7 @@
     "cancel": "Cancel",
     "viewContexts": "View Contexts",
     "emailChangeWarning": "Changing your email will require re-verification",
+    "emailVerificationSent": "Email updated. A verification email has been sent to your new address.",
     "avatar": {
       "title": "Profile Picture",
       "upload": "Upload",
@@ -211,6 +221,10 @@
     "overridesDescription": "These values will override your base profile when using this context. Leave empty to use your base profile values.",
     "pickFromNames": "Pick from your identity names",
     "pseudonymousRestriction": "Note: Pseudonymous accounts cannot create legal or healthcare contexts.",
+    "verificationNotice": "This context requires identity verification. After creation, it will remain inactive until you upload a verification document and an administrator approves it.",
+    "verificationPending": "Verification pending",
+    "verificationVerified": "Verified",
+    "verificationRejected": "Verification rejected",
     "types": {
       "professional": "Professional",
       "social": "Social",
@@ -248,6 +262,17 @@
       "uploadSuccess": "Context avatar uploaded successfully",
       "uploadFailed": "Context created, but the avatar upload failed. You can retry from the detail page.",
       "removeSuccess": "Context avatar removed successfully"
+    },
+    "verification": {
+      "title": "Verification Documents",
+      "noDocuments": "No documents linked to this context. Upload or link an existing document to begin verification.",
+      "unlink": "Remove link",
+      "linkExisting": "Link existing document",
+      "linkExistingTitle": "Link Existing Document",
+      "noUnlinkedDocuments": "All your documents are already linked to this context.",
+      "replaceDocument": "Replace document",
+      "replaceDocumentTitle": "Replace Document",
+      "replaceDocumentWarning": "Replacing the document will require re-verification by an admin."
     }
   },
   "settings": {
@@ -420,7 +445,8 @@
       "unauthorized_client": "Client is not authorized",
       "server_error": "Server error occurred",
       "invalid_client": "Invalid client application",
-      "invalid_grant": "Invalid grant"
+      "invalid_grant": "Invalid grant",
+      "context_not_verified": "This context requires identity verification before it can be shared with applications"
     }
   },
   "nameInput": {
@@ -503,6 +529,96 @@
       "errorDetails": "Error details",
       "validExplanation": "All {count} audit log entries have valid hash chain linkage. No tampering detected.",
       "invalidExplanation": "The hash chain verification failed, indicating possible tampering with audit log entries."
+    }
+  },
+  "documents": {
+    "title": "My Documents",
+    "description": "View and manage your uploaded identity documents. Documents can be linked to legal and healthcare context profiles for verification.",
+    "empty": "No documents uploaded yet. Upload a government-issued identity document to get started."
+  },
+  "verification": {
+    "loading": "Loading documents...",
+    "status": {
+      "pending": "Pending",
+      "under_review": "Under Review",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "documentTypes": {
+      "passport": "Passport",
+      "nationalId": "National ID"
+    },
+    "upload": {
+      "title": "Upload Document",
+      "documentType": "Document type",
+      "dropZoneText": "Click to select or drag and drop a file",
+      "dropZoneHint": "PDF, JPEG, or PNG up to 10 MB",
+      "invalidFormat": "Unsupported format. Accepted: PDF, JPEG, PNG",
+      "fileTooLarge": "File exceeds the 10 MB size limit",
+      "changeFile": "Change",
+      "expiryDate": "Document expiry date",
+      "expiryDateHint": "Enter the expiry date printed on your physical document.",
+      "submit": "Upload Document",
+      "success": "Document uploaded successfully. It will be reviewed by an administrator."
+    },
+    "document": {
+      "filename": "File",
+      "fileSize": "Size",
+      "format": "Format",
+      "expiryDate": "Expires",
+      "expired": "Expired",
+      "expiringSoon": "Expiring soon",
+      "reviewedOn": "Reviewed on {date}",
+      "rejectionReason": "Rejection reason",
+      "viewDocument": "View",
+      "closePreview": "Close preview",
+      "previewError": "Could not load document preview",
+      "loadingPreview": "Loading preview..."
+    },
+    "documents": {
+      "title": "Submitted Documents"
+    },
+    "admin": {
+      "title": "Verification Queue",
+      "description": "Context profiles submitted by users for identity verification review.",
+      "loading": "Loading pending verifications...",
+      "pendingCount": "{count} context(s) awaiting review",
+      "emptyTitle": "No pending verifications",
+      "emptyDescription": "All verification requests have been reviewed. New submissions will appear here.",
+      "unknownUser": "Unknown user",
+      "submittedOn": "Submitted",
+      "review": "Review",
+      "reviewTitle": "Review Context Verification",
+      "backToQueue": "Back to queue",
+      "loadingDocument": "Loading verification details...",
+      "contextIdentity": "Context Identity Claims",
+      "compareHint": "Compare the identity fields below against the linked verification documents to verify this context profile.",
+      "contextName": "Context name",
+      "displayName": "Display name",
+      "emailOverride": "Email override",
+      "phoneOverride": "Phone override",
+      "documentCount": "{count} document(s)",
+      "userId": "User ID",
+      "reviewFormTitle": "Review Decision",
+      "approve": "Approve",
+      "reject": "Reject",
+      "expiryDate": "Document expiry date",
+      "declaredExpiry": "User-declared expiry",
+      "expiryHint": "Pre-filled from the user's declared expiry date. Override if the date shown on the document differs.",
+      "rejectionReason": "Rejection reason",
+      "rejectionReasonPlaceholder": "Explain why this context verification is being rejected...",
+      "reviewerNotes": "Internal notes",
+      "reviewerNotesPlaceholder": "Optional notes visible only to administrators...",
+      "confirmApprove": "Approve Verification",
+      "confirmReject": "Reject Verification",
+      "alreadyReviewed": "This context has already been reviewed (status: {status}).",
+      "documentPreview": "Document Preview",
+      "loadingPreview": "Loading document preview...",
+      "previewUnsupported": "Preview is not available for this file type.",
+      "reviewSuccess": {
+        "approved": "Context verified. The user's account has been promoted to verified.",
+        "rejected": "Context verification rejected. The user has been notified."
+      }
     }
   },
   "common": {
