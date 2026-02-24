@@ -10,7 +10,8 @@ export type VerificationStatus =
   | "pending"
   | "under_review"
   | "verified"
-  | "rejected";
+  | "rejected"
+  | "expired";
 
 export interface VerificationDocumentResponse {
   id: string;
