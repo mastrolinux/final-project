@@ -119,6 +119,13 @@ const navigateToDetail = (id: string) => {
                 >
                   {{ t("context.verificationRejected") }}
                 </BaseBadge>
+                <BaseBadge
+                  v-else-if="context.verification_status === 'expired'"
+                  variant="warning"
+                  size="sm"
+                >
+                  {{ t("context.verificationExpired") }}
+                </BaseBadge>
                 <BaseBadge v-else-if="!context.is_active" variant="warning" size="sm">
                   {{ t("context.inactive") }}
                 </BaseBadge>
