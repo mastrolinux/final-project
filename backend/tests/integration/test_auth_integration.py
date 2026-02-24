@@ -1,8 +1,4 @@
-"""
-Integration Tests for Authentication Workflows
-
-Tests complete authentication flows with real database and mocked email sending.
-"""
+"""Integration tests for authentication workflows with mocked email."""
 
 import pytest
 import secrets
@@ -53,7 +49,6 @@ class TestAuthIntegration:
     @patch('src.services.auth_service.send_verification_email')
     def test_register_and_verify_email_flow(self, mock_send_email, auth_service, test_profile):
         """Test complete registration and email verification flow."""
-        # Step 1: Register user
         success, error, data = auth_service.register_user(
             email="test@example.com",
             password="SecurePass123!",
@@ -64,12 +59,10 @@ class TestAuthIntegration:
         assert success is True
         assert data["is_email_verified"] is False
         
-        # Verify email was queued
         mock_send_email.delay.assert_called_once()
         call_args = mock_send_email.delay.call_args[0]
         verification_token = call_args[1]
         
-        # Step 2: Verify email with token
         success, error = auth_service.verify_email(verification_token)
         
         assert success is True
@@ -78,7 +71,6 @@ class TestAuthIntegration:
     @patch('src.services.auth_service.send_verification_email')
     def test_login_after_registration(self, mock_send_email, auth_service, test_profile):
         """Test login after successful registration."""
-        # Step 1: Register
         success, _, _ = auth_service.register_user(
             email="test@example.com",
             password="SecurePass123!",
@@ -87,7 +79,6 @@ class TestAuthIntegration:
         )
         assert success is True
         
-        # Step 2: Login
         success, error, data = auth_service.login(
             email="test@example.com",
             password="SecurePass123!"
@@ -98,7 +89,6 @@ class TestAuthIntegration:
         assert "access_token" in data
         assert "refresh_token" in data
         
-        # Verify tokens are valid
         access_token_data = verify_token(data["access_token"], token_type="access")
         assert access_token_data is not None
         assert access_token_data.user_id == str(test_profile.user_id)
@@ -109,51 +99,42 @@ class TestAuthIntegration:
     @patch('src.services.auth_service.send_password_reset_email')
     def test_password_reset_flow(self, mock_send_email, auth_service, auth_repo, test_profile):
         """Test complete password reset flow."""
-        # Setup: Create auth user with known password
         auth_user = auth_repo.create(
             email="test@example.com",
             password_hash=hash_password("OldPassword123!"),
             user_id=str(test_profile.user_id)
         )
         
-        # Step 1: Request password reset
         success, error = auth_service.request_password_reset("test@example.com")
         assert success is True
         
-        # Get reset token from mock call
         mock_send_email.delay.assert_called_once()
         call_args = mock_send_email.delay.call_args[0]
         reset_token = call_args[1]
         
-        # Step 2: Reset password with token
         success, error = auth_service.reset_password(reset_token, "NewPassword123!")
         assert success is True
         assert error is None
         
-        # Step 3: Verify old password no longer works
         success, _, _ = auth_service.login("test@example.com", "OldPassword123!")
         assert success is False
         
-        # Step 4: Verify new password works
         success, _, data = auth_service.login("test@example.com", "NewPassword123!")
         assert success is True
         assert "access_token" in data
     
     def test_failed_login_locks_account(self, auth_service, auth_repo, test_profile):
         """Test account locks after 5 failed login attempts."""
-        # Create auth user
         auth_user = auth_repo.create(
             email="test@example.com",
             password_hash=hash_password("CorrectPassword123!"),
             user_id=str(test_profile.user_id)
         )
-        
-        # Attempt 5 failed logins
+
         for i in range(5):
             success, error, _ = auth_service.login("test@example.com", "WrongPassword!")
             assert success is False
         
-        # 6th attempt should be blocked due to lock
         success, error, _ = auth_service.login("test@example.com", "CorrectPassword123!")
         assert success is False
         assert "locked" in error.lower()
@@ -161,14 +142,12 @@ class TestAuthIntegration:
     @patch('src.services.auth_service.send_verification_email')
     def test_resend_verification_email(self, mock_send_email, auth_service, auth_repo, test_profile):
         """Test resending verification email."""
-        # Create unverified auth user
         auth_user = auth_repo.create(
             email="test@example.com",
             password_hash=hash_password("Password123!"),
             user_id=str(test_profile.user_id)
         )
-        
-        # Resend verification
+
         success, error = auth_service.resend_verification_email("test@example.com")
         
         assert success is True
@@ -177,7 +156,6 @@ class TestAuthIntegration:
     
     def test_resend_verification_already_verified(self, auth_service, auth_repo, test_profile):
         """Test resend fails if email already verified."""
-        # Create verified auth user
         auth_user = auth_repo.create(
             email="test@example.com",
             password_hash=hash_password("Password123!"),
@@ -185,7 +163,6 @@ class TestAuthIntegration:
         )
         auth_repo.update_verification_status(str(test_profile.user_id), verified=True)
 
-        # Try to resend
         success, error = auth_service.resend_verification_email("test@example.com")
 
         assert success is False
@@ -242,7 +219,6 @@ class TestSetPasswordIntegration:
         """Test full flow: OAuth user sets password, then logs in with email/password."""
         user_id = str(oauth_profile.user_id)
 
-        # Step 1: Set password
         success, error_code, data = auth_service.set_password(
             user_id=user_id,
             new_password="NewSecurePass123!"
@@ -252,11 +228,9 @@ class TestSetPasswordIntegration:
         assert error_code is None
         assert data["email"] == "oauth@example.com"
 
-        # Step 2: Verify has_custom_password flag is set
         updated_user = auth_repo.get_by_user_id(user_id)
         assert updated_user.has_custom_password is True
 
-        # Step 3: Login with email/password
         success, error, login_data = auth_service.login(
             email="oauth@example.com",
             password="NewSecurePass123!"
@@ -270,14 +244,12 @@ class TestSetPasswordIntegration:
         """Test that password can only be set once via this method."""
         user_id = str(oauth_profile.user_id)
 
-        # First set succeeds
         success, _, _ = auth_service.set_password(
             user_id=user_id,
             new_password="FirstPass123!"
         )
         assert success is True
 
-        # Second set fails
         success, error_code, _ = auth_service.set_password(
             user_id=user_id,
             new_password="SecondPass123!"
@@ -318,26 +290,21 @@ class TestSetPasswordIntegration:
         """Test that password reset flow works for OAuth users who have set a password."""
         user_id = str(oauth_profile.user_id)
 
-        # Step 1: Set password
         success, _, _ = auth_service.set_password(
             user_id=user_id,
             new_password="InitialPass123!"
         )
         assert success is True
 
-        # Step 2: Request password reset
         success, error = auth_service.request_password_reset("oauth@example.com")
         assert success is True
 
-        # Reset email should be sent (user has custom password)
         mock_send_email.delay.assert_called_once()
         reset_token = mock_send_email.delay.call_args[0][1]
 
-        # Step 3: Reset password
         success, error = auth_service.reset_password(reset_token, "ResetPass123!")
         assert success is True
 
-        # Step 4: Login with new password
         success, _, login_data = auth_service.login(
             email="oauth@example.com",
             password="ResetPass123!"
@@ -350,9 +317,7 @@ class TestSetPasswordIntegration:
         self, mock_send_email, auth_service, oauth_user, oauth_profile
     ):
         """Test that password reset is silently skipped for OAuth users without custom password."""
-        # OAuth user has NOT set a password yet
         success, error = auth_service.request_password_reset("oauth@example.com")
         assert success is True
-        # No email should be sent
         mock_send_email.delay.assert_not_called()
 

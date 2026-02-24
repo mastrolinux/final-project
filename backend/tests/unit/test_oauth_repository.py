@@ -1,8 +1,4 @@
-"""
-Unit Tests for OAuth Repository
-
-Tests data access layer for OAuth 2.1 entities.
-"""
+"""Tests for OAuth 2.1 data access layer."""
 
 import pytest
 from datetime import datetime, timezone, timedelta
@@ -65,7 +61,6 @@ class TestOAuthScopeOperations:
 
     def test_get_scopes_returns_multiple(self, oauth_repo, db_session: Session):
         """Test getting multiple scopes by name."""
-        # Create multiple scopes
         scope1 = OAuthScope(scope_name="scope:one", description="First scope")
         scope2 = OAuthScope(scope_name="scope:two", description="Second scope")
         db_session.add_all([scope1, scope2])
@@ -80,7 +75,6 @@ class TestOAuthScopeOperations:
 
     def test_list_all_scopes(self, oauth_repo, db_session: Session):
         """Test listing all scopes."""
-        # Create scopes
         scope1 = OAuthScope(scope_name="list:one", description="First")
         scope2 = OAuthScope(scope_name="list:two", description="Second")
         db_session.add_all([scope1, scope2])
@@ -156,7 +150,6 @@ class TestOAuthClientOperations:
         result = oauth_repo.deactivate_client("test-client-123")
 
         assert result is True
-        # Verify client is deactivated
         client = oauth_repo.get_client("test-client-123")
         assert client.is_active is False
 
@@ -165,7 +158,6 @@ class TestOAuthClientOperations:
         result = oauth_repo.delete_client("test-client-123")
 
         assert result is True
-        # Client should not be returned
         client = oauth_repo.get_client("test-client-123")
         assert client is None
 
@@ -264,7 +256,6 @@ class TestAuthorizationCodeOperations:
             scope="profile:read:basic",
             code_challenge="test-challenge"
         )
-        # Mark as used
         auth_code.used_at = datetime.now(timezone.utc)
         db_session.commit()
 
@@ -285,7 +276,6 @@ class TestAuthorizationCodeOperations:
         result = oauth_repo.mark_authorization_code_used(auth_code.code)
 
         assert result is True
-        # Verify code is marked used
         code = oauth_repo.get_authorization_code(auth_code.code)
         assert code.used_at is not None
 
@@ -404,7 +394,6 @@ class TestAccessTokenOperations:
         result = oauth_repo.revoke_access_token(token_model.id)
 
         assert result is True
-        # Verify token is revoked
         token = oauth_repo.get_access_token_by_hash(token_model.token_hash)
         assert token.revoked_at is not None
 
@@ -515,7 +504,6 @@ class TestRefreshTokenOperations:
         """Test refresh token rotation."""
         access_token, _ = sample_access_token
 
-        # Create original refresh token
         old_refresh, old_raw = oauth_repo.create_refresh_token(
             access_token_id=access_token.id,
             client_id=sample_client.client_id,
@@ -523,14 +511,12 @@ class TestRefreshTokenOperations:
             scope="profile:read:basic offline_access"
         )
 
-        # Create new access token for rotation
         new_access, _ = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
             scope="profile:read:basic offline_access"
         )
 
-        # Rotate
         new_refresh, new_raw = oauth_repo.rotate_refresh_token(
             old_token_id=old_refresh.id,
             new_access_token_id=new_access.id,
@@ -542,12 +528,10 @@ class TestRefreshTokenOperations:
         assert new_refresh is not None
         assert new_raw != old_raw
 
-        # Verify old token is marked as rotated
         db_session.refresh(old_refresh)
         assert old_refresh.rotated_at is not None
         assert old_refresh.replaced_by_id == new_refresh.id
 
-        # Verify old token is no longer active
         result = oauth_repo.get_active_refresh_token(old_raw)
         assert result is None
 
@@ -646,7 +630,6 @@ class TestConsentOperations:
         result = oauth_repo.withdraw_consent(sample_profile.user_id, sample_client.client_id)
 
         assert result is True
-        # Verify consent is withdrawn
         consent = oauth_repo.get_consent(sample_profile.user_id, sample_client.client_id)
         assert consent is None
 
@@ -654,24 +637,20 @@ class TestConsentOperations:
         self, oauth_repo, sample_profile, sample_client
     ):
         """Test withdrawing consent revokes associated tokens."""
-        # Create consent
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
             granted_scopes=["profile:read:basic", "offline_access"]
         )
 
-        # Create tokens
         access_token, raw_access = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
             scope="profile:read:basic"
         )
 
-        # Withdraw consent
         oauth_repo.withdraw_consent(sample_profile.user_id, sample_client.client_id)
 
-        # Verify token is revoked
         result = oauth_repo.get_active_access_token(raw_access)
         assert result is None
 
@@ -711,7 +690,6 @@ class TestConsentOperations:
 
     def test_get_user_active_consents(self, oauth_repo, db_session, sample_profile):
         """Test getting user's active consents."""
-        # Create multiple clients and consents
         client1 = OAuthClient(
             client_id="consent-client-1",
             client_name="Client 1",
@@ -746,20 +724,17 @@ class TestConsentOperations:
         self, oauth_repo, sample_profile, sample_client
     ):
         """Test creating consent updates existing consent instead of creating duplicate."""
-        # Create initial consent
         consent1 = oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
             granted_scopes=["profile:read:basic"]
         )
 
-        # Create new consent with different scopes
         consent2 = oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
             granted_scopes=["profile:read:basic", "email"]
         )
 
-        # Should be the same consent record, updated
         assert consent1.id == consent2.id
         assert "email" in consent2.granted_scopes

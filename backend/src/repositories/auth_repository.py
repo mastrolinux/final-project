@@ -18,24 +18,10 @@ class AuthRepository:
     """Repository for auth_users table operations."""
     
     def __init__(self, db: Session):
-        """
-        Initialize repository with database session.
-        
-        Args:
-            db: SQLAlchemy database session
-        """
         self.db = db
     
     def get_by_email(self, email: str) -> Optional[AuthUser]:
-        """
-        Get auth user by email address.
-        
-        Args:
-            email: User email address
-            
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by email address, excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.email == email,
             AuthUser.deleted_at.is_(None)
@@ -44,15 +30,7 @@ class AuthRepository:
         return result.scalars().first()
     
     def get_by_id(self, auth_id: str) -> Optional[AuthUser]:
-        """
-        Get auth user by auth ID.
-        
-        Args:
-            auth_id: Auth user ID (primary key)
-            
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by auth ID, excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.id == auth_id,
             AuthUser.deleted_at.is_(None)
@@ -61,15 +39,7 @@ class AuthRepository:
         return result.scalars().first()
     
     def get_by_user_id(self, user_id: str) -> Optional[AuthUser]:
-        """
-        Get auth user by user_id (foreign key to base_profiles).
-        
-        Args:
-            user_id: User ID from base_profiles table
-            
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by user_id (FK to base_profiles), excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.user_id == user_id,
             AuthUser.deleted_at.is_(None)
@@ -78,15 +48,7 @@ class AuthRepository:
         return result.scalars().first()
     
     def get_by_verification_token(self, token: str) -> Optional[AuthUser]:
-        """
-        Get auth user by verification token.
-        
-        Args:
-            token: Email verification token
-            
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by email verification token, excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.verification_token == token,
             AuthUser.deleted_at.is_(None)
@@ -95,15 +57,7 @@ class AuthRepository:
         return result.scalars().first()
     
     def get_by_reset_token(self, token: str) -> Optional[AuthUser]:
-        """
-        Get auth user by password reset token.
-
-        Args:
-            token: Password reset token
-
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by password reset token, excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.reset_token == token,
             AuthUser.deleted_at.is_(None)
@@ -112,16 +66,7 @@ class AuthRepository:
         return result.scalars().first()
 
     def get_by_provider(self, provider: str, provider_id: str) -> Optional[AuthUser]:
-        """
-        Get auth user by OAuth provider and provider ID.
-
-        Args:
-            provider: OAuth provider name (e.g., 'google', 'github')
-            provider_id: Provider-specific user identifier
-
-        Returns:
-            AuthUser if found and not deleted, None otherwise
-        """
+        """Get auth user by OAuth provider and provider ID, excluding soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.provider == provider,
             AuthUser.provider_id == provider_id,
@@ -131,16 +76,9 @@ class AuthRepository:
         return result.scalars().first()
 
     def get_by_provider_including_deleted(self, provider: str, provider_id: str) -> Optional[AuthUser]:
-        """
-        Get auth user by OAuth provider and provider ID, including soft-deleted accounts.
+        """Get auth user by OAuth provider and provider ID, including soft-deleted.
+
         Used for restoration detection during OAuth login.
-
-        Args:
-            provider: OAuth provider name (e.g., 'google', 'github')
-            provider_id: Provider-specific user identifier
-
-        Returns:
-            AuthUser if found (active or deleted), None otherwise
         """
         stmt = select(AuthUser).where(
             AuthUser.provider == provider,
@@ -150,17 +88,7 @@ class AuthRepository:
         return result.scalars().first()
 
     def create(self, email: str, password_hash: str, user_id: str) -> AuthUser:
-        """
-        Create new auth user (email/password authentication).
-
-        Args:
-            email: User email address
-            password_hash: Argon2id hashed password
-            user_id: Foreign key to base_profiles.user_id
-
-        Returns:
-            Created AuthUser instance
-        """
+        """Create new auth user for email/password authentication."""
         auth_user = AuthUser(
             email=email,
             password_hash=password_hash,
@@ -182,20 +110,7 @@ class AuthRepository:
         provider: Optional[str] = None,
         provider_id: Optional[str] = None
     ) -> AuthUser:
-        """
-        Create new auth user (email/password or OAuth).
-
-        Args:
-            email: User email address
-            password_hash: Argon2id hashed password
-            user_id: Foreign key to base_profiles.user_id
-            is_email_verified: Email verification status
-            provider: Optional OAuth provider name
-            provider_id: Optional provider-specific user ID
-
-        Returns:
-            Created AuthUser instance
-        """
+        """Create new auth user (email/password or OAuth)."""
         auth_user = AuthUser(
             email=email,
             password_hash=password_hash,
@@ -210,13 +125,7 @@ class AuthRepository:
         return auth_user
     
     def update_verification_status(self, user_id: str, verified: bool) -> None:
-        """
-        Update email verification status.
-        
-        Args:
-            user_id: User ID from base_profiles
-            verified: New verification status
-        """
+        """Update email verification status and clear the verification token."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.is_email_verified = verified
@@ -226,19 +135,9 @@ class AuthRepository:
             self.db.commit()
     
     def update_email(self, user_id: str, new_email: str) -> Optional[str]:
-        """
-        Update email address and reset verification status.
+        """Update email, reset verification status, and return new verification token.
 
-        Synchronizes auth_users.email with base_profiles.primary_email,
-        resets is_email_verified to False, and generates a new verification
-        token so the user must re-verify the new address.
-
-        Args:
-            user_id: User ID from base_profiles
-            new_email: New email address
-
-        Returns:
-            Verification token if user found, None otherwise
+        Resets is_email_verified to False so the user must re-verify.
         """
         auth_user = self.get_by_user_id(user_id)
         if not auth_user:
@@ -255,14 +154,7 @@ class AuthRepository:
         return token
 
     def set_verification_token(self, user_id: str, token: str, expires_hours: int = 24) -> None:
-        """
-        Set email verification token.
-        
-        Args:
-            user_id: User ID from base_profiles
-            token: Verification token
-            expires_hours: Token expiration in hours (default 24)
-        """
+        """Set email verification token with expiration."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.verification_token = token
@@ -270,14 +162,7 @@ class AuthRepository:
             self.db.commit()
     
     def set_reset_token(self, user_id: str, token: str, expires_hours: int = 1) -> None:
-        """
-        Set password reset token.
-        
-        Args:
-            user_id: User ID from base_profiles
-            token: Reset token
-            expires_hours: Token expiration in hours (default 1)
-        """
+        """Set password reset token with expiration."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.reset_token = token
@@ -285,12 +170,7 @@ class AuthRepository:
             self.db.commit()
     
     def clear_reset_token(self, user_id: str) -> None:
-        """
-        Clear password reset token after use.
-        
-        Args:
-            user_id: User ID from base_profiles
-        """
+        """Clear password reset token after use."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.reset_token = None
@@ -298,26 +178,14 @@ class AuthRepository:
             self.db.commit()
     
     def set_custom_password_flag(self, user_id: str, value: bool) -> None:
-        """
-        Set the has_custom_password flag for a user.
-
-        Args:
-            user_id: User ID from base_profiles
-            value: True if user has explicitly set a password
-        """
+        """Set the has_custom_password flag for a user."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.has_custom_password = value
             self.db.commit()
 
     def update_password(self, user_id: str, password_hash: str) -> None:
-        """
-        Update user password hash.
-        
-        Args:
-            user_id: User ID from base_profiles
-            password_hash: New Argon2id hashed password
-        """
+        """Update user password hash."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.password_hash = password_hash
@@ -325,22 +193,11 @@ class AuthRepository:
             self.db.commit()
     
     def increment_failed_login(self, user_id: str) -> int:
-        """
-        Increment failed login attempts counter.
-        
-        Locks account after 5 failed attempts for 15 minutes.
-        
-        Args:
-            user_id: User ID from base_profiles
-            
-        Returns:
-            New failed login attempts count
-        """
+        """Increment failed login attempts. Locks account after 5 failures for 15 minutes."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.failed_login_attempts += 1
-            
-            # Lock account after 5 failed attempts
+
             if auth_user.failed_login_attempts >= 5:
                 auth_user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=15)
             
@@ -349,12 +206,7 @@ class AuthRepository:
         return 0
     
     def reset_failed_login(self, user_id: str) -> None:
-        """
-        Reset failed login attempts after successful login.
-
-        Args:
-            user_id: User ID from base_profiles
-        """
+        """Reset failed login attempts after successful login."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.failed_login_attempts = 0
@@ -363,39 +215,23 @@ class AuthRepository:
             self.db.commit()
 
     def update_last_login(self, user_id: str) -> None:
-        """
-        Update last login timestamp for OAuth or other authentication methods.
-
-        Args:
-            user_id: User ID from base_profiles
-        """
+        """Update last login timestamp."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.last_login_at = datetime.now(timezone.utc)
             self.db.commit()
     
     def soft_delete(self, user_id: str) -> None:
-        """
-        Soft delete auth user (30-day grace period).
-
-        Args:
-            user_id: User ID from base_profiles
-        """
+        """Soft delete auth user (30-day grace period)."""
         auth_user = self.get_by_user_id(user_id)
         if auth_user:
             auth_user.deleted_at = datetime.now(timezone.utc)
             self.db.commit()
 
     def get_by_email_including_deleted(self, email: str) -> Optional[AuthUser]:
-        """
-        Get auth user by email, including soft-deleted accounts.
+        """Get auth user by email, including soft-deleted.
+
         Used for restoration detection during registration and login.
-
-        Args:
-            email: User email address
-
-        Returns:
-            AuthUser if found (active or deleted), None otherwise
         """
         stmt = select(AuthUser).where(
             AuthUser.email == email
@@ -404,15 +240,7 @@ class AuthRepository:
         return result.scalars().first()
 
     def get_by_restoration_token(self, token: str) -> Optional[AuthUser]:
-        """
-        Get auth user by restoration token, including soft-deleted accounts.
-
-        Args:
-            token: Account restoration token
-
-        Returns:
-            AuthUser if found, None otherwise
-        """
+        """Get auth user by restoration token, including soft-deleted."""
         stmt = select(AuthUser).where(
             AuthUser.restoration_token == token
         )
@@ -420,14 +248,9 @@ class AuthRepository:
         return result.scalars().first()
 
     def set_restoration_token(self, user_id: str, token: str, expires_hours: int = 24) -> None:
-        """
-        Set account restoration token on a soft-deleted user.
-        Queries without deleted_at filter since the target account is deleted.
+        """Set account restoration token on a soft-deleted user.
 
-        Args:
-            user_id: User ID from base_profiles
-            token: Restoration token
-            expires_hours: Token expiration in hours (default 24)
+        Queries without deleted_at filter since the target account is deleted.
         """
         stmt = select(AuthUser).where(AuthUser.user_id == user_id)
         result = self.db.execute(stmt)
@@ -440,12 +263,9 @@ class AuthRepository:
             self.db.commit()
 
     def clear_restoration_token(self, user_id: str) -> None:
-        """
-        Clear restoration token after use.
-        Queries without deleted_at filter since the target account may be deleted.
+        """Clear restoration token after use.
 
-        Args:
-            user_id: User ID from base_profiles
+        Queries without deleted_at filter since the target account may be deleted.
         """
         stmt = select(AuthUser).where(AuthUser.user_id == user_id)
         result = self.db.execute(stmt)
@@ -456,12 +276,7 @@ class AuthRepository:
             self.db.commit()
 
     def restore_account(self, user_id: str) -> None:
-        """
-        Restore a soft-deleted account by clearing deleted_at.
-
-        Args:
-            user_id: User ID from base_profiles
-        """
+        """Restore a soft-deleted account by clearing deleted_at."""
         stmt = select(AuthUser).where(AuthUser.user_id == user_id)
         result = self.db.execute(stmt)
         auth_user = result.scalars().first()
@@ -470,15 +285,7 @@ class AuthRepository:
             self.db.commit()
 
     def get_expired_soft_deleted_users(self, retention_days: int) -> List[AuthUser]:
-        """
-        Get soft-deleted users whose grace period has expired.
-
-        Args:
-            retention_days: Number of days after deletion before permanent purge
-
-        Returns:
-            List of AuthUser records eligible for permanent deletion
-        """
+        """Get soft-deleted users whose grace period has expired."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
         stmt = select(AuthUser).where(
             AuthUser.deleted_at.isnot(None),
@@ -490,16 +297,7 @@ class AuthRepository:
     def get_all_soft_deleted_users(
         self, offset: int = 0, limit: int = 20
     ) -> List[AuthUser]:
-        """
-        Get all soft-deleted users with pagination.
-
-        Args:
-            offset: Number of records to skip
-            limit: Maximum number of records to return
-
-        Returns:
-            List of soft-deleted AuthUser records ordered by deletion date
-        """
+        """Get all soft-deleted users with pagination, ordered by deletion date."""
         stmt = (
             select(AuthUser)
             .where(AuthUser.deleted_at.isnot(None))
@@ -519,15 +317,7 @@ class AuthRepository:
         return result.scalar() or 0
 
     def hard_delete(self, user_id: str) -> bool:
-        """
-        Permanently delete auth user record.
-
-        Args:
-            user_id: User ID from base_profiles
-
-        Returns:
-            True if deleted, False if not found
-        """
+        """Permanently delete auth user record."""
         stmt = select(AuthUser).where(AuthUser.user_id == user_id)
         result = self.db.execute(stmt)
         auth_user = result.scalars().first()

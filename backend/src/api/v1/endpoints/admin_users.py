@@ -107,7 +107,6 @@ def purge_expired_users(
     """Purge all soft-deleted accounts past the retention period."""
     purged_count = service.purge_expired_accounts()
 
-    # Audit log the admin-initiated purge trigger
     audit_service.log_event(
         event_type=AuditEventType.account_permanently_purged,
         user_id=None,

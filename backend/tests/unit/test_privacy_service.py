@@ -1,9 +1,4 @@
-"""
-Unit Tests for Privacy Service
-
-Tests GDPR Article 15 data export logic with mocked repositories.
-Verifies data aggregation, sensitive field exclusion, and audit logging.
-"""
+"""Tests for GDPR Article 15 data export with mocked repositories."""
 
 import pytest
 from unittest.mock import Mock, MagicMock
@@ -226,7 +221,6 @@ class TestExportUserData:
         result = privacy_service.export_user_data(user_id)
 
         assert len(result["identity_names"]) == 2
-        # Verify include_deprecated=True was passed
         mock_profile_repo.get_identity_names.assert_called_once_with(
             user_id, include_deprecated=True
         )

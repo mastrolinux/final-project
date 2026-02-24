@@ -1,21 +1,6 @@
-"""
-Email Tasks
+"""Celery tasks for sending emails asynchronously.
 
-Celery tasks for sending emails asynchronously.
-Uses Mailpit (local dev) or Mailgun SMTP (production) for email delivery.
-
-Local Development:
-    - SMTP_HOST: 127.0.0.1 (Mailpit via Supabase)
-    - SMTP_PORT: 54325
-    - SMTP_USE_TLS: false
-    - No authentication required
-
-Production (Mailgun):
-    - SMTP_HOST: smtp.mailgun.org (or smtp.eu.mailgun.org for EU)
-    - SMTP_PORT: 587
-    - SMTP_USE_TLS: true
-    - SMTP_USER: postmaster@yourdomain.mailgun.org
-    - SMTP_PASSWORD: Mailgun SMTP password
+Uses Mailpit (local dev) or Mailgun SMTP (production).
 """
 
 import smtplib
@@ -29,23 +14,13 @@ from src.core.config import settings
 
 @contextmanager
 def get_smtp_connection():
-    """
-    Create SMTP connection based on environment configuration.
-    
-    Local development (Mailpit): No authentication, plain SMTP
-    Production (Mailgun): TLS + authentication
-    
-    Yields:
-        smtplib.SMTP: Configured SMTP connection
-    """
+    """Create SMTP connection. Uses TLS + auth in production, plain SMTP locally."""
     server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
     try:
         if settings.SMTP_USE_TLS:
-            # Production: Use TLS (Mailgun, SendGrid, etc.)
             server.starttls()
             if settings.SMTP_USER and settings.SMTP_PASSWORD:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        # Local development: Mailpit (no auth needed)
         yield server
     finally:
         server.quit()
@@ -53,20 +28,7 @@ def get_smtp_connection():
 
 @celery_app.task(name="send_verification_email", bind=True, max_retries=3)
 def send_verification_email(self, email: str, token: str, user_name: str):
-    """
-    Send email verification email via SMTP.
-    
-    Email includes verification link that expires in 24 hours.
-    Retries up to 3 times on failure with exponential backoff.
-    
-    Args:
-        email: Recipient email address
-        token: Verification token
-        user_name: User's display name for personalization
-        
-    Raises:
-        Exception: If email sending fails after retries
-    """
+    """Send email verification link (expires in 24 hours)."""
     try:
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
         api_verify_url = f"{settings.API_BASE_URL}/api/v1/auth/verify-email"
@@ -75,8 +37,7 @@ def send_verification_email(self, email: str, token: str, user_name: str):
         msg["Subject"] = "Verify your email address"
         msg["From"] = settings.SMTP_FROM_EMAIL
         msg["To"] = email
-        
-        # Plain text version
+
         text = f"""
         Welcome, {user_name}!
         
@@ -98,7 +59,6 @@ def send_verification_email(self, email: str, token: str, user_name: str):
         Identity Management Team
         """
         
-        # HTML version
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -142,32 +102,18 @@ def send_verification_email(self, email: str, token: str, user_name: str):
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
         
-        # Send email via SMTP (works for both Mailpit and Mailgun)
         with get_smtp_connection() as server:
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
         
     except Exception as exc:
-        # Retry with exponential backoff
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
 @celery_app.task(name="send_password_reset_email", bind=True, max_retries=3)
 def send_password_reset_email(self, email: str, token: str):
-    """
-    Send password reset email via SMTP.
-    
-    Email includes reset link that expires in 1 hour.
-    Retries up to 3 times on failure with exponential backoff.
-    
-    Args:
-        email: Recipient email address
-        token: Password reset token
-        
-    Raises:
-        Exception: If email sending fails after retries
-    """
+    """Send password reset link (expires in 1 hour)."""
     try:
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
         api_reset_url = f"{settings.API_BASE_URL}/api/v1/auth/reset-password"
@@ -177,7 +123,6 @@ def send_password_reset_email(self, email: str, token: str):
         msg["From"] = settings.SMTP_FROM_EMAIL
         msg["To"] = email
         
-        # Plain text version
         text = f"""
         Password Reset Request
         
@@ -199,7 +144,6 @@ def send_password_reset_email(self, email: str, token: str):
         Identity Management Team
         """
         
-        # HTML version
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -243,32 +187,18 @@ def send_password_reset_email(self, email: str, token: str):
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
         
-        # Send email via SMTP (works for both Mailpit and Mailgun)
         with get_smtp_connection() as server:
             server.send_message(msg)
             
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        # Retry with exponential backoff
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
 @celery_app.task(name="send_restoration_email", bind=True, max_retries=3)
 def send_restoration_email(self, email: str, token: str):
-    """
-    Send account restoration email via SMTP.
-
-    Email includes restoration link that expires in 24 hours.
-    Retries up to 3 times on failure with exponential backoff.
-
-    Args:
-        email: Recipient email address
-        token: Account restoration token
-
-    Raises:
-        Exception: If email sending fails after retries
-    """
+    """Send account restoration link (expires in 24 hours)."""
     try:
         restore_url = f"{settings.FRONTEND_URL}/restore-account/confirm?token={token}"
         api_restore_url = (
@@ -280,7 +210,6 @@ def send_restoration_email(self, email: str, token: str):
         msg["From"] = settings.SMTP_FROM_EMAIL
         msg["To"] = email
 
-        # Plain text version
         text = f"""
         Account Restoration Request
 
@@ -304,7 +233,6 @@ def send_restoration_email(self, email: str, token: str):
         Identity Management Team
         """
 
-        # HTML version
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -367,19 +295,7 @@ def send_restoration_email(self, email: str, token: str):
 def send_rejection_email(
     self, email: str, user_name: str, context_name: str, rejection_reason: str
 ):
-    """
-    Send verification rejection notification via SMTP.
-
-    Informs the user that their context verification was rejected
-    and includes the reason provided by the reviewer.
-    Retries up to 3 times on failure with exponential backoff.
-
-    Args:
-        email: Recipient email address
-        user_name: Display name of the user
-        context_name: Name of the rejected context
-        rejection_reason: Reviewer's reason for rejection
-    """
+    """Send verification rejection notification with the reviewer's reason."""
     try:
         documents_url = f"{settings.FRONTEND_URL}/documents"
 
@@ -455,18 +371,7 @@ def send_rejection_email(
 
 @celery_app.task(name="send_approval_email", bind=True, max_retries=3)
 def send_approval_email(self, email: str, user_name: str, context_name: str):
-    """
-    Send verification approval notification via SMTP.
-
-    Informs the user that their context verification was approved
-    and their account has been promoted to verified status.
-    Retries up to 3 times on failure with exponential backoff.
-
-    Args:
-        email: Recipient email address
-        user_name: Display name of the user
-        context_name: Name of the approved context
-    """
+    """Send verification approval notification. Account is promoted to verified."""
     try:
         contexts_url = f"{settings.FRONTEND_URL}/contexts"
 
@@ -544,19 +449,7 @@ def send_document_expiry_email(
     context_names: list,
     expiry_date: str,
 ):
-    """
-    Send document expiry notification via SMTP.
-
-    Informs the user that their verification document has expired
-    and lists the context profiles that were deactivated as a result.
-    Retries up to 3 times on failure with exponential backoff.
-
-    Args:
-        email: Recipient email address
-        user_name: Display name of the user
-        context_names: Names of the deactivated contexts
-        expiry_date: Document expiry date as ISO string
-    """
+    """Send document expiry notification listing deactivated contexts."""
     try:
         documents_url = f"{settings.FRONTEND_URL}/documents"
         contexts_list = ", ".join(context_names)

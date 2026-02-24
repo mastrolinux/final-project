@@ -1,9 +1,4 @@
-"""
-Unit Tests for Pydantic Schemas
-
-Tests validation, serialization, and edge cases for Profile schemas.
-Following TDD approach - these tests will initially fail.
-"""
+"""Tests for Profile schema validation and serialization."""
 
 import pytest
 from pydantic import ValidationError

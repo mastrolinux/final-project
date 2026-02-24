@@ -1,9 +1,4 @@
-"""
-OAuth 2.1 Service
-
-Business logic for OAuth 2.1 authorization server.
-Implements Authorization Code Flow with mandatory PKCE.
-"""
+"""OAuth 2.1 authorization server: Authorization Code Flow with mandatory PKCE."""
 
 import hashlib
 import base64
@@ -113,16 +108,7 @@ class IntrospectionResult:
 
 
 class OAuthService:
-    """
-    OAuth 2.1 Authorization Server Service
-    
-    Implements:
-    - Authorization Code Flow with PKCE (mandatory)
-    - Token issuance and validation
-    - Refresh token rotation
-    - Scope validation and filtering
-    - Context-aware token binding
-    """
+    """OAuth 2.1 authorization server with PKCE, token rotation, and context-aware token binding."""
     
     # Token expiry times (seconds)
     ACCESS_TOKEN_EXPIRY = 3600  # 1 hour
@@ -142,13 +128,7 @@ class OAuthService:
         self.audit_service = audit_service
 
     def _assert_context_verified(self, context_profile_id: Optional[UUID]) -> None:
-        """Reject the request if the context requires identity verification
-        but has not been approved by an admin.
-
-        Only legal and healthcare context types trigger this check.
-        Returns silently when context_repo is not injected, context_profile_id
-        is None, or the context type does not require verification.
-        """
+        """Reject requests for unverified legal/healthcare contexts."""
         if not context_profile_id or not self.context_repo:
             return
         context = self.context_repo.get_context_profile_by_id(context_profile_id)
@@ -163,18 +143,7 @@ class OAuthService:
     
     @staticmethod
     def generate_pkce_challenge(code_verifier: str) -> str:
-        """
-        Generate PKCE code_challenge from code_verifier.
-        
-        Uses SHA-256 hash encoded as base64url (S256 method).
-        This is the only method allowed in OAuth 2.1.
-        
-        Args:
-            code_verifier: Random string between 43-128 characters
-            
-        Returns:
-            Base64url-encoded SHA-256 hash of the verifier
-        """
+        """Generate S256 PKCE code_challenge from code_verifier (RFC 7636)."""
         # SHA-256 hash
         digest = hashlib.sha256(code_verifier.encode('ascii')).digest()
         
@@ -185,28 +154,14 @@ class OAuthService:
     
     @staticmethod
     def verify_pkce(code_verifier: str, code_challenge: str) -> bool:
-        """
-        Verify PKCE code_verifier matches code_challenge.
-        
-        Args:
-            code_verifier: Original verifier sent by client
-            code_challenge: Challenge stored with authorization code
-            
-        Returns:
-            True if verification succeeds, False otherwise
-        """
+        """Verify PKCE code_verifier matches code_challenge."""
         expected_challenge = OAuthService.generate_pkce_challenge(code_verifier)
         return expected_challenge == code_challenge
     
 # Client Validation
     
     def get_client(self, client_id: str) -> OAuthClient:
-        """
-        Get and validate an OAuth client.
-        
-        Raises:
-            InvalidClientError: If client not found or inactive
-        """
+        """Get an active OAuth client or raise InvalidClientError."""
         client = self.oauth_repo.get_active_client(client_id)
         if not client:
             raise InvalidClientError("Unknown client")
@@ -217,15 +172,7 @@ class OAuthService:
         client_id: str,
         client_secret: Optional[str] = None
     ) -> OAuthClient:
-        """
-        Validate client credentials.
-        
-        For confidential clients, requires valid client_secret.
-        For public clients, no secret required.
-        
-        Raises:
-            InvalidClientError: If validation fails
-        """
+        """Validate client credentials; confidential clients require a secret."""
         client = self.get_client(client_id)
         
         if client.is_confidential:
@@ -246,14 +193,7 @@ class OAuthService:
         return client
     
     def validate_redirect_uri(self, client: OAuthClient, redirect_uri: str) -> None:
-        """
-        Validate redirect URI against client's registered URIs.
-        
-        OAuth 2.1 requires exact string matching (no wildcards).
-        
-        Raises:
-            InvalidRequestError: If redirect URI not registered
-        """
+        """Validate redirect URI via exact string match (OAuth 2.1)."""
         if not client.is_redirect_uri_valid(redirect_uri):
             raise InvalidRequestError(
                 f"Invalid redirect_uri: must match one of the registered URIs"
@@ -268,27 +208,7 @@ class OAuthService:
         user_profile: Optional[BaseProfile] = None,
         context_type: Optional[ContextType] = None
     ) -> List[str]:
-        """
-        Validate and filter requested scopes.
-        
-        Checks:
-        1. Client is allowed to request each scope
-        2. Scope exists in the system
-        3. User's account type allows the scope (if applicable)
-        4. Context type restriction is met (if applicable)
-        
-        Args:
-            client: OAuth client requesting authorization
-            requested_scopes: List of scope strings requested
-            user_profile: User's profile (for account type checks)
-            context_type: Requested context type
-            
-        Returns:
-            List of validated/approved scopes
-            
-        Raises:
-            InvalidScopeError: If any scope is invalid
-        """
+        """Validate requested scopes against client permissions, account type, and context restrictions."""
         validated_scopes = []
         
         for scope_name in requested_scopes:
@@ -335,18 +255,7 @@ class OAuthService:
         return validated_scopes
 
     def get_scope_details(self, scope_names: List[str]) -> List["OAuthScope"]:
-        """
-        Get full scope information for consent screen display.
-        
-        Retrieves scope objects with descriptions, sensitivity flags,
-        and context type requirements for informed user consent.
-        
-        Args:
-            scope_names: List of scope name strings
-            
-        Returns:
-            List of OAuthScope objects with full details
-        """
+        """Get full scope information for consent screen display."""
         # Handle special scopes that may not be in database
         db_scope_names = [
             s for s in scope_names 
@@ -382,18 +291,7 @@ class OAuthService:
         profile_data: Dict[str, Any],
         scopes: List[str]
     ) -> Dict[str, Any]:
-        """
-        Filter profile data based on granted scopes.
-        
-        Each scope grants access to specific fields.
-        
-        Args:
-            profile_data: Full profile data dictionary
-            scopes: List of granted scope strings
-            
-        Returns:
-            Filtered profile data with only allowed fields
-        """
+        """Filter profile data to only the fields allowed by granted scopes."""
         # Define field access by scope
         scope_fields = {
             'openid': {'sub'},
@@ -447,27 +345,7 @@ class OAuthService:
         context_profile_id: Optional[UUID] = None,
         nonce: Optional[str] = None
     ) -> OAuthAuthorizationCode:
-        """
-        Create an authorization code after user grants consent.
-        
-        Args:
-            client_id: Client requesting authorization
-            user_id: User granting authorization
-            redirect_uri: Client's callback URL
-            scope: Space-separated scope string
-            code_challenge: PKCE challenge
-            code_challenge_method: Must be 'S256' (OAuth 2.1)
-            state: Client state parameter
-            context_profile_id: Optional context binding
-            nonce: OIDC nonce for ID token
-            
-        Returns:
-            Authorization code record
-            
-        Raises:
-            InvalidRequestError: If PKCE method invalid
-            InvalidClientError: If client invalid
-        """
+        """Create an authorization code after user grants consent."""
         # Validate PKCE method (OAuth 2.1 only allows S256)
         if code_challenge_method != "S256":
             raise InvalidRequestError(
@@ -505,28 +383,7 @@ class OAuthService:
         code_verifier: str,
         client_secret: Optional[str] = None
     ) -> TokenResponse:
-        """
-        Exchange authorization code for tokens.
-        
-        Validates:
-        1. Client credentials (if confidential)
-        2. Authorization code validity
-        3. PKCE code_verifier
-        4. Redirect URI matches
-        
-        Args:
-            code: Authorization code to exchange
-            client_id: Client ID
-            redirect_uri: Must match original request
-            code_verifier: PKCE verifier
-            client_secret: Optional for confidential clients
-            
-        Returns:
-            TokenResponse with access_token (and refresh_token if offline_access)
-            
-        Raises:
-            InvalidGrantError: If code invalid or verification fails
-        """
+        """Exchange authorization code for tokens with PKCE verification."""
         # Validate client
         client = self.validate_client_credentials(client_id, client_secret)
         
@@ -565,23 +422,10 @@ class OAuthService:
         client_secret: Optional[str] = None,
         scope: Optional[str] = None
     ) -> TokenResponse:
-        """
-        Exchange refresh token for new token pair.
-        
-        Implements refresh token rotation: issues new refresh token
-        and invalidates the old one.
-        
+        """Exchange refresh token for new token pair with rotation.
+
         Args:
-            refresh_token: Current refresh token
-            client_id: Client ID
-            client_secret: Optional for confidential clients
-            scope: Optional reduced scope (must be subset)
-            
-        Returns:
-            TokenResponse with new tokens
-            
-        Raises:
-            InvalidGrantError: If refresh token invalid
+            scope: If provided, must be a subset of the original grant's scopes.
         """
         # Validate client
         client = self.validate_client_credentials(client_id, client_secret)
@@ -624,19 +468,7 @@ class OAuthService:
         context_profile_id: Optional[UUID] = None,
         old_refresh_token_id: Optional[UUID] = None
     ) -> TokenResponse:
-        """
-        Internal method to issue access and refresh tokens.
-        
-        Args:
-            client: OAuth client
-            user_id: User ID
-            scope: Scope string
-            context_profile_id: Optional context binding
-            old_refresh_token_id: If rotating, ID of old token
-            
-        Returns:
-            TokenResponse with tokens
-        """
+        """Issue access and refresh tokens, rotating the old refresh token if provided."""
         # Create access token
         access_token_model, access_token = self.oauth_repo.create_access_token(
             client_id=client.client_id,
@@ -685,18 +517,7 @@ class OAuthService:
         token: str,
         token_type_hint: Optional[str] = None
     ) -> IntrospectionResult:
-        """
-        Introspect a token to determine its validity and metadata.
-        
-        Used by resource servers to validate tokens.
-        
-        Args:
-            token: Token to introspect
-            token_type_hint: Optional hint ('access_token' or 'refresh_token')
-            
-        Returns:
-            IntrospectionResult with token metadata if active
-        """
+        """Return token validity and metadata (RFC 7662)."""
         # Try as access token
         access_token = self.oauth_repo.get_access_token_by_raw(token)
         if access_token:
@@ -747,19 +568,7 @@ class OAuthService:
         token_type_hint: Optional[str] = None,
         client_id: Optional[str] = None
     ) -> bool:
-        """
-        Revoke a token.
-        
-        Per RFC 7009, returns success even if token unknown.
-        
-        Args:
-            token: Token to revoke
-            token_type_hint: Optional hint
-            client_id: Optional client ID for validation
-            
-        Returns:
-            True (always, per spec)
-        """
+        """Revoke a token; always returns True per RFC 7009."""
         # Try as access token
         revoked = self.oauth_repo.revoke_access_token_by_raw(token)
         if revoked:
@@ -794,11 +603,7 @@ class OAuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> OAuthConsent:
-        """
-        Record user consent for a client.
-        
-        Called when user approves authorization request.
-        """
+        """Record user consent for a client after authorization approval."""
         # Validate client
         client = self.get_client(client_id)
         
@@ -839,12 +644,7 @@ class OAuthService:
         client_id: str,
         required_scopes: List[str]
     ) -> bool:
-        """
-        Check if user has granted consent for required scopes.
-        
-        Returns:
-            True if consent exists and covers all scopes
-        """
+        """Check if user has granted consent covering all required scopes."""
         return self.oauth_repo.has_valid_consent(
             user_id=user_id,
             client_id=client_id,
@@ -852,11 +652,7 @@ class OAuthService:
         )
     
     def withdraw_consent(self, user_id: UUID, client_id: str) -> bool:
-        """
-        Withdraw user consent for a client.
-
-        Also revokes all tokens for this user-client pair.
-        """
+        """Withdraw user consent for a client and revoke all associated tokens."""
         result = self.oauth_repo.withdraw_consent(user_id, client_id)
 
         # Audit: consent withdrawal

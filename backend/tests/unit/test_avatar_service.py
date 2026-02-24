@@ -1,10 +1,4 @@
-"""
-Unit Tests for Avatar Service
-
-Tests the business logic for uploading and deleting avatars on base
-and context profiles. Uses in-memory storage and the standard SQLite
-test database from conftest.
-"""
+"""Tests for avatar upload and deletion on base and context profiles."""
 
 import io
 import pytest
@@ -19,9 +13,6 @@ from src.repositories.avatar_repository import AvatarRepository
 from src.services.avatar_service import AvatarService, AvatarServiceError
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _make_jpeg(width: int = 200, height: int = 200) -> bytes:
     """Generate a minimal valid JPEG image."""
@@ -30,10 +21,6 @@ def _make_jpeg(width: int = 200, height: int = 200) -> bytes:
     img.save(buf, format="JPEG")
     return buf.getvalue()
 
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def storage():
@@ -82,10 +69,6 @@ def context_profile(db_session, sample_verified_profile):
     return ctx
 
 
-# ---------------------------------------------------------------------------
-# Base avatar upload tests
-# ---------------------------------------------------------------------------
-
 class TestUploadBaseAvatar:
 
     def test_upload_success(self, avatar_service, sample_verified_profile, storage):
@@ -98,11 +81,9 @@ class TestUploadBaseAvatar:
         assert "avatar_thumbnail_url" in result
         assert result["avatar_url"].startswith("https://storage.test/")
         assert result["avatar_thumbnail_url"].startswith("https://storage.test/")
-        # Two blobs should have been stored (avatar + thumbnail)
         assert len(storage.blobs) == 2
 
     def test_upload_replaces_existing(self, avatar_service, profile_with_avatar, storage):
-        # Pre-populate the old blobs so deletion can find them
         storage.blobs["old/avatar.webp"] = b"old-avatar"
         storage.blobs["old/thumbnail.webp"] = b"old-thumb"
 
@@ -111,10 +92,8 @@ class TestUploadBaseAvatar:
             profile_with_avatar.user_id, data
         )
 
-        # Old blobs should have been replaced by new ones
         assert "old/avatar.webp" not in storage.blobs
         assert "old/thumbnail.webp" not in storage.blobs
-        # New blobs present
         assert len(storage.blobs) == 2
         assert result["avatar_url"] != "https://storage.test/old/avatar.webp"
 
@@ -138,10 +117,6 @@ class TestUploadBaseAvatar:
             )
 
 
-# ---------------------------------------------------------------------------
-# Base avatar delete tests
-# ---------------------------------------------------------------------------
-
 class TestDeleteBaseAvatar:
 
     def test_delete_success(self, avatar_service, profile_with_avatar, storage):
@@ -161,10 +136,6 @@ class TestDeleteBaseAvatar:
         with pytest.raises(AvatarServiceError, match="does not have an avatar"):
             avatar_service.delete_base_avatar(sample_verified_profile.user_id)
 
-
-# ---------------------------------------------------------------------------
-# Context avatar upload tests
-# ---------------------------------------------------------------------------
 
 class TestUploadContextAvatar:
 
@@ -198,23 +169,17 @@ class TestUploadContextAvatar:
             )
 
 
-# ---------------------------------------------------------------------------
-# Context avatar delete tests
-# ---------------------------------------------------------------------------
-
 class TestDeleteContextAvatar:
 
     def test_delete_context_avatar_success(
         self, avatar_service, sample_verified_profile, context_profile, db_session, storage
     ):
-        # First upload an avatar
         data = _make_jpeg()
         avatar_service.upload_context_avatar(
             sample_verified_profile.user_id, context_profile.id, data
         )
         assert len(storage.blobs) == 2
 
-        # Now delete it
         result = avatar_service.delete_context_avatar(
             sample_verified_profile.user_id, context_profile.id
         )

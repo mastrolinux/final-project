@@ -1,14 +1,6 @@
-"""
-Purge Expired Accounts
+"""Management command to permanently delete soft-deleted accounts past their grace period.
 
-Management command to permanently delete soft-deleted accounts
-whose grace period has expired.
-
-Usage:
-    docker compose exec api python -m src.commands.purge_expired_accounts
-
-This command should be scheduled to run periodically (e.g., daily via cron
-or a task scheduler) to enforce the retention policy.
+Usage: docker compose exec api python -m src.commands.purge_expired_accounts
 """
 
 import logging

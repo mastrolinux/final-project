@@ -1,8 +1,4 @@
-"""
-Integration Tests for OAuth 2.1 Endpoints
-
-Tests the complete OAuth 2.1 flows through the API endpoints.
-"""
+"""Integration tests for OAuth 2.1 endpoint flows."""
 
 import pytest
 import json
@@ -57,7 +53,6 @@ class TestOAuthDiscovery:
 
     def test_get_scopes_endpoint(self, client: TestClient, db_session: Session):
         """Test /oauth/scopes returns available scopes."""
-        # Create sample scopes
         scope = OAuthScope(
             scope_name="test:read",
             description="Test read scope",
@@ -524,7 +519,6 @@ class TestUserInfoEndpoint:
             headers={"Authorization": "Bearer invalid-token"}
         )
 
-        # Should reject invalid token
         assert response.status_code in [401, 403]
 
 

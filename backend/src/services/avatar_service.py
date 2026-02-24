@@ -2,21 +2,6 @@
 Avatar Service
 
 Business logic for uploading and deleting profile avatars.
-
-Upload pipeline:
-    1. Validate that the target profile (base or context) exists
-    2. For context avatars, verify ownership (context.user_id == user_id)
-    3. Process the image (validate, crop, resize, encode to WebP)
-    4. Upload avatar and thumbnail to object storage
-    5. If replacing an existing avatar, delete the old storage objects
-    6. Persist the new URLs and storage paths to the database
-    7. Record an audit event
-
-Delete pipeline:
-    1. Validate that the profile exists and has an avatar
-    2. Delete storage objects
-    3. Clear avatar columns in the database
-    4. Record an audit event
 """
 
 import logging
@@ -43,14 +28,7 @@ class AvatarServiceError(Exception):
 
 
 class AvatarService:
-    """
-    Orchestrates avatar upload and deletion for base and context profiles.
-
-    Depends on:
-        avatar_repo   -- database access for avatar columns
-        storage       -- blob storage for image files
-        audit_service -- tamper-evident audit logging (optional)
-    """
+    """Orchestrates avatar upload and deletion for base and context profiles."""
 
     def __init__(
         self,
@@ -67,28 +45,21 @@ class AvatarService:
     def upload_base_avatar(
         self, user_id: UUID, file_data: bytes
     ) -> dict:
-        """
-        Upload or replace the base profile avatar.
-
-        Returns a dict with avatar_url, avatar_thumbnail_url, and message.
-        """
+        """Upload or replace the base profile avatar."""
         profile = self.avatar_repo.get_base_profile(user_id)
         if not profile:
             raise AvatarServiceError(
                 f"Profile {user_id} not found", status_code=404
             )
 
-        # Process image (validate + resize + encode)
         try:
             processed = process_avatar_image(file_data)
         except ImageProcessingError as exc:
             raise AvatarServiceError(str(exc)) from exc
 
-        # Delete previous avatar from storage if one exists
         if profile.avatar_storage_path:
             self._delete_storage_pair(profile.avatar_storage_path)
 
-        # Upload new avatar and thumbnail
         prefix = f"{user_id}/{uuid_pkg.uuid4().hex}"
         avatar_result = self.storage.upload(
             f"{prefix}/avatar.webp", processed.avatar, processed.content_type
@@ -97,7 +68,6 @@ class AvatarService:
             f"{prefix}/thumbnail.webp", processed.thumbnail, processed.content_type
         )
 
-        # Persist URLs to database
         self.avatar_repo.update_base_avatar(
             user_id=user_id,
             avatar_url=avatar_result.public_url,
@@ -119,11 +89,7 @@ class AvatarService:
         }
 
     def delete_base_avatar(self, user_id: UUID) -> dict:
-        """
-        Remove the base profile avatar.
-
-        Returns a dict with a confirmation message.
-        """
+        """Remove the base profile avatar."""
         profile = self.avatar_repo.get_base_profile(user_id)
         if not profile:
             raise AvatarServiceError(
@@ -155,11 +121,7 @@ class AvatarService:
     def upload_context_avatar(
         self, user_id: UUID, context_id: UUID, file_data: bytes
     ) -> dict:
-        """
-        Upload or replace a context-specific avatar override.
-
-        The context must belong to the given user_id.
-        """
+        """Upload or replace a context-specific avatar override."""
         context = self._get_verified_context(user_id, context_id)
 
         try:
@@ -167,7 +129,6 @@ class AvatarService:
         except ImageProcessingError as exc:
             raise AvatarServiceError(str(exc)) from exc
 
-        # Delete previous override from storage if one exists
         if context.avatar_override_storage_path:
             self._delete_storage_pair(context.avatar_override_storage_path)
 
@@ -200,11 +161,7 @@ class AvatarService:
         }
 
     def delete_context_avatar(self, user_id: UUID, context_id: UUID) -> dict:
-        """
-        Remove the context-specific avatar override.
-
-        After deletion the context inherits the base profile avatar.
-        """
+        """Remove the context-specific avatar override; context inherits base avatar."""
         context = self._get_verified_context(user_id, context_id)
 
         if not context.avatar_override_storage_path:

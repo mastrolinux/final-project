@@ -18,7 +18,6 @@ class GrantType(str, Enum):
     """OAuth 2.1 grant types"""
     authorization_code = "authorization_code"
     refresh_token = "refresh_token"
-    # Note: implicit and password grants removed in OAuth 2.1
 
 
 class TokenType(str, Enum):
@@ -40,17 +39,12 @@ class ErrorCode(str, Enum):
     unsupported_grant_type = "unsupported_grant_type"
 
 
-# =============================================================================
+#
 # Authorization Request/Response Schemas
-# =============================================================================
+#
 
 class AuthorizationRequest(BaseModel):
-    """
-    OAuth 2.1 Authorization Request
-    
-    Parameters sent to /oauth/authorize endpoint.
-    PKCE parameters (code_challenge, code_challenge_method) are mandatory.
-    """
+    """OAuth 2.1 Authorization Request with mandatory PKCE."""
     
     response_type: str = Field(
         ...,
@@ -130,12 +124,7 @@ class AuthorizationRequest(BaseModel):
 
 
 class AuthorizationResponse(BaseModel):
-    """
-    OAuth 2.1 Authorization Response
-    
-    Returned via redirect after user authorization.
-    Contains authorization code to exchange for tokens.
-    """
+    """OAuth 2.1 Authorization Response with authorization code."""
     
     code: str = Field(
         ...,
@@ -159,11 +148,7 @@ class AuthorizationResponse(BaseModel):
 
 
 class AuthorizationErrorResponse(BaseModel):
-    """
-    OAuth 2.1 Authorization Error Response
-    
-    Returned when authorization request fails.
-    """
+    """OAuth 2.1 Authorization Error Response."""
     
     error: ErrorCode
     error_description: Optional[str] = None
@@ -171,24 +156,18 @@ class AuthorizationErrorResponse(BaseModel):
     state: Optional[str] = None
 
 
-# =============================================================================
+#
 # Token Request/Response Schemas
-# =============================================================================
+#
 
 class TokenRequest(BaseModel):
-    """
-    OAuth 2.1 Token Request
-    
-    Parameters sent to /oauth/token endpoint.
-    Supports Authorization Code and Refresh Token grants.
-    """
+    """OAuth 2.1 Token Request (authorization_code or refresh_token grant)."""
     
     grant_type: GrantType = Field(
         ...,
         description="Grant type: 'authorization_code' or 'refresh_token'"
     )
     
-    # For authorization_code grant
     code: Optional[str] = Field(
         default=None,
         description="Authorization code (required for authorization_code grant)"
@@ -204,13 +183,11 @@ class TokenRequest(BaseModel):
         description="PKCE code verifier (required for authorization_code grant)"
     )
     
-    # For refresh_token grant
     refresh_token: Optional[str] = Field(
         default=None,
         description="Refresh token (required for refresh_token grant)"
     )
     
-    # Client credentials (optional, depends on client type)
     client_id: Optional[str] = Field(
         default=None,
         description="Client ID (required for public clients)"
@@ -220,7 +197,6 @@ class TokenRequest(BaseModel):
         description="Client secret (required for confidential clients)"
     )
     
-    # Optional scope reduction
     scope: Optional[str] = Field(
         default=None,
         description="Reduced scope (must be subset of original)"
@@ -242,11 +218,7 @@ class TokenRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """
-    OAuth 2.1 Token Response
-    
-    Returned after successful token request.
-    """
+    """OAuth 2.1 Token Response."""
     
     access_token: str = Field(
         ...,
@@ -269,18 +241,16 @@ class TokenResponse(BaseModel):
         description="Granted scopes (may differ from requested)"
     )
     
-    # OIDC extensions
     id_token: Optional[str] = Field(
         default=None,
         description="ID token (if openid scope included)"
     )
     
-    # Custom extension for context binding
     context_profile_id: Optional[UUID] = Field(
         default=None,
         description="Context profile ID (if context-specific authorization)"
     )
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -298,27 +268,19 @@ class TokenResponse(BaseModel):
 
 
 class TokenErrorResponse(BaseModel):
-    """
-    OAuth 2.1 Token Error Response
-    
-    Returned when token request fails.
-    """
+    """OAuth 2.1 Token Error Response."""
     
     error: ErrorCode
     error_description: Optional[str] = None
     error_uri: Optional[str] = None
 
 
-# =============================================================================
+#
 # Token Introspection Schemas (RFC 7662)
-# =============================================================================
+#
 
 class IntrospectionRequest(BaseModel):
-    """
-    Token Introspection Request (RFC 7662)
-    
-    Used by resource servers to validate tokens.
-    """
+    """Token Introspection Request (RFC 7662)."""
     
     token: str = Field(
         ...,
@@ -331,18 +293,13 @@ class IntrospectionRequest(BaseModel):
 
 
 class IntrospectionResponse(BaseModel):
-    """
-    Token Introspection Response (RFC 7662)
-    
-    Returns token metadata if active, minimal response if inactive.
-    """
+    """Token Introspection Response (RFC 7662)."""
     
     active: bool = Field(
         ...,
         description="Whether token is currently active"
     )
     
-    # Only present if active=True
     scope: Optional[str] = None
     client_id: Optional[str] = None
     username: Optional[str] = None
@@ -376,7 +333,6 @@ class IntrospectionResponse(BaseModel):
         description="Token identifier"
     )
     
-    # Custom extension
     context_profile_id: Optional[UUID] = None
     context_type: Optional[ContextType] = None
     context_verified: Optional[bool] = Field(
@@ -389,16 +345,12 @@ class IntrospectionResponse(BaseModel):
     )
 
 
-# =============================================================================
+#
 # Token Revocation Schemas (RFC 7009)
-# =============================================================================
+#
 
 class RevocationRequest(BaseModel):
-    """
-    Token Revocation Request (RFC 7009)
-    
-    Allows clients to notify server that token is no longer needed.
-    """
+    """Token Revocation Request (RFC 7009)."""
     
     token: str = Field(
         ...,
@@ -409,24 +361,17 @@ class RevocationRequest(BaseModel):
         description="Hint about token type: 'access_token' or 'refresh_token'"
     )
     
-    # Client credentials (optional)
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
 
 
-# =============================================================================
+#
 # UserInfo Schemas (OIDC Core)
-# =============================================================================
+#
 
 class UserInfoResponse(BaseModel):
-    """
-    OIDC UserInfo Response
+    """OIDC UserInfo Response with context-awareness extensions."""
     
-    Standard OIDC claims plus custom extensions for context awareness.
-    Fields filtered based on granted scopes.
-    """
-    
-    # Standard OIDC claims
     sub: str = Field(
         ...,
         description="Subject identifier (user_id)"
@@ -445,7 +390,6 @@ class UserInfoResponse(BaseModel):
     picture: Optional[str] = None
     locale: Optional[str] = None
     
-    # Custom extensions for multi-context identity
     context: Optional[str] = Field(
         default=None,
         description="Current context type (professional, social, etc.)"
@@ -482,9 +426,9 @@ class UserInfoResponse(BaseModel):
     )
 
 
-# =============================================================================
+#
 # OAuth Client Schemas
-# =============================================================================
+#
 
 class OAuthClientCreate(BaseModel):
     """Schema for registering a new OAuth client"""
@@ -554,7 +498,6 @@ class OAuthClientUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_first_party: Optional[bool] = None
     
-    # Allow setting a new secret (will be hashed)
     client_secret: Optional[str] = Field(
         default=None,
         description="New client secret (only for confidential clients)"
@@ -582,12 +525,7 @@ class OAuthClientResponse(BaseModel):
 
 
 class OAuthClientCreateResponse(BaseModel):
-    """
-    Schema for OAuth client creation response.
-    
-    Includes the plain text client_secret - this is the ONLY time
-    the secret is returned. It cannot be retrieved later.
-    """
+    """Schema for OAuth client creation response (secret shown only once)."""
     
     client_id: str
     client_name: str
@@ -602,7 +540,6 @@ class OAuthClientCreateResponse(BaseModel):
     is_first_party: bool
     created_at: datetime
     
-    # Secret shown only on creation
     client_secret: Optional[str] = Field(
         default=None,
         description="Client secret (shown only once, store securely)"
@@ -620,16 +557,12 @@ class OAuthClientListResponse(BaseModel):
     page_size: int = 20
 
 
-# =============================================================================
+#
 # Consent Schemas
-# =============================================================================
+#
 
 class ConsentRequest(BaseModel):
-    """
-    Schema for consent decision from user
-    
-    Sent when user approves or denies authorization request.
-    """
+    """Schema for consent decision from user."""
     
     client_id: str
     approved: bool = Field(
@@ -670,16 +603,12 @@ class ConsentListResponse(BaseModel):
     total: int
 
 
-# =============================================================================
+#
 # Authorization Consent Flow Schemas (Frontend API Contract)
-# =============================================================================
+#
 
 class ConsentClientInfo(BaseModel):
-    """
-    Client information for consent screen display.
-    
-    Provides rich client metadata for informed user consent.
-    """
+    """Client information for consent screen display."""
     
     client_id: str = Field(..., description="Client identifier")
     client_name: str = Field(..., description="Human-readable client name")
@@ -702,11 +631,7 @@ class ConsentClientInfo(BaseModel):
 
 
 class ConsentScopeInfo(BaseModel):
-    """
-    Scope information for consent screen display.
-    
-    Includes human-readable descriptions for informed consent.
-    """
+    """Scope information for consent screen display."""
     
     scope_name: str = Field(..., description="Scope identifier")
     description: str = Field(..., description="Human-readable scope description")
@@ -723,11 +648,7 @@ class ConsentScopeInfo(BaseModel):
 
 
 class ConsentRequestInfo(BaseModel):
-    """
-    Authorization request parameters echoed back for consent flow.
-    
-    Contains all parameters needed to complete the authorization after consent.
-    """
+    """Authorization request parameters echoed back for consent flow."""
     
     client_id: str = Field(..., description="Client identifier")
     response_type: str = Field(..., description="OAuth response type")
@@ -744,14 +665,7 @@ class ConsentRequestInfo(BaseModel):
 
 
 class AuthorizationConsentResponse(BaseModel):
-    """
-    Response for authorization consent screen.
-    
-    Provides all information needed to render a consent UI:
-    - Client details for trust assessment
-    - Scope descriptions for informed consent
-    - Request parameters for form submission
-    """
+    """Response for authorization consent screen rendering."""
     
     client: ConsentClientInfo = Field(
         ...,
@@ -772,12 +686,7 @@ class AuthorizationConsentResponse(BaseModel):
 
 
 class ConsentDecisionRequestBody(BaseModel):
-    """
-    Request body for consent decision submission.
-    
-    Sent by frontend when user approves or denies authorization.
-    Uses JSON body instead of query parameters for security.
-    """
+    """Request body for consent decision submission."""
     
     client_id: str = Field(..., description="Client identifier")
     scope: str = Field(..., description="Requested scopes")
@@ -805,12 +714,7 @@ class ConsentDecisionRequestBody(BaseModel):
 
 
 class ConsentDecisionResponseBody(BaseModel):
-    """
-    Response after consent decision processing.
-    
-    Returns redirect URL for frontend to navigate to,
-    giving the SPA control over the redirect behavior.
-    """
+    """Response after consent decision processing."""
     
     redirect_to: str = Field(
         ...,
@@ -818,16 +722,12 @@ class ConsentDecisionResponseBody(BaseModel):
     )
 
 
-# =============================================================================
+#
 # OAuth Discovery Schemas (RFC 8414)
-# =============================================================================
+#
 
 class OAuthServerMetadata(BaseModel):
-    """
-    OAuth 2.0 Authorization Server Metadata (RFC 8414)
-    
-    Returned at /.well-known/oauth-authorization-server
-    """
+    """OAuth 2.0 Authorization Server Metadata (RFC 8414)."""
     
     issuer: str
     authorization_endpoint: str
@@ -846,7 +746,6 @@ class OAuthServerMetadata(BaseModel):
     ]
     code_challenge_methods_supported: List[str] = ["S256"]
     
-    # OIDC extensions
     subject_types_supported: List[str] = ["public"]
     id_token_signing_alg_values_supported: List[str] = ["RS256", "HS256"]
     claims_supported: List[str] = [
@@ -856,9 +755,9 @@ class OAuthServerMetadata(BaseModel):
     ]
 
 
-# =============================================================================
+#
 # Scope Information Schemas
-# =============================================================================
+#
 
 class ScopeInfo(BaseModel):
     """Schema for scope information display"""

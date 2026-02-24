@@ -1,14 +1,5 @@
 """
-Storage Abstraction Module
-
-Provides a Protocol-based storage interface with implementations:
-
-    SupabaseStorageClient          -- public bucket for avatars
-    SupabaseDocumentStorageClient  -- private bucket for encrypted documents
-    InMemoryStorageClient          -- test double that stores blobs in a dict
-
-The Protocol uses structural subtyping (PEP 544), so any object exposing
-the required methods is accepted without explicit registration.
+Protocol-based storage abstraction with Supabase and in-memory implementations.
 """
 
 import logging
@@ -27,11 +18,7 @@ class StorageUploadResult:
 
 @runtime_checkable
 class StorageClient(Protocol):
-    """
-    Structural interface for blob storage operations.
-
-    Implementations must provide upload, delete, and public URL retrieval.
-    """
+    """Structural interface for blob storage operations (PEP 544)."""
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
         """Upload a blob and return its storage path and public URL."""
@@ -51,13 +38,7 @@ class StorageClient(Protocol):
 
 
 class SupabaseStorageClient:
-    """
-    Production storage client using Supabase Storage (S3-compatible).
-
-    Requires the ``supabase`` Python SDK and a configured bucket named ``avatars``.
-    The bucket must have public access enabled so avatar URLs are directly
-    resolvable without signed tokens.
-    """
+    """Supabase Storage client for the public ``avatars`` bucket."""
 
     BUCKET = "avatars"
 
@@ -114,12 +95,7 @@ class SupabaseStorageClient:
             return False
 
     def get_public_url(self, path: str) -> str:
-        """Return the public URL for an object in the avatars bucket.
-
-        When a separate ``public_url`` was provided (e.g. the host-facing
-        Supabase URL that differs from the Docker-internal one), the SDK
-        URL is rewritten so that browsers can resolve it.
-        """
+        """Return the public URL, rewriting Docker-internal URLs if needed."""
         url = self._client.storage.from_(self.BUCKET).get_public_url(path)
         if self._public_url and self._supabase_url in url:
             url = url.replace(self._supabase_url, self._public_url, 1)
@@ -137,13 +113,7 @@ class SupabaseStorageClient:
 
 
 class SupabaseDocumentStorageClient:
-    """
-    Private-bucket storage client for encrypted verification documents.
-
-    Uses a ``verification-documents`` bucket with public access disabled.
-    Documents are encrypted before upload, so even bucket-level access
-    does not expose plaintext content.
-    """
+    """Supabase Storage client for the private ``verification-documents`` bucket."""
 
     BUCKET = "verification-documents"
 
@@ -217,12 +187,7 @@ class SupabaseDocumentStorageClient:
 
 
 class InMemoryStorageClient:
-    """
-    Test double for StorageClient.
-
-    Stores blobs in a plain dict keyed by storage path. Useful for unit and
-    integration tests that must not depend on external services.
-    """
+    """Test double for StorageClient backed by a plain dict."""
 
     BASE_URL = "https://storage.test"
 
@@ -246,21 +211,12 @@ class InMemoryStorageClient:
         return self.blobs.get(path)
 
 
-# ---------------------------------------------------------------------------
-# Dependency injection helpers
-# ---------------------------------------------------------------------------
-
 _storage_client: Optional[StorageClient] = None
 _document_storage_client: Optional[StorageClient] = None
 
 
 def get_storage_client() -> StorageClient:
-    """
-    FastAPI dependency that returns the configured StorageClient singleton.
-
-    In production, call ``configure_storage_client`` at application startup.
-    In tests, override this dependency with ``InMemoryStorageClient``.
-    """
+    """FastAPI dependency returning the configured StorageClient singleton."""
     if _storage_client is None:
         raise RuntimeError(
             "Storage client not configured. "
@@ -276,12 +232,7 @@ def configure_storage_client(client: StorageClient) -> None:
 
 
 def get_document_storage_client() -> StorageClient:
-    """
-    FastAPI dependency returning the document storage client singleton.
-
-    The document storage client uses a private bucket for encrypted
-    verification documents, separate from the public avatars bucket.
-    """
+    """FastAPI dependency returning the document storage client singleton."""
     if _document_storage_client is None:
         raise RuntimeError(
             "Document storage client not configured. "

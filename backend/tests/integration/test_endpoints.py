@@ -1,8 +1,4 @@
-"""
-Integration Tests for API Endpoints
-
-Tests API endpoints with real database interactions.
-"""
+"""Integration tests for profile and identity name API endpoints."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -41,8 +37,8 @@ def test_detailed_health_endpoint(client: TestClient):
     assert "database" in data["components"]
     assert "supabase" in data["components"]
     assert "tables" in data["components"]
-    
-    # Database component should have status
+
+
     db_component = data["components"]["database"]
     assert "status" in db_component
     assert "message" in db_component

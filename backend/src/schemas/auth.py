@@ -12,11 +12,7 @@ from src.models.profile import AccountType
 
 
 class RegisterRequest(BaseModel):
-    """
-    User registration request schema.
-    
-    Creates new user with email/password authentication.
-    """
+    """User registration request schema."""
     email: EmailStr = Field(
         ...,
         description="User email address (must be unique)"
@@ -290,12 +286,7 @@ class ResendVerificationResponse(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """
-    Refresh token request schema.
-
-    Used to exchange a valid refresh token for new access and refresh tokens.
-    Implements refresh token rotation for enhanced security.
-    """
+    """Refresh token request schema."""
     refresh_token: str = Field(
         ...,
         min_length=50,
@@ -312,12 +303,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 class RefreshTokenResponse(BaseModel):
-    """
-    Refresh token response with new tokens.
-
-    Returns new access and refresh tokens. The old refresh token is
-    invalidated (blacklisted) to implement token rotation.
-    """
+    """Refresh token response with rotated tokens."""
     access_token: str = Field(
         ...,
         description="New JWT access token (1 hour expiry)"
@@ -347,9 +333,6 @@ class RefreshTokenResponse(BaseModel):
     )
 
 
-# --- Account Restoration Schemas (MAS-42: Soft Deletion) ---
-
-
 class RestoreAccountRequest(BaseModel):
     """Request to initiate account restoration after soft deletion."""
     email: EmailStr = Field(..., description="Email of the soft-deleted account")
@@ -372,10 +355,7 @@ class RestoreAccountResponse(BaseModel):
 
 
 class RestoreAccountConfirmRequest(BaseModel):
-    """Confirm account restoration with token and optional new password.
-
-    Password is required for email/password users but optional for OAuth users.
-    """
+    """Confirm account restoration with token and optional new password."""
     token: str = Field(
         ...,
         min_length=32,
@@ -396,9 +376,6 @@ class RestoreAccountConfirmResponse(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     restored_at: datetime = Field(..., description="Restoration timestamp")
-
-
-# --- Set Password Schemas (OAuth users adding password auth) ---
 
 
 class SetPasswordRequest(BaseModel):

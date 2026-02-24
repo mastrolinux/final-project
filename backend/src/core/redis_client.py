@@ -1,8 +1,5 @@
 """
-Redis Client Module
-
-Provides Redis connection management and token blacklist operations
-for refresh token rotation security.
+Redis-based token blacklist for refresh token rotation.
 """
 
 import logging
@@ -20,46 +17,17 @@ DEFAULT_BLACKLIST_TTL = 30 * 24 * 60 * 60  # 2592000 seconds
 
 
 class TokenBlacklist:
-    """
-    Redis-based token blacklist for refresh token rotation.
-
-    Stores revoked token JTIs (JWT IDs) in Redis with automatic expiration.
-    Implements fail-closed behavior: if Redis is unavailable, operations
-    raise exceptions to prevent token validation without blacklist checks.
-
-    Key format: blacklist:{jti}
-    Value: "1" (presence indicates blacklisted)
-    TTL: Matches refresh token expiry (30 days by default)
-
-    Security Model:
-        - Fail closed: Redis unavailability causes 503 errors
-        - Old tokens blacklisted BEFORE new tokens issued
-        - TTL-based automatic cleanup eliminates maintenance jobs
-    """
+    """Redis-backed JTI blacklist with fail-closed semantics and TTL-based cleanup."""
 
     _instance: Optional["TokenBlacklist"] = None
     _redis_client: Optional[redis.Redis] = None
 
     def __init__(self, redis_url: str):
-        """
-        Initialize Redis connection for token blacklist.
-
-        Args:
-            redis_url: Redis connection URL (e.g., redis://localhost:6379/0)
-
-        Raises:
-            ConnectionError: If initial Redis connection fails
-        """
         self._redis_url = redis_url
         self._connect()
 
     def _connect(self) -> None:
-        """
-        Establish Redis connection with connection pooling.
-
-        Raises:
-            ConnectionError: If Redis connection cannot be established
-        """
+        """Establish Redis connection with connection pooling."""
         try:
             self._redis_client = redis.from_url(
                 self._redis_url,
@@ -68,7 +36,6 @@ class TokenBlacklist:
                 socket_timeout=5,
                 retry_on_timeout=True
             )
-            # Test connection
             self._redis_client.ping()
             logger.info("Redis connection established for token blacklist")
         except (RedisConnectionError, RedisError) as e:
@@ -76,12 +43,7 @@ class TokenBlacklist:
             raise ConnectionError(f"Redis connection failed: {e}") from e
 
     def is_available(self) -> bool:
-        """
-        Check if Redis connection is healthy.
-
-        Returns:
-            True if Redis is reachable and responding, False otherwise
-        """
+        """Check if Redis connection is healthy."""
         try:
             if self._redis_client is None:
                 return False
@@ -91,18 +53,7 @@ class TokenBlacklist:
             return False
 
     def is_blacklisted(self, jti: str) -> bool:
-        """
-        Check if a token JTI is in the blacklist.
-
-        Args:
-            jti: JWT ID (unique token identifier)
-
-        Returns:
-            True if token is blacklisted (revoked), False otherwise
-
-        Raises:
-            ConnectionError: If Redis is unavailable (fail closed)
-        """
+        """Check if a token JTI is blacklisted (fail-closed on Redis error)."""
         if not jti:
             raise ValueError("JTI cannot be empty")
 
@@ -123,20 +74,7 @@ class TokenBlacklist:
             ) from e
 
     def blacklist_token(self, jti: str, ttl_seconds: int = DEFAULT_BLACKLIST_TTL) -> None:
-        """
-        Add a token JTI to the blacklist with automatic expiration.
-
-        The token remains blacklisted until TTL expires, after which Redis
-        automatically removes the key. This eliminates the need for cleanup jobs.
-
-        Args:
-            jti: JWT ID (unique token identifier)
-            ttl_seconds: Time-to-live in seconds (default: 30 days)
-
-        Raises:
-            ValueError: If jti is empty or ttl_seconds is invalid
-            ConnectionError: If Redis is unavailable (fail closed)
-        """
+        """Add a token JTI to the blacklist with automatic TTL expiration."""
         if not jti:
             raise ValueError("JTI cannot be empty")
 
@@ -156,17 +94,8 @@ class TokenBlacklist:
             ) from e
 
     def get_stats(self) -> dict:
-        """
-        Return blacklist statistics for health monitoring.
-
-        Returns:
-            Dictionary with blacklist statistics
-
-        Raises:
-            ConnectionError: If Redis is unavailable
-        """
+        """Return blacklist statistics for health monitoring."""
         try:
-            # Count blacklist keys (approximate for large datasets)
             assert self._redis_client is not None
             cursor = 0
             count = 0
@@ -193,23 +122,11 @@ class TokenBlacklist:
             raise ConnectionError("Redis unavailable for stats") from e
 
 
-# Module-level singleton instance
 _blacklist_instance: Optional[TokenBlacklist] = None
 
 
 def get_blacklist() -> TokenBlacklist:
-    """
-    Get the singleton TokenBlacklist instance.
-
-    Creates the instance on first call if Redis is enabled.
-
-    Returns:
-        TokenBlacklist singleton instance
-
-    Raises:
-        ConnectionError: If Redis is unavailable
-        RuntimeError: If Redis is disabled in configuration
-    """
+    """Get the singleton TokenBlacklist instance."""
     global _blacklist_instance
 
     if not settings.REDIS_ENABLED:
@@ -225,11 +142,7 @@ def get_blacklist() -> TokenBlacklist:
 
 
 def reset_blacklist() -> None:
-    """
-    Reset the singleton instance (primarily for testing).
-
-    Closes existing connection and clears the singleton.
-    """
+    """Reset the singleton instance (for testing)."""
     global _blacklist_instance
 
     if _blacklist_instance is not None:

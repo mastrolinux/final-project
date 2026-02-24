@@ -34,13 +34,7 @@ class AuditOperation(str, enum.Enum):
 
 
 class AuditEventType(str, enum.Enum):
-    """
-    Audit event types.
-
-    Stored as VARCHAR in the database to avoid migration churn.
-    Enforcement is at the application layer via this enum.
-    """
-    # Auth events
+    """Audit event types (VARCHAR in DB, enforced at application layer)."""
     login_success = "auth.login.success"
     login_failure = "auth.login.failure"
     logout = "auth.logout"
@@ -51,38 +45,31 @@ class AuditEventType(str, enum.Enum):
     password_reset = "auth.password_reset"
     account_lock = "auth.account_lock"
 
-    # Profile events
     profile_create = "profile.create"
     profile_update = "profile.update"
     profile_delete = "profile.delete"
 
-    # Context events
     context_create = "context.create"
     context_update = "context.update"
     context_delete = "context.delete"
 
-    # Consent events
     consent_grant = "consent.grant"
     consent_withdraw = "consent.withdraw"
 
-    # Privacy events
     data_export = "privacy.data_export"
     account_deletion_requested = "privacy.account_deletion_requested"
     account_restored = "privacy.account_restored"
     account_permanently_purged = "privacy.account_permanently_purged"
 
-    # OAuth events
     token_revoke = "oauth.token.revoke"
     client_create = "oauth.client.create"
     client_update = "oauth.client.update"
     client_delete = "oauth.client.delete"
     client_purge = "oauth.client.purge"
 
-    # Avatar events
     avatar_upload = "avatar.upload"
     avatar_delete = "avatar.delete"
 
-    # Verification events
     document_upload = "verification.document.upload"
     document_review = "verification.document.review"
     document_delete = "verification.document.delete"
@@ -95,16 +82,7 @@ GENESIS_HASH = "901131d838b17aac0f7885b81e03cbdc9f5157a00343d30ab22083685ed1416a
 
 
 class AuditLog(Base):
-    """
-    Immutable audit log entry with hash chaining.
-
-    Each entry stores the SHA-256 hash of the previous entry, creating
-    a verifiable chain. Tampering with historical entries breaks
-    the chain and is detectable via verify_chain().
-
-    Intentionally omits TimestampMixin (no updated_at) and
-    SoftDeleteMixin (no deleted_at) because audit logs are immutable.
-    """
+    """Immutable audit log entry with SHA-256 hash chaining."""
     __tablename__ = "audit_logs"
 
     log_id = Column(

@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 def get_oauth_repository(db: Session = Depends(get_db)) -> OAuthRepository:
-    """Dependency to get OAuthRepository instance"""
+    """Dependency to get OAuthRepository instance."""
     return OAuthRepository(db)
 
 
@@ -41,9 +41,9 @@ def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
     return AuditService(AuditRepository(db))
 
 
-# =============================================================================
+#
 # OAuth Client CRUD Endpoints
-# =============================================================================
+#
 
 @router.post(
     "/clients",
@@ -58,37 +58,23 @@ def create_oauth_client(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-    """
-    Create a new OAuth client.
-    
-    For confidential clients, a client_secret is required and will be hashed.
-    The plain text secret is returned ONLY in this response - store it securely.
-    
-    For public clients (is_confidential=False), no secret is needed.
-    """
-    # Check if client_id already exists (including soft-deleted)
+    """Create a new OAuth client. Plain text secret is only returned in this response."""
     if oauth_repo.client_id_exists(client_data.client_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Client with ID '{client_data.client_id}' already exists or was previously deleted"
         )
     
-    # Handle client secret for confidential clients
     plain_secret = None
     secret_hash = None
     
     if client_data.is_confidential:
         if client_data.client_secret:
-            # Use provided secret
             plain_secret = client_data.client_secret
         else:
-            # Generate a secure random secret
             plain_secret = secrets.token_urlsafe(32)
-        
-        # Hash the secret using Argon2id (same as passwords)
         secret_hash = hash_password(plain_secret)
-    
-    # Create the client model
+
     client = OAuthClient(
         client_id=client_data.client_id,
         client_secret_hash=secret_hash,
@@ -104,10 +90,8 @@ def create_oauth_client(
         is_active=True
     )
     
-    # Save to database
     created_client = oauth_repo.create_client(client)
 
-    # Audit: OAuth client creation
     audit_service.log_event(
         event_type=AuditEventType.client_create,
         user_id=admin.user_id,
@@ -119,7 +103,6 @@ def create_oauth_client(
         legal_basis="legitimate_interest"
     )
 
-    # Return response with plain secret (only time it's shown)
     return OAuthClientCreateResponse(
         client_id=created_client.client_id,
         client_name=created_client.client_name,
@@ -133,7 +116,7 @@ def create_oauth_client(
         is_active=created_client.is_active,
         is_first_party=created_client.is_first_party,
         created_at=created_client.created_at,
-        client_secret=plain_secret  # Only returned on creation
+        client_secret=plain_secret
     )
 
 
@@ -150,12 +133,7 @@ def list_oauth_clients(
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository)
 ):
-    """
-    List all OAuth clients with pagination.
-    
-    By default, only active clients are returned.
-    Use include_inactive=true to see all clients including deactivated ones.
-    """
+    """List all OAuth clients with pagination."""
     clients = oauth_repo.list_all_clients(
         include_inactive=include_inactive,
         offset=(page - 1) * page_size,
@@ -200,12 +178,7 @@ def get_oauth_client(
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository)
 ):
-    """
-    Get details of a specific OAuth client.
-    
-    Note: The client_secret is never returned - it can only be seen
-    at creation time or by generating a new one via PATCH.
-    """
+    """Get details of a specific OAuth client. Secret is never returned."""
     client = oauth_repo.get_client(client_id)
     
     if not client:
@@ -244,12 +217,7 @@ def update_oauth_client(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-    """
-    Update an OAuth client.
-    
-    Only provided fields are updated. To update the client_secret,
-    include it in the request body (it will be hashed).
-    """
+    """Update an OAuth client. Only provided fields are changed."""
     client = oauth_repo.get_client(client_id)
     
     if not client:
@@ -258,24 +226,19 @@ def update_oauth_client(
             detail=f"Client '{client_id}' not found"
         )
     
-    # Update fields if provided
     update_dict = update_data.model_dump(exclude_unset=True)
-    
-    # Handle client_secret separately (needs hashing)
+
     if "client_secret" in update_dict:
         new_secret = update_dict.pop("client_secret")
         if new_secret:
             client.client_secret_hash = hash_password(new_secret)
     
-    # Update other fields
     for field, value in update_dict.items():
         if hasattr(client, field):
             setattr(client, field, value)
     
-    # Save changes
     updated_client = oauth_repo.update_client(client)
 
-    # Audit: OAuth client update
     audit_service.log_event(
         event_type=AuditEventType.client_update,
         user_id=admin.user_id,
@@ -316,15 +279,7 @@ def delete_oauth_client(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-    """
-    Soft-delete an OAuth client.
-    
-    The client is marked as inactive (is_active=false) and its deleted_at
-    timestamp is set. The client record is preserved for audit purposes.
-    
-    All existing tokens for this client will continue to work until they
-    expire, but no new tokens can be issued.
-    """
+    """Soft-delete an OAuth client. Existing tokens remain valid until expiry."""
     client = oauth_repo.get_client(client_id)
     
     if not client:
@@ -333,10 +288,8 @@ def delete_oauth_client(
             detail=f"Client '{client_id}' not found"
         )
     
-    # Soft delete (sets deleted_at and is_active=false)
     oauth_repo.delete_client(client_id)
 
-    # Audit: OAuth client soft delete
     audit_service.log_event(
         event_type=AuditEventType.client_delete,
         user_id=admin.user_id,
@@ -362,31 +315,14 @@ def purge_oauth_client(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-    """
-    Permanently delete an OAuth client from the database.
-    
-    WARNING: This is a destructive operation that cannot be undone.
-    
-    This endpoint:
-    - Removes the client record permanently (hard delete)
-    - Cascades deletion to all related tokens, consents, and authorization codes
-    - Allows the client_id to be reused for a new client
-    
-    Use this for:
-    - Testing cleanup when you need to recreate clients with the same ID
-    - Removing test data
-    - Cases where soft-delete is insufficient
-    
-    For normal operations, use DELETE /clients/{client_id} (soft delete) instead.
-    """
-    # Check if client exists (including soft-deleted)
+    """Hard-delete an OAuth client and all related records. Irreversible."""
     if not oauth_repo.client_id_exists(client_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Client '{client_id}' not found"
         )
     
-    # Audit: record BEFORE purge (data will be gone after)
+    # Record audit event before purge since the data will be gone after
     audit_service.log_event(
         event_type=AuditEventType.client_purge,
         user_id=admin.user_id,
@@ -398,7 +334,6 @@ def purge_oauth_client(
         legal_basis="legitimate_interest"
     )
 
-    # Permanently delete the client
     oauth_repo.purge_client(client_id)
 
     return None

@@ -1,9 +1,4 @@
-"""
-Encryption Module Tests
-
-Validates Fernet encryption/decryption round-trip, error handling
-for invalid keys, and correct behavior of the EncryptionService.
-"""
+"""Tests for Fernet encryption/decryption round-trip and error handling."""
 
 import pytest
 from cryptography.fernet import Fernet

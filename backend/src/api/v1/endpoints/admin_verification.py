@@ -62,9 +62,9 @@ def get_verification_service(
     )
 
 
-# ------------------------------------------------------------------
+#
 # List contexts pending verification
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -77,13 +77,7 @@ async def list_pending_contexts(
     admin: AuthUser = Depends(require_admin),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    List context profiles awaiting admin verification.
-
-    Returns contexts in ``pending`` or ``under_review`` status that have
-    at least one linked verification document, ordered by creation date
-    (oldest first).
-    """
+    """List context profiles awaiting admin verification."""
     contexts = service.get_pending_contexts(limit=limit, offset=offset)
 
     items = []
@@ -111,9 +105,9 @@ async def list_pending_contexts(
     return items
 
 
-# ------------------------------------------------------------------
+#
 # Get context details for review
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -125,18 +119,12 @@ async def get_context_verification(
     admin: AuthUser = Depends(require_admin),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Retrieve full context details with linked documents for admin review.
-
-    Returns the context's identity claims alongside all linked documents,
-    enabling the admin to compare document content against claimed fields.
-    """
+    """Retrieve full context details with linked documents for admin review."""
     try:
         ctx = service.get_context_for_review(context_id)
     except VerificationServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
-    # Fetch linked documents
     docs = service.verification_repo.get_documents_for_context(context_id)
 
     display_name = None
@@ -164,9 +152,9 @@ async def get_context_verification(
     )
 
 
-# ------------------------------------------------------------------
+#
 # Review (approve / reject) context
-# ------------------------------------------------------------------
+#
 
 
 @router.patch(
@@ -179,16 +167,7 @@ async def review_context_verification(
     admin: AuthUser = Depends(require_admin),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Approve or reject a context's verification request.
-
-    When approving, the context is activated, the user's account type
-    is promoted to ``verified``, and an optional document expiry date
-    is set on all linked documents.
-
-    When rejecting, the ``rejection_reason`` field is required and is
-    stored on the context for the user to see.
-    """
+    """Approve or reject a context's verification request."""
     try:
         updated_ctx = service.review_context(
             context_id=context_id,
@@ -201,7 +180,6 @@ async def review_context_verification(
     except VerificationServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
-    # Build response with refreshed document list
     docs = service.verification_repo.get_documents_for_context(context_id)
 
     display_name = None
@@ -230,9 +208,9 @@ async def review_context_verification(
     )
 
 
-# ------------------------------------------------------------------
+#
 # Download (decrypted document for admin review)
-# ------------------------------------------------------------------
+#
 
 
 @router.get("/verifications/{document_id}/download")
@@ -241,12 +219,7 @@ async def download_verification_document(
     admin: AuthUser = Depends(require_admin),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Download and decrypt a verification document for review.
-
-    Returns the original document bytes with appropriate content type
-    and security headers to prevent caching and cross-origin attacks.
-    """
+    """Download and decrypt a verification document for admin review."""
     try:
         plaintext, content_type = service.download_document(
             document_id=document_id,

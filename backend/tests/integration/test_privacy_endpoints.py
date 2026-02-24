@@ -1,9 +1,4 @@
-"""
-Integration Tests for Privacy Endpoints
-
-Tests the GET /api/v1/privacy/export endpoint including authentication,
-response structure, and data completeness.
-"""
+"""Integration tests for privacy data export endpoints."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -246,7 +241,6 @@ class TestPrivacyExportEndpoint:
         self, client, user_token, user_profile, db_session
     ):
         """Authenticated user receives only their own data, not other users'."""
-        # Create a second user (commit profile first for FK constraint)
         other_profile = BaseProfile(
             user_id="00000000-0000-0000-0000-000000000061",
             account_type=AccountType.verified,
@@ -275,14 +269,12 @@ class TestPrivacyExportEndpoint:
         db_session.add(other_name)
         db_session.commit()
 
-        # Export with first user's token
         response = client.get(
             "/api/v1/privacy/export",
             headers={"Authorization": f"Bearer {user_token}"},
         )
         data = response.json()
 
-        # Verify only the first user's data is returned
         assert data["profile"]["user_id"] == "00000000-0000-0000-0000-000000000060"
         assert data["profile"]["primary_email"] == "export.user@example.com"
         for name in data["identity_names"]:

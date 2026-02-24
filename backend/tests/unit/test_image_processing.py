@@ -1,10 +1,4 @@
-"""
-Unit Tests for Image Processing Module
-
-Tests image validation (magic bytes), center-cropping, resizing,
-and WebP conversion. Test images are generated programmatically
-with Pillow to avoid fixture file dependencies.
-"""
+"""Tests for image validation, center-cropping, resizing, and WebP conversion."""
 
 import io
 import pytest
@@ -20,10 +14,6 @@ from src.core.image import (
     THUMBNAIL_SIZE,
 )
 
-
-# ---------------------------------------------------------------------------
-# Helpers: generate test image bytes in various formats
-# ---------------------------------------------------------------------------
 
 def _make_image_bytes(
     width: int = 800,
@@ -53,10 +43,6 @@ def _make_palette_image(width: int = 100, height: int = 100) -> bytes:
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-
-# ---------------------------------------------------------------------------
-# Validation tests
-# ---------------------------------------------------------------------------
 
 class TestImageValidation:
     """Tests for validate_image_bytes and format/size constraints."""
@@ -107,10 +93,6 @@ class TestImageValidation:
         with pytest.raises(ImageProcessingError, match="not a valid image"):
             validate_image_bytes(svg_data)
 
-
-# ---------------------------------------------------------------------------
-# Processing pipeline tests
-# ---------------------------------------------------------------------------
 
 class TestProcessAvatarImage:
     """Tests for the full processing pipeline: validate, crop, resize, encode."""
