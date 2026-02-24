@@ -225,6 +225,7 @@
     "verificationPending": "Verification pending",
     "verificationVerified": "Verified",
     "verificationRejected": "Verification rejected",
+    "verificationExpired": "Document expired",
     "types": {
       "professional": "Professional",
       "social": "Social",
