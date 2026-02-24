@@ -1107,7 +1107,10 @@ class TestExpiryEnrichment:
         enriched = context_service.get_context_profile(context_id)
         assert enriched.verification_status == VerificationStatus.expired
 
-        # Re-query directly from the repository (bypasses enrichment)
+        # Expire and re-query to force a fresh read from the database.
+        # set_committed_value modifies the in-memory object without marking it
+        # dirty, so we must expire the cached state to verify the DB is unchanged.
+        db_session.expire_all()
         db_row = context_repository.get_context_profile_by_id(context_id)
         assert db_row.verification_status == VerificationStatus.verified
         assert db_row.is_active is True
