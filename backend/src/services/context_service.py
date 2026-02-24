@@ -28,25 +28,13 @@ class ContextServiceError(Exception):
     """Custom exception for context service errors"""
     
     def __init__(self, message: str, status_code: int = 400):
-        """
-        Initialize exception with message and optional status code
-        
-        Args:
-            message: Error message
-            status_code: HTTP status code (default 400)
-        """
         super().__init__(message)
         self.status_code = status_code
         self.message = message
 
 
 class ResolvedProfile:
-    """
-    Resolved profile after applying context inheritance.
-    
-    This is the unified view combining base profile + context overrides.
-    Returned to third-party applications via OAuth.
-    """
+    """Unified view combining base profile + context overrides."""
     
     def __init__(
         self,
@@ -111,15 +99,6 @@ class ContextService:
         audit_service: Optional["AuditService"] = None,
         auth_repository: Optional[AuthRepository] = None
     ):
-        """
-        Initialize service with repositories
-
-        Args:
-            context_repository: ContextRepository instance
-            profile_repository: ProfileRepository instance
-            audit_service: Optional audit service for event logging
-            auth_repository: Optional auth repository for email verification checks
-        """
         self.context_repo = context_repository
         self.profile_repo = profile_repository
         self.audit_service = audit_service
@@ -131,31 +110,7 @@ class ContextService:
         requested_language: str,
         preferred_language: str
     ) -> str:
-        """
-        Resolve name value based on language with fallback chain.
-        
-        Implements W3C internationalization best practices.
-        
-        Fallback order (BCP 47 compliant):
-        1. Requested language (e.g., 'zh' from Accept-Language header)
-        2. User's preferred language from base profile
-        3. English 'en' as universal default
-        4. First available language (alphabetically)
-        
-        Args:
-            name: IdentityName with JSONB name_value
-            requested_language: Language code from Accept-Language (e.g., 'zh', 'en')
-            preferred_language: User's preferred language from base profile
-            
-        Returns:
-            Name string in best-match language, or empty string if none available
-            
-        Examples:
-            name_value = {"zh": "李明", "en": "Li Ming"}
-            requested='zh', preferred='en' -> "李明"
-            requested='fr', preferred='zh' -> "李明"
-            requested='fr', preferred='de' -> "Li Ming" (en default)
-        """
+        """Resolve name value using BCP 47 fallback: requested -> preferred -> 'en' -> first available."""
         name_value = name.name_value  # JSONB dict: {"en": "Sarah", "zh": "萨拉"}
         
         if not isinstance(name_value, dict):
@@ -190,24 +145,7 @@ class ContextService:
         phone_override: Optional[str] = None,
         bio: Optional[str] = None
     ) -> ContextProfile:
-        """
-        Create a new context profile with business logic validation
-        
-        Args:
-            user_id: User ID this context belongs to
-            context_type: Type of context
-            context_name: User-defined context name
-            display_name_override: Optional display name override
-            email_override: Optional email override
-            phone_override: Optional phone override
-            bio: Optional context-specific biography
-            
-        Returns:
-            Created context profile
-            
-        Raises:
-            ContextServiceError: If validation fails
-        """
+        """Create a new context profile with business logic validation."""
         # Verify base profile exists
         base_profile = self.profile_repo.get_profile_by_id(user_id)
         if not base_profile:
@@ -293,17 +231,10 @@ class ContextService:
         return context
     
     def _enrich_expiry_status(self, context: ContextProfile) -> ContextProfile:
-        """
-        Project verification_status as 'expired' when the linked document's
-        expiry date has passed. This is a read-time enrichment that does not
-        mutate the database row; the Celery Beat task handles canonical state
-        transitions.
-
-        Uses set_committed_value to modify the in-memory attribute without
-        marking the object as dirty, so autoflush will not persist the change.
-        The object remains attached to the session, avoiding DetachedInstanceError
-        during Pydantic serialization.
-        """
+        """Project verification_status as 'expired' when the linked document's
+        expiry date has passed. Celery Beat handles the canonical state
+        transition. Uses set_committed_value to modify the in-memory
+        attribute without marking the object as dirty."""
         if (
             context.verification_status == VerificationStatus.verified
             and context.document is not None
@@ -315,18 +246,7 @@ class ContextService:
         return context
 
     def get_context_profile(self, context_id: UUID) -> ContextProfile:
-        """
-        Get context profile by ID
-
-        Args:
-            context_id: Context profile ID
-
-        Returns:
-            Context profile
-
-        Raises:
-            ContextServiceError: If context not found
-        """
+        """Get context profile by ID. Raises ContextServiceError if not found."""
         context = self.context_repo.get_context_profile_by_id(context_id)
 
         if not context:
@@ -339,16 +259,7 @@ class ContextService:
         user_id: UUID,
         include_inactive: bool = False
     ) -> List[ContextProfile]:
-        """
-        Get all context profiles for a user
-
-        Args:
-            user_id: User ID
-            include_inactive: Whether to include inactive contexts
-
-        Returns:
-            List of context profiles
-        """
+        """Get all context profiles for a user."""
         contexts = self.context_repo.get_user_context_profiles(
             user_id,
             include_inactive=include_inactive
@@ -365,29 +276,7 @@ class ContextService:
         is_active: Union[bool, None, _Unset] = UNSET,
         context_name: Union[str, None, _Unset] = UNSET
     ) -> ContextProfile:
-        """
-        Update context profile with validation.
-
-        Uses UNSET sentinel to distinguish between:
-        - Field not provided (UNSET): keep existing value
-        - Field explicitly null (None): clear override, inherit from base profile
-        - Field has value (str): set new override value
-
-        Args:
-            context_id: Context profile ID
-            display_name_override: Display name override (None clears, UNSET keeps)
-            email_override: Email override (None clears, UNSET keeps)
-            phone_override: Phone override (None clears, UNSET keeps)
-            bio: Biography (None clears, UNSET keeps)
-            is_active: Active status (None keeps existing, UNSET keeps)
-            context_name: Context name (None keeps existing, UNSET keeps)
-
-        Returns:
-            Updated context profile
-
-        Raises:
-            ContextServiceError: If validation fails
-        """
+        """Update context profile. UNSET keeps existing, None clears override."""
         # Get existing context
         context = self.context_repo.get_context_profile_by_id(context_id)
         if not context:
@@ -448,18 +337,7 @@ class ContextService:
         return updated_context
     
     def delete_context_profile(self, context_id: UUID) -> bool:
-        """
-        Soft delete a context profile
-        
-        Args:
-            context_id: Context profile ID
-            
-        Returns:
-            True if deleted
-            
-        Raises:
-            ContextServiceError: If context not found
-        """
+        """Soft delete a context profile."""
         # Get context before deletion for audit user_id
         context = self.context_repo.get_context_profile_by_id(context_id)
 
@@ -489,31 +367,7 @@ class ContextService:
         language: str = "en",
         include_deprecated_names: bool = False
     ) -> ResolvedProfile:
-        """
-        CRITICAL ALGORITHM: Profile resolution with inheritance
-        
-        Merges base profile + context overrides to create unified view.
-        This implements Goffman's dramaturgical theory: context-dependent identity presentation.
-        
-        Resolution order:
-        1. Start with base profile fields
-        2. Apply context overrides (if not None)
-        3. Resolve multilingual names via language preference
-        4. Filter deprecated names (unless explicitly included)
-        5. Return unified ResolvedProfile view
-        
-        Args:
-            user_id: User ID
-            context_id: Context profile ID
-            language: Language code for name resolution (default: "en")
-            include_deprecated_names: Whether to include deprecated names
-            
-        Returns:
-            ResolvedProfile with merged base + context data
-            
-        Raises:
-            ContextServiceError: If profile or context not found
-        """
+        """Merge base profile + context overrides into a ResolvedProfile."""
         # Get base profile
         base_profile = self.profile_repo.get_profile_by_id(user_id)
         if not base_profile:
@@ -614,22 +468,7 @@ class ContextService:
         language: str = "en",
         include_deprecated_names: bool = False
     ) -> ResolvedProfile:
-        """
-        Resolve base profile without context overrides
-        
-        Useful for displaying user's default identity presentation.
-        
-        Args:
-            user_id: User ID
-            language: Language code for name resolution
-            include_deprecated_names: Whether to include deprecated names
-            
-        Returns:
-            ResolvedProfile with base profile data only
-            
-        Raises:
-            ContextServiceError: If profile not found
-        """
+        """Resolve base profile without context overrides."""
         # Get base profile
         base_profile = self.profile_repo.get_profile_by_id(user_id)
         if not base_profile:

@@ -1,8 +1,4 @@
-"""
-Unit Tests for Configuration Module
-
-Tests configuration loading, validation, and production safety checks.
-"""
+"""Tests for configuration loading, validation, and production safety checks."""
 
 import pytest
 import os
@@ -12,10 +8,8 @@ from src.core.config import Settings
 
 def test_settings_defaults():
     """Test that settings load with defaults"""
-    # Set required environment variables
     os.environ["DATABASE_URL"] = "postgresql://test@localhost/test"
     os.environ["SECRET_KEY"] = "test-secure-key-for-testing"
-    # Clear variables whose defaults we want to test, since CI may set them
     os.environ.pop("ENVIRONMENT", None)
     os.environ.pop("DEBUG", None)
     os.environ.pop("LOG_LEVEL", None)
@@ -33,12 +27,10 @@ def test_database_url_validation():
     """Test DATABASE_URL validation"""
     os.environ["SECRET_KEY"] = "test-secret-key"
     
-    # Valid PostgreSQL URL
     os.environ["DATABASE_URL"] = "postgresql://user:pass@localhost/db"
     settings = Settings()
     assert settings.DATABASE_URL.startswith("postgresql://")
     
-    # Invalid URL should raise validation error
     with pytest.raises(ValidationError):
         os.environ["DATABASE_URL"] = "mysql://user:pass@localhost/db"
         Settings()
@@ -49,13 +41,11 @@ def test_log_level_validation():
     os.environ["DATABASE_URL"] = "postgresql://test@localhost/test"
     os.environ["SECRET_KEY"] = "test-secret-key"
     
-    # Valid log levels
     for level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
         os.environ["LOG_LEVEL"] = level
         settings = Settings()
         assert settings.LOG_LEVEL == level
     
-    # Invalid log level should raise error
     with pytest.raises(ValidationError):
         os.environ["LOG_LEVEL"] = "INVALID"
         Settings()
@@ -65,14 +55,12 @@ def test_environment_validation():
     """Test ENVIRONMENT validation"""
     os.environ["DATABASE_URL"] = "postgresql://test@localhost/test"
     
-    # Valid environments
     for env in ["development", "staging", "test"]:
         os.environ["ENVIRONMENT"] = env
         os.environ["SECRET_KEY"] = "test-secure-key-for-testing"
         settings = Settings()
         assert settings.ENVIRONMENT == env.lower()
     
-    # Production environment requires secure settings
     os.environ["ENVIRONMENT"] = "production"
     os.environ["SECRET_KEY"] = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
     os.environ["DEBUG"] = "false"
@@ -177,12 +165,10 @@ def test_production_security_validation_fails_with_localhost_supabase():
         Settings()
 
 
-# Cleanup after tests
 @pytest.fixture(autouse=True)
 def cleanup_env():
     """Clean up environment variables after each test"""
     yield
-    # Reset environment variables
     env_vars = [
         "DATABASE_URL", "SECRET_KEY", "ENVIRONMENT", "DEBUG", 
         "LOG_LEVEL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", 

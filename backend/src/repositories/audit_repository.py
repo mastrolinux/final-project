@@ -40,26 +40,10 @@ class AuditRepository:
         changes: Optional[dict],
         previous_hash: str
     ) -> str:
-        """
-        Compute SHA-256 hash for an audit log entry.
+        """Compute SHA-256 hash for an audit log entry.
 
-        The hash input is a deterministic concatenation of all
-        semantically significant fields plus the previous entry's hash,
-        separated by pipe characters.
-
-        Args:
-            timestamp: Event timestamp (ISO format used for hashing)
-            event_type: Event type string
-            user_id: Data subject UUID string or None
-            actor_id: Actor UUID string or None
-            resource_type: Resource type string
-            resource_id: Resource identifier string
-            operation: Operation enum value string
-            changes: JSONB changes dict (sorted keys for determinism)
-            previous_hash: Hash of the previous log entry
-
-        Returns:
-            64-character hex digest of SHA-256 hash
+        Concatenates all significant fields plus the previous entry's
+        hash with pipe separators for deterministic chaining.
         """
         changes_json = json.dumps(
             changes, sort_keys=True, default=str
@@ -113,27 +97,7 @@ class AuditRepository:
         user_agent: Optional[str] = None,
         legal_basis: Optional[str] = None
     ) -> AuditLog:
-        """
-        Create a new audit log entry with hash chaining.
-
-        Fetches the latest entry's hash, computes this entry's hash
-        incorporating it, then persists the new entry.
-
-        Args:
-            event_type: Event type string (from AuditEventType.value)
-            user_id: Data subject UUID
-            actor_id: Actor UUID (who performed the action)
-            resource_type: Type of resource affected
-            resource_id: Identifier of the resource
-            operation: Operation performed
-            changes: Optional dict of change details
-            ip_address: Client IP address
-            user_agent: Client user agent string
-            legal_basis: GDPR processing basis
-
-        Returns:
-            Created AuditLog instance
-        """
+        """Create a new audit log entry with hash chaining."""
         now = datetime.now(timezone.utc)
         previous_hash = self._get_latest_hash()
 
@@ -178,19 +142,7 @@ class AuditRepository:
         limit: int = 50,
         offset: int = 0
     ) -> List[AuditLog]:
-        """
-        Get audit logs for a specific user (data subject access).
-
-        Args:
-            user_id: Data subject UUID
-            event_type: Optional filter by event type
-            resource_type: Optional filter by resource type
-            limit: Maximum entries to return
-            offset: Pagination offset
-
-        Returns:
-            List of AuditLog entries, newest first
-        """
+        """Get audit logs for a specific user, newest first."""
         query = (
             self.db.query(AuditLog)
             .filter(AuditLog.user_id == user_id)
@@ -215,18 +167,7 @@ class AuditRepository:
         limit: int = 50,
         offset: int = 0
     ) -> List[AuditLog]:
-        """
-        Get audit logs for a specific resource.
-
-        Args:
-            resource_type: Resource type (e.g., "profile", "context")
-            resource_id: Resource identifier
-            limit: Maximum entries to return
-            offset: Pagination offset
-
-        Returns:
-            List of AuditLog entries, newest first
-        """
+        """Get audit logs for a specific resource, newest first."""
         return (
             self.db.query(AuditLog)
             .filter(
@@ -251,19 +192,11 @@ class AuditRepository:
         self,
         limit: int = 1000
     ) -> Tuple[bool, int, Optional[str]]:
-        """
-        Verify hash chain integrity for the most recent entries.
+        """Verify hash chain integrity for the most recent entries.
 
-        Walks the chain from newest to oldest, recomputing each
-        entry's hash and verifying it matches the stored value.
-        Also checks that each entry's previous_hash matches the
-        entry_hash of the chronologically preceding entry.
-
-        Args:
-            limit: Maximum number of entries to verify
-
-        Returns:
-            Tuple of (is_valid, entries_verified, error_message)
+        Walks newest to oldest, recomputing each hash and checking
+        that previous_hash links match. Returns (is_valid,
+        entries_verified, error_message).
         """
         entries = (
             self.db.query(AuditLog)
@@ -277,7 +210,6 @@ class AuditRepository:
 
         entries_verified = 0
         for i, entry in enumerate(entries):
-            # Recompute this entry's hash from its fields
             recomputed = self._compute_entry_hash(
                 timestamp=entry.created_at,
                 event_type=entry.event_type,
@@ -298,8 +230,6 @@ class AuditRepository:
                     f"stored={entry.entry_hash}, computed={recomputed}"
                 )
 
-            # Check chain linkage: this entry's previous_hash should
-            # match the older entry's entry_hash
             if i + 1 < len(entries):
                 older_entry = entries[i + 1]
                 if entry.previous_hash != older_entry.entry_hash:

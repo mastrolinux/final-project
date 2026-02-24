@@ -124,9 +124,9 @@ class TestAdminUserEndpoints:
         db_session.commit()
         return user
 
-    # =========================================================================
+    #
     # GET /api/v1/admin/users/soft-deleted
-    # =========================================================================
+    #
 
     def test_list_soft_deleted_users_as_admin(
         self, client: TestClient, admin_token: str, soft_deleted_user
@@ -188,9 +188,9 @@ class TestAdminUserEndpoints:
         user_ids = [u["user_id"] for u in data["users"]]
         assert str(admin_user.user_id) not in user_ids
 
-    # =========================================================================
+    #
     # POST /api/v1/admin/users/purge-expired
-    # =========================================================================
+    #
 
     def test_purge_expired_as_admin_none_expired(
         self, client: TestClient, admin_token: str, soft_deleted_user

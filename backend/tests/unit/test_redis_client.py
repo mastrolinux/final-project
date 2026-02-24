@@ -1,8 +1,4 @@
-"""
-Unit Tests for Redis Client and Token Blacklist
-
-Tests token blacklist operations with mocked Redis.
-"""
+"""Tests for token blacklist operations with mocked Redis."""
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
@@ -196,7 +192,6 @@ class TestGetBlacklistSingleton:
         with patch('src.core.redis_client.settings') as mock_settings:
             mock_settings.REDIS_ENABLED = False
 
-            # Reset singleton
             import src.core.redis_client as redis_module
             redis_module._blacklist_instance = None
 
@@ -217,7 +212,6 @@ class TestGetBlacklistSingleton:
             mock_settings.REDIS_URL = "redis://localhost:6379/0"
             mock_from_url.return_value = mock_redis
 
-            # Reset singleton
             import src.core.redis_client as redis_module
             redis_module._blacklist_instance = None
 
@@ -248,14 +242,8 @@ class TestResetBlacklist:
 
             from src.core.redis_client import get_blacklist, reset_blacklist
 
-            # Create instance
             instance1 = get_blacklist()
-
-            # Reset
             reset_blacklist()
-
-            # Create new instance
             instance2 = get_blacklist()
 
-            # Should be different instances
             assert instance1 is not instance2

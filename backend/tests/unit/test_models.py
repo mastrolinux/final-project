@@ -1,8 +1,4 @@
-"""
-Unit Tests for Profile Models
-
-Tests BaseProfile and IdentityName models with their behaviors.
-"""
+"""Tests for BaseProfile and IdentityName models."""
 
 import pytest
 from datetime import datetime, timezone
@@ -55,7 +51,6 @@ def test_base_profile_soft_delete(db_session: Session, sample_verified_profile: 
     """Test soft delete functionality"""
     assert sample_verified_profile.is_deleted is False
     
-    # Soft delete
     sample_verified_profile.deleted_at = datetime.now(timezone.utc)
     db_session.commit()
     
@@ -109,7 +104,6 @@ def test_identity_name_relationship(db_session: Session, sample_verified_profile
     db_session.add_all([name1, name2])
     db_session.commit()
     
-    # Access relationship
     names = sample_verified_profile.identity_names.all()
     assert len(names) == 2
 
@@ -183,17 +177,14 @@ def test_cascade_delete(db_session: Session, sample_verified_profile: BaseProfil
     db_session.add_all([name1, name2])
     db_session.commit()
     
-    # Verify names exist
     names_count = db_session.query(IdentityName).filter(
         IdentityName.identity_id == sample_verified_profile.user_id
     ).count()
     assert names_count == 2
     
-    # Delete profile
     db_session.delete(sample_verified_profile)
     db_session.commit()
     
-    # Verify names were cascade deleted
     names_count = db_session.query(IdentityName).filter(
         IdentityName.identity_id == sample_verified_profile.user_id
     ).count()

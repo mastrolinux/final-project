@@ -40,9 +40,9 @@ def get_avatar_service(
     return AvatarService(avatar_repo, storage, audit_service=audit_service)
 
 
-# ------------------------------------------------------------------
+#
 # Base profile avatar
-# ------------------------------------------------------------------
+#
 
 
 @router.post(
@@ -56,13 +56,7 @@ async def upload_base_avatar(
     service: AvatarService = Depends(get_avatar_service),
     _current_user: AuthUser = Depends(require_verified_user),
 ):
-    """
-    Upload or replace the base profile avatar.
-
-    Accepts JPEG, PNG, or WebP images up to 5 MB. The image is center-cropped
-    to a square, resized to 400x400 (avatar) and 80x80 (thumbnail), and
-    converted to WebP format.
-    """
+    """Upload or replace the base profile avatar."""
     file_data = await file.read()
     logger.info("Avatar upload request: user_id=%s, file=%s, size=%d bytes",
                 user_id, file.filename, len(file_data))
@@ -90,11 +84,7 @@ def delete_base_avatar(
     service: AvatarService = Depends(get_avatar_service),
     _current_user: AuthUser = Depends(require_verified_user),
 ):
-    """
-    Delete the base profile avatar.
-
-    Removes the stored image files and clears the avatar URLs from the profile.
-    """
+    """Delete the base profile avatar."""
     try:
         result = service.delete_base_avatar(user_id)
         return result
@@ -102,9 +92,9 @@ def delete_base_avatar(
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
 
-# ------------------------------------------------------------------
+#
 # Context profile avatar override
-# ------------------------------------------------------------------
+#
 
 
 @router.post(
@@ -119,12 +109,7 @@ async def upload_context_avatar(
     service: AvatarService = Depends(get_avatar_service),
     _current_user: AuthUser = Depends(require_verified_user),
 ):
-    """
-    Upload or replace a context-specific avatar override.
-
-    The context must belong to the given user. When a context override exists,
-    it takes precedence over the base avatar in resolved profiles.
-    """
+    """Upload or replace a context-specific avatar override."""
     file_data = await file.read()
     try:
         result = service.upload_context_avatar(user_id, context_id, file_data)
@@ -144,11 +129,7 @@ def delete_context_avatar(
     service: AvatarService = Depends(get_avatar_service),
     _current_user: AuthUser = Depends(require_verified_user),
 ):
-    """
-    Delete a context-specific avatar override.
-
-    After deletion, the resolved profile returns null for avatar fields.
-    """
+    """Delete a context-specific avatar override."""
     try:
         result = service.delete_context_avatar(user_id, context_id)
         return result

@@ -1,9 +1,4 @@
-"""
-Integration Tests for Audit Endpoints
-
-Tests the GET /api/v1/audit/me and GET /api/v1/audit/verify endpoints,
-including authentication requirements, pagination, and admin access control.
-"""
+"""Integration tests for audit trail and integrity verification endpoints."""
 
 import pytest
 from unittest.mock import patch

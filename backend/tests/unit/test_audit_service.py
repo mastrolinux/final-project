@@ -1,9 +1,4 @@
-"""
-Unit Tests for Audit Service
-
-Tests event logging delegation, error swallowing behavior, pagination,
-and integrity verification.
-"""
+"""Tests for audit service: logging, error handling, and integrity verification."""
 
 import pytest
 import logging

@@ -1,13 +1,4 @@
-"""
-Context Creation Verification Rule Tests
-
-Validates the context-bound verification business rules:
-- Pseudonymous accounts are blocked from legal/healthcare contexts
-- Non-pseudonymous accounts can create legal/healthcare contexts,
-  which start inactive with verification_status=pending
-- Professional/social contexts start active with no verification requirement
-- Identity field changes on verified contexts reset verification to pending
-"""
+"""Integration tests for context-bound verification business rules."""
 
 import pytest
 from sqlalchemy.orm import Session
@@ -161,13 +152,11 @@ class TestIdentityChangeReverification:
             display_name_override="Original Name",
         )
 
-        # Simulate admin verification
         context_repo = ContextRepository(db_session)
         context_repo.update_verification_status(
             context.id, VerificationStatus.verified, is_active=True
         )
 
-        # Update identity field
         updated = context_service.update_context_profile(
             context_id=context.id,
             display_name_override="Changed Name",
@@ -186,13 +175,11 @@ class TestIdentityChangeReverification:
             context_name="Contract Signing",
         )
 
-        # Simulate admin verification
         context_repo = ContextRepository(db_session)
         context_repo.update_verification_status(
             context.id, VerificationStatus.verified, is_active=True
         )
 
-        # Update non-identity field
         updated = context_service.update_context_profile(
             context_id=context.id,
             bio="Updated biography text",

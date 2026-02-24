@@ -1,8 +1,4 @@
-"""
-Integration Tests for Database Operations
-
-Tests database operations with real database interactions.
-"""
+"""Integration tests for database operations."""
 
 import pytest
 from sqlalchemy.orm import Session
@@ -22,8 +18,8 @@ def test_create_and_query_profile(db_session: Session):
     
     db_session.add(profile)
     db_session.commit()
-    
-    # Query back
+
+
     queried = db_session.query(BaseProfile).filter(
         BaseProfile.primary_email == "test@example.com"
     ).first()
@@ -43,8 +39,7 @@ def test_create_profile_with_names(db_session: Session):
     
     db_session.add(profile)
     db_session.flush()
-    
-    # Add multiple names
+
     given_name = IdentityName(
         identity_id=profile.user_id,
         name_type=NameType.given,
@@ -61,8 +56,7 @@ def test_create_profile_with_names(db_session: Session):
     
     db_session.add_all([given_name, family_name])
     db_session.commit()
-    
-    # Query back with names
+
     queried = db_session.query(BaseProfile).filter(
         BaseProfile.user_id == profile.user_id
     ).first()
@@ -88,8 +82,7 @@ def test_query_jsonb_names(db_session: Session):
     )
     db_session.add(name)
     db_session.commit()
-    
-    # Query back
+
     queried_name = db_session.query(IdentityName).filter(
         IdentityName.identity_id == profile.user_id
     ).first()
@@ -100,26 +93,22 @@ def test_query_jsonb_names(db_session: Session):
 
 def test_soft_delete_filtering(db_session: Session):
     """Test that soft-deleted profiles are filtered out"""
-    # Create two profiles
     profile1 = BaseProfile(primary_email="active@example.com")
     profile2 = BaseProfile(primary_email="deleted@example.com")
     
     db_session.add_all([profile1, profile2])
     db_session.commit()
     
-    # Soft delete one
     profile2.deleted_at = datetime.now(timezone.utc)
     db_session.commit()
     
-    # Query active profiles
     active_profiles = db_session.query(BaseProfile).filter(
         BaseProfile.deleted_at.is_(None)
     ).all()
     
     assert len(active_profiles) == 1
     assert active_profiles[0].primary_email == "active@example.com"
-    
-    # Query all profiles (including deleted)
+
     all_profiles = db_session.query(BaseProfile).all()
     assert len(all_profiles) == 2
 
@@ -139,10 +128,8 @@ def test_profile_relationships(db_session: Session):
     db_session.add(name)
     db_session.commit()
     
-    # Test forward relationship (profile -> names)
     assert profile.identity_names.count() == 1
-    
-    # Test backward relationship (name -> profile)
+
     queried_name = db_session.query(IdentityName).first()
     assert queried_name.profile.user_id == profile.user_id
 
@@ -165,7 +152,6 @@ def test_account_type_filtering(db_session: Session):
     db_session.add_all([verified, unverified, pseudonymous])
     db_session.commit()
     
-    # Query by account type
     verified_profiles = db_session.query(BaseProfile).filter(
         BaseProfile.account_type == AccountType.verified
     ).all()
@@ -180,7 +166,6 @@ def test_deprecated_names_filtering(db_session: Session):
     db_session.add(profile)
     db_session.flush()
     
-    # Current name
     current = IdentityName(
         identity_id=profile.user_id,
         name_type=NameType.preferred,
@@ -189,7 +174,6 @@ def test_deprecated_names_filtering(db_session: Session):
         is_deprecated=False
     )
     
-    # Deprecated name (deadname)
     deprecated = IdentityName(
         identity_id=profile.user_id,
         name_type=NameType.given,
@@ -202,7 +186,6 @@ def test_deprecated_names_filtering(db_session: Session):
     db_session.add_all([current, deprecated])
     db_session.commit()
     
-    # Query non-deprecated names
     active_names = db_session.query(IdentityName).filter(
         IdentityName.identity_id == profile.user_id,
         IdentityName.is_deprecated == False
@@ -218,27 +201,21 @@ def test_transaction_rollback(db_session: Session):
     db_session.add(profile)
     db_session.flush()  # Flush instead of commit to work with test fixture transaction
     
-    # Store original email and user_id
     user_id = profile.user_id
     original_email = profile.primary_email
     
-    # Use a nested transaction (savepoint) to test rollback
     nested = db_session.begin_nested()
     try:
         profile.primary_email = "changed@example.com"
         db_session.flush()
-        # Manually roll back the nested transaction
         nested.rollback()
     except Exception:
         nested.rollback()
     
-    # Expire the object to force fresh query from database
     db_session.expire(profile)
-    
-    # Verify original data is preserved after rollback
+
     assert profile.primary_email == original_email
-    
-    # Also verify via fresh query
+
     queried = db_session.query(BaseProfile).filter(
         BaseProfile.user_id == user_id
     ).first()
@@ -267,7 +244,6 @@ def test_unique_email_constraint(db_session: Session):
     db_session.add(profile1)
     db_session.commit()
     
-    # Try to create duplicate
     profile2 = BaseProfile(primary_email="unique@example.com")
     db_session.add(profile2)
     

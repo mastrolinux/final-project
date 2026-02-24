@@ -1,11 +1,7 @@
-"""
-Integration Tests for Authentication Endpoints
+"""Integration tests for authentication endpoints.
 
-Tests complete HTTP request/response cycles for auth endpoints.
-
-Note: Tests that need to access the database directly (e.g., to retrieve
-verification tokens) must use the shared db_session fixture from conftest.py
-to ensure they use the same database session as the test client.
+Tests needing direct DB access must use the shared db_session fixture
+to ensure the same session as the test client.
 """
 
 import pytest
@@ -33,14 +29,11 @@ class TestRegisterEndpoint:
         assert data["is_email_verified"] is False
         assert "user_id" in data
         assert "verify" in data["message"].lower()
-        
-        # Verify email task was queued
         mock_send_email.delay.assert_called_once()
     
     @patch('src.services.auth_service.send_verification_email')
     def test_register_duplicate_email(self, mock_send_email, client, db_session):
         """Test registration fails with duplicate email."""
-        # Register first user
         response1 = client.post("/api/v1/auth/register", json={
             "email": "duplicate@example.com",
             "password": "SecurePass123!",
@@ -48,10 +41,8 @@ class TestRegisterEndpoint:
         })
         assert response1.status_code == 201, f"First registration failed: {response1.json()}"
         
-        # Commit the first registration to ensure it's visible
         db_session.commit()
-        
-        # Try to register again with same email
+
         response = client.post("/api/v1/auth/register", json={
             "email": "duplicate@example.com",
             "password": "DifferentPass123!",
@@ -88,14 +79,12 @@ class TestLoginEndpoint:
     @patch('src.services.auth_service.send_verification_email')
     def test_login_success(self, mock_send_email, client):
         """Test successful login returns JWT tokens."""
-        # Register user first
         client.post("/api/v1/auth/register", json={
             "email": "loginuser@example.com",
             "password": "SecurePass123!",
             "preferred_name": "Login User"
         })
-        
-        # Login
+
         response = client.post("/api/v1/auth/login", json={
             "email": "loginuser@example.com",
             "password": "SecurePass123!"
@@ -122,14 +111,12 @@ class TestLoginEndpoint:
     @patch('src.services.auth_service.send_verification_email')
     def test_login_wrong_password(self, mock_send_email, client):
         """Test login fails with wrong password."""
-        # Register user
         client.post("/api/v1/auth/register", json={
             "email": "wrongpass@example.com",
             "password": "CorrectPass123!",
             "preferred_name": "Wrong Pass User"
         })
-        
-        # Login with wrong password
+
         response = client.post("/api/v1/auth/login", json={
             "email": "wrongpass@example.com",
             "password": "WrongPass123!"
@@ -144,7 +131,6 @@ class TestVerifyEmailEndpoint:
     @patch('src.services.auth_service.send_verification_email')
     def test_verify_email_success(self, mock_send_email, client, db_session):
         """Test successful email verification."""
-        # Register user
         response = client.post("/api/v1/auth/register", json={
             "email": "verify@example.com",
             "password": "SecurePass123!",
@@ -153,18 +139,15 @@ class TestVerifyEmailEndpoint:
         assert response.status_code == 201, f"Registration failed: {response.json()}"
         user_id = response.json()["user_id"]
         
-        # Refresh the session to see committed changes from the API
         db_session.expire_all()
-        
-        # Get verification token from database
+
         from src.repositories.auth_repository import AuthRepository
         auth_repo = AuthRepository(db_session)
         auth_user = auth_repo.get_by_user_id(user_id)
         assert auth_user is not None, f"Auth user not found for user_id: {user_id}"
         token = auth_user.verification_token
         assert token is not None, "Verification token is None"
-        
-        # Verify email
+
         response = client.post("/api/v1/auth/verify-email", json={
             "token": token
         })
@@ -189,7 +172,6 @@ class TestPasswordResetEndpoints:
     @patch('src.services.auth_service.send_verification_email')
     def test_password_reset_flow(self, mock_verify_email, mock_reset_email, client, db_session):
         """Test complete password reset flow."""
-        # Register user
         response = client.post("/api/v1/auth/register", json={
             "email": "resetuser@example.com",
             "password": "OldPassword123!",
@@ -197,39 +179,33 @@ class TestPasswordResetEndpoints:
         })
         assert response.status_code == 201, f"Registration failed: {response.json()}"
         
-        # Request password reset
         response = client.post("/api/v1/auth/request-reset", json={
             "email": "resetuser@example.com"
         })
         assert response.status_code == 200
         assert "reset link" in response.json()["message"].lower()
         
-        # Refresh the session to see committed changes from the API
         db_session.expire_all()
-        
-        # Get reset token from database
+
         from src.repositories.auth_repository import AuthRepository
         auth_repo = AuthRepository(db_session)
         auth_user = auth_repo.get_by_email("resetuser@example.com")
         assert auth_user is not None, "Auth user not found"
         reset_token = auth_user.reset_token
         assert reset_token is not None, "Reset token is None"
-        
-        # Reset password with token
+
         response = client.post("/api/v1/auth/reset-password", json={
             "token": reset_token,
             "new_password": "NewPassword123!"
         })
         assert response.status_code == 200
-        
-        # Login with old password should fail
+
         response = client.post("/api/v1/auth/login", json={
             "email": "resetuser@example.com",
             "password": "OldPassword123!"
         })
         assert response.status_code == 401
-        
-        # Login with new password should succeed
+
         response = client.post("/api/v1/auth/login", json={
             "email": "resetuser@example.com",
             "password": "NewPassword123!"
@@ -244,10 +220,7 @@ class TestPasswordResetEndpoints:
             "email": "doesnotexist@example.com"
         })
         
-        # Should return success to prevent email enumeration
         assert response.status_code == 200
-        
-        # But email should not be sent
         mock_send_email.delay.assert_not_called()
     
     def test_reset_password_invalid_token(self, client):
@@ -266,25 +239,20 @@ class TestResendVerificationEndpoint:
     @patch('src.services.auth_service.send_verification_email')
     def test_resend_verification_success(self, mock_send_email, client):
         """Test resending verification email."""
-        # Register user (initial verification email sent)
         client.post("/api/v1/auth/register", json={
             "email": "resend@example.com",
             "password": "SecurePass123!",
             "preferred_name": "Resend User"
         })
         
-        # Reset mock call count
         mock_send_email.delay.reset_mock()
-        
-        # Resend verification
+
         response = client.post("/api/v1/auth/resend-verification", json={
             "email": "resend@example.com"
         })
         
         assert response.status_code == 200
         assert "verification" in response.json()["message"].lower()
-        
-        # Verify new email was queued
         mock_send_email.delay.assert_called_once()
     
     def test_resend_verification_nonexistent_email(self, client):
@@ -305,13 +273,11 @@ class TestRefreshEndpoint:
         """Test successful token refresh returns new tokens."""
         from unittest.mock import Mock
 
-        # Setup mock blacklist
         mock_blacklist = Mock()
         mock_blacklist.is_blacklisted.return_value = False
         mock_blacklist.blacklist_token.return_value = None
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Register and login to get refresh token
         client.post("/api/v1/auth/register", json={
             "email": "refreshuser@example.com",
             "password": "SecurePass123!",
@@ -325,7 +291,6 @@ class TestRefreshEndpoint:
         assert login_response.status_code == 200
         original_refresh_token = login_response.json()["refresh_token"]
 
-        # Refresh token
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": original_refresh_token
         })
@@ -336,8 +301,6 @@ class TestRefreshEndpoint:
         assert "refresh_token" in data
         assert data["token_type"] == "bearer"
         assert data["expires_in"] == 3600
-
-        # New tokens should be different from original
         assert data["refresh_token"] != original_refresh_token
 
     @patch('src.api.v1.endpoints.auth.get_blacklist')
@@ -348,16 +311,13 @@ class TestRefreshEndpoint:
         from src.core.security import verify_token
         import uuid
 
-        # Setup mock blacklist
         mock_blacklist = Mock()
         mock_blacklist.is_blacklisted.return_value = False
         mock_blacklist.blacklist_token.return_value = None
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Use unique email to avoid conflicts
         unique_email = f"validtoken_{uuid.uuid4().hex[:8]}@example.com"
 
-        # Register and login
         reg_response = client.post("/api/v1/auth/register", json={
             "email": unique_email,
             "password": "SecurePass123!",
@@ -373,7 +333,6 @@ class TestRefreshEndpoint:
         assert login_response.status_code == 200, f"Login failed: {login_response.json()}"
         refresh_token = login_response.json()["refresh_token"]
 
-        # Refresh token
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": refresh_token
         })
@@ -381,7 +340,6 @@ class TestRefreshEndpoint:
         assert response.status_code == 200
         new_access_token = response.json()["access_token"]
 
-        # Verify new access token
         token_data = verify_token(new_access_token, token_type="access")
         assert token_data is not None
         assert token_data.user_id == user_id
@@ -395,8 +353,6 @@ class TestRefreshEndpoint:
         mock_blacklist = Mock()
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Use a token that passes min_length validation but is invalid JWT
-        # Needs to be at least 50 characters
         invalid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.invalid_signature_here"
 
         response = client.post("/api/v1/auth/refresh", json={
@@ -415,7 +371,6 @@ class TestRefreshEndpoint:
         mock_blacklist = Mock()
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Register and login
         client.post("/api/v1/auth/register", json={
             "email": "wrongtype@example.com",
             "password": "SecurePass123!",
@@ -428,7 +383,6 @@ class TestRefreshEndpoint:
         })
         access_token = login_response.json()["access_token"]
 
-        # Try to refresh with access token instead of refresh token
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": access_token
         })
@@ -442,13 +396,11 @@ class TestRefreshEndpoint:
         """Test that old refresh token is blacklisted after rotation."""
         from unittest.mock import Mock
 
-        # Setup mock blacklist to track calls
         mock_blacklist = Mock()
         mock_blacklist.is_blacklisted.return_value = False
         mock_blacklist.blacklist_token.return_value = None
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Register and login
         client.post("/api/v1/auth/register", json={
             "email": "rotation@example.com",
             "password": "SecurePass123!",
@@ -461,19 +413,14 @@ class TestRefreshEndpoint:
         })
         original_refresh_token = login_response.json()["refresh_token"]
 
-        # First refresh - should succeed
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": original_refresh_token
         })
         assert response.status_code == 200
-
-        # Verify blacklist_token was called for the old token
         mock_blacklist.blacklist_token.assert_called_once()
 
-        # Simulate old token being in blacklist now
         mock_blacklist.is_blacklisted.return_value = True
 
-        # Try to use old refresh token again - should fail as revoked
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": original_refresh_token
         })
@@ -485,12 +432,10 @@ class TestRefreshEndpoint:
         """Test refresh fails when token JTI is in blacklist (revoked)."""
         from unittest.mock import Mock
 
-        # Setup mock blacklist to indicate token is revoked
         mock_blacklist = Mock()
         mock_blacklist.is_blacklisted.return_value = True
         mock_get_blacklist.return_value = mock_blacklist
 
-        # Register and login
         client.post("/api/v1/auth/register", json={
             "email": "revoked@example.com",
             "password": "SecurePass123!",
@@ -503,7 +448,6 @@ class TestRefreshEndpoint:
         })
         refresh_token = login_response.json()["refresh_token"]
 
-        # Try to refresh - should fail because token is blacklisted
         response = client.post("/api/v1/auth/refresh", json={
             "refresh_token": refresh_token
         })
@@ -514,10 +458,8 @@ class TestRefreshEndpoint:
     def test_refresh_fails_when_redis_unavailable(self, mock_get_blacklist, client):
         """Test refresh returns 503 when Redis blacklist is unavailable."""
 
-        # Simulate Redis being unavailable
         mock_get_blacklist.side_effect = RuntimeError("Redis is disabled")
 
-        # Use a token that passes min_length validation (50+ chars)
         long_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.valid_looking_but_fake"
 
         response = client.post("/api/v1/auth/refresh", json={

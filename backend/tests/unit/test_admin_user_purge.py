@@ -1,9 +1,4 @@
-"""
-Unit Tests for Admin User Purge
-
-Tests the list_soft_deleted_users and purge_expired_accounts service methods
-with mocked repositories.
-"""
+"""Tests for admin user purge and soft-deleted user listing."""
 
 import pytest
 from datetime import datetime, timezone, timedelta
