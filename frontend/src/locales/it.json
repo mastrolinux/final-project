@@ -209,6 +209,7 @@
     "verificationPending": "Verifica in attesa",
     "verificationVerified": "Verificato",
     "verificationRejected": "Verifica rifiutata",
+    "verificationExpired": "Documento scaduto",
     "types": {
       "professional": "Professionale",
       "social": "Sociale",

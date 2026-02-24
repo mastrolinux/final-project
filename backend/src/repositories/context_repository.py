@@ -108,16 +108,18 @@ class ContextRepository:
         Returns:
             List of context profiles
         """
-        query = self.db.query(ContextProfile).filter(
+        query = self.db.query(ContextProfile).options(
+            joinedload(ContextProfile.document)
+        ).filter(
             and_(
                 ContextProfile.user_id == user_id,
                 ContextProfile.deleted_at.is_(None)
             )
         )
-        
+
         if not include_inactive:
             query = query.filter(ContextProfile.is_active == True)
-        
+
         return query.order_by(ContextProfile.created_at.asc()).all()
     
     def get_context_by_type_and_name(
