@@ -67,6 +67,7 @@ const canUploadDocument = computed(
   () =>
     !linkedDocument.value ||
     context.value?.verification_status === "rejected" ||
+    context.value?.verification_status === "expired" ||
     wantsReplace.value,
 );
 
@@ -79,6 +80,7 @@ const availableDocuments = computed(() =>
   allUserDocs.value.filter((doc) => {
     if (linkedDocument.value && doc.id === linkedDocument.value.id) return false;
     if (doc.verification_status === "rejected") return false;
+    if (doc.verification_status === "expired") return false;
     return true;
   }),
 );
@@ -486,6 +488,13 @@ function formatFileSize(bytes: number): string {
                       size="sm"
                     >
                       {{ t("context.verificationRejected") }}
+                    </BaseBadge>
+                    <BaseBadge
+                      v-else-if="context.verification_status === 'expired'"
+                      variant="warning"
+                      size="sm"
+                    >
+                      {{ t("context.verificationExpired") }}
                     </BaseBadge>
                     <BaseBadge
                       v-else-if="!context.is_active"

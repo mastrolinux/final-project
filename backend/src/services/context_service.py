@@ -292,26 +292,45 @@ class ContextService:
 
         return context
     
+    def _enrich_expiry_status(self, context: ContextProfile) -> ContextProfile:
+        """
+        Project verification_status as 'expired' when the linked document's
+        expiry date has passed. This is a read-time enrichment that does not
+        mutate the database row; the Celery Beat task handles canonical state
+        transitions.
+        """
+        if (
+            context.verification_status == VerificationStatus.verified
+            and context.document is not None
+            and context.document.is_expired
+        ):
+            from sqlalchemy.orm import make_transient
+            self.context_repo.db.expunge(context)
+            make_transient(context)
+            context.verification_status = VerificationStatus.expired
+            context.is_active = False
+        return context
+
     def get_context_profile(self, context_id: UUID) -> ContextProfile:
         """
         Get context profile by ID
-        
+
         Args:
             context_id: Context profile ID
-            
+
         Returns:
             Context profile
-            
+
         Raises:
             ContextServiceError: If context not found
         """
         context = self.context_repo.get_context_profile_by_id(context_id)
-        
+
         if not context:
             raise ContextServiceError(f"Context profile {context_id} not found")
-        
-        return context
-    
+
+        return self._enrich_expiry_status(context)
+
     def get_user_contexts(
         self,
         user_id: UUID,
@@ -319,18 +338,19 @@ class ContextService:
     ) -> List[ContextProfile]:
         """
         Get all context profiles for a user
-        
+
         Args:
             user_id: User ID
             include_inactive: Whether to include inactive contexts
-            
+
         Returns:
             List of context profiles
         """
-        return self.context_repo.get_user_context_profiles(
+        contexts = self.context_repo.get_user_context_profiles(
             user_id,
             include_inactive=include_inactive
         )
+        return [self._enrich_expiry_status(ctx) for ctx in contexts]
     
     def update_context_profile(
         self,
