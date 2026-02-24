@@ -1,9 +1,4 @@
-"""
-Integration Tests for Social Authentication Endpoints
-
-Tests OAuth 2.0 social login flow with Google provider.
-Includes edge cases for soft-deleted accounts and account linking.
-"""
+"""Integration tests for social authentication endpoints."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -65,14 +60,12 @@ class TestSocialAuthCallbackEndpoint:
         db_session
     ):
         """Test successful OAuth callback with new user creation."""
-        # Mock token exchange
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token",
             "expires_in": 3600
         }
 
-        # Mock ID token verification
         mock_verify_token.return_value = {
             "sub": "google-user-123456",
             "email": "newuser@gmail.com",
@@ -80,7 +73,6 @@ class TestSocialAuthCallbackEndpoint:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -97,11 +89,8 @@ class TestSocialAuthCallbackEndpoint:
         assert "refresh_token" in data
         assert data["email"] == "newuser@gmail.com"
         assert data["is_email_verified"] is True
-        # OAuth registration starts as unverified; identity verification
-        # (account_type=verified) requires admin document review
         assert data["account_type"] == "unverified"
 
-        # Verify user was created in database
         auth_repo = AuthRepository(db_session)
         user = auth_repo.get_by_provider("google", "google-user-123456")
         assert user is not None
@@ -119,7 +108,6 @@ class TestSocialAuthCallbackEndpoint:
         db_session
     ):
         """Test successful OAuth callback with existing user login."""
-        # Create existing OAuth user
         profile_repo = ProfileRepository(db_session)
         profile = profile_repo.create_profile(
             account_type=AccountType.verified,
@@ -138,13 +126,11 @@ class TestSocialAuthCallbackEndpoint:
         )
         db_session.commit()
 
-        # Mock token exchange
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token"
         }
 
-        # Mock ID token verification
         mock_verify_token.return_value = {
             "sub": "google-user-existing",
             "email": "existing@gmail.com",
@@ -152,7 +138,6 @@ class TestSocialAuthCallbackEndpoint:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -178,7 +163,6 @@ class TestSocialAuthCallbackEndpoint:
         db_session
     ):
         """Test OAuth callback with soft-deleted user returns ACCOUNT_RECOVERABLE."""
-        # Create and soft-delete OAuth user
         profile_repo = ProfileRepository(db_session)
         profile = profile_repo.create_profile(
             account_type=AccountType.verified,
@@ -196,22 +180,18 @@ class TestSocialAuthCallbackEndpoint:
             provider_id="google-user-deleted"
         )
 
-        # Soft delete the user
         auth_repo.soft_delete(str(profile.user_id))
         db_session.commit()
 
-        # Verify user is soft-deleted
         deleted_user = auth_repo.get_by_provider_including_deleted("google", "google-user-deleted")
         assert deleted_user is not None
         assert deleted_user.deleted_at is not None
 
-        # Mock token exchange
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token"
         }
 
-        # Mock ID token verification
         mock_verify_token.return_value = {
             "sub": "google-user-deleted",
             "email": "deleted@gmail.com",
@@ -219,7 +199,6 @@ class TestSocialAuthCallbackEndpoint:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -230,14 +209,12 @@ class TestSocialAuthCallbackEndpoint:
             }
         )
 
-        # Should return 409 with ACCOUNT_RECOVERABLE
         assert response.status_code == 409
         data = response.json()
         assert data["detail"]["code"] == "ACCOUNT_RECOVERABLE"
         assert "permanent_deletion_date" in data["detail"]
         assert data["detail"]["restore_endpoint"] == "/api/v1/auth/restore-account"
 
-        # Verify permanent deletion date is in the future (within 30-day grace period)
         permanent_date = datetime.fromisoformat(
             data["detail"]["permanent_deletion_date"].replace("Z", "+00:00")
         )
@@ -253,7 +230,6 @@ class TestSocialAuthCallbackEndpoint:
         db_session
     ):
         """Test OAuth callback with existing email/password account requires linking."""
-        # Create existing email/password user (no OAuth provider)
         profile_repo = ProfileRepository(db_session)
         profile = profile_repo.create_profile(
             account_type=AccountType.verified,
@@ -272,13 +248,11 @@ class TestSocialAuthCallbackEndpoint:
         )
         db_session.commit()
 
-        # Mock token exchange
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token"
         }
 
-        # Mock ID token verification with same email
         mock_verify_token.return_value = {
             "sub": "google-user-new",
             "email": "existing@example.com",
@@ -286,7 +260,6 @@ class TestSocialAuthCallbackEndpoint:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -297,7 +270,6 @@ class TestSocialAuthCallbackEndpoint:
             }
         )
 
-        # Should return 409 with account_linking_required
         assert response.status_code == 409
         data = response.json()
         assert data["detail"]["code"] == "account_linking_required"
@@ -326,7 +298,6 @@ class TestSocialAuthCallbackEndpoint:
         client
     ):
         """Test callback fails when provider doesn't return ID token."""
-        # Mock token exchange without id_token
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "expires_in": 3600
@@ -366,7 +337,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
         sign up again with same Google account. Without the fix, this would
         cause a UniqueViolation on (provider, provider_id).
         """
-        # Step 1: Create OAuth user
         profile_repo = ProfileRepository(db_session)
         profile = profile_repo.create_profile(
             account_type=AccountType.verified,
@@ -385,11 +355,9 @@ class TestSoftDeletedOAuthUserEdgeCases:
         )
         db_session.commit()
 
-        # Step 2: Soft delete the user (simulates user deleting account from UI)
         auth_repo.soft_delete(str(profile.user_id))
         db_session.commit()
 
-        # Verify user is soft-deleted but still in database
         deleted_user = auth_repo.get_by_provider_including_deleted(
             "google",
             "107311201951144540851"
@@ -397,7 +365,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
         assert deleted_user is not None
         assert deleted_user.deleted_at is not None
 
-        # Step 3: User tries to sign up again with same Google account
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token"
@@ -410,7 +377,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -421,13 +387,11 @@ class TestSoftDeletedOAuthUserEdgeCases:
             }
         )
 
-        # CRITICAL: Should return 409 ACCOUNT_RECOVERABLE, NOT 500 UniqueViolation
         assert response.status_code == 409
         data = response.json()
         assert data["detail"]["code"] == "ACCOUNT_RECOVERABLE"
         assert "permanent_deletion_date" in data["detail"]
 
-        # Verify no new user was created (still only one record in database)
         all_users = db_session.query(AuthUser).filter_by(
             provider="google",
             provider_id="107311201951144540851"
@@ -450,7 +414,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
         After 30-day grace period, the old account should be purged and
         new registration should succeed.
         """
-        # Create and soft-delete OAuth user
         profile_repo = ProfileRepository(db_session)
         profile = profile_repo.create_profile(
             account_type=AccountType.verified,
@@ -468,11 +431,9 @@ class TestSoftDeletedOAuthUserEdgeCases:
             provider_id="google-user-expired"
         )
 
-        # Soft delete with old timestamp (>30 days ago)
         auth_user.deleted_at = datetime.now(timezone.utc) - timedelta(days=31)
         db_session.commit()
 
-        # Mock token exchange
         mock_exchange_code.return_value = {
             "access_token": "google-access-token",
             "id_token": "google-id-token"
@@ -485,7 +446,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
             "email_verified": True
         }
 
-        # Make callback request
         response = client.get(
             "/api/v1/auth/social/google/callback",
             params={
@@ -496,7 +456,6 @@ class TestSoftDeletedOAuthUserEdgeCases:
             }
         )
 
-        # Grace period expired: old account is purged and new one is created
         assert response.status_code == 200
         data = response.json()
         assert data["email"] == "expired@gmail.com"

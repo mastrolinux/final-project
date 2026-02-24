@@ -1,11 +1,4 @@
-"""
-Document Expiry Task Unit Tests
-
-Tests business logic for automatic context deactivation when linked
-verification documents expire. Covers the
-``VerificationService.process_expired_documents`` method using
-mocked repositories and email tasks.
-"""
+"""Tests for automatic context deactivation when verification documents expire."""
 
 import uuid
 from datetime import date, datetime, timedelta, timezone
@@ -24,11 +17,6 @@ from src.services.verification_service import (
     VerificationService,
     VerificationServiceError,
 )
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 
 def _make_expired_document(
@@ -85,11 +73,6 @@ def _make_profile(
     return profile
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture
 def mock_verification_repo():
     repo = MagicMock()
@@ -130,11 +113,6 @@ def service(
         audit_service=mock_audit_service,
         context_repo=mock_context_repo,
     )
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestProcessExpiredDocuments:

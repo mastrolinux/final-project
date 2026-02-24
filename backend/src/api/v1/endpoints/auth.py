@@ -35,11 +35,7 @@ router = APIRouter()
 
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
-    """
-    Dependency to get AuthService instance.
-
-    Creates service with auth, profile repositories and audit service.
-    """
+    """Dependency to get AuthService instance."""
     auth_repo = AuthRepository(db)
     profile_repo = ProfileRepository(db)
     audit_repo = AuditRepository(db)
@@ -59,54 +55,12 @@ def register(
     http_request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Register New User Account
-    
-    Creates a new user with email/password authentication and sends verification email.
-    
-    **Process:**
-    1. Validates email format and password strength
-    2. Creates base profile record
-    3. Creates auth user record with hashed password
-    4. Sends verification email via Mailpit/SMTP (async)
-    5. Returns user data with verification pending
-    
-    **Password Requirements (NIST SP 800-63B):**
-    - Minimum 8 characters
-    - Must not be a commonly used password
-
-    **Email Verification:**
-    - User receives email with verification link
-    - Link expires in 24 hours
-    - Check Mailpit UI at http://127.0.0.1:54324 (local dev)
-    
-    **Transaction Safety:**
-    - Profile and auth user creation wrapped in database transaction
-    - Rollback on failure ensures data consistency
-    
-    **Example Request:**
-    ```json
-    {
-      "email": "user@example.com",
-      "password": "SecurePass123!",
-      "preferred_name": "John Doe",
-      "account_type": "unverified",
-      "preferred_language": "en"
-    }
-    ```
-    
-    **Errors:**
-    - 400: Weak password or validation error
-    - 409: Email already registered
-    """
+    """Register a new user with email/password authentication."""
     try:
-        # Create profile repository
         profile_repo = ProfileRepository(db)
 
-        # Step 0: Check for recoverable soft-deleted account before
-        # attempting profile creation. The unique constraint on
-        # primary_email would otherwise raise IntegrityError for
-        # soft-deleted rows (which still exist in the table).
+        # Check for recoverable soft-deleted account before profile creation;
+        # the unique constraint on primary_email covers soft-deleted rows.
         auth_repo = AuthRepository(db)
         deleted_user = auth_repo.get_by_email_including_deleted(
             request.email
@@ -139,7 +93,6 @@ def register(
                     },
                 )
 
-        # Step 1: Create base profile
         try:
             base_profile = profile_repo.create_profile(
                 account_type=request.account_type,
@@ -154,7 +107,6 @@ def register(
                 detail="Email already registered"
             )
         
-        # Step 2: Create auth user with auth service
         auth_repo = AuthRepository(db)
         audit_repo = AuditRepository(db)
         audit_service = AuditService(audit_repo)
@@ -173,7 +125,6 @@ def register(
         )
         
         if not success:
-            # Rollback profile creation if auth user creation fails
             db.rollback()
 
             if error == "ACCOUNT_RECOVERABLE":
@@ -224,41 +175,7 @@ def login(
     http_request: Request,
     service: AuthService = Depends(get_auth_service)
 ):
-    """
-    User Login
-
-    Authenticates user with email and password, returns JWT tokens.
-
-    **Process:**
-    1. Validates credentials against Argon2id hash
-    2. Checks if account is locked (5 failed attempts = 15 min lock)
-    3. Generates JWT access token (1 hour expiry)
-    4. Generates JWT refresh token (30 days expiry)
-    5. Resets failed login counter on success
-
-    **Response:**
-    - access_token: Use for API requests (Authorization: Bearer token)
-    - refresh_token: Use to get new access token when expired
-    - expires_in: Access token expiry in seconds (3600 = 1 hour)
-
-    **Security:**
-    - Password verified with constant-time comparison
-    - Failed attempts tracked and logged
-    - Account locked after 5 failed attempts
-    - Generic error message (doesn't reveal if email exists)
-
-    **Example Request:**
-    ```json
-    {
-      "email": "user@example.com",
-      "password": "SecurePass123!"
-    }
-    ```
-
-    **Errors:**
-    - 401: Invalid email or password
-    - 403: Account locked due to failed login attempts
-    """
+    """Authenticate user with email/password and return JWT tokens."""
     ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent")
 
@@ -309,34 +226,7 @@ def verify_email(
     service: AuthService = Depends(get_auth_service),
     db: Session = Depends(get_db)
 ):
-    """
-    Verify Email Address
-    
-    Verifies user email with token sent via email.
-    
-    **Process:**
-    1. Validates token exists and not expired
-    2. Updates auth_users.is_email_verified = true
-    3. Clears verification token
-    4. Returns success message
-    
-    **Token:**
-    - Sent via email during registration
-    - Expires in 24 hours
-    - Can only be used once
-    - Check Mailpit UI at http://127.0.0.1:54324 to get token (local dev)
-    
-    **Example Request:**
-    ```json
-    {
-      "token": "abc123def456ghi789jkl012mno345pqr"
-    }
-    ```
-    
-    **Errors:**
-    - 400: Invalid or expired token
-    - 404: Token not found
-    """
+    """Verify user email with token sent during registration."""
     success, error = service.verify_email(request.token)
     
     if not success:
@@ -345,13 +235,7 @@ def verify_email(
             detail=error
         )
     
-    # Get user info for response
-    auth_repo = AuthRepository(db)
-    auth_user = auth_repo.get_by_verification_token(request.token)
-    
-    # Token might be cleared, so get by email from recently verified user
-    # This is a bit hacky - in production would track this differently
-    # For now, return success without specific user info
+    # Token is cleared on verification, so user info is unavailable here
     return VerifyEmailResponse(
         message="Email verified successfully",
         email="",  # Email already verified, token cleared
@@ -370,36 +254,8 @@ def request_password_reset(
     request: RequestPasswordResetRequest,
     service: AuthService = Depends(get_auth_service)
 ):
-    """
-    Request Password Reset
-    
-    Sends password reset email with token.
-    
-    **Process:**
-    1. Generates secure reset token
-    2. Stores token in database (1 hour expiry)
-    3. Sends reset email via Mailpit/SMTP (async)
-    4. Always returns success (prevents email enumeration)
-    
-    **Security:**
-    - Returns success even if email doesn't exist
-    - Prevents attackers from discovering registered emails
-    - Token expires in 1 hour
-    - Check Mailpit UI at http://127.0.0.1:54324 for email (local dev)
-    
-    **Example Request:**
-    ```json
-    {
-      "email": "user@example.com"
-    }
-    ```
-    
-    **Response:**
-    Always 200 OK with generic message, regardless of whether email exists.
-    """
+    """Send password reset email. Returns success even for non-existent addresses."""
     success, error = service.request_password_reset(request.email)
-    
-    # Always return success for security (prevent email enumeration)
     return RequestPasswordResetResponse(
         message="If the email exists, a password reset link has been sent. Please check your inbox."
     )
@@ -416,40 +272,7 @@ def reset_password(
     request: ResetPasswordRequest,
     service: AuthService = Depends(get_auth_service)
 ):
-    """
-    Reset Password
-    
-    Resets user password with token from email.
-    
-    **Process:**
-    1. Validates reset token exists and not expired
-    2. Validates new password strength
-    3. Hashes new password with Argon2id
-    4. Updates password in database
-    5. Clears reset token
-    
-    **Password Requirements (NIST SP 800-63B):**
-    - Minimum 8 characters
-    - Must not be a commonly used password
-
-    **Token:**
-    - Sent via email during password reset request
-    - Expires in 1 hour
-    - Can only be used once
-    - Check Mailpit UI at http://127.0.0.1:54324 for email (local dev)
-    
-    **Example Request:**
-    ```json
-    {
-      "token": "abc123def456ghi789jkl012mno345pqr",
-      "new_password": "NewSecurePass123!"
-    }
-    ```
-    
-    **Errors:**
-    - 400: Invalid/expired token or weak password
-    - 404: Token not found
-    """
+    """Reset user password with token from email."""
     success, error = service.reset_password(request.token, request.new_password)
     
     if not success:
@@ -474,38 +297,7 @@ def resend_verification(
     request: ResendVerificationRequest,
     service: AuthService = Depends(get_auth_service)
 ):
-    """
-    Resend Verification Email
-    
-    Resends email verification link to user.
-    
-    **Process:**
-    1. Checks if email exists and not already verified
-    2. Generates new verification token
-    3. Sends verification email via Mailpit/SMTP (async)
-    4. Returns success message
-    
-    **Use Case:**
-    - User didn't receive original verification email
-    - Original verification token expired (24 hours)
-    - User needs new verification link
-    
-    **Token:**
-    - New token generated (old token invalidated)
-    - Expires in 24 hours
-    - Check Mailpit UI at http://127.0.0.1:54324 for email (local dev)
-    
-    **Example Request:**
-    ```json
-    {
-      "email": "user@example.com"
-    }
-    ```
-    
-    **Errors:**
-    - 400: Email already verified
-    - 404: Email not found
-    """
+    """Resend email verification link to user."""
     success, error = service.resend_verification_email(request.email)
     
     if not success:
@@ -526,17 +318,7 @@ def resend_verification(
 
 
 def get_token_blacklist() -> TokenBlacklist:
-    """
-    Dependency to get TokenBlacklist singleton instance.
-
-    Creates Redis connection on first call if Redis is enabled.
-
-    Returns:
-        TokenBlacklist singleton instance
-
-    Raises:
-        HTTPException 503: If Redis is unavailable or disabled
-    """
+    """Dependency to get TokenBlacklist singleton instance."""
     try:
         return get_blacklist()
     except RuntimeError as e:
@@ -563,49 +345,13 @@ def refresh_token(
     service: AuthService = Depends(get_auth_service),
     blacklist: TokenBlacklist = Depends(get_token_blacklist)
 ):
-    """
-    Refresh Access Token
-
-    Exchanges a valid refresh token for new access and refresh tokens.
-    Implements refresh token rotation: the old refresh token is invalidated.
-
-    **Process:**
-    1. Validates refresh token signature and expiry
-    2. Checks token has not been revoked (blacklisted)
-    3. Verifies user account is active (not locked or deleted)
-    4. Invalidates old refresh token (adds to blacklist)
-    5. Issues new access token (1 hour) and refresh token (30 days)
-
-    **Token Rotation:**
-    Each refresh operation invalidates the old refresh token and issues a new one.
-    This limits the damage from token theft: a stolen token can only be used once.
-
-    **Security:**
-    - Refresh tokens are single-use (rotation)
-    - Reusing an old refresh token indicates potential token theft
-    - Account status validated on each refresh
-    - Redis blacklist ensures immediate token invalidation
-
-    **Example Request:**
-    ```json
-    {
-      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    }
-    ```
-
-    **Errors:**
-    - 401: Invalid, expired, or revoked token
-    - 403: Account locked or deleted
-    - 503: Token blacklist service unavailable
-    """
+    """Exchange valid refresh token for new tokens (with rotation)."""
     success, error_code, data = service.refresh_access_token(
         refresh_token=request.refresh_token,
         blacklist=blacklist
     )
 
     if not success:
-        # Map error codes to HTTP status codes
-        # Use generic messages for 401 to prevent token enumeration
         if error_code in ("INVALID_TOKEN", "REVOKED_TOKEN", "USER_NOT_FOUND"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -675,10 +421,7 @@ def confirm_restore_account(
     http_request: Request,
     service: AuthService = Depends(get_auth_service),
 ):
-    """Confirm account restoration with token and optional password.
-
-    Password is required for email/password users but not for OAuth users.
-    """
+    """Confirm account restoration. Password required for email/password users, not OAuth."""
     ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent")
 
@@ -725,7 +468,6 @@ def confirm_restore_account(
                 },
             )
         else:
-            # Password validation error
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_code,
@@ -752,27 +494,7 @@ def set_password(
     current_user: AuthUser = Depends(require_verified_user),
     service: AuthService = Depends(get_auth_service),
 ):
-    """
-    Set Password for OAuth User
-
-    Allows an OAuth-registered user to add password-based authentication.
-    After setting a password, the user can login via both OAuth and
-    email/password.
-
-    **Preconditions:**
-    - User must be authenticated (JWT access token required)
-    - User must have registered via OAuth (provider is not None)
-    - User must not have already set a custom password
-
-    **Password Requirements (NIST SP 800-63B):**
-    - Minimum 8 characters
-    - Must not be a commonly used password
-
-    **Errors:**
-    - 400: Not an OAuth user, or weak password
-    - 401: Not authenticated
-    - 409: Password already set (use reset-password instead)
-    """
+    """Allow an OAuth-registered user to add password-based authentication."""
     ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent")
 

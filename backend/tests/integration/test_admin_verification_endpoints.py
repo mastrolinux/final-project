@@ -1,10 +1,4 @@
-"""
-Admin Verification Endpoint Integration Tests
-
-Tests the full HTTP request cycle for admin context verification review,
-including listing pending contexts, retrieving context details with linked
-documents, and approving/rejecting with account type promotion.
-"""
+"""Integration tests for admin context verification review endpoints."""
 
 import io
 
@@ -126,7 +120,6 @@ def legal_context_with_document(
     """
     user_id = str(regular_user.user_id)
 
-    # Create a legal context (starts pending/inactive)
     context = ContextProfile(
         user_id=user_id,
         context_type=ContextType.legal,
@@ -139,7 +132,6 @@ def legal_context_with_document(
     db_session.commit()
     db_session.refresh(context)
 
-    # Upload a standalone document
     resp = client_with_deps.post(
         f"/api/v1/profiles/{user_id}/verification-documents",
         headers={"Authorization": f"Bearer {regular_token}"},
@@ -149,7 +141,6 @@ def legal_context_with_document(
     assert resp.status_code == 201
     doc_data = resp.json()
 
-    # Link the document to the context
     resp = client_with_deps.post(
         f"/api/v1/profiles/{user_id}/contexts/{context.id}/documents/{doc_data['id']}",
         headers={"Authorization": f"Bearer {regular_token}"},
@@ -258,7 +249,6 @@ class TestAdminContextReview:
         assert body["verification_status"] == "verified"
         assert body["context_id"] == context_id
 
-        # Verify the user's account type was promoted
         profile = (
             db_session.query(BaseProfile)
             .filter(
@@ -268,7 +258,6 @@ class TestAdminContextReview:
         )
         assert profile.account_type == AccountType.verified
 
-        # Verify linked documents were marked verified
         doc = (
             db_session.query(VerificationDocument)
             .filter(
@@ -301,7 +290,6 @@ class TestAdminContextReview:
         assert body["verification_status"] == "rejected"
         assert body["rejection_reason"] == "Image is blurry"
 
-        # Account type must remain unverified
         profile = (
             db_session.query(BaseProfile)
             .filter(
@@ -311,7 +299,6 @@ class TestAdminContextReview:
         )
         assert profile.account_type == AccountType.unverified
 
-        # Linked documents must be marked rejected
         doc = (
             db_session.query(VerificationDocument)
             .filter(
@@ -336,7 +323,6 @@ class TestAdminContextReview:
             headers={"Authorization": f"Bearer {admin_token}"},
             json={"verification_status": "rejected"},
         )
-        # Schema validation or service-level error
         assert resp.status_code in (400, 422)
 
     def test_review_requires_admin(

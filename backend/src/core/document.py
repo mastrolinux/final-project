@@ -1,17 +1,5 @@
 """
-Document Validation Module
-
-Validates uploaded identity documents using format-specific detection.
-Image formats (JPEG, PNG) are validated with Pillow, which parses the
-file header and verifies structural integrity rather than relying on
-client-supplied MIME types or file extensions. PDF files are identified
-by the ``%PDF`` prefix as specified in ISO 32000.
-
-Supported formats:
-    - PDF  (prefix: ``%PDF``, validated manually)
-    - JPEG, PNG (validated via Pillow: header parse + structural verify)
-
-Maximum file size: 10 MB.
+Document validation using magic-byte detection (PDF, JPEG, PNG). Max 10 MB.
 """
 
 import io
@@ -21,10 +9,8 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-# Constraints
 MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
-# Pillow format names mapped to canonical MIME types
 _PILLOW_FORMAT_TO_MIME = {
     "JPEG": "image/jpeg",
     "PNG": "image/png",
@@ -40,32 +26,7 @@ class DocumentValidationError(Exception):
 
 
 def validate_document(data: bytes, claimed_content_type: str = "") -> str:
-    """
-    Validate raw document bytes and return the detected MIME type.
-
-    The function checks three properties:
-        1. The file is non-empty.
-        2. The file size does not exceed ``MAX_DOCUMENT_SIZE_BYTES``.
-        3. The content is a valid PDF, JPEG, or PNG.
-
-    For images, Pillow's ``Image.open()`` and ``verify()`` are used
-    to confirm both the format and structural integrity, matching
-    the validation approach used for avatar uploads. PDF files are
-    identified by the ``%PDF`` prefix (ISO 32000).
-
-    Args:
-        data: Raw file bytes.
-        claimed_content_type: Optional MIME type supplied by the client.
-            Used only for logging; the authoritative type is determined
-            from file content.
-
-    Returns:
-        The detected MIME type (e.g. ``"application/pdf"``).
-
-    Raises:
-        DocumentValidationError: If the file exceeds the size limit,
-            is empty, or does not match any supported format.
-    """
+    """Validate raw document bytes and return the detected MIME type."""
     if not data:
         raise DocumentValidationError("Empty file")
 
@@ -75,7 +36,6 @@ def validate_document(data: bytes, claimed_content_type: str = "") -> str:
             f"{MAX_DOCUMENT_SIZE_BYTES} bytes (10 MB)"
         )
 
-    # PDF: Pillow cannot parse PDFs, so check the prefix manually
     if data[:4] == b"%PDF":
         if claimed_content_type and claimed_content_type != "application/pdf":
             logger.warning(
@@ -84,7 +44,6 @@ def validate_document(data: bytes, claimed_content_type: str = "") -> str:
             )
         return "application/pdf"
 
-    # Images: delegate to Pillow for header parsing + structural verification
     try:
         img = Image.open(io.BytesIO(data))
         img.verify()

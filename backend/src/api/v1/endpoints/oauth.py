@@ -72,9 +72,9 @@ def get_oauth_service(db: Session = Depends(get_db)) -> OAuthService:
     return OAuthService(oauth_repo, profile_repo, context_repo, audit_service=audit_service)
 
 
-# =============================================================================
+#
 # OAuth 2.1 Discovery Endpoint
-# =============================================================================
+#
 
 @router.get(
     "/.well-known/oauth-authorization-server",
@@ -83,11 +83,7 @@ def get_oauth_service(db: Session = Depends(get_db)) -> OAuthService:
     description="Returns OAuth 2.0 Authorization Server Metadata (RFC 8414)"
 )
 def get_oauth_metadata(request: Request):
-    """
-    Return OAuth server metadata for discovery.
-    
-    Clients can use this to automatically configure endpoints.
-    """
+    """Return OAuth server metadata for client auto-configuration."""
     base_url = str(request.base_url).rstrip('/')
     
     return OAuthServerMetadata(
@@ -130,9 +126,9 @@ def get_oauth_metadata(request: Request):
     )
 
 
-# =============================================================================
+#
 # Authorization Endpoint
-# =============================================================================
+#
 
 @router.get(
     "/authorize",
@@ -154,25 +150,12 @@ async def authorization_request(
     current_user: Optional[AuthUser] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    """
-    OAuth 2.1 Authorization Endpoint.
-    
-    Returns authorization request details for the consent screen.
-    The frontend renders the consent UI and submits the user's decision
-    to the /oauth/consent endpoint.
-    
-    Response includes:
-    - Client information (name, logo, description)
-    - Scope details with human-readable descriptions
-    - Request parameters for consent form submission
-    """
-    # When the frontend (SPA) calls this endpoint it sends Accept: application/json.
-    # Error responses should return JSON in that case instead of a 302 redirect,
-    # which would cause the browser to follow cross-origin and fail with CORS.
+    """Return authorization request details for the frontend consent screen."""
+    # SPA sends Accept: application/json; return JSON errors instead of 302
+    # redirects to avoid cross-origin CORS failures.
     accept_header = request.headers.get("accept", "")
     wants_json = "application/json" in accept_header
 
-    # Validate response_type
     if response_type != "code":
         return _authorization_error_response(
             redirect_uri=redirect_uri,
@@ -182,7 +165,6 @@ async def authorization_request(
             accept_json=wants_json
         )
 
-    # Validate code_challenge_method
     if code_challenge_method != "S256":
         return _authorization_error_response(
             redirect_uri=redirect_uri,
@@ -193,17 +175,12 @@ async def authorization_request(
         )
     
     oauth_service = OAuthService(OAuthRepository(db))
-    
+
     try:
-        # Validate client and redirect_uri
         client = oauth_service.get_client(client_id)
         oauth_service.validate_redirect_uri(client, redirect_uri)
-        
-        # Validate scopes
         scope_list = scope.split()
         oauth_service.validate_scopes(client, scope_list)
-        
-        # Fetch scope details for display
         scope_details = oauth_service.get_scope_details(scope_list)
         
     except InvalidClientError as e:
@@ -231,7 +208,6 @@ async def authorization_request(
             accept_json=wants_json
         )
     
-    # Build structured response for consent screen
     client_info = ConsentClientInfo(
         client_id=client.client_id,
         client_name=client.client_name,
@@ -263,10 +239,8 @@ async def authorization_request(
         context_type=context_type
     )
     
-    # Determine if consent is required:
-    # - First-party clients always skip consent
-    # - If user is authenticated and already has valid consent covering
-    #   all requested scopes, skip consent (implements "remember" behavior)
+    # First-party clients skip consent; returning users with remembered
+    # consent covering all requested scopes also skip.
     requires_consent = True
     if client.is_first_party:
         requires_consent = False
@@ -295,13 +269,7 @@ def _authorization_error_response(
     state: Optional[str] = None,
     accept_json: bool = False
 ) -> Response:
-    """
-    Build authorization error response.
-
-    When the caller sends Accept: application/json (SPA frontend), returns
-    a JSON body so the frontend can display the error in its own UI.
-    Otherwise falls back to the standard OAuth 302 redirect.
-    """
+    """Return JSON error for SPA clients, or standard OAuth 302 redirect."""
     if accept_json:
         body = {
             "error": error,
@@ -320,7 +288,6 @@ def _authorization_error_response(
     if state:
         params["state"] = state
 
-    # Append error params to redirect URI
     parsed = urlparse(redirect_uri)
     query = parse_qs(parsed.query)
     query.update(params)
@@ -333,9 +300,9 @@ def _authorization_error_response(
     return RedirectResponse(url=new_url, status_code=status.HTTP_302_FOUND)
 
 
-# =============================================================================
+#
 # Consent Endpoint
-# =============================================================================
+#
 
 @router.post(
     "/consent",
@@ -350,22 +317,8 @@ async def submit_consent(
     oauth_service: OAuthService = Depends(get_oauth_service),
     db: Session = Depends(get_db)
 ):
-    """
-    Process user consent decision.
+    """Process user consent decision and return redirect URL with authorization code or error."""
 
-    Accepts JSON body with the consent decision from the frontend.
-    User identity is obtained from JWT authentication token.
-
-    If approved, creates authorization code and returns redirect URL.
-    If denied, returns redirect URL with access_denied error.
-    Rejects consent when the selected context requires identity
-    verification but has not been verified by an admin.
-
-    Returns:
-        ConsentDecisionResponseBody with redirect_to URL
-    """
-
-    # Handle denial
     if consent_data.decision == 'deny':
         from urllib.parse import urlencode
         params = {
@@ -378,10 +331,10 @@ async def submit_consent(
         return ConsentDecisionResponseBody(redirect_to=redirect_url)
     
     try:
-        # Record consent only when user opted to remember the decision
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
 
+        # Only persist consent when user opted to remember the decision
         if consent_data.remember:
             oauth_service.record_consent(
                 user_id=current_user.user_id,
@@ -392,7 +345,6 @@ async def submit_consent(
                 user_agent=user_agent
             )
         
-        # Create authorization code
         auth_code = oauth_service.create_authorization_code(
             client_id=consent_data.client_id,
             user_id=current_user.user_id,
@@ -405,7 +357,6 @@ async def submit_consent(
             nonce=consent_data.nonce
         )
         
-        # Build redirect URL with authorization code
         from urllib.parse import urlencode
         params = {"code": auth_code.code}
         if consent_data.state:
@@ -426,9 +377,9 @@ async def submit_consent(
         return ConsentDecisionResponseBody(redirect_to=redirect_url)
 
 
-# =============================================================================
+#
 # Token Endpoint
-# =============================================================================
+#
 
 @router.post(
     "/token",
@@ -452,22 +403,11 @@ def token_request(
     authorization: Optional[str] = Header(None, alias="Authorization"),
     db: Session = Depends(get_db)
 ):
-    """
-    OAuth 2.1 Token Endpoint.
-    
-    Supports:
-    - authorization_code: Exchange code for tokens (requires PKCE)
-    - refresh_token: Exchange refresh token for new tokens (with rotation)
-    
-    Client authentication:
-    - Public clients: client_id in body, no secret
-    - Confidential clients: client_secret_post or client_secret_basic
-    """
+    """Exchange authorization code or refresh token for access tokens."""
     audit_repo = AuditRepository(db)
     audit_svc = AuditService(audit_repo)
     oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
 
-    # Extract client credentials from Authorization header if present
     if authorization and authorization.startswith("Basic "):
         import base64
         try:
@@ -539,9 +479,9 @@ def token_request(
         )
 
 
-# =============================================================================
+#
 # Token Introspection Endpoint (RFC 7662)
-# =============================================================================
+#
 
 @router.post(
     "/introspect",
@@ -556,11 +496,7 @@ def introspect_token(
     client_secret: Optional[str] = Form(None, description="Client secret"),
     db: Session = Depends(get_db)
 ):
-    """
-    Token Introspection Endpoint.
-    
-    Resource servers use this to validate tokens and get metadata.
-    """
+    """Validate token and return metadata for resource servers."""
     oauth_service = OAuthService(
         OAuthRepository(db),
         context_repo=ContextRepository(db)
@@ -584,9 +520,9 @@ def introspect_token(
     )
 
 
-# =============================================================================
+#
 # Token Revocation Endpoint (RFC 7009)
-# =============================================================================
+#
 
 @router.post(
     "/revoke",
@@ -601,11 +537,7 @@ def revoke_token(
     client_secret: Optional[str] = Form(None, description="Client secret"),
     db: Session = Depends(get_db)
 ):
-    """
-    Token Revocation Endpoint.
-    
-    Per RFC 7009, always returns 200 OK (even if token unknown).
-    """
+    """Revoke a token. Per RFC 7009, always returns 200 OK."""
     audit_repo = AuditRepository(db)
     audit_svc = AuditService(audit_repo)
     oauth_service = OAuthService(OAuthRepository(db), audit_service=audit_svc)
@@ -615,9 +547,9 @@ def revoke_token(
     return Response(status_code=status.HTTP_200_OK)
 
 
-# =============================================================================
+#
 # UserInfo Endpoint (OIDC)
-# =============================================================================
+#
 
 @router.get(
     "/userinfo",
@@ -629,13 +561,7 @@ def get_userinfo(
     authorization: str = Header(..., description="Bearer token"),
     db: Session = Depends(get_db)
 ):
-    """
-    OIDC UserInfo Endpoint.
-    
-    Returns user profile claims based on granted scopes.
-    Fields are filtered by scope.
-    """
-    # Extract token from Authorization header
+    """Return user profile claims filtered by granted scopes."""
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -649,7 +575,6 @@ def get_userinfo(
     context_repo = ContextRepository(db)
     oauth_service = OAuthService(oauth_repo, profile_repo, context_repo)
     
-    # Validate token
     access_token = oauth_repo.get_active_access_token(token)
     if not access_token:
         raise HTTPException(
@@ -657,7 +582,6 @@ def get_userinfo(
             detail="Invalid or expired access token"
         )
     
-    # Get user profile
     profile = profile_repo.get_profile_by_id(access_token.user_id)
     if not profile:
         raise HTTPException(
@@ -665,14 +589,12 @@ def get_userinfo(
             detail="User profile not found"
         )
     
-    # Get context profile if bound
     context_profile = None
     if access_token.context_profile_id:
         context_profile = context_repo.get_context_profile_by_id(
             access_token.context_profile_id
         )
 
-    # Reject serving data from unverified legal/healthcare contexts
     if (context_profile
             and context_profile.requires_verification
             and not context_profile.is_identity_verified):
@@ -691,14 +613,11 @@ def get_userinfo(
             }
         )
 
-    # Build response based on scopes
     scopes = access_token.get_scopes_list()
     
     response = UserInfoResponse(sub=str(profile.user_id))
     
-    # Basic profile claims
     if any(s in scopes for s in ['profile:read:basic', 'profile:read:full', 'openid']):
-        # Get identity names for display name
         names = profile_repo.get_identity_names(profile.user_id)
         full_name = None
         given_name = None
@@ -724,7 +643,6 @@ def get_userinfo(
         response.locale = profile.preferred_language
         response.account_type = profile.account_type.value
     
-    # Email claims
     if any(s in scopes for s in ['profile:read:email', 'profile:read:full', 'email']):
         if context_profile and context_profile.email_override:
             response.email = context_profile.email_override
@@ -732,7 +650,6 @@ def get_userinfo(
             response.email = profile.primary_email
         response.email_verified = True  # TODO: Check auth_users
     
-    # Phone claims
     if any(s in scopes for s in ['profile:read:phone', 'profile:read:full', 'phone']):
         if context_profile and context_profile.phone_override:
             response.phone_number = context_profile.phone_override
@@ -740,7 +657,6 @@ def get_userinfo(
             response.phone_number = profile.primary_phone
         response.phone_number_verified = profile.primary_phone is not None
     
-    # Context claims
     if context_profile:
         response.context = context_profile.context_type.value
         response.context_name = context_profile.context_name
@@ -750,9 +666,9 @@ def get_userinfo(
     return response
 
 
-# =============================================================================
+#
 # Consent Management Endpoints
-# =============================================================================
+#
 
 @router.get(
     "/consents",
@@ -764,11 +680,7 @@ def list_user_consents(
     user_id: UUID = Query(..., description="User ID"),
     oauth_service: OAuthService = Depends(get_oauth_service)
 ):
-    """
-    List all active consents for a user.
-    
-    Users can see which applications have access to their data.
-    """
+    """List all active OAuth consents for a user."""
     consents = oauth_service.get_user_consents(user_id)
     
     consent_responses = []
@@ -803,12 +715,7 @@ def withdraw_consent(
     user_id: UUID = Query(..., description="User ID"),
     oauth_service: OAuthService = Depends(get_oauth_service)
 ):
-    """
-    Withdraw consent for a client.
-    
-    This revokes all tokens and the client will need to re-request authorization.
-    Implements GDPR Article 7(3) - right to withdraw consent.
-    """
+    """Withdraw consent and revoke all tokens for a client (GDPR Art. 7(3))."""
     result = oauth_service.withdraw_consent(user_id, client_id)
     
     if not result:
@@ -820,9 +727,9 @@ def withdraw_consent(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# =============================================================================
+#
 # Scope Information Endpoint
-# =============================================================================
+#
 
 @router.get(
     "/scopes",
@@ -831,11 +738,7 @@ def withdraw_consent(
     description="List all available OAuth scopes"
 )
 def list_scopes(db: Session = Depends(get_db)):
-    """
-    List all available OAuth scopes.
-    
-    Useful for clients to understand what access levels are available.
-    """
+    """List all available OAuth scopes."""
     oauth_repo = OAuthRepository(db)
     scopes = oauth_repo.list_all_scopes()
     

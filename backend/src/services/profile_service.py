@@ -35,45 +35,23 @@ class ProfileService:
         audit_service: Optional["AuditService"] = None,
         auth_repository: Optional[AuthRepository] = None
     ):
-        """
-        Initialize service with repository
-
-        Args:
-            repository: ProfileRepository instance
-            audit_service: Optional audit service for event logging
-            auth_repository: Optional auth repository for email re-verification
-        """
         self.repository = repository
         self.audit_service = audit_service
         self.auth_repo = auth_repository
     
     def create_profile(self, profile_data: ProfileCreate) -> BaseProfile:
-        """
-        Create a new profile with business logic validation
-        
-        Args:
-            profile_data: Profile creation data
-            
-        Returns:
-            Created profile
-            
-        Raises:
-            ProfileServiceError: If validation fails
-        """
-        # Validate verified accounts have legal_name
+        """Create a new profile with business logic validation."""
         if profile_data.account_type == AccountType.verified and not profile_data.legal_name:
             raise ProfileServiceError(
                 "Verified accounts require a legal_name"
             )
-        
-        # Check for duplicate email
+
         existing = self.repository.get_profile_by_email(profile_data.primary_email)
         if existing:
             raise ProfileServiceError(
                 f"Profile with email {profile_data.primary_email} already exists"
             )
-        
-        # Create profile
+
         profile = self.repository.create_profile(
             account_type=profile_data.account_type,
             legal_name=profile_data.legal_name,
@@ -82,7 +60,6 @@ class ProfileService:
             preferred_language=profile_data.preferred_language
         )
 
-        # Audit: profile creation
         if self.audit_service:
             self.audit_service.log_event(
                 event_type=AuditEventType.profile_create,
@@ -101,18 +78,7 @@ class ProfileService:
         return profile
     
     def get_profile(self, user_id: UUID) -> BaseProfile:
-        """
-        Get profile by ID
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            Profile
-            
-        Raises:
-            ProfileServiceError: If profile not found
-        """
+        """Get profile by ID or raise ProfileServiceError."""
         profile = self.repository.get_profile_by_id(user_id)
         
         if not profile:
@@ -125,19 +91,7 @@ class ProfileService:
         user_id: UUID,
         include_deprecated: bool = False
     ) -> Tuple[BaseProfile, List[IdentityName]]:
-        """
-        Get profile with identity names
-        
-        Args:
-            user_id: User ID
-            include_deprecated: Whether to include deprecated names
-            
-        Returns:
-            Tuple of (profile, names)
-            
-        Raises:
-            ProfileServiceError: If profile not found
-        """
+        """Get profile with its identity names."""
         profile, names = self.repository.get_profile_with_names(
             user_id,
             include_deprecated=include_deprecated
@@ -153,43 +107,25 @@ class ProfileService:
         user_id: UUID,
         update_data: ProfileUpdate
     ) -> BaseProfile:
-        """
-        Update profile with business logic validation
-        
-        Args:
-            user_id: User ID
-            update_data: Update data
-            
-        Returns:
-            Updated profile
-            
-        Raises:
-            ProfileServiceError: If validation fails
-        """
-        # Get existing profile
+        """Update profile with account-type transition and email-uniqueness validation."""
         existing = self.repository.get_profile_by_id(user_id)
         if not existing:
             raise ProfileServiceError(f"Profile {user_id} not found")
         
-        # Validate account type transitions
         if update_data.account_type is not None:
-            # Check if upgrading to verified
             if update_data.account_type == AccountType.verified:
-                # Need legal_name either in update or existing profile
                 legal_name = update_data.legal_name or existing.legal_name
                 if not legal_name:
                     raise ProfileServiceError(
                         "Cannot upgrade to verified account without legal_name"
                     )
             
-            # Prevent downgrading from verified
             if existing.account_type == AccountType.verified:
                 if update_data.account_type != AccountType.verified:
                     raise ProfileServiceError(
                         "Cannot downgrade from verified account type"
                     )
         
-        # Check for duplicate email if updating email
         email_changed = False
         if update_data.primary_email:
             if update_data.primary_email != existing.primary_email:
@@ -200,17 +136,14 @@ class ProfileService:
                     )
                 email_changed = True
 
-        # Build update dict
         updates = {}
         for field in ['account_type', 'legal_name', 'primary_email', 'primary_phone', 'preferred_language']:
             value = getattr(update_data, field)
             if value is not None:
                 updates[field] = value
 
-        # Update profile
         profile = self.repository.update_profile(user_id, **updates)
 
-        # Sync auth_users email and trigger re-verification
         if email_changed and self.auth_repo:
             token = self.auth_repo.update_email(
                 str(user_id), update_data.primary_email
@@ -229,7 +162,6 @@ class ProfileService:
                     )
             profile.email_verification_pending = True  # type: ignore[attr-defined]
 
-        # Audit: profile update
         if self.audit_service:
             self.audit_service.log_event(
                 event_type=AuditEventType.profile_update,
@@ -245,24 +177,12 @@ class ProfileService:
         return profile
     
     def delete_profile(self, user_id: UUID) -> bool:
-        """
-        Soft delete a profile
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            True if deleted
-            
-        Raises:
-            ProfileServiceError: If profile not found
-        """
+        """Soft delete a profile."""
         result = self.repository.soft_delete_profile(user_id)
 
         if not result:
             raise ProfileServiceError(f"Profile {user_id} not found")
 
-        # Audit: profile deletion (soft delete)
         if self.audit_service:
             self.audit_service.log_event(
                 event_type=AuditEventType.profile_delete,
@@ -281,25 +201,11 @@ class ProfileService:
         user_id: UUID,
         name_data: IdentityNameCreate
     ) -> IdentityName:
-        """
-        Add an identity name to a profile
-        
-        Args:
-            user_id: User ID
-            name_data: Identity name data
-            
-        Returns:
-            Created identity name
-            
-        Raises:
-            ProfileServiceError: If profile not found
-        """
-        # Verify profile exists
+        """Add an identity name to a profile."""
         profile = self.repository.get_profile_by_id(user_id)
         if not profile:
             raise ProfileServiceError(f"Profile {user_id} not found")
         
-        # Create identity name
         name = self.repository.create_identity_name(
             identity_id=user_id,
             name_type=name_data.name_type,
@@ -318,23 +224,7 @@ class ProfileService:
         name_id: UUID,
         update_data: IdentityNameUpdate
     ) -> IdentityName:
-        """
-        Update an identity name belonging to a profile.
-
-        Validates that the name belongs to the given user before applying
-        updates. Only non-None fields in update_data are changed.
-
-        Args:
-            user_id: Owner user ID
-            name_id: Identity name ID to update
-            update_data: Fields to update
-
-        Returns:
-            Updated identity name
-
-        Raises:
-            ProfileServiceError: If name not found or does not belong to user
-        """
+        """Update an identity name after verifying ownership."""
         name = self.repository.get_identity_name_by_id(name_id)
         if not name:
             raise ProfileServiceError(f"Identity name {name_id} not found")
@@ -358,21 +248,7 @@ class ProfileService:
         user_id: UUID,
         name_id: UUID
     ) -> bool:
-        """
-        Delete an identity name belonging to a profile.
-
-        Validates ownership before deletion.
-
-        Args:
-            user_id: Owner user ID
-            name_id: Identity name ID to delete
-
-        Returns:
-            True if deleted
-
-        Raises:
-            ProfileServiceError: If name not found or does not belong to user
-        """
+        """Delete an identity name after verifying ownership."""
         name = self.repository.get_identity_name_by_id(name_id)
         if not name:
             raise ProfileServiceError(f"Identity name {name_id} not found")

@@ -18,12 +18,6 @@ class ProfileRepository:
     """Repository for Profile and IdentityName database operations"""
     
     def __init__(self, db: Session):
-        """
-        Initialize repository with database session
-        
-        Args:
-            db: SQLAlchemy database session
-        """
         self.db = db
     
     # Profile CRUD operations
@@ -36,19 +30,7 @@ class ProfileRepository:
         legal_name: Optional[str] = None,
         primary_phone: Optional[str] = None,
     ) -> BaseProfile:
-        """
-        Create a new profile
-        
-        Args:
-            account_type: Type of account (verified, unverified, pseudonymous)
-            primary_email: Primary email address
-            preferred_language: Preferred language code
-            legal_name: Optional legal name
-            primary_phone: Optional primary phone number
-            
-        Returns:
-            Created profile instance
-        """
+        """Create a new base profile."""
         profile = BaseProfile(
             account_type=account_type,
             legal_name=legal_name,
@@ -64,15 +46,7 @@ class ProfileRepository:
         return profile
     
     def get_profile_by_id(self, user_id: UUID) -> Optional[BaseProfile]:
-        """
-        Get profile by user ID, excluding soft-deleted profiles
-        
-        Args:
-            user_id: User ID to look up
-            
-        Returns:
-            Profile if found and not deleted, None otherwise
-        """
+        """Get profile by user ID, excluding soft-deleted."""
         return self.db.query(BaseProfile).filter(
             and_(
                 BaseProfile.user_id == user_id,
@@ -81,29 +55,13 @@ class ProfileRepository:
         ).first()
 
     def get_profile_by_id_including_deleted(self, user_id: UUID) -> Optional[BaseProfile]:
-        """
-        Get profile by user ID, including soft-deleted profiles.
-        
-        Args:
-            user_id: User ID to look up
-            
-        Returns:
-            Profile if found, None otherwise
-        """
+        """Get profile by user ID, including soft-deleted."""
         return self.db.query(BaseProfile).filter(
             BaseProfile.user_id == user_id
         ).first()
     
     def get_profile_by_email(self, email: str) -> Optional[BaseProfile]:
-        """
-        Get profile by email address, excluding soft-deleted profiles
-        
-        Args:
-            email: Email address to look up
-            
-        Returns:
-            Profile if found and not deleted, None otherwise
-        """
+        """Get profile by email address, excluding soft-deleted."""
         return self.db.query(BaseProfile).filter(
             and_(
                 BaseProfile.primary_email == email,
@@ -116,16 +74,7 @@ class ProfileRepository:
         limit: Optional[int] = None,
         offset: Optional[int] = None
     ) -> List[BaseProfile]:
-        """
-        List all profiles, excluding soft-deleted ones
-        
-        Args:
-            limit: Maximum number of profiles to return
-            offset: Number of profiles to skip
-            
-        Returns:
-            List of profiles
-        """
+        """List all profiles with pagination, excluding soft-deleted."""
         query = self.db.query(BaseProfile).filter(
             BaseProfile.deleted_at.is_(None)
         ).order_by(BaseProfile.created_at.desc())
@@ -143,27 +92,16 @@ class ProfileRepository:
         user_id: UUID,
         **updates
     ) -> Optional[BaseProfile]:
-        """
-        Update profile fields
-        
-        Args:
-            user_id: User ID of profile to update
-            **updates: Fields to update
-            
-        Returns:
-            Updated profile if found, None otherwise
-        """
+        """Update profile fields."""
         profile = self.get_profile_by_id(user_id)
         
         if not profile:
             return None
-        
-        # Update provided fields
+
         for key, value in updates.items():
             if hasattr(profile, key):
                 setattr(profile, key, value)
-        
-        # Update timestamp
+
         profile.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
@@ -172,16 +110,7 @@ class ProfileRepository:
         return profile
     
     def soft_delete_profile(self, user_id: UUID) -> bool:
-        """
-        Soft delete a profile by setting deleted_at timestamp
-        
-        Args:
-            user_id: User ID of profile to delete
-            
-        Returns:
-            True if profile was deleted, False if not found
-        """
-        # Query without the deleted_at filter to find even non-deleted
+        """Soft delete a profile by setting deleted_at timestamp."""
         profile = self.db.query(BaseProfile).filter(
             BaseProfile.user_id == user_id
         ).first()
@@ -196,7 +125,7 @@ class ProfileRepository:
         return True
     
     # IdentityName CRUD operations
-    
+
     def create_identity_name(
         self,
         identity_id: UUID,
@@ -207,21 +136,7 @@ class ProfileRepository:
         visibility_level: VisibilityLevel = VisibilityLevel.public,
         context_id: Optional[UUID] = None
     ) -> IdentityName:
-        """
-        Create a new identity name
-        
-        Args:
-            identity_id: Profile user ID this name belongs to
-            name_type: Type of name (given, family, full_name, etc.)
-            name_value: Multilingual name dictionary
-            is_primary: Whether this is the primary name of this type
-            is_deprecated: Whether this name is deprecated
-            visibility_level: Visibility level
-            context_id: Optional context ID
-            
-        Returns:
-            Created identity name instance
-        """
+        """Create a new identity name."""
         name = IdentityName(
             identity_id=identity_id,
             name_type=name_type,
@@ -239,15 +154,7 @@ class ProfileRepository:
         return name
     
     def get_identity_name_by_id(self, name_id: UUID) -> Optional[IdentityName]:
-        """
-        Get identity name by ID
-        
-        Args:
-            name_id: Identity name ID
-            
-        Returns:
-            Identity name if found, None otherwise
-        """
+        """Get identity name by ID."""
         return self.db.query(IdentityName).filter(
             IdentityName.id == name_id
         ).first()
@@ -257,16 +164,7 @@ class ProfileRepository:
         identity_id: UUID,
         include_deprecated: bool = False
     ) -> List[IdentityName]:
-        """
-        Get all identity names for a profile
-        
-        Args:
-            identity_id: Profile user ID
-            include_deprecated: Whether to include deprecated names
-            
-        Returns:
-            List of identity names
-        """
+        """Get all identity names for a profile."""
         query = self.db.query(IdentityName).filter(
             IdentityName.identity_id == identity_id
         )
@@ -284,27 +182,16 @@ class ProfileRepository:
         name_id: UUID,
         **updates
     ) -> Optional[IdentityName]:
-        """
-        Update identity name fields
-        
-        Args:
-            name_id: Identity name ID
-            **updates: Fields to update
-            
-        Returns:
-            Updated identity name if found, None otherwise
-        """
+        """Update identity name fields."""
         name = self.get_identity_name_by_id(name_id)
         
         if not name:
             return None
-        
-        # Update provided fields
+
         for key, value in updates.items():
             if hasattr(name, key):
                 setattr(name, key, value)
-        
-        # Update timestamp
+
         name.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
@@ -313,15 +200,7 @@ class ProfileRepository:
         return name
     
     def delete_identity_name(self, name_id: UUID) -> bool:
-        """
-        Delete an identity name (hard delete)
-        
-        Args:
-            name_id: Identity name ID
-            
-        Returns:
-            True if name was deleted, False if not found
-        """
+        """Delete an identity name (hard delete)."""
         name = self.get_identity_name_by_id(name_id)
         
         if not name:
@@ -339,16 +218,9 @@ class ProfileRepository:
         user_id: UUID,
         include_deprecated: bool = False
     ) -> Tuple[Optional[BaseProfile], List[IdentityName]]:
-        """
-        Get profile with all associated identity names
-        
-        Args:
-            user_id: User ID of profile
-            include_deprecated: Whether to include deprecated names
-            
-        Returns:
-            Tuple of (profile, list of identity names)
-            Returns (None, []) if profile not found
+        """Get profile with all associated identity names.
+
+        Returns (None, []) if profile not found.
         """
         profile = self.get_profile_by_id(user_id)
         
@@ -360,15 +232,7 @@ class ProfileRepository:
         return profile, names
 
     def restore_profile(self, user_id: UUID) -> bool:
-        """
-        Restore a soft-deleted profile by clearing deleted_at.
-
-        Args:
-            user_id: User ID of profile to restore
-
-        Returns:
-            True if profile was restored, False if not found
-        """
+        """Restore a soft-deleted profile by clearing deleted_at."""
         profile = self.db.query(BaseProfile).filter(
             BaseProfile.user_id == user_id
         ).first()
@@ -379,15 +243,7 @@ class ProfileRepository:
         return True
 
     def hard_delete_profile(self, user_id: UUID) -> bool:
-        """
-        Permanently delete a profile. CASCADE handles identity_names.
-
-        Args:
-            user_id: User ID of profile to delete
-
-        Returns:
-            True if deleted, False if not found
-        """
+        """Permanently delete a profile. CASCADE handles identity_names."""
         profile = self.db.query(BaseProfile).filter(
             BaseProfile.user_id == user_id
         ).first()

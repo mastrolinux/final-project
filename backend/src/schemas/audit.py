@@ -24,7 +24,6 @@ class AuditLogEntry(BaseModel):
     changes: Optional[Dict[str, Any]] = None
     ip_address: Optional[str] = None
     legal_basis: Optional[str] = None
-    # user_agent intentionally excluded from response (forensic data only)
 
     model_config = ConfigDict(from_attributes=True)
 

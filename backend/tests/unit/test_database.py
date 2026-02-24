@@ -1,8 +1,4 @@
-"""
-Unit Tests for Database Module
-
-Tests database connection, health checks, and Supabase client initialization.
-"""
+"""Tests for database connection, health checks, and Supabase client initialization."""
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
@@ -121,10 +117,9 @@ def test_get_supabase_client_success(mock_settings, mock_create_client):
     mock_client = Mock()
     mock_create_client.return_value = mock_client
     
-    # Reset global client
     import src.core.database
     src.core.database._supabase_client = None
-    
+
     client = get_supabase_client()
     
     assert client is not None
@@ -137,7 +132,6 @@ def test_get_supabase_client_success(mock_settings, mock_create_client):
 @patch('src.core.database.create_client', None)
 def test_get_supabase_client_not_installed():
     """Test Supabase client creation when library not installed"""
-    # Reset global client
     import src.core.database
     src.core.database._supabase_client = None
     
@@ -152,7 +146,6 @@ def test_get_supabase_client_missing_config(mock_settings, mock_create_client):
     mock_settings.SUPABASE_URL = ""
     mock_settings.SUPABASE_SERVICE_KEY = ""
     
-    # Reset global client
     import src.core.database
     src.core.database._supabase_client = None
     

@@ -31,22 +31,7 @@ class ContextType(str, enum.Enum):
 
 
 class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
-    """
-    Context Profile Model
-    
-    Enables users to present different identity aspects in different social contexts.
-    Implements Goffman's dramaturgical theory: identity as performative and context-dependent.
-    
-    Design Pattern: Stores only overrides, not full profiles.
-    Base profile remains single source of truth.
-    Resolution merges base profile + context overrides.
-    
-    Example Use Cases:
-    - Professional: Work-appropriate name and credentials for LinkedIn
-    - Social: Preferred name and casual bio for social apps
-    - Legal: Official name and credentials for government services
-    - Healthcare: Medical information for health apps
-    """
+    """Context-dependent identity overrides; null fields inherit from base profile."""
     __tablename__ = "context_profiles"
 
     id = Column(
@@ -71,18 +56,15 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
         nullable=False
     )
     
-    # Override fields - nullable (null means inherit from base profile)
     display_name_override = Column(Text, nullable=True)
     email_override = Column(String(255), nullable=True)
     phone_override = Column(String(50), nullable=True)
     bio = Column(Text, nullable=True)
 
-    # Avatar override fields (null means inherit from base profile)
     avatar_override_url = Column(Text, nullable=True)
     avatar_override_thumbnail_url = Column(Text, nullable=True)
     avatar_override_storage_path = Column(Text, nullable=True)
 
-    # Status
     is_active = Column(Boolean, nullable=False, default=True)
     verification_status = Column(
         SQLEnum(VerificationStatus, name="verification_status", create_type=False),
@@ -90,7 +72,6 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     )
     rejection_reason = Column(Text, nullable=True)
 
-    # Relationships
     base_profile = relationship(
         "BaseProfile",
         foreign_keys=[user_id],
@@ -131,12 +112,7 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
         ])
     
     def get_override_fields(self) -> dict[str, Any]:
-        """
-        Get dictionary of fields that are overridden in this context
-        
-        Returns:
-            Dict mapping field names to override values (excludes None values)
-        """
+        """Get non-null override fields as a dict."""
         overrides = {}
         
         if self.display_name_override is not None:

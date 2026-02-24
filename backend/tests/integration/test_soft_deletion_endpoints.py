@@ -1,10 +1,4 @@
-"""
-Integration Tests for Soft Deletion and Account Restoration Endpoints
-
-Tests the full HTTP request/response cycle for GDPR Article 17
-soft deletion, account restoration, and deletion status endpoints
-using TestClient with a real in-memory SQLite database.
-"""
+"""Integration tests for soft deletion and account restoration endpoints."""
 
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -107,10 +101,6 @@ class TestSoftDeletionEndpoints:
         result = db_session.execute(stmt)
         return result.scalars().first()
 
-    # ------------------------------------------------------------------
-    # Deletion Request
-    # ------------------------------------------------------------------
-
     def test_deletion_request_returns_200(self, client, user_token, user_profile):
         """POST /privacy/deletion-request returns 200 with scheduling info."""
         response = self._delete_account(client, user_token)
@@ -129,16 +119,11 @@ class TestSoftDeletionEndpoints:
     ):
         """After soft deletion, JWT-authenticated requests return 401."""
         self._delete_account(client, user_token)
-        # The auth middleware filters deleted_at IS NULL, so re-auth fails
         response = client.post(
             "/api/v1/privacy/deletion-request",
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert response.status_code == 401
-
-    # ------------------------------------------------------------------
-    # Deletion Status
-    # ------------------------------------------------------------------
 
     def test_deletion_status_returns_active(self, client, user_token, user_profile):
         """GET /privacy/deletion-status for active account returns 'active'."""
@@ -153,10 +138,6 @@ class TestSoftDeletionEndpoints:
         """GET /privacy/deletion-status returns 401 without token."""
         response = client.get("/api/v1/privacy/deletion-status")
         assert response.status_code == 401
-
-    # ------------------------------------------------------------------
-    # Login after Deletion
-    # ------------------------------------------------------------------
 
     def test_login_after_deletion_returns_403(
         self, client, user_token, user_profile
@@ -175,10 +156,6 @@ class TestSoftDeletionEndpoints:
         assert data["detail"]["code"] == "ACCOUNT_DELETED"
         assert "deletion_scheduled_at" in data["detail"]
         assert "recovery_info" in data["detail"]
-
-    # ------------------------------------------------------------------
-    # Register detects Recoverable Account
-    # ------------------------------------------------------------------
 
     @patch("src.services.auth_service.send_verification_email")
     def test_register_detects_recoverable_returns_409(
@@ -199,10 +176,6 @@ class TestSoftDeletionEndpoints:
         assert data["detail"]["code"] == "ACCOUNT_RECOVERABLE"
         assert data["detail"]["account_recoverable"] is True
         assert "restore_endpoint" in data["detail"]
-
-    # ------------------------------------------------------------------
-    # Restore Account Request
-    # ------------------------------------------------------------------
 
     @patch("src.services.auth_service.send_restoration_email")
     def test_restore_account_returns_202(
@@ -228,10 +201,6 @@ class TestSoftDeletionEndpoints:
         )
         assert response.status_code == 202
         mock_send_email.delay.assert_not_called()
-
-    # ------------------------------------------------------------------
-    # Restore Account Confirm
-    # ------------------------------------------------------------------
 
     @patch("src.services.auth_service.send_restoration_email")
     def test_restore_confirm_restores_account_returns_200(
@@ -287,7 +256,6 @@ class TestSoftDeletionEndpoints:
             json={"email": "delete.test@example.com"},
         )
 
-        # Manipulate deleted_at to simulate 35 days ago (past grace period)
         auth_user = self._get_auth_user_raw(db_session)
         token = auth_user.restoration_token
         auth_user.deleted_at = datetime.now(timezone.utc) - timedelta(days=35)
@@ -300,10 +268,6 @@ class TestSoftDeletionEndpoints:
         )
         assert response.status_code == 410
         assert response.json()["detail"]["code"] == "ACCOUNT_PERMANENTLY_DELETED"
-
-    # ------------------------------------------------------------------
-    # Full End-to-End Flow
-    # ------------------------------------------------------------------
 
     @patch("src.services.auth_service.send_restoration_email")
     def test_full_deletion_and_restoration_flow(

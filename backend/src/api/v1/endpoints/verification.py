@@ -71,9 +71,9 @@ def get_verification_service(
     )
 
 
-# ------------------------------------------------------------------
+#
 # Upload
-# ------------------------------------------------------------------
+#
 
 
 @router.post(
@@ -95,17 +95,7 @@ async def upload_verification_document(
     current_user: AuthUser = Depends(require_verified_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Upload a government-issued identity document for verification.
-
-    The document is validated (magic bytes, size), encrypted with Fernet,
-    and stored in a private bucket. Only metadata is returned in the
-    response; the encrypted content is never exposed via the API.
-
-    To associate the document with a context, call the link endpoint
-    after upload.
-    """
-    # Resource-owner check
+    """Upload a government-issued identity document for verification."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -140,9 +130,9 @@ async def upload_verification_document(
         )
 
 
-# ------------------------------------------------------------------
+#
 # Status
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -154,12 +144,7 @@ async def get_verification_status(
     current_user: AuthUser = Depends(get_current_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Return the user's current verification state.
-
-    Includes account type, latest document metadata, and whether the
-    user is eligible to create legal or healthcare context profiles.
-    """
+    """Return the user's current verification state."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -172,9 +157,9 @@ async def get_verification_status(
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
 
-# ------------------------------------------------------------------
+#
 # Document listing
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -186,11 +171,7 @@ async def list_verification_documents(
     current_user: AuthUser = Depends(get_current_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    List all verification documents for a user.
-
-    Returns metadata only; encrypted document content is never included.
-    """
+    """List all verification documents for a user (metadata only)."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -203,9 +184,9 @@ async def list_verification_documents(
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
 
-# ------------------------------------------------------------------
+#
 # Document download (decrypted for the owning user)
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -217,12 +198,7 @@ async def download_own_document(
     current_user: AuthUser = Depends(get_current_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Download and decrypt an owned verification document.
-
-    Returns the original document bytes with appropriate content type
-    and security headers. Only the document owner can access this.
-    """
+    """Download and decrypt an owned verification document."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -249,9 +225,9 @@ async def download_own_document(
     )
 
 
-# ------------------------------------------------------------------
+#
 # Context-document linking
-# ------------------------------------------------------------------
+#
 
 
 @router.get(
@@ -288,12 +264,7 @@ async def link_document_to_context(
     current_user: AuthUser = Depends(get_current_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Link an existing verification document to a context profile.
-
-    The document and context must both belong to the requesting user,
-    and the context must require verification (legal or healthcare type).
-    """
+    """Link a verification document to a context profile."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -317,11 +288,7 @@ async def unlink_document_from_context(
     current_user: AuthUser = Depends(get_current_user),
     service: VerificationService = Depends(get_verification_service),
 ):
-    """
-    Remove the link between a verification document and a context profile.
-
-    The document itself is not deleted; only the association is removed.
-    """
+    """Remove the link between a verification document and a context profile."""
     if str(current_user.user_id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

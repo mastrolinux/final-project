@@ -1,9 +1,7 @@
 """
 Audit Logging Service
 
-Business logic layer for immutable audit logging.
-Provides a simple interface for recording audit events
-and querying audit trails.
+Business logic for immutable audit logging and trail queries.
 """
 
 import logging
@@ -35,24 +33,7 @@ class AuditService:
         user_agent: Optional[str] = None,
         legal_basis: Optional[str] = None
     ) -> None:
-        """
-        Record an audit event.
-
-        This method catches all exceptions to avoid disrupting
-        the primary operation. Errors are logged but not propagated.
-
-        Args:
-            event_type: Categorized event type
-            user_id: Data subject UUID
-            actor_id: Actor UUID (who performed the action)
-            resource_type: e.g., "profile", "context", "auth_user", "oauth_consent"
-            resource_id: e.g., user_id string, context_id string
-            operation: CRUD-like operation
-            changes: Optional dict of change details
-            ip_address: Client IP
-            user_agent: Client user agent
-            legal_basis: GDPR basis (e.g., "consent", "legitimate_interest", "contract")
-        """
+        """Record an audit event. Swallows exceptions to avoid disrupting the caller."""
         try:
             self.audit_repo.create_log(
                 event_type=event_type.value,
@@ -67,8 +48,6 @@ class AuditService:
                 legal_basis=legal_basis
             )
         except Exception:
-            # Audit logging failures must not break primary operations.
-            # In production, this would route to a secondary logging system.
             logger.exception(
                 "Failed to record audit event: %s for user %s",
                 event_type.value,
@@ -83,21 +62,7 @@ class AuditService:
         limit: int = 50,
         offset: int = 0
     ) -> dict:
-        """
-        Get audit trail for a user (data subject access right).
-
-        Returns paginated audit log entries for the specified user.
-
-        Args:
-            user_id: Data subject UUID
-            event_type: Optional event type filter
-            resource_type: Optional resource type filter
-            limit: Max entries per page
-            offset: Pagination offset
-
-        Returns:
-            Dict with entries list, total count, and pagination info
-        """
+        """Return paginated audit trail for a user (GDPR Art. 15 access right)."""
         entries = self.audit_repo.get_logs_for_user(
             user_id=user_id,
             event_type=event_type,
@@ -118,15 +83,5 @@ class AuditService:
         self,
         limit: int = 1000
     ) -> Tuple[bool, int, Optional[str]]:
-        """
-        Verify audit log hash chain integrity.
-
-        Admin-only operation for tamper detection.
-
-        Args:
-            limit: Number of recent entries to verify
-
-        Returns:
-            Tuple of (is_valid, entries_verified, error_message)
-        """
+        """Verify audit log hash chain integrity for tamper detection."""
         return self.audit_repo.verify_chain(limit=limit)

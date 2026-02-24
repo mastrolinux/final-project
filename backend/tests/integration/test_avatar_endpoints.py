@@ -1,13 +1,4 @@
-"""
-Integration Tests for Avatar Endpoints
-
-Tests the full HTTP request cycle for avatar upload and deletion,
-using the FastAPI TestClient with an in-memory SQLite database and
-InMemoryStorageClient dependency override.
-
-Write endpoints (POST, DELETE) require JWT authentication with
-a verified email address via the require_verified_user dependency.
-"""
+"""Integration tests for avatar upload and deletion endpoints."""
 
 import io
 import pytest
@@ -23,10 +14,6 @@ from src.models.auth import AuthUser
 from src.models.profile import BaseProfile, AccountType
 from src.models.context import ContextProfile, ContextType
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _make_jpeg(width: int = 200, height: int = 200) -> bytes:
     img = Image.new("RGB", (width, height), color="green")
@@ -48,10 +35,6 @@ def _make_gif(width: int = 100, height: int = 100) -> bytes:
     img.save(buf, format="GIF")
     return buf.getvalue()
 
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def storage_client():
@@ -134,10 +117,6 @@ def context(db_session, profile) -> ContextProfile:
     return ctx
 
 
-# ---------------------------------------------------------------------------
-# Base avatar endpoint tests
-# ---------------------------------------------------------------------------
-
 class TestBaseAvatarUpload:
 
     def test_upload_jpeg(self, client_with_storage, profile, storage_client, auth_headers):
@@ -187,7 +166,6 @@ class TestBaseAvatarUpload:
         assert resp.status_code == 404
 
     def test_upload_replaces_previous(self, client_with_storage, profile, storage_client, auth_headers):
-        # Upload first avatar
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             files={"file": ("v1.jpg", _make_jpeg(), "image/jpeg")},
@@ -195,7 +173,6 @@ class TestBaseAvatarUpload:
         )
         first_blobs = set(storage_client.blobs.keys())
 
-        # Upload replacement
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             files={"file": ("v2.jpg", _make_jpeg(), "image/jpeg")},
@@ -203,7 +180,6 @@ class TestBaseAvatarUpload:
         )
         second_blobs = set(storage_client.blobs.keys())
 
-        # Old blobs should be gone, new ones should exist
         assert first_blobs != second_blobs
         assert len(storage_client.blobs) == 2
 
@@ -219,7 +195,6 @@ class TestBaseAvatarUpload:
 class TestBaseAvatarDelete:
 
     def test_delete_success(self, client_with_storage, profile, storage_client, auth_headers):
-        # Upload first
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             files={"file": ("photo.jpg", _make_jpeg(), "image/jpeg")},
@@ -227,7 +202,6 @@ class TestBaseAvatarDelete:
         )
         assert len(storage_client.blobs) == 2
 
-        # Delete
         resp = client_with_storage.delete(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             headers=auth_headers,
@@ -251,10 +225,6 @@ class TestBaseAvatarDelete:
         )
         assert resp.status_code == 404
 
-
-# ---------------------------------------------------------------------------
-# Context avatar endpoint tests
-# ---------------------------------------------------------------------------
 
 class TestContextAvatarUpload:
 
@@ -291,7 +261,6 @@ class TestContextAvatarUpload:
 class TestContextAvatarDelete:
 
     def test_delete_context_avatar(self, client_with_storage, profile, context, storage_client, auth_headers):
-        # Upload first
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/contexts/{context.id}/avatar",
             files={"file": ("work.jpg", _make_jpeg(), "image/jpeg")},
@@ -314,21 +283,15 @@ class TestContextAvatarDelete:
         assert "does not have" in resp.json()["detail"]
 
 
-# ---------------------------------------------------------------------------
-# Profile response includes avatar fields
-# ---------------------------------------------------------------------------
-
 class TestProfileResponseIncludesAvatar:
 
     def test_get_profile_shows_avatar_fields(self, client_with_storage, profile, auth_headers):
-        # Upload an avatar
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             files={"file": ("photo.jpg", _make_jpeg(), "image/jpeg")},
             headers=auth_headers,
         )
 
-        # GET the profile and verify avatar fields are present
         resp = client_with_storage.get(
             f"/api/v1/profiles/{profile.user_id}",
         )
@@ -347,10 +310,6 @@ class TestProfileResponseIncludesAvatar:
         assert body["avatar_url"] is None
         assert body["avatar_thumbnail_url"] is None
 
-
-# ---------------------------------------------------------------------------
-# Email verification enforcement
-# ---------------------------------------------------------------------------
 
 class TestAvatarEmailVerificationEnforcement:
 

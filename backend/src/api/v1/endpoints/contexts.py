@@ -48,35 +48,14 @@ def get_context_service(db: Session = Depends(get_db)) -> ContextService:
 def parse_accept_language(
     accept_language: Optional[str] = Header(None, alias="Accept-Language")
 ) -> str:
-    """
-    Parse Accept-Language header to extract primary language code.
-    
-    Implements W3C content negotiation (RFC 7231) for multilingual name resolution.
-    
-    Examples:
-        "zh-CN,zh;q=0.9,en;q=0.8" -> "zh"
-        "en-US,en;q=0.9" -> "en"
-        "fr-FR,fr;q=0.9,en;q=0.5" -> "fr"
-        None -> "en" (default)
-    
-    Args:
-        accept_language: Accept-Language header value from HTTP request
-        
-    Returns:
-        Primary language code (ISO 639-1) or 'en' as default
-    """
+    """Extract primary language code from Accept-Language header (RFC 7231)."""
     if not accept_language:
         return "en"
-    
-    # Split by comma to get languages with quality values
+
     languages = accept_language.split(',')
-    
+
     if languages:
-        # Take first language (highest priority, q=1.0 implied)
         primary = languages[0].strip()
-        
-        # Extract language code (before '-' for region or ';' for quality)
-        # Example: "zh-CN" -> "zh", "en;q=0.9" -> "en"
         lang_code = primary.split('-')[0].split(';')[0].strip()
         
         return lang_code if lang_code else "en"
@@ -95,26 +74,7 @@ def create_context_profile(
     service: ContextService = Depends(get_context_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Create a new context profile for a user
-    
-    Enables users to present different identity aspects in different social contexts.
-    
-    - **context_type**: professional, social, legal, or healthcare
-    - **context_name**: User-defined label (e.g., "LinkedIn", "Family Photos")
-    - **display_name_override**: Optional override for display name
-    - **email_override**: Optional override for email
-    - **phone_override**: Optional override for phone
-    - **bio**: Optional context-specific biography
-    
-    **Business Rules:**
-    - Only verified accounts can create legal or healthcare contexts
-    - Context (user_id, context_type, context_name) must be unique
-    
-    **Example Use Case:**
-    Privacy-focused professional creates professional context with work credentials
-    while keeping personal information private from career platforms.
-    """
+    """Create a new context profile for a user."""
     try:
         context = service.create_context_profile(
             user_id=user_id,
@@ -160,14 +120,7 @@ def list_user_contexts(
     ),
     service: ContextService = Depends(get_context_service)
 ):
-    """
-    List all context profiles for a user
-    
-    Returns raw context profiles showing only overrides.
-    Use the resolved endpoint to see the full merged profile.
-    
-    - **include_inactive**: Whether to include inactive contexts
-    """
+    """List all context profiles for a user (raw overrides only)."""
     contexts = service.get_user_contexts(user_id, include_inactive=include_inactive)
     return contexts
 
@@ -181,16 +134,10 @@ def get_context_profile(
     context_id: UUID,
     service: ContextService = Depends(get_context_service)
 ):
-    """
-    Get a specific context profile (raw overrides only)
-    
-    Returns the context profile showing only override fields.
-    Use the /resolved endpoint to see the full merged profile.
-    """
+    """Get a specific context profile (raw overrides only)."""
     try:
         context = service.get_context_profile(context_id)
         
-        # Verify context belongs to user
         if context.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -219,29 +166,7 @@ def get_resolved_context_profile(
     language: str = Depends(parse_accept_language),
     service: ContextService = Depends(get_context_service)
 ):
-    """
-    Get fully resolved profile with context inheritance applied
-    
-    **CRITICAL ENDPOINT: Demonstrates the inheritance engine**
-    
-    This endpoint implements Goffman's dramaturgical theory by merging:
-    1. Base profile fields
-    2. Context-specific overrides
-    3. Multilingual name resolution
-    
-    The resolved profile is what third-party applications receive via OAuth.
-    
-    **Inheritance Rules:**
-    - Start with base profile values
-    - Apply context overrides (null overrides inherit from base)
-    - Filter deprecated names unless explicitly requested
-    - Resolve multilingual names using language preference
-    
-    **Example:**
-    - Base profile: email=personal@example.com, phone=+1-555-1234
-    - Professional context: email_override=work@company.com, phone_override=None
-    - Resolved: email=work@company.com, phone=+1-555-1234 (inherited)
-    """
+    """Get fully resolved profile with context inheritance applied."""
     try:
         resolved = service.resolve_context_profile(
             user_id=user_id,
@@ -249,8 +174,7 @@ def get_resolved_context_profile(
             language=language,
             include_deprecated_names=include_deprecated
         )
-        
-        # Convert ResolvedProfile to dict for Pydantic response
+
         return ResolvedProfileResponse(
             user_id=resolved.user_id,
             account_type=resolved.account_type,
@@ -273,11 +197,9 @@ def get_resolved_context_profile(
             ]
         )
     except ContextServiceError as e:
-        # Use explicit status code from exception if available
         status_code = getattr(e, 'status_code', None)
-        
+
         if status_code:
-            # Exception specifies exact status code (e.g., 410 for expired)
             raise HTTPException(
                 status_code=status_code,
                 detail=str(e)
@@ -311,12 +233,7 @@ def get_resolved_base_profile(
     language: str = Depends(parse_accept_language),
     service: ContextService = Depends(get_context_service)
 ):
-    """
-    Get resolved base profile without context overrides
-    
-    Returns the user's default identity presentation without any context-specific overrides.
-    Useful for displaying the user's primary profile.
-    """
+    """Get resolved base profile without context overrides."""
     try:
         resolved = service.resolve_base_profile(
             user_id=user_id,
@@ -363,25 +280,8 @@ def update_context_profile(
     service: ContextService = Depends(get_context_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Update a context profile.
-
-    Allows partial updates to context overrides.
-    Setting a field to null removes the override (inherits from base profile).
-    Omitting a field keeps the existing value.
-
-    Override fields (support null to clear):
-    - display_name_override
-    - email_override
-    - phone_override
-    - bio
-
-    Non-nullable fields (null is ignored):
-    - context_name
-    - is_active
-    """
+    """Update a context profile. Null clears an override; omitted fields are unchanged."""
     try:
-        # Verify context belongs to user first
         context = service.get_context_profile(context_id)
         if context.user_id != user_id:
             raise HTTPException(
@@ -389,11 +289,8 @@ def update_context_profile(
                 detail=f"Context {context_id} does not belong to user {user_id}"
             )
 
-        # Use model_fields_set to distinguish "not provided" from "explicitly null"
-        # Fields not in model_fields_set were not in the request body
         provided_fields = update_data.model_fields_set
 
-        # Update context - pass UNSET for fields not provided in request
         updated = service.update_context_profile(
             context_id=context_id,
             context_name=(
@@ -437,22 +334,15 @@ def delete_context_profile(
     service: ContextService = Depends(get_context_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Delete a context profile (soft delete)
-    
-    Marks the context as deleted without physically removing it.
-    The context can be recovered within the retention period.
-    """
+    """Soft-delete a context profile."""
     try:
-        # Verify context belongs to user first
         context = service.get_context_profile(context_id)
         if context.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Context {context_id} does not belong to user {user_id}"
             )
-        
-        # Delete context
+
         service.delete_context_profile(context_id)
         
         return None
@@ -461,10 +351,6 @@ def delete_context_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-
-
-
-
 
 
 

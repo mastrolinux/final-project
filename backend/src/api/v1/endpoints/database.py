@@ -18,34 +18,20 @@ router = APIRouter()
 
 @router.get("/test", response_model=Dict[str, Any])
 def test_database_connection(db: Session = Depends(get_db)):
-    """
-    Test database connection and query sample data
-    
-    Performs simple database queries to verify:
-    - Database connectivity
-    - Table existence
-    - Sample data access
-    
-    Returns count of profiles and sample profile data.
-    """
+    """Test database connection and return sample profile data."""
     try:
-        # Count profiles
         profile_count = db.query(func.count(BaseProfile.user_id)).filter(
             BaseProfile.deleted_at.is_(None)
         ).scalar()
         
-        # Count identity names
         name_count = db.query(func.count(IdentityName.id)).scalar()
-        
-        # Get sample profiles (limit to 5)
+
         sample_profiles = db.query(BaseProfile).filter(
             BaseProfile.deleted_at.is_(None)
         ).limit(5).all()
         
-        # Format sample data
         profiles_data = []
         for profile in sample_profiles:
-            # Get associated names
             names = db.query(IdentityName).filter(
                 IdentityName.identity_id == profile.user_id
             ).all()
@@ -90,14 +76,8 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 @router.get("/profiles/count", response_model=Dict[str, Any])
 def get_profile_counts(db: Session = Depends(get_db)):
-    """
-    Get profile counts by account type
-    
-    Returns breakdown of profile counts by account type
-    (verified, unverified, pseudonymous).
-    """
+    """Get profile counts grouped by account type."""
     try:
-        # Count by account type
         counts = db.query(
             BaseProfile.account_type,
             func.count(BaseProfile.user_id).label('count')
@@ -112,7 +92,6 @@ def get_profile_counts(db: Session = Depends(get_db)):
             for account_type, count in counts
         }
         
-        # Get total count
         total = sum(counts_dict.values())
         
         return {
@@ -136,13 +115,8 @@ def get_profile_counts(db: Session = Depends(get_db)):
 
 @router.get("/profiles/{user_id}", response_model=Dict[str, Any])
 def get_profile_with_names(user_id: str, db: Session = Depends(get_db)):
-    """
-    Get a specific profile with all associated names
-    
-    Retrieves profile and all identity names for testing.
-    """
+    """Get a specific profile with all associated identity names."""
     try:
-        # Get profile
         profile = db.query(BaseProfile).filter(
             BaseProfile.user_id == user_id,
             BaseProfile.deleted_at.is_(None)
@@ -154,7 +128,6 @@ def get_profile_with_names(user_id: str, db: Session = Depends(get_db)):
                 detail="Profile not found"
             )
         
-        # Get associated names
         names = db.query(IdentityName).filter(
             IdentityName.identity_id == profile.user_id
         ).all()
