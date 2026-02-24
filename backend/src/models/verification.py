@@ -121,10 +121,10 @@ class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
 
     @property
     def is_expired(self) -> bool:
-        """Return True if the physical document has passed its expiry date."""
+        """Return True if the physical document has passed its expiry date (UTC)."""
         if self.document_expiry_date is None:
             return False
-        return self.document_expiry_date < date.today()
+        return self.document_expiry_date < datetime.now(timezone.utc).date()
 
     def __repr__(self) -> str:
         return (
