@@ -7,9 +7,11 @@ Critical test scenarios focus on profile resolution algorithm.
 
 import pytest
 from uuid import uuid4
+from datetime import date, timedelta
 
 from src.models.context import ContextType
 from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
+from src.models.verification import VerificationDocument, DocumentType, VerificationStatus
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
 from src.services.context_service import ContextService, ContextServiceError
@@ -931,8 +933,184 @@ class TestTemporalValidity:
         assert resolved.context_type == ContextType.social
 
 
+class TestExpiryEnrichment:
+    """Test read-time enrichment of verification_status when linked document expires."""
 
+    def _make_verified_document(self, db_session, user_id, expiry_date):
+        """Helper: create a verified document with the given expiry date."""
+        doc = VerificationDocument(
+            user_id=user_id,
+            document_type=DocumentType.passport,
+            verification_status=VerificationStatus.verified,
+            original_filename="passport.pdf",
+            file_size_bytes=1024,
+            content_type="application/pdf",
+            storage_path="test/path.enc",
+            document_expiry_date=expiry_date,
+        )
+        db_session.add(doc)
+        db_session.commit()
+        db_session.refresh(doc)
+        return doc
 
+    def test_get_context_returns_expired_when_document_expired(
+        self,
+        db_session,
+        context_service: ContextService,
+        context_repository: ContextRepository,
+        sample_verified_profile: BaseProfile,
+    ):
+        """Context with a linked expired document returns verification_status='expired'."""
+        yesterday = date.today() - timedelta(days=1)
+        doc = self._make_verified_document(
+            db_session, sample_verified_profile.user_id, yesterday
+        )
+
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Hospital",
+        )
+        # Simulate admin approval: set context to verified + active with linked doc
+        context.verification_status = VerificationStatus.verified
+        context.is_active = True
+        context.document_id = doc.id
+        db_session.commit()
+
+        result = context_service.get_context_profile(context.id)
+
+        assert result.verification_status == VerificationStatus.expired
+        assert result.is_active is False
+
+    def test_get_context_returns_verified_when_document_not_expired(
+        self,
+        db_session,
+        context_service: ContextService,
+        context_repository: ContextRepository,
+        sample_verified_profile: BaseProfile,
+    ):
+        """Context with a non-expired document retains verification_status='verified'."""
+        future = date.today() + timedelta(days=365)
+        doc = self._make_verified_document(
+            db_session, sample_verified_profile.user_id, future
+        )
+
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Hospital",
+        )
+        context.verification_status = VerificationStatus.verified
+        context.is_active = True
+        context.document_id = doc.id
+        db_session.commit()
+
+        result = context_service.get_context_profile(context.id)
+
+        assert result.verification_status == VerificationStatus.verified
+        assert result.is_active is True
+
+    def test_get_context_unchanged_when_no_linked_document(
+        self,
+        db_session,
+        context_service: ContextService,
+        sample_verified_profile: BaseProfile,
+    ):
+        """Context with verification_status='verified' and no document stays verified."""
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work",
+        )
+        # Manually set verified without a linked document (edge case)
+        context.verification_status = VerificationStatus.verified
+        context.is_active = True
+        db_session.commit()
+
+        result = context_service.get_context_profile(context.id)
+
+        assert result.verification_status == VerificationStatus.verified
+        assert result.is_active is True
+
+    def test_get_user_contexts_enriches_expired_documents(
+        self,
+        db_session,
+        context_service: ContextService,
+        context_repository: ContextRepository,
+        sample_verified_profile: BaseProfile,
+    ):
+        """get_user_contexts enriches only the context with an expired document."""
+        yesterday = date.today() - timedelta(days=1)
+        future = date.today() + timedelta(days=365)
+        expired_doc = self._make_verified_document(
+            db_session, sample_verified_profile.user_id, yesterday
+        )
+        valid_doc = self._make_verified_document(
+            db_session, sample_verified_profile.user_id, future
+        )
+
+        ctx_expired = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Expired Hospital",
+        )
+        ctx_expired.verification_status = VerificationStatus.verified
+        ctx_expired.is_active = True
+        ctx_expired.document_id = expired_doc.id
+
+        ctx_valid = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.legal,
+            context_name="Valid Legal",
+        )
+        ctx_valid.verification_status = VerificationStatus.verified
+        ctx_valid.is_active = True
+        ctx_valid.document_id = valid_doc.id
+
+        db_session.commit()
+
+        results = context_service.get_user_contexts(
+            sample_verified_profile.user_id, include_inactive=True
+        )
+        by_name = {c.context_name: c for c in results}
+
+        assert by_name["Expired Hospital"].verification_status == VerificationStatus.expired
+        assert by_name["Expired Hospital"].is_active is False
+        assert by_name["Valid Legal"].verification_status == VerificationStatus.verified
+        assert by_name["Valid Legal"].is_active is True
+
+    def test_enrichment_does_not_modify_database(
+        self,
+        db_session,
+        context_service: ContextService,
+        context_repository: ContextRepository,
+        sample_verified_profile: BaseProfile,
+    ):
+        """The read-time enrichment must not persist changes to the database."""
+        yesterday = date.today() - timedelta(days=1)
+        doc = self._make_verified_document(
+            db_session, sample_verified_profile.user_id, yesterday
+        )
+
+        context = context_service.create_context_profile(
+            user_id=sample_verified_profile.user_id,
+            context_type=ContextType.healthcare,
+            context_name="Hospital",
+        )
+        context.verification_status = VerificationStatus.verified
+        context.is_active = True
+        context.document_id = doc.id
+        db_session.commit()
+        context_id = context.id
+
+        # Trigger enrichment
+        enriched = context_service.get_context_profile(context_id)
+        assert enriched.verification_status == VerificationStatus.expired
+
+        # Re-query directly from the repository (bypasses enrichment)
+        db_row = context_repository.get_context_profile_by_id(context_id)
+        assert db_row.verification_status == VerificationStatus.verified
+        assert db_row.is_active is True
 
 
 
