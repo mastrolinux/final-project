@@ -1,15 +1,5 @@
 """
-Celery Application Configuration
-
-Configures Celery for async task processing (email sending, periodic
-maintenance tasks). Uses Redis as message broker and result backend.
-
-Queues:
-    emails - outbound email delivery (verification, reset, etc.)
-    maintenance - periodic background jobs (document expiry checks)
-
-Beat schedule:
-    check_expired_documents - runs every 8 hours
+Celery configuration for async email delivery and periodic maintenance tasks.
 """
 
 from celery import Celery
@@ -18,14 +8,12 @@ from celery.schedules import crontab
 from src.core.config import settings
 
 
-# Initialize Celery app
 celery_app = Celery(
     "thesis_auth",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL
 )
 
-# Configure Celery
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],

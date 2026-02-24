@@ -16,12 +16,7 @@ from src.models.verification import DocumentType, VerificationStatus
 
 
 class VerificationDocumentResponse(BaseModel):
-    """
-    Public representation of a verification document.
-
-    Deliberately omits ``storage_path`` to prevent leaking
-    internal storage details in API responses.
-    """
+    """Public representation of a verification document (omits storage_path)."""
 
     id: UUID
     user_id: UUID
@@ -62,13 +57,7 @@ class VerificationDocumentResponse(BaseModel):
 
 
 class VerificationStatusResponse(BaseModel):
-    """
-    Summary of a user's verification state.
-
-    Combines the account type with the latest document status
-    and a derived boolean indicating whether the user can create
-    legal or healthcare context profiles.
-    """
+    """Summary of a user's verification state."""
 
     user_id: UUID
     account_type: AccountType
@@ -79,13 +68,7 @@ class VerificationStatusResponse(BaseModel):
 
 
 class AdminVerificationReview(BaseModel):
-    """
-    Admin request body for approving or rejecting a verification document.
-
-    When ``verification_status`` is ``rejected``, the ``rejection_reason``
-    field is required. When ``verified``, ``document_expiry_date`` is
-    optional (None means the document does not expire).
-    """
+    """Admin request body for approving or rejecting a verification document."""
 
     verification_status: VerificationStatus = Field(
         ...,
@@ -146,13 +129,7 @@ class AdminVerificationReview(BaseModel):
 
 
 class AdminContextVerificationItem(BaseModel):
-    """
-    Context entry for the admin pending-verification list.
-
-    The admin review unit is now the context profile, not the document.
-    Each item represents a legal/healthcare context awaiting verification,
-    enriched with the user's display name and linked document count.
-    """
+    """Context entry for the admin pending-verification list."""
 
     context_id: UUID
     context_type: str
@@ -169,12 +146,7 @@ class AdminContextVerificationItem(BaseModel):
 
 
 class AdminContextVerificationDetail(BaseModel):
-    """
-    Full context details with linked documents for the admin review page.
-
-    Shows the context's identity claims alongside all linked documents,
-    enabling the admin to compare document content against claimed fields.
-    """
+    """Full context details with linked documents for admin review."""
 
     context_id: UUID
     context_type: str

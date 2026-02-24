@@ -21,12 +21,7 @@ from src.core.database import Base
 
 
 class UUID(TypeDecorator):
-    """
-    Platform-independent UUID type.
-    
-    Uses PostgreSQL's UUID type when available, otherwise uses CHAR(36) for SQLite.
-    This allows tests to run with SQLite while production uses PostgreSQL.
-    """
+    """Platform-independent UUID type (PostgreSQL UUID or SQLite CHAR(36))."""
     impl = CHAR
     cache_ok = True
 
@@ -55,12 +50,7 @@ class UUID(TypeDecorator):
 
 
 class JSONBType(TypeDecorator):
-    """
-    Platform-independent JSONB type.
-    
-    Uses PostgreSQL's JSONB type when available, otherwise uses JSON for SQLite.
-    This allows tests to run with SQLite while production uses PostgreSQL.
-    """
+    """Platform-independent JSONB type (PostgreSQL JSONB or SQLite JSON)."""
     impl = JSON
     cache_ok = True
 
@@ -132,16 +122,7 @@ class TemporalMixin:
 
 
 class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
-    """
-    Base Profile Model
-    
-    Core user profile information. Supports three account types:
-    - verified: Full access, legal name required
-    - unverified: Limited access, legal name optional
-    - pseudonymous: Minimal access, no legal name required
-    
-    Follows privacy-by-design principles with optional legal_name field.
-    """
+    """Core user profile with three account types (verified, unverified, pseudonymous)."""
     __tablename__ = "base_profiles"
 
     user_id = Column[Any](
@@ -156,19 +137,16 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
         default=AccountType.unverified
     )
     
-    # Optional - only required for verified accounts accessing legal/healthcare contexts
     legal_name = Column[str](Text, nullable=True)
     
     primary_email = Column[str](String(255), nullable=False, unique=True)
     primary_phone = Column[str](String(50), nullable=True)
     preferred_language = Column[str](String(10), nullable=False, default="en")
 
-    # Avatar fields (managed by avatar service, not directly editable)
     avatar_url = Column[str](Text, nullable=True)
     avatar_thumbnail_url = Column[str](Text, nullable=True)
     avatar_storage_path = Column[str](Text, nullable=True)
 
-    # Relationships
     identity_names = relationship(
         "IdentityName",
         back_populates="profile",
@@ -181,20 +159,7 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
 
 
 class IdentityName(Base, TimestampMixin, TemporalMixin):
-    """
-    Identity Name Model
-    
-    Multilingual name storage supporting diverse cultural naming conventions.
-    Uses JSONB for flexible name representation across languages and scripts.
-    
-    Example name_value JSONB:
-    - Mononym: {"en": "Sukarno"}
-    - Western: {"en": "John Smith"}
-    - Chinese: {"zh": "李明", "zh-Latn": "Li Ming", "en": "Li Ming"}
-    - Arabic: {"ar": "محمد", "ar-Latn": "Muhammad", "en": "Muhammad"}
-    
-    Supports deprecated names (deadnames) with visibility controls.
-    """
+    """Multilingual name storage using JSONB with deprecation and visibility controls."""
     __tablename__ = "identity_names"
 
     id = Column(
@@ -214,13 +179,10 @@ class IdentityName(Base, TimestampMixin, TemporalMixin):
         nullable=False
     )
     
-    # JSONB field for multilingual name storage
-    # Example: {"en": "John", "es": "Juan", "zh": "约翰"}
     name_value = Column(JSONBType, nullable=False)
     
     is_primary = Column(Boolean, nullable=False, default=False)
     
-    # For deadnames and historical names that should not be displayed
     is_deprecated = Column(Boolean, nullable=False, default=False)
     
     visibility_level = Column(
@@ -229,38 +191,24 @@ class IdentityName(Base, TimestampMixin, TemporalMixin):
         default=VisibilityLevel.public
     )
     
-    # Future: Link to context profiles
     context_id = Column(UUID(), nullable=True)
-    
-    # Relationships
+
     profile = relationship("BaseProfile", back_populates="identity_names")
 
     def __repr__(self) -> str:
         return f"<IdentityName(id={self.id}, type={self.name_type}, primary={self.is_primary})>"
     
     def get_name_for_language(self, lang: str, fallback: str = "en") -> Optional[str]:
-        """
-        Get name value for a specific language with fallback.
-        
-        Args:
-            lang: Language code (e.g., 'en', 'zh', 'es')
-            fallback: Fallback language if requested language not found
-            
-        Returns:
-            Name string in requested language, fallback language, or None
-        """
+        """Get name value for a language with fallback chain: lang -> fallback -> first available."""
         if not isinstance(self.name_value, dict):
             return None
-        
-        # Try requested language
+
         if lang in self.name_value:
             return self.name_value[lang]
-        
-        # Try fallback
+
         if fallback in self.name_value:
             return self.name_value[fallback]
-        
-        # Return first available value
+
         if self.name_value:
             return next(iter(self.name_value.values()))
         

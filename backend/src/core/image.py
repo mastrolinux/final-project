@@ -1,19 +1,5 @@
 """
-Image Processing Module
-
-Validates, resizes, and normalizes uploaded images for avatar storage.
-All output is converted to WebP format for consistent compression and quality.
-
-Validation uses Pillow's image parser (magic bytes) rather than file extensions,
-preventing MIME spoofing attacks where a malicious file is renamed to .jpg.
-
-Processing pipeline:
-    1. Validate file size (max 5 MB)
-    2. Parse image with Pillow (validates magic bytes)
-    3. Reject disallowed formats (only JPEG, PNG, WebP accepted)
-    4. Center-crop to square aspect ratio
-    5. Resize to target dimensions (400x400 avatar, 80x80 thumbnail)
-    6. Encode as WebP (quality 85)
+Image validation and processing for avatar uploads (magic-byte detection, WebP output).
 """
 
 import io
@@ -25,7 +11,6 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-# Constraints
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 AVATAR_SIZE = (400, 400)
 THUMBNAIL_SIZE = (80, 80)
@@ -47,22 +32,7 @@ class ProcessedImage:
 
 
 def validate_image_bytes(data: bytes) -> Image.Image:
-    """
-    Validate raw bytes as a supported image format using Pillow's parser.
-
-    Pillow reads the file header (magic bytes) to determine the actual format,
-    independent of any file extension the client may have provided.
-
-    Args:
-        data: Raw file bytes
-
-    Returns:
-        Opened PIL Image
-
-    Raises:
-        ImageProcessingError: If the file exceeds the size limit, is not a
-            valid image, or uses a disallowed format.
-    """
+    """Validate raw bytes as a supported image format using Pillow's magic-byte parser."""
     if len(data) > MAX_FILE_SIZE_BYTES:
         raise ImageProcessingError(
             f"File size {len(data)} bytes exceeds maximum of {MAX_FILE_SIZE_BYTES} bytes (5 MB)"
@@ -70,8 +40,7 @@ def validate_image_bytes(data: bytes) -> Image.Image:
 
     try:
         img = Image.open(io.BytesIO(data))
-        img.verify()  # verify integrity without fully decoding
-        # Re-open because verify() can leave the image in an unusable state
+        img.verify()
         img = Image.open(io.BytesIO(data))
     except Exception as exc:
         raise ImageProcessingError(
@@ -89,11 +58,7 @@ def validate_image_bytes(data: bytes) -> Image.Image:
 
 
 def _center_crop_square(img: Image.Image) -> Image.Image:
-    """
-    Crop the image to a centered square using the shorter dimension.
-
-    For a 1200x800 image, this produces an 800x800 crop centered horizontally.
-    """
+    """Crop to a centered square using the shorter dimension."""
     width, height = img.size
     if width == height:
         return img
@@ -109,13 +74,7 @@ def _resize_and_encode_webp(
     size: Tuple[int, int],
     quality: int = WEBP_QUALITY,
 ) -> bytes:
-    """
-    Resize an image to the given dimensions and encode as WebP.
-
-    Uses LANCZOS resampling for high-quality downscaling.
-    Converts RGBA images to RGB (WebP lossy does not support alpha at quality < 100
-    in all decoders, and avatars do not require transparency).
-    """
+    """Resize to given dimensions and encode as WebP (LANCZOS resampling)."""
     resized = img.resize(size, Image.LANCZOS)  # type: ignore[attr-defined]
     if resized.mode in ("RGBA", "LA", "P"):
         resized = resized.convert("RGB")
@@ -126,22 +85,9 @@ def _resize_and_encode_webp(
 
 
 def process_avatar_image(data: bytes) -> ProcessedImage:
-    """
-    Full processing pipeline: validate, crop, resize, and encode.
-
-    Args:
-        data: Raw uploaded file bytes
-
-    Returns:
-        ProcessedImage containing avatar (400x400) and thumbnail (80x80)
-            both encoded as WebP.
-
-    Raises:
-        ImageProcessingError: On any validation or processing failure.
-    """
+    """Validate, crop, resize, and encode to WebP (400x400 avatar, 80x80 thumbnail)."""
     img = validate_image_bytes(data)
 
-    # Convert palette and grayscale modes to RGB before processing
     if img.mode not in ("RGB", "RGBA"):
         img = img.convert("RGB")
 

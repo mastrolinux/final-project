@@ -1,13 +1,7 @@
-"""
-Document Expiry Tasks
+"""Celery periodic task that checks for expired verification documents.
 
-Celery periodic task that checks for expired verification documents
-and deactivates their linked context profiles. Runs daily via Celery
-Beat at 02:00 UTC.
-
-The business logic lives in VerificationService.process_expired_documents().
-This module provides only the Celery task wrapper that manages the
-database session lifecycle and retry semantics.
+Runs daily at 02:00 UTC via Celery Beat. Business logic is in
+VerificationService.process_expired_documents().
 """
 
 import logging
@@ -19,15 +13,9 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task(name="check_expired_documents", bind=True, max_retries=3)
 def check_expired_documents(self):
-    """
-    Daily periodic task: find verified documents past their expiry
-    date, deactivate linked contexts, and send notifications.
+    """Find expired documents, deactivate linked contexts, and send notifications.
 
-    Creates its own database session because Celery workers run
-    outside the FastAPI request lifecycle.
-
-    Returns:
-        Dict with expired_documents and deactivated_contexts counts.
+    Creates its own DB session (Celery workers run outside FastAPI lifecycle).
     """
     from src.core.database import SessionLocal
     from src.repositories.context_repository import ContextRepository

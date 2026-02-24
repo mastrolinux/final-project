@@ -1,14 +1,5 @@
 """
-Encryption Module
-
-Provides symmetric encryption for sensitive documents stored at rest.
-Uses Fernet (AES-128-CBC with HMAC-SHA256) from the ``cryptography`` library,
-which is already present as a transitive dependency of ``python-jose[cryptography]``.
-
-The encryption key is read from the DOCUMENT_ENCRYPTION_KEY environment variable.
-Generate a key for local development with::
-
-    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+Fernet symmetric encryption (AES-128-CBC + HMAC-SHA256) for documents at rest.
 """
 
 import logging
@@ -26,12 +17,7 @@ class EncryptionError(Exception):
 
 
 class EncryptionService:
-    """
-    Thin wrapper around Fernet symmetric encryption.
-
-    Each instance is bound to a single key, which must be a URL-safe
-    base64-encoded 32-byte value (as produced by ``Fernet.generate_key()``).
-    """
+    """Thin wrapper around Fernet symmetric encryption bound to a single key."""
 
     def __init__(self, key: str) -> None:
         if not key:
@@ -67,20 +53,11 @@ class EncryptionService:
             raise EncryptionError(f"Decryption failed: {exc}") from exc
 
 
-# ---------------------------------------------------------------------------
-# Module-level singleton (configured at application startup)
-# ---------------------------------------------------------------------------
-
 _encryption_service: Optional[EncryptionService] = None
 
 
 def get_encryption_service() -> EncryptionService:
-    """
-    FastAPI dependency returning the configured EncryptionService singleton.
-
-    Call ``configure_encryption_service`` at application startup.
-    In tests, override this dependency directly.
-    """
+    """FastAPI dependency returning the configured EncryptionService singleton."""
     if _encryption_service is None:
         raise RuntimeError(
             "Encryption service not configured. "

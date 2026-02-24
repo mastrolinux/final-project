@@ -1,8 +1,4 @@
-"""
-Unit Tests for OAuth 2.1 Service
-
-Tests PKCE validation, scope filtering, token issuance, and consent management.
-"""
+"""Tests for PKCE validation, scope filtering, token issuance, and consent management."""
 
 import pytest
 from datetime import datetime, timezone, timedelta
@@ -216,7 +212,6 @@ class TestScopeValidation:
     def mock_oauth_repo(self):
         """Create mock OAuth repository."""
         repo = Mock()
-        # Setup scope returns
         basic_scope = Mock(spec=OAuthScope)
         basic_scope.scope_name = "profile:read:basic"
         basic_scope.required_context_type = None
@@ -577,7 +572,6 @@ class TestTokenExchange:
         mock_oauth_repo.get_active_client.return_value = sample_client
         mock_oauth_repo.get_valid_authorization_code.return_value = sample_auth_code
 
-        # Mock token creation
         access_token_model = Mock(spec=OAuthAccessToken)
         access_token_model.id = uuid4()
         mock_oauth_repo.create_access_token.return_value = (access_token_model, "access-token-value")
@@ -712,7 +706,6 @@ class TestRefreshTokenRotation:
         mock_oauth_repo.get_active_client.return_value = sample_client
         mock_oauth_repo.get_active_refresh_token.return_value = sample_refresh_token
 
-        # Mock new token creation
         new_access_token = Mock(spec=OAuthAccessToken)
         new_access_token.id = uuid4()
         mock_oauth_repo.create_access_token.return_value = (new_access_token, "new-access-token")
@@ -729,7 +722,6 @@ class TestRefreshTokenRotation:
         assert result.access_token == "new-access-token"
         assert result.refresh_token == "new-refresh-token"
 
-        # Verify rotation was called
         mock_oauth_repo.rotate_refresh_token.assert_called_once()
 
     def test_refresh_access_token_invalid_token(
@@ -951,7 +943,6 @@ class TestConsentManagement:
         user_id = uuid4()
         mock_oauth_repo.get_active_client.return_value = sample_client
 
-        # Mock scope validation
         basic_scope = Mock(spec=OAuthScope)
         basic_scope.required_context_type = None
         basic_scope.is_sensitive = False

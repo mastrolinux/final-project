@@ -1,10 +1,4 @@
-"""
-Integration Tests for Audit Logging across Services
-
-Verifies that audit log entries are created when performing operations
-through the API: registration, login, profile updates, context creation,
-and consent management.
-"""
+"""Integration tests for audit log creation across API operations."""
 
 import pytest
 from unittest.mock import patch
@@ -53,7 +47,6 @@ class TestAuthAuditIntegration:
         assert log.resource_type == "auth_user"
         assert log.operation.value == "register"
         assert log.legal_basis == "contract"
-        # Hash chain fields populated
         assert log.entry_hash is not None
         assert log.previous_hash is not None
         assert len(log.entry_hash) == 64
@@ -63,14 +56,12 @@ class TestAuthAuditIntegration:
         self, mock_email, client, db_session
     ):
         """Successful login produces an audit entry with event_type 'auth.login.success'."""
-        # Register user first
         client.post("/api/v1/auth/register", json={
             "email": "audit.login@example.com",
             "password": "SecurePass123!",
             "preferred_name": "Login User"
         })
 
-        # Login
         response = client.post("/api/v1/auth/login", json={
             "email": "audit.login@example.com",
             "password": "SecurePass123!"
@@ -88,14 +79,12 @@ class TestAuthAuditIntegration:
         self, mock_email, client, db_session
     ):
         """Failed login produces an audit entry with event_type 'auth.login.failure'."""
-        # Register user first
         client.post("/api/v1/auth/register", json={
             "email": "audit.fail@example.com",
             "password": "SecurePass123!",
             "preferred_name": "Fail User"
         })
 
-        # Attempt login with wrong password
         response = client.post("/api/v1/auth/login", json={
             "email": "audit.fail@example.com",
             "password": "WrongPassword123!"
@@ -142,7 +131,6 @@ class TestProfileAuditIntegration:
 
     def test_update_profile_creates_audit_log(self, client, db_session):
         """Profile update produces an audit entry with event_type 'profile.update'."""
-        # Create profile first
         create_resp = client.post("/api/v1/profiles", json={
             "account_type": "verified",
             "legal_name": "Update Test",
@@ -150,7 +138,6 @@ class TestProfileAuditIntegration:
         })
         user_id = create_resp.json()["user_id"]
 
-        # Create auth user for JWT authentication
         auth_user = AuthUser(
             user_id=user_id,
             email="audit.update@example.com",
@@ -164,7 +151,6 @@ class TestProfileAuditIntegration:
             user_id=user_id, email=auth_user.email, account_type="verified"
         )
 
-        # Update profile
         response = client.patch(
             f"/api/v1/profiles/{user_id}",
             json={"preferred_language": "fr"},
@@ -180,14 +166,12 @@ class TestProfileAuditIntegration:
 
     def test_delete_profile_creates_audit_log(self, client, db_session):
         """Profile deletion produces an audit entry with event_type 'profile.delete'."""
-        # Create profile first
         create_resp = client.post("/api/v1/profiles", json={
             "account_type": "unverified",
             "primary_email": "audit.delete@example.com"
         })
         user_id = create_resp.json()["user_id"]
 
-        # Create auth user for JWT authentication
         auth_user = AuthUser(
             user_id=user_id,
             email="audit.delete@example.com",
@@ -201,7 +185,6 @@ class TestProfileAuditIntegration:
             user_id=user_id, email=auth_user.email, account_type="unverified"
         )
 
-        # Delete profile
         response = client.delete(
             f"/api/v1/profiles/{user_id}",
             headers={"Authorization": f"Bearer {token}"},
@@ -238,7 +221,6 @@ class TestAuditHashChainIntegrity:
         from src.models.audit import GENESIS_HASH
         from src.repositories.audit_repository import AuditRepository
 
-        # Create a series of auditable operations
         client.post("/api/v1/profiles", json={
             "account_type": "verified",
             "legal_name": "Chain Test User",
@@ -251,7 +233,6 @@ class TestAuditHashChainIntegrity:
             "preferred_name": "Chain Auth"
         })
 
-        # Verify chain integrity
         audit_repo = AuditRepository(db_session)
         is_valid, count, error = audit_repo.verify_chain(limit=100)
 
@@ -259,7 +240,6 @@ class TestAuditHashChainIntegrity:
         assert count >= 2
         assert error is None
 
-        # Verify first entry links to GENESIS_HASH
         first_entry = db_session.query(AuditLog).order_by(
             AuditLog.created_at.asc()
         ).first()

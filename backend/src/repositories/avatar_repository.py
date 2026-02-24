@@ -2,8 +2,6 @@
 Avatar Repository
 
 Data access layer for avatar-related columns on BaseProfile and ContextProfile.
-Follows the existing repository pattern: thin wrappers around SQLAlchemy operations
-with explicit commit and refresh semantics.
 """
 
 from datetime import datetime, timezone
@@ -22,9 +20,9 @@ class AvatarRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    # ------------------------------------------------------------------
+    #
     # Base profile avatar operations
-    # ------------------------------------------------------------------
+    #
 
     def get_base_profile(self, user_id: UUID) -> Optional[BaseProfile]:
         """Retrieve a base profile by user_id, ignoring soft-deleted records."""
@@ -62,9 +60,9 @@ class AvatarRepository:
         self.db.refresh(profile)
         return profile
 
-    # ------------------------------------------------------------------
+    #
     # Context profile avatar operations
-    # ------------------------------------------------------------------
+    #
 
     def get_context_profile(self, context_id: UUID) -> Optional[ContextProfile]:
         """Retrieve a context profile by id, ignoring soft-deleted records."""

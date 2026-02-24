@@ -1,8 +1,5 @@
 """
-Database Module
-
-Manages database connections and sessions using SQLAlchemy and Supabase client.
-Provides database session dependencies and health check functions for FastAPI endpoints.
+Database connection management, session dependencies, and health checks.
 """
 
 from typing import Generator, Dict, Any
@@ -14,7 +11,6 @@ import logging
 try:
     from supabase import create_client, Client
 except ImportError:
-    # Supabase client not installed - will be handled gracefully
     create_client = None
     Client = None
 
@@ -22,7 +18,6 @@ from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Create SQLAlchemy engine
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
@@ -31,30 +26,19 @@ engine = create_engine(
     echo=settings.DEBUG,
 )
 
-# Create SessionLocal class
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
 )
 
-# Base class for all SQLAlchemy models
 Base = declarative_base()
 
-# Global Supabase client instance
 _supabase_client: Client = None
 
 
 def get_supabase_client() -> Client:
-    """
-    Get or create Supabase client instance.
-    
-    Returns:
-        Client: Supabase client instance
-        
-    Raises:
-        RuntimeError: If Supabase client cannot be initialized
-    """
+    """Get or create Supabase client singleton."""
     global _supabase_client
     
     if _supabase_client is not None:
@@ -85,15 +69,7 @@ def get_supabase_client() -> Client:
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Database session dependency
-    
-    Yields a database session for use in FastAPI endpoints.
-    Ensures proper session cleanup after request completion.
-    
-    Yields:
-        Session: SQLAlchemy database session
-    """
+    """FastAPI dependency that yields a database session."""
     db = SessionLocal()
     try:
         yield db
@@ -102,18 +78,10 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def check_db_connection() -> Dict[str, Any]:
-    """
-    Check PostgreSQL database connection health.
-    
-    Performs a simple query to verify database connectivity.
-    
-    Returns:
-        Dict with status, message, and optional error details
-    """
+    """Check PostgreSQL database connection health."""
     try:
         db = SessionLocal()
         try:
-            # Execute simple query
             result = db.execute(text("SELECT 1 as health_check"))
             row = result.fetchone()
             
@@ -162,16 +130,8 @@ def check_db_connection() -> Dict[str, Any]:
 
 
 def check_supabase_connection() -> Dict[str, Any]:
-    """
-    Check Supabase API connection health.
-    
-    Attempts to initialize and ping Supabase service.
-    
-    Returns:
-        Dict with status, message, and optional error details
-    """
+    """Check Supabase API connection health."""
     try:
-        # Check if Supabase library is available
         if create_client is None:
             return {
                 "status": "unavailable",
@@ -182,7 +142,6 @@ def check_supabase_connection() -> Dict[str, Any]:
                 }
             }
         
-        # Check if configured
         if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_KEY:
             return {
                 "status": "unconfigured",
@@ -193,11 +152,7 @@ def check_supabase_connection() -> Dict[str, Any]:
                 }
             }
         
-        # Try to get/create client
         client = get_supabase_client()
-        
-        # Simple health check: try to query a table (will fail gracefully if tables don't exist)
-        # For now, just verify client was created
         return {
             "status": "healthy",
             "message": "Supabase client initialized successfully",
@@ -228,18 +183,10 @@ def check_supabase_connection() -> Dict[str, Any]:
 
 
 def check_database_tables() -> Dict[str, Any]:
-    """
-    Check if required database tables exist.
-    
-    Verifies that core tables from migrations are present.
-    
-    Returns:
-        Dict with status and list of existing tables
-    """
+    """Check if required database tables exist."""
     try:
         db = SessionLocal()
         try:
-            # Query for core tables
             query = text("""
                 SELECT table_name 
                 FROM information_schema.tables 

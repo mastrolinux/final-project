@@ -1,9 +1,4 @@
-"""
-Unit Tests for Social Authentication Service
-
-Tests the business logic for OAuth 2.0 social login functionality.
-Uses mocked repositories to isolate service layer logic.
-"""
+"""Tests for OAuth 2.0 social login business logic."""
 
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
@@ -31,16 +26,14 @@ class TestPKCEGeneration:
 
         code_verifier, code_challenge = service.generate_pkce_pair()
 
-        # Verify code_verifier is generated (43-128 chars for URL-safe base64)
         assert len(code_verifier) >= 43
         assert len(code_verifier) <= 128
         assert all(c.isalnum() or c in '-_' for c in code_verifier)
 
-        # Verify code_challenge is generated (SHA-256 hash, base64 encoded)
-        assert len(code_challenge) == 43  # SHA-256 -> 32 bytes -> 43 chars base64
+        # SHA-256 -> 32 bytes -> 43 chars base64url
+        assert len(code_challenge) == 43
         assert all(c.isalnum() or c in '-_' for c in code_challenge)
 
-        # Verify they are different
         assert code_verifier != code_challenge
 
     def test_pkce_pair_uniqueness(self):
@@ -68,7 +61,6 @@ class TestAuthorizationURLGeneration:
 
         auth_url, state, code_verifier = service.generate_authorization_url("google")
 
-        # Verify authorization URL contains required parameters
         assert "https://accounts.google.com/o/oauth2/v2/auth" in auth_url
         assert "client_id=test-client-id" in auth_url
         assert "redirect_uri=" in auth_url
@@ -77,10 +69,7 @@ class TestAuthorizationURLGeneration:
         assert "scope=openid+email+profile" in auth_url or "scope=openid%20email%20profile" in auth_url
         assert "state=" in auth_url
 
-        # Verify state is generated
         assert len(state) >= 32
-
-        # Verify code_verifier is generated
         assert len(code_verifier) >= 43
 
     @patch('src.services.social_auth_service.settings')
@@ -136,7 +125,6 @@ class TestTokenExchange:
         mock_settings.GOOGLE_CLIENT_SECRET = "test-client-secret"
         mock_settings.GOOGLE_REDIRECT_URI = "http://localhost:8000/callback"
 
-        # Mock OAuth client
         mock_client = Mock()
         mock_client.fetch_token.return_value = {
             "access_token": "mock-access-token",
@@ -184,7 +172,6 @@ class TestTokenExchange:
         mock_settings.GOOGLE_CLIENT_SECRET = "test-client-secret"
         mock_settings.GOOGLE_REDIRECT_URI = "http://localhost:8000/callback"
 
-        # Mock OAuth client to raise exception
         mock_client = Mock()
         mock_client.fetch_token.side_effect = Exception("Network error")
         mock_oauth_client_class.return_value = mock_client
@@ -213,13 +200,11 @@ class TestIDTokenVerification:
         """Test successful ID token verification."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
 
-        # Mock JWKS fetch
         mock_jwks_response = Mock()
         mock_jwks_response.json.return_value = {"keys": []}
         mock_jwks_response.raise_for_status = Mock()
         mock_httpx_get.return_value = mock_jwks_response
 
-        # Mock JWT decode
         mock_jwt_decode.return_value = {
             "sub": "google-user-123",
             "email": "user@gmail.com",
@@ -242,7 +227,6 @@ class TestIDTokenVerification:
         """Test error when required claims missing."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
 
-        # Mock JWKS fetch
         mock_jwks_response = Mock()
         mock_jwks_response.json.return_value = {"keys": []}
         mock_jwks_response.raise_for_status = Mock()
@@ -270,14 +254,10 @@ class TestAuthenticateOrCreateUser:
         from uuid import uuid4, UUID
         from src.models.profile import BaseProfile
 
-        # Mock repositories
         mock_auth_repo = Mock()
         mock_profile_repo = Mock()
-
-        # Generate valid UUID
         user_uuid = str(uuid4())
 
-        # Existing OAuth user
         existing_user = AuthUser(
             id=str(uuid4()),
             user_id=user_uuid,
@@ -293,7 +273,6 @@ class TestAuthenticateOrCreateUser:
         mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
         mock_auth_repo.update_last_login = Mock()
 
-        # Mock profile for account_type
         mock_profile = Mock(spec=BaseProfile)
         mock_profile.account_type = AccountType.verified
         mock_profile_repo.get_profile_by_id = Mock(return_value=mock_profile)
@@ -326,11 +305,9 @@ class TestAuthenticateOrCreateUser:
         """Test account linking error when email exists."""
         from uuid import uuid4
 
-        # Mock repositories
         mock_auth_repo = Mock()
         mock_profile_repo = Mock()
 
-        # No OAuth user, but email exists
         mock_auth_repo.get_by_provider = Mock(return_value=None)
         mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
 
@@ -362,16 +339,13 @@ class TestAuthenticateOrCreateUser:
         from uuid import uuid4
         from src.models.profile import BaseProfile
 
-        # Mock repositories
         mock_auth_repo = Mock()
         mock_profile_repo = Mock()
 
-        # No existing user
         mock_auth_repo.get_by_provider = Mock(return_value=None)
         mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
         mock_auth_repo.get_by_email = Mock(return_value=None)
 
-        # Mock profile creation
         mock_profile = Mock(spec=BaseProfile)
         mock_profile.user_id = uuid4()
         mock_profile_repo.create_profile = Mock(return_value=mock_profile)
@@ -401,11 +375,9 @@ class TestAuthenticateOrCreateUser:
         assert ret_provider == "google"
         assert has_custom_password is False
 
-        # Verify profile and auth user created
         mock_profile_repo.create_profile.assert_called_once()
         mock_auth_repo.create_user.assert_called_once()
 
-        # Verify OAuth fields passed to create_user
         call_args = mock_auth_repo.create_user.call_args
         assert call_args.kwargs["provider"] == "google"
         assert call_args.kwargs["provider_id"] == "google-new"

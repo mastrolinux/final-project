@@ -1,10 +1,4 @@
-"""
-Document Validation Tests
-
-Validates format detection, size limits, and rejection of unsupported
-file formats for identity document uploads. Image fixtures are
-generated programmatically with Pillow to ensure structural validity.
-"""
+"""Tests for document format detection, size limits, and format rejection."""
 
 import io
 
@@ -18,11 +12,6 @@ from src.core.document import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Helpers: generate valid image bytes for testing
-# ---------------------------------------------------------------------------
-
-
 def _make_image_bytes(fmt: str = "JPEG", size: tuple = (100, 100)) -> bytes:
     """Generate a structurally valid image of the given format."""
     img = Image.new("RGB", size, color="red")
@@ -30,10 +19,6 @@ def _make_image_bytes(fmt: str = "JPEG", size: tuple = (100, 100)) -> bytes:
     img.save(buf, format=fmt)
     return buf.getvalue()
 
-
-# ---------------------------------------------------------------------------
-# Valid document fixtures
-# ---------------------------------------------------------------------------
 
 PDF_HEADER = b"%PDF-1.4 fake pdf content"
 JPEG_BYTES = _make_image_bytes("JPEG")

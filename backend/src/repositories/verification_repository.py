@@ -29,9 +29,9 @@ class VerificationRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    # ------------------------------------------------------------------
+    #
     # Create
-    # ------------------------------------------------------------------
+    #
 
     def create_document(
         self,
@@ -59,9 +59,9 @@ class VerificationRepository:
         self.db.refresh(doc)
         return doc
 
-    # ------------------------------------------------------------------
+    #
     # Read
-    # ------------------------------------------------------------------
+    #
 
     def get_document_by_id(
         self, document_id: UUID
@@ -111,15 +111,7 @@ class VerificationRepository:
         )
 
     def get_expired_verified_documents(self) -> List[VerificationDocument]:
-        """
-        Return all non-deleted, verified documents whose physical expiry
-        date has passed.
-
-        Only returns documents that:
-        - Have ``verification_status = 'verified'``
-        - Have a non-null ``document_expiry_date``
-        - Have ``document_expiry_date < date.today()``
-        - Are not soft-deleted
+        """Return verified, non-deleted documents whose expiry date has passed.
 
         Used by the daily expiry task to find documents that need processing.
         """
@@ -141,12 +133,9 @@ class VerificationRepository:
     def mark_document_expired(
         self, document_id: UUID
     ) -> Optional[VerificationDocument]:
-        """
-        Transition a document to the ``expired`` status.
+        """Transition a document to ``expired`` status.
 
-        Called after the expiry task has deactivated all linked contexts.
-        Prevents re-processing on subsequent runs since the daily query
-        filters on ``verification_status = 'verified'``.
+        Prevents re-processing on subsequent expiry task runs.
         """
         doc = self.get_document_by_id(document_id)
         if doc is None:
@@ -193,9 +182,9 @@ class VerificationRepository:
         doc = self.get_document_by_id(ctx.document_id)
         return [doc] if doc else []
 
-    # ------------------------------------------------------------------
+    #
     # Context-document link (one document per context via FK)
-    # ------------------------------------------------------------------
+    #
 
     def link_document_to_context(
         self, context_id: UUID, document_id: UUID
@@ -237,9 +226,9 @@ class VerificationRepository:
         )
         return ctx is not None and str(ctx.document_id) == str(document_id)
 
-    # ------------------------------------------------------------------
+    #
     # Update
-    # ------------------------------------------------------------------
+    #
 
     def update_document_status(
         self,
@@ -272,9 +261,9 @@ class VerificationRepository:
         self.db.refresh(doc)
         return doc
 
-    # ------------------------------------------------------------------
+    #
     # Delete (soft)
-    # ------------------------------------------------------------------
+    #
 
     def soft_delete_document(self, document_id: UUID) -> bool:
         """Mark a document as deleted. Returns False if not found."""

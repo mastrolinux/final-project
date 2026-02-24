@@ -1,9 +1,4 @@
-"""
-Verification Service Unit Tests
-
-Tests business logic for document upload, status queries, and admin
-review using mocked repositories and in-memory storage/encryption.
-"""
+"""Tests for document upload, status queries, and admin review."""
 
 import uuid
 from datetime import date, datetime, timezone
@@ -27,9 +22,9 @@ from src.services.verification_service import (
 )
 
 
-# ---------------------------------------------------------------------------
+#
 # Fixtures
-# ---------------------------------------------------------------------------
+#
 
 
 @pytest.fixture
@@ -176,9 +171,9 @@ def _make_context(
 PDF_BYTES = b"%PDF-1.4 test content for upload validation"
 
 
-# ---------------------------------------------------------------------------
+#
 # Upload tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestUploadDocument:
@@ -333,9 +328,9 @@ class TestUploadDocument:
         assert audit_kwargs["changes"]["document_expiry_date"] == "2030-06-15"
 
 
-# ---------------------------------------------------------------------------
+#
 # Status query tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestGetVerificationStatus:
@@ -388,9 +383,9 @@ class TestGetVerificationStatus:
             service.get_verification_status(uuid.uuid4())
 
 
-# ---------------------------------------------------------------------------
+#
 # Admin review tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestReviewContext:
@@ -763,9 +758,9 @@ class TestReviewContext:
         )
 
 
-# ---------------------------------------------------------------------------
+#
 # Delete tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestDeleteDocument:
@@ -795,9 +790,9 @@ class TestDeleteDocument:
             service.delete_document(uuid.uuid4(), uuid.uuid4())
 
 
-# ---------------------------------------------------------------------------
+#
 # Context-bound upload tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestDocumentContextLinking:
@@ -1177,9 +1172,9 @@ class TestDocumentContextLinking:
         )
 
 
-# ---------------------------------------------------------------------------
+#
 # Download tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestDownloadDocument:
@@ -1245,9 +1240,9 @@ class TestDownloadDocument:
             service.download_document(uuid.uuid4(), uuid.uuid4())
 
 
-# ---------------------------------------------------------------------------
+#
 # Owner download tests
-# ---------------------------------------------------------------------------
+#
 
 
 class TestDownloadDocumentForOwner:

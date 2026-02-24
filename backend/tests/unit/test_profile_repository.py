@@ -1,9 +1,4 @@
-"""
-Unit Tests for ProfileRepository
-
-Tests data access layer methods for Profile and IdentityName entities.
-Following TDD approach - these tests will initially fail.
-"""
+"""Tests for Profile and IdentityName data access layer."""
 
 import pytest
 from datetime import datetime, timezone
@@ -106,12 +101,9 @@ class TestProfileRepositoryRead:
         """Test email lookup is case-sensitive"""
         repo = ProfileRepository(db_session)
         
-        # Email stored as lowercase
         profile = repo.get_profile_by_email(sample_verified_profile.primary_email.upper())
-        
-        # Should still find it if database handles case-insensitivity
-        # Or should not find it if case-sensitive
-        # This test documents the behavior
+
+        # Documents whether email lookup is case-sensitive or not
         assert profile is None or profile.user_id == sample_verified_profile.user_id
     
     def test_list_profiles_empty(self, db_session):
@@ -145,10 +137,8 @@ class TestProfileRepositoryRead:
         """Test that soft-deleted profiles are excluded from listing"""
         repo = ProfileRepository(db_session)
         
-        # Soft delete the profile
         repo.soft_delete_profile(sample_verified_profile.user_id)
-        
-        # Should not appear in list
+
         profiles = repo.list_profiles()
         assert len(profiles) == 0
 
@@ -168,7 +158,6 @@ class TestProfileRepositoryUpdate:
         
         assert updated_profile.primary_phone == "+1-555-9999"
         assert updated_profile.preferred_language == "es"
-        # Should preserve other fields
         assert updated_profile.primary_email == sample_verified_profile.primary_email
     
     def test_update_profile_updates_timestamp(self, db_session, sample_verified_profile):
@@ -215,7 +204,6 @@ class TestProfileRepositorySoftDelete:
         
         assert result is True
         
-        # Profile should still exist but marked deleted
         profile = db_session.query(BaseProfile).filter(
             BaseProfile.user_id == sample_verified_profile.user_id
         ).first()
@@ -291,7 +279,6 @@ class TestIdentityNameRepository:
         
         names = repo.get_identity_names(sample_verified_profile.user_id)
         
-        # Profile from fixture has no names by default
         assert names == []
     
     def test_get_identity_name_by_id(self, db_session, sample_identity_name):
@@ -324,7 +311,6 @@ class TestIdentityNameRepository:
         
         assert result is True
         
-        # Should no longer exist
         name = repo.get_identity_name_by_id(sample_identity_name.id)
         assert name is None
 

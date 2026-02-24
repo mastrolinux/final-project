@@ -25,12 +25,7 @@ from src.models.context import ContextType
 
 
 class TextArray(TypeDecorator):
-    """
-    Platform-independent TEXT[] type.
-    
-    Uses PostgreSQL's ARRAY(Text) when available, otherwise uses JSON for SQLite.
-    This allows tests to run with SQLite while production uses PostgreSQL.
-    """
+    """Platform-independent TEXT[] type (PostgreSQL ARRAY or SQLite JSON)."""
     impl = JSON
     cache_ok = True
 
@@ -44,31 +39,23 @@ class TextArray(TypeDecorator):
         if value is None:
             return value
         if dialect.name == 'postgresql':
-            # PostgreSQL expects a list directly for ARRAY type
             return value
         else:
-            # SQLite: store as JSON array
             return json.dumps(value) if isinstance(value, list) else value
 
     def process_result_value(self, value, dialect):
         if value is None:
             return value
         if dialect.name == 'postgresql':
-            # PostgreSQL returns list directly
             return value
         else:
-            # SQLite: parse JSON array
             if isinstance(value, str):
                 return json.loads(value)
             return value
 
 
 class InetType(TypeDecorator):
-    """
-    Platform-independent INET type.
-    
-    Uses PostgreSQL's INET type when available, otherwise uses String for SQLite.
-    """
+    """Platform-independent INET type (PostgreSQL INET or SQLite String)."""
     impl = String
     cache_ok = True
 
@@ -109,22 +96,12 @@ class ConsentMethod(str, enum.Enum):
 
 
 class OAuthScope(Base):
-    """
-    OAuth Scope Definition Model
-    
-    Defines available permission scopes for the OAuth server.
-    Each scope specifies:
-    - What profile fields can be accessed
-    - Required context type (if any)
-    - Access level (read/write/admin)
-    - Whether explicit consent display is required
-    """
+    """OAuth scope definition with field-level access control."""
     __tablename__ = "oauth_scopes"
 
     scope_name = Column(String(100), primary_key=True)
     description = Column(Text, nullable=False)
     
-    # Context restriction - NULL means scope works for any context
     required_context_type = Column(
         SQLEnum(ContextType, name="context_type"),
         nullable=True
@@ -136,10 +113,7 @@ class OAuthScope(Base):
         default=AccessLevel.read
     )
     
-    # Fields accessible with this scope (stored as TEXT[] in PostgreSQL)
     allowed_fields = Column(TextArray, nullable=True)
-    
-    # Sensitive scopes require explicit display in consent screen
     is_sensitive = Column(Boolean, nullable=False, default=False)
     
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
@@ -155,46 +129,26 @@ class OAuthScope(Base):
 
 
 class OAuthClient(Base, TimestampMixin, SoftDeleteMixin):
-    """
-    OAuth Client Registration Model
-    
-    Represents a registered third-party application that can request
-    authorization to access user profiles.
-    
-    Client Types (OAuth 2.1):
-    - Confidential: Has client_secret, server-side apps
-    - Public: No client_secret, mobile/SPA apps (PKCE-only)
-    
-    First-Party Clients:
-    - Owned by the identity system operator
-    - Can skip consent screen
-    - Have elevated trust level
-    """
+    """Registered OAuth 2.1 client (confidential or public)."""
     __tablename__ = "oauth_clients"
 
     client_id = Column(String(64), primary_key=True)
     
-    # NULL for public clients (PKCE-only)
     client_secret_hash = Column(String(256), nullable=True)
     
     client_name = Column(String(255), nullable=False)
     client_description = Column(Text, nullable=True)
-    client_uri = Column(Text, nullable=True)  # Homepage URL
-    logo_uri = Column(Text, nullable=True)    # Logo for consent screen
+    client_uri = Column(Text, nullable=True)
+    logo_uri = Column(Text, nullable=True)
     
-    # Allowed callback URLs (OAuth 2.1 requires exact match)
     redirect_uris = Column(TextArray, nullable=False)
-    
-    # Scopes this client is allowed to request
     allowed_scopes = Column(TextArray, nullable=False, default=lambda: ['profile:read:basic'])
-    
-    # Default context type when client doesn't specify
+
     default_context_type = Column(
         SQLEnum(ContextType, name="context_type"),
         nullable=True
     )
     
-    # Client classification
     is_confidential = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
     is_first_party = Column(Boolean, nullable=False, default=False)
@@ -205,7 +159,6 @@ class OAuthClient(Base, TimestampMixin, SoftDeleteMixin):
         default=TokenEndpointAuthMethod.none
     )
 
-    # Relationships
     authorization_codes = relationship(
         "OAuthAuthorizationCode",
         back_populates="client",
@@ -248,18 +201,7 @@ class OAuthClient(Base, TimestampMixin, SoftDeleteMixin):
 
 
 class OAuthAuthorizationCode(Base):
-    """
-    OAuth Authorization Code Model
-    
-    Temporary authorization code issued after user consent.
-    Used in Authorization Code Flow with PKCE.
-    
-    Security Features:
-    - 10 minute expiry (OAuth 2.1 recommendation)
-    - Single-use (marked used_at on exchange)
-    - PKCE mandatory (code_challenge required)
-    - Bound to specific redirect_uri
-    """
+    """Single-use authorization code with mandatory PKCE (10-minute expiry)."""
     __tablename__ = "oauth_authorization_codes"
 
     code = Column(String(128), primary_key=True)
@@ -277,28 +219,24 @@ class OAuthAuthorizationCode(Base):
     )
     
     redirect_uri = Column(Text, nullable=False)
-    scope = Column(Text, nullable=False)  # Space-separated scope string
-    state = Column(String(256), nullable=True)  # Client state parameter
+    scope = Column(Text, nullable=False)
+    state = Column(String(256), nullable=True)
     
-    # PKCE - mandatory in OAuth 2.1
     code_challenge = Column(String(128), nullable=False)
     code_challenge_method = Column(String(10), nullable=False, default="S256")
     
-    # Optional context binding
     context_profile_id = Column(
         UUID(),
         ForeignKey("context_profiles.id", ondelete="SET NULL"),
         nullable=True
     )
-    
-    # OIDC nonce for ID token
+
     nonce = Column(String(256), nullable=True)
     
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     expires_at = Column(DateTime, nullable=False)
-    used_at = Column(DateTime, nullable=True)  # Set when code is exchanged
+    used_at = Column(DateTime, nullable=True)
 
-    # Relationships
     client = relationship("OAuthClient", back_populates="authorization_codes")
     user = relationship("BaseProfile")
     context_profile = relationship("ContextProfile")
@@ -331,18 +269,7 @@ class OAuthAuthorizationCode(Base):
 
 
 class OAuthAccessToken(Base):
-    """
-    OAuth Access Token Model
-    
-    Short-lived access token for API authorization.
-    Stored as hash for security (original token returned only once).
-    
-    Security Features:
-    - 1 hour default expiry
-    - Token stored as SHA-256 hash
-    - Can be revoked by user or admin
-    - Bound to specific scope and optional context
-    """
+    """Short-lived access token stored as SHA-256 hash (1-hour default expiry)."""
     __tablename__ = "oauth_access_tokens"
 
     id = Column(
@@ -367,18 +294,16 @@ class OAuthAccessToken(Base):
     
     scope = Column(Text, nullable=False)
     
-    # Optional context binding for context-aware tokens
     context_profile_id = Column(
         UUID(),
         ForeignKey("context_profiles.id", ondelete="SET NULL"),
         nullable=True
     )
-    
+
     issued_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     expires_at = Column(DateTime, nullable=False)
     revoked_at = Column(DateTime, nullable=True)
 
-    # Relationships
     client = relationship("OAuthClient", back_populates="access_tokens")
     user = relationship("BaseProfile")
     context_profile = relationship("ContextProfile")
@@ -421,19 +346,7 @@ class OAuthAccessToken(Base):
 
 
 class OAuthRefreshToken(Base):
-    """
-    OAuth Refresh Token Model
-    
-    Long-lived token for obtaining new access tokens.
-    Implements refresh token rotation as required by OAuth 2.1.
-    
-    Security Features:
-    - 30 day default expiry
-    - Token stored as SHA-256 hash
-    - Rotation: new refresh token issued on each use
-    - Old token tracked via replaced_by_id for audit
-    - Reuse detection possible via chain tracking
-    """
+    """Long-lived refresh token with rotation (30-day default expiry)."""
     __tablename__ = "oauth_refresh_tokens"
 
     id = Column(
@@ -468,15 +381,13 @@ class OAuthRefreshToken(Base):
     expires_at = Column(DateTime, nullable=False)
     revoked_at = Column(DateTime, nullable=True)
     
-    # Rotation tracking
-    rotated_at = Column(DateTime, nullable=True)  # Set when token is rotated
+    rotated_at = Column(DateTime, nullable=True)
     replaced_by_id = Column(
         UUID(),
         ForeignKey("oauth_refresh_tokens.id"),
         nullable=True
-    )  # Points to replacement token
+    )
 
-    # Relationships
     client = relationship("OAuthClient", back_populates="refresh_tokens")
     user = relationship("BaseProfile")
     access_token = relationship("OAuthAccessToken", back_populates="refresh_token")
@@ -519,16 +430,7 @@ class OAuthRefreshToken(Base):
 
 
 class OAuthConsent(Base):
-    """
-    OAuth Consent Record Model
-    
-    Tracks user consent for third-party access to profile data.
-    Supports GDPR-inspired consent management:
-    - Explicit consent tracking
-    - Consent withdrawal (Art. 7(3))
-    - Consent expiry
-    - Audit trail (IP, user agent)
-    """
+    """User consent record with GDPR-inspired withdrawal and expiry support."""
     __tablename__ = "oauth_consents"
 
     id = Column(
@@ -549,10 +451,8 @@ class OAuthConsent(Base):
         nullable=False
     )
     
-    # Scopes the user has granted
     granted_scopes = Column(TextArray, nullable=False)
-    
-    # Optional binding to specific context
+
     context_profile_id = Column(
         UUID(),
         ForeignKey("context_profiles.id", ondelete="SET NULL"),
@@ -560,8 +460,8 @@ class OAuthConsent(Base):
     )
     
     granted_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    expires_at = Column(DateTime, nullable=True)  # NULL means no expiry
-    withdrawn_at = Column(DateTime, nullable=True)  # Consent withdrawal
+    expires_at = Column(DateTime, nullable=True)
+    withdrawn_at = Column(DateTime, nullable=True)
     
     consent_method = Column(
         SQLEnum(ConsentMethod, name="consent_method", create_type=False),
@@ -569,11 +469,9 @@ class OAuthConsent(Base):
         default=ConsentMethod.explicit
     )
     
-    # Audit trail
     ip_address = Column(InetType, nullable=True)
     user_agent = Column(Text, nullable=True)
 
-    # Relationships
     user = relationship("BaseProfile")
     client = relationship("OAuthClient", back_populates="consents")
     context_profile = relationship("ContextProfile")

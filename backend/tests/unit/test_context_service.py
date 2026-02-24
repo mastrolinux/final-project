@@ -1,9 +1,4 @@
-"""
-Unit Tests for Context Service
-
-Tests the inheritance engine and business logic for context profile management.
-Critical test scenarios focus on profile resolution algorithm.
-"""
+"""Tests for context profile inheritance engine and management."""
 
 import pytest
 from uuid import uuid4
@@ -158,14 +153,12 @@ class TestContextCreation:
         sample_verified_profile: BaseProfile
     ):
         """Test creating duplicate context (user_id, type, name) fails"""
-        # Create first context
         context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
             context_name="LinkedIn"
         )
         
-        # Try to create duplicate
         with pytest.raises(ContextServiceError) as exc_info:
             context_service.create_context_profile(
                 user_id=sample_verified_profile.user_id,
@@ -193,11 +186,7 @@ class TestContextCreation:
 
 
 class TestInheritanceEngine:
-    """
-    CRITICAL TESTS: Profile resolution with inheritance
-    
-    Tests the core algorithm implementing Goffman's dramaturgical theory.
-    """
+    """Test profile resolution with inheritance."""
     
     def test_resolve_context_with_full_overrides(
         self,
@@ -206,7 +195,6 @@ class TestInheritanceEngine:
         sample_identity_name: IdentityName
     ):
         """Test resolving context with all fields overridden"""
-        # Create context with full overrides
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
@@ -217,24 +205,20 @@ class TestInheritanceEngine:
             bio="Professional bio"
         )
         
-        # Resolve profile
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id
         )
-        
-        # All overrides should be applied
+
         assert resolved.display_name == "Dr. Sarah Chen"
         assert resolved.email == "work@hospital.org"
         assert resolved.phone == "+1-555-9999"
         assert resolved.bio == "Professional bio"
-        
-        # Base profile fields should be preserved
+
         assert resolved.user_id == sample_verified_profile.user_id
         assert resolved.account_type == sample_verified_profile.account_type
         assert resolved.preferred_language == sample_verified_profile.preferred_language
-        
-        # Context metadata should be included
+
         assert resolved.context_type == ContextType.professional
         assert resolved.context_name == "Work"
     
@@ -243,12 +227,7 @@ class TestInheritanceEngine:
         context_service: ContextService,
         sample_verified_profile: BaseProfile
     ):
-        """
-        Test resolving context with partial overrides
-        
-        CRITICAL: Null overrides should inherit from base profile
-        """
-        # Create context with only email override
+        """Null overrides should inherit from base profile."""
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
@@ -257,22 +236,14 @@ class TestInheritanceEngine:
             # display_name_override, phone_override, bio are None
         )
         
-        # Resolve profile
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id
         )
-        
-        # Email should be overridden
+
         assert resolved.email == "work@company.com"
-        
-        # Phone should inherit from base profile
         assert resolved.phone == sample_verified_profile.primary_phone
-        
-        # Display name should be None (no override, no base field)
         assert resolved.display_name is None
-        
-        # Bio should be None (no override)
         assert resolved.bio is None
     
     def test_resolve_context_with_no_overrides(
@@ -280,25 +251,18 @@ class TestInheritanceEngine:
         context_service: ContextService,
         sample_verified_profile: BaseProfile
     ):
-        """
-        Test resolving context with no overrides
-        
-        Should return base profile values for all fields
-        """
-        # Create context with no overrides
+        """No overrides: all values should inherit from base profile."""
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.social,
             context_name="Personal"
         )
         
-        # Resolve profile
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id
         )
-        
-        # All values should inherit from base profile
+
         assert resolved.email == sample_verified_profile.primary_email
         assert resolved.phone == sample_verified_profile.primary_phone
         assert resolved.display_name is None
@@ -318,12 +282,10 @@ class TestInheritanceEngine:
         context without explicit consent.  The resolved profile returns None
         for avatar fields unless the context has its own avatar_override.
         """
-        # Set a base profile avatar
         sample_verified_profile.avatar_url = "https://storage.example.com/avatar.webp"
         sample_verified_profile.avatar_thumbnail_url = "https://storage.example.com/thumb.webp"
         db_session.commit()
 
-        # Create context with NO avatar override
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.social,
@@ -335,7 +297,6 @@ class TestInheritanceEngine:
             context_id=context.id
         )
 
-        # Avatar must NOT be inherited from base profile
         assert resolved.avatar_url is None
         assert resolved.avatar_thumbnail_url is None
 
@@ -349,12 +310,10 @@ class TestInheritanceEngine:
         When a context has an explicit avatar_override, the resolved profile
         returns that override (not the base avatar).
         """
-        # Set a base profile avatar
         sample_verified_profile.avatar_url = "https://storage.example.com/base.webp"
         sample_verified_profile.avatar_thumbnail_url = "https://storage.example.com/base-thumb.webp"
         db_session.commit()
 
-        # Create context and set an avatar override directly
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
@@ -383,19 +342,16 @@ class TestInheritanceEngine:
             user_id=sample_verified_profile.user_id
         )
         
-        # Should return base profile values
         assert resolved.user_id == sample_verified_profile.user_id
         assert resolved.email == sample_verified_profile.primary_email
         assert resolved.phone == sample_verified_profile.primary_phone
         assert resolved.preferred_language == sample_verified_profile.preferred_language
         
-        # No context-specific fields
         assert resolved.context_type is None
         assert resolved.context_name is None
         assert resolved.display_name is None
         assert resolved.bio is None
         
-        # Identity names should be included
         assert len(resolved.identity_names) > 0
     
     def test_resolved_profile_includes_identity_names(
@@ -416,7 +372,6 @@ class TestInheritanceEngine:
             context_id=context.id
         )
         
-        # Identity names should be included
         assert len(resolved.identity_names) == 1
         assert resolved.identity_names[0].name_type == NameType.full_name
         assert resolved.identity_names[0].name_value == {"en": "Dr. Sarah Chen"}
@@ -429,7 +384,6 @@ class TestInheritanceEngine:
         sample_identity_name: IdentityName
     ):
         """Test deprecated names are filtered from resolved profile"""
-        # Add deprecated name
         deprecated = IdentityName(
             identity_id=sample_verified_profile.user_id,
             name_type=NameType.given,
@@ -447,25 +401,21 @@ class TestInheritanceEngine:
             context_name="Friends"
         )
         
-        # Resolve without deprecated names
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id,
             include_deprecated_names=False
         )
         
-        # Should only have non-deprecated name
         assert len(resolved.identity_names) == 1
         assert resolved.identity_names[0].is_deprecated is False
         
-        # Resolve with deprecated names
         resolved_with_deprecated = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id,
             include_deprecated_names=True
         )
         
-        # Should have both names
         assert len(resolved_with_deprecated.identity_names) == 2
     
     def test_resolve_context_not_belonging_to_user_fails(
@@ -475,14 +425,12 @@ class TestInheritanceEngine:
         sample_unverified_profile: BaseProfile
     ):
         """Test resolving context that doesn't belong to user fails"""
-        # Create context for user 1
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
             context_name="Work"
         )
         
-        # Try to resolve for user 2
         with pytest.raises(ContextServiceError) as exc_info:
             context_service.resolve_context_profile(
                 user_id=sample_unverified_profile.user_id,
@@ -501,7 +449,6 @@ class TestContextManagement:
         sample_verified_profile: BaseProfile
     ):
         """Test retrieving all contexts for a user"""
-        # Create multiple contexts
         context1 = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
@@ -514,7 +461,6 @@ class TestContextManagement:
             context_name="Facebook"
         )
         
-        # Retrieve contexts
         contexts = context_service.get_user_contexts(sample_verified_profile.user_id)
         
         assert len(contexts) == 2
@@ -534,7 +480,6 @@ class TestContextManagement:
             bio="Old bio"
         )
         
-        # Update context
         updated = context_service.update_context_profile(
             context_id=context.id,
             bio="New bio",
@@ -556,11 +501,9 @@ class TestContextManagement:
             context_name="Facebook"
         )
         
-        # Delete context
         result = context_service.delete_context_profile(context.id)
         assert result is True
         
-        # Context should no longer be retrievable
         with pytest.raises(ContextServiceError):
             context_service.get_context_profile(context.id)
 
@@ -588,7 +531,6 @@ class TestResolvedProfileOutput:
             context_id=context.id
         )
         
-        # Convert to dict
         data = resolved.to_dict()
         
         assert data["user_id"] == str(sample_verified_profile.user_id)
@@ -652,7 +594,6 @@ class TestMultilingualNameResolution:
         sample_verified_profile: BaseProfile
     ):
         """Test resolving name when exact language match available"""
-        # Create multilingual name: Chinese and English
         multilingual_name = IdentityName(
             identity_id=sample_verified_profile.user_id,
             name_type=NameType.full_name,
@@ -670,18 +611,15 @@ class TestMultilingualNameResolution:
             context_name="Work"
         )
         
-        # Resolve with Chinese language
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id,
             language="zh"
         )
         
-        # Verify Chinese name is resolved (test internal method works)
         assert len(resolved.identity_names) == 1
         name = resolved.identity_names[0]
         
-        # Test the multilingual resolution method directly
         resolved_value = context_service._resolve_multilingual_name(
             name, 
             requested_language="zh",
@@ -696,7 +634,6 @@ class TestMultilingualNameResolution:
         sample_verified_profile: BaseProfile
     ):
         """Test fallback to user's preferred language when requested unavailable"""
-        # Create name with Chinese and English, no French
         multilingual_name = IdentityName(
             identity_id=sample_verified_profile.user_id,
             name_type=NameType.full_name,
@@ -707,7 +644,6 @@ class TestMultilingualNameResolution:
         )
         db_session.add(multilingual_name)
         
-        # Set user's preferred language to Chinese
         sample_verified_profile.preferred_language = "zh"
         db_session.commit()
         
@@ -723,14 +659,13 @@ class TestMultilingualNameResolution:
             language="fr"  # Request French (not available)
         )
         
-        # Test fallback to preferred language (zh)
         name = resolved.identity_names[0]
         resolved_value = context_service._resolve_multilingual_name(
             name,
             requested_language="fr",
             preferred_language="zh"
         )
-        assert resolved_value == "李明"  # Falls back to preferred language
+        assert resolved_value == "李明"
     
     def test_fallback_to_english_default(
         self,
@@ -749,7 +684,6 @@ class TestMultilingualNameResolution:
         )
         db_session.add(multilingual_name)
         
-        # Preferred language not in name_value
         sample_verified_profile.preferred_language = "de"
         db_session.commit()
         
@@ -765,14 +699,13 @@ class TestMultilingualNameResolution:
             language="fr"  # Not available
         )
         
-        # Test fallback to English default
         name = resolved.identity_names[0]
         resolved_value = context_service._resolve_multilingual_name(
             name,
             requested_language="fr",  # Not available
             preferred_language="de"   # Not available
         )
-        assert resolved_value == "Li Ming"  # Falls back to English
+        assert resolved_value == "Li Ming"
     
     def test_fallback_to_first_available(
         self,
@@ -806,14 +739,13 @@ class TestMultilingualNameResolution:
             language="de"
         )
         
-        # Test fallback to first available (alphabetically: 'ja' before 'zh')
         name = resolved.identity_names[0]
         resolved_value = context_service._resolve_multilingual_name(
             name,
             requested_language="de",
             preferred_language="fr"
         )
-        assert resolved_value == "リメイ"  # First alphabetically (ja)
+        assert resolved_value == "リメイ"
     
     def test_empty_name_value_returns_empty_string(
         self,
@@ -823,7 +755,6 @@ class TestMultilingualNameResolution:
         """Test graceful handling of empty JSONB name_value"""
         from src.models.profile import IdentityName
         
-        # Create name with empty JSONB
         empty_name = IdentityName(
             identity_id=sample_verified_profile.user_id,
             name_type=NameType.full_name,
@@ -833,7 +764,6 @@ class TestMultilingualNameResolution:
             visibility_level=VisibilityLevel.public
         )
         
-        # Test method handles empty dict gracefully
         resolved_value = context_service._resolve_multilingual_name(
             empty_name,
             requested_language="en",
@@ -855,14 +785,12 @@ class TestTemporalValidity:
         from datetime import datetime, timezone, timedelta
         from sqlalchemy import text
         
-        # Create context that expired yesterday
         expired_context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
             context_type=ContextType.professional,
             context_name="Old Job"
         )
         
-        # Manually set valid_to to past date (timezone-aware)
         past_date = datetime.now(timezone.utc) - timedelta(days=1)
         db_session.execute(
             text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
@@ -870,7 +798,6 @@ class TestTemporalValidity:
         )
         db_session.commit()
         
-        # Attempt to resolve expired context
         with pytest.raises(ContextServiceError) as exc_info:
             context_service.resolve_context_profile(
                 user_id=sample_verified_profile.user_id,
@@ -896,7 +823,6 @@ class TestTemporalValidity:
             context_name="Current Job"
         )
         
-        # Set valid_to to future date (timezone-aware)
         future_date = datetime.now(timezone.utc) + timedelta(days=30)
         db_session.execute(
             text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
@@ -904,7 +830,6 @@ class TestTemporalValidity:
         )
         db_session.commit()
         
-        # Should resolve successfully
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id
@@ -924,7 +849,6 @@ class TestTemporalValidity:
             context_name="Social"
         )
         
-        # valid_to is None by default (ongoing)
         resolved = context_service.resolve_context_profile(
             user_id=sample_verified_profile.user_id,
             context_id=context.id
@@ -971,7 +895,6 @@ class TestExpiryEnrichment:
             context_type=ContextType.healthcare,
             context_name="Hospital",
         )
-        # Simulate admin approval: set context to verified + active with linked doc
         context.verification_status = VerificationStatus.verified
         context.is_active = True
         context.document_id = doc.id
@@ -1022,7 +945,6 @@ class TestExpiryEnrichment:
             context_type=ContextType.professional,
             context_name="Work",
         )
-        # Manually set verified without a linked document (edge case)
         context.verification_status = VerificationStatus.verified
         context.is_active = True
         db_session.commit()
@@ -1103,7 +1025,6 @@ class TestExpiryEnrichment:
         db_session.commit()
         context_id = context.id
 
-        # Trigger enrichment
         enriched = context_service.get_context_profile(context_id)
         assert enriched.verification_status == VerificationStatus.expired
 

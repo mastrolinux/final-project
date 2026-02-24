@@ -53,14 +53,6 @@ class AuthService:
         profile_repo: ProfileRepository,
         audit_service: Optional["AuditService"] = None
     ):
-        """
-        Initialize auth service with repositories.
-
-        Args:
-            auth_repo: Authentication repository
-            profile_repo: Profile repository (to get account_type)
-            audit_service: Optional audit service for event logging
-        """
         self.auth_repo = auth_repo
         self.profile_repo = profile_repo
         self.audit_service = audit_service
@@ -101,28 +93,10 @@ class AuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
-        """
-        Register new user with email and password.
-
-        Process:
-        1. Check if email already exists
-        2. Validate password strength
-        3. Hash password with Argon2id
-        4. Create auth_users record
-        5. Generate verification token
-        6. Send verification email (async via Celery)
-
-        Args:
-            email: User email address
-            password: Plain text password
-            user_id: User ID from base_profiles (must exist)
-            display_name: User's display name for email personalization
-            ip_address: Client IP address (for audit logging)
-            user_agent: Client user agent (for audit logging)
+        """Register new user with email and password.
 
         Returns:
             Tuple of (success, error_message, auth_data)
-            auth_data contains: user_id, email, is_email_verified
         """
         # Check if email already exists (active accounts)
         existing = self.auth_repo.get_by_email(email)
@@ -192,26 +166,10 @@ class AuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
-        """
-        Authenticate user and return JWT tokens.
-
-        Process:
-        1. Get auth user by email
-        2. Check if account is locked
-        3. Verify password
-        4. Reset failed login attempts on success
-        5. Get account type from base_profiles
-        6. Generate access and refresh tokens
-
-        Args:
-            email: User email address
-            password: Plain text password
-            ip_address: Client IP address (for audit logging)
-            user_agent: Client user agent (for audit logging)
+        """Authenticate user and return JWT tokens.
 
         Returns:
             Tuple of (success, error_message, token_data)
-            token_data contains: access_token, refresh_token, token_type, expires_in, user_id, email
         """
         # Get auth user (active accounts only)
         auth_user = self.auth_repo.get_by_email(email)
@@ -319,21 +277,7 @@ class AuthService:
         }
 
     def verify_email(self, token: str) -> Tuple[bool, Optional[str]]:
-        """
-        Verify email with verification token.
-
-        Process:
-        1. Find auth user by verification token
-        2. Check if token exists and not expired
-        3. Update verification status
-        4. Clear verification token
-
-        Args:
-            token: Email verification token
-
-        Returns:
-            Tuple of (success, error_message)
-        """
+        """Verify email with verification token."""
         # Find auth user by verification token
         auth_user = self.auth_repo.get_by_verification_token(token)
         if not auth_user:
@@ -365,28 +309,9 @@ class AuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
-        """
-        Set a password for an OAuth-only user who has not yet set one.
+        """Set a password for an OAuth-only user who has not yet set one.
 
-        Preconditions:
-        - User must exist and be active (not deleted)
-        - User must be an OAuth user (provider is not None)
-        - User must not already have a custom password (has_custom_password is False)
-
-        After setting a password, the user can authenticate via both OAuth
-        and email/password. Subsequent password changes require the
-        reset-password flow.
-
-        Args:
-            user_id: User ID (from JWT token, already authenticated)
-            new_password: The password the user wants to set
-            ip_address: Client IP (for audit)
-            user_agent: Client user agent (for audit)
-
-        Returns:
-            Tuple of (success, error_code, data)
-            Error codes: USER_NOT_FOUND, NOT_OAUTH_USER, PASSWORD_ALREADY_SET,
-                         or password validation error message
+        Error codes: USER_NOT_FOUND, NOT_OAUTH_USER, PASSWORD_ALREADY_SET
         """
         # Step 1: Look up user
         auth_user = self.auth_repo.get_by_user_id(user_id)
@@ -434,24 +359,7 @@ class AuthService:
         }
 
     def request_password_reset(self, email: str) -> Tuple[bool, Optional[str]]:
-        """
-        Request password reset email.
-
-        Process:
-        1. Find auth user by email
-        2. Skip OAuth users who never set a custom password
-        3. Generate secure reset token
-        4. Store token with 1-hour expiry
-        5. Send reset email (async via Celery)
-
-        Note: Always returns success even if email doesn't exist (security best practice)
-
-        Args:
-            email: User email address
-
-        Returns:
-            Tuple of (success, error_message)
-        """
+        """Request password reset email. Always returns success to prevent enumeration."""
         # Get auth user
         auth_user = self.auth_repo.get_by_email(email)
         if not auth_user:
@@ -488,24 +396,7 @@ class AuthService:
         token: str,
         new_password: str
     ) -> Tuple[bool, Optional[str]]:
-        """
-        Reset password with reset token.
-
-        Process:
-        1. Find auth user by reset token
-        2. Check if token is valid and not expired
-        3. Validate new password strength
-        4. Hash new password
-        5. Update password hash
-        6. Clear reset token
-
-        Args:
-            token: Password reset token
-            new_password: New plain text password
-
-        Returns:
-            Tuple of (success, error_message)
-        """
+        """Reset password with reset token."""
         # Find auth user by reset token
         auth_user = self.auth_repo.get_by_reset_token(token)
         if not auth_user:
@@ -540,21 +431,7 @@ class AuthService:
         return True, None
 
     def resend_verification_email(self, email: str) -> Tuple[bool, Optional[str]]:
-        """
-        Resend verification email to user.
-
-        Process:
-        1. Find auth user by email
-        2. Check if already verified
-        3. Generate new verification token
-        4. Send verification email
-
-        Args:
-            email: User email address
-
-        Returns:
-            Tuple of (success, error_message)
-        """
+        """Resend verification email to user."""
         # Get auth user
         auth_user = self.auth_repo.get_by_email(email)
         if not auth_user:
@@ -582,34 +459,10 @@ class AuthService:
         refresh_token: str,
         blacklist: "TokenBlacklist"
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
-        """
-        Exchange valid refresh token for new access and refresh tokens.
+        """Exchange valid refresh token for new tokens (refresh token rotation).
 
-        Implements refresh token rotation: the old refresh token is blacklisted
-        and new tokens are issued. This limits the impact of token theft.
-
-        Process:
-            1. Verify refresh token signature and type
-            2. Check JTI against Redis blacklist
-            3. Get user from database, validate account status
-            4. Blacklist old token JTI (before issuing new tokens)
-            5. Generate new access + refresh tokens
-
-        Args:
-            refresh_token: JWT refresh token from client
-            blacklist: TokenBlacklist instance for rotation
-
-        Returns:
-            Tuple of (success, error_code, token_data)
-            token_data contains: access_token, refresh_token, token_type, expires_in
-
-        Error codes:
-            INVALID_TOKEN: Signature invalid, expired, or wrong type
-            REVOKED_TOKEN: Token was previously used (blacklisted)
-            USER_NOT_FOUND: User ID from token not in database
-            ACCOUNT_LOCKED: Account temporarily locked
-            ACCOUNT_DELETED: Account soft deleted
-            SERVICE_UNAVAILABLE: Redis blacklist unavailable
+        Error codes: INVALID_TOKEN, REVOKED_TOKEN, USER_NOT_FOUND,
+        ACCOUNT_LOCKED, ACCOUNT_DELETED, SERVICE_UNAVAILABLE
         """
         from redis.exceptions import ConnectionError as RedisConnectionError
 
@@ -680,18 +533,8 @@ class AuthService:
         self,
         email: str
     ) -> Tuple[bool, Optional[str]]:
-        """
-        Request account restoration after soft deletion.
-
-        Generates a time-limited restoration token and sends it via email.
-        Always returns success to prevent email enumeration.
-
-        Args:
-            email: Email of the soft-deleted account
-
-        Returns:
-            Tuple of (success, error_message)
-        """
+        """Request account restoration after soft deletion.
+        Always returns success to prevent email enumeration."""
         from datetime import timedelta
 
         # Look for soft-deleted account
@@ -726,23 +569,10 @@ class AuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[dict]]:
-        """
-        Confirm account restoration with token and optional new password.
+        """Confirm account restoration with token and optional new password.
 
-        Validates the restoration token, checks grace period, restores all
-        user records. For email/password users, requires and sets new password.
-        For OAuth users (Google, etc.), password is not needed.
-
-        Args:
-            token: Restoration token from email
-            new_password: New password (required for email/password users, not for OAuth)
-            ip_address: Client IP address (for audit logging)
-            user_agent: Client user agent (for audit logging)
-
-        Returns:
-            Tuple of (success, error_code, data)
-            error_code is one of: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED,
-                                  PASSWORD_REQUIRED, PROFILE_NOT_FOUND
+        Error codes: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED,
+        PASSWORD_REQUIRED, PROFILE_NOT_FOUND
         """
         from datetime import timedelta
 

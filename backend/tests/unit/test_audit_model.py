@@ -1,8 +1,4 @@
-"""
-Unit Tests for Audit Model and Enums
-
-Tests AuditLog model creation, enum values, and hash chain constants.
-"""
+"""Tests for AuditLog model, enums, and hash chain constants."""
 
 import pytest
 from datetime import datetime, timezone

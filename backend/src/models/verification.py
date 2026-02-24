@@ -44,18 +44,7 @@ class VerificationStatus(str, enum.Enum):
 
 
 class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
-    """
-    Identity verification document uploaded by a user.
-
-    Documents are encrypted at rest using Fernet before storage.
-    The ``storage_path`` column references the encrypted blob in the
-    ``verification-documents`` private bucket.
-
-    Documents are linked to context profiles via a direct FK
-    (``context_profiles.document_id``). Each context references at most
-    one document; a single document can still be referenced by multiple
-    contexts.
-    """
+    """Identity verification document, encrypted at rest via Fernet."""
 
     __tablename__ = "verification_documents"
 
@@ -88,7 +77,6 @@ class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
     file_size_bytes = Column(Integer, nullable=False)
     content_type = Column(String(50), nullable=False)
 
-    # Admin review fields
     reviewer_id = Column(
         UUID(),
         ForeignKey("base_profiles.user_id", ondelete="SET NULL"),
@@ -99,7 +87,6 @@ class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
     document_expiry_date = Column(Date, nullable=True)
     rejection_reason = Column(Text, nullable=True)
 
-    # Relationships
     user = relationship(
         "BaseProfile",
         foreign_keys=[user_id],

@@ -1,9 +1,4 @@
-"""
-Pytest Configuration and Fixtures
-
-Provides reusable test fixtures for database, client, and sample data.
-Ensures test isolation and cleanup between tests.
-"""
+"""Test fixtures for database, client, and sample data."""
 
 import pytest
 from typing import Generator
@@ -23,47 +18,34 @@ from src.services.profile_service import ProfileService
 from src.services.audit_service import AuditService
 
 
-# Use in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 @pytest.fixture(scope="function")
 def db_engine():
-    """
-    Create a test database engine.
-    
-    Uses SQLite in-memory database with StaticPool for fast tests.
-    Scope is 'function' to ensure isolation between tests.
-    """
+    """In-memory SQLite engine with StaticPool, recreated per test."""
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     
-    # Enable foreign key constraints for SQLite
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
     
-    # Create all tables
     Base.metadata.create_all(bind=engine)
-    
+
     yield engine
-    
-    # Drop all tables after test
+
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
 
 @pytest.fixture(scope="function")
 def db_session(db_engine) -> Generator[Session, None, None]:
-    """
-    Create a database session for testing.
-    
-    Provides a clean database session that is rolled back after each test.
-    """
+    """Database session rolled back after each test."""
     connection = db_engine.connect()
     transaction = connection.begin()
     SessionLocal = sessionmaker(bind=connection)
@@ -80,16 +62,12 @@ def db_session(db_engine) -> Generator[Session, None, None]:
 
 @pytest.fixture(scope="function")
 def client(db_session: Session) -> Generator[TestClient, None, None]:
-    """
-    Create a FastAPI test client with overridden database dependency.
-    
-    All database operations in the API will use the test database session.
-    """
+    """FastAPI test client using the test database session."""
     def override_get_db():
         try:
             yield db_session
         finally:
-            pass  # Session cleanup handled by db_session fixture
+            pass
     
     app.dependency_overrides[get_db] = override_get_db
     
@@ -99,11 +77,9 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
     app.dependency_overrides.clear()
 
 
-# Sample data fixtures
-
 @pytest.fixture
 def sample_verified_profile(db_session: Session) -> BaseProfile:
-    """Create a sample verified profile for testing"""
+    """Verified profile fixture."""
     profile = BaseProfile(
         account_type=AccountType.verified,
         legal_name="Sarah Elizabeth Chen",
@@ -119,7 +95,7 @@ def sample_verified_profile(db_session: Session) -> BaseProfile:
 
 @pytest.fixture
 def sample_unverified_profile(db_session: Session) -> BaseProfile:
-    """Create a sample unverified profile for testing"""
+    """Unverified profile fixture."""
     profile = BaseProfile(
         account_type=AccountType.unverified,
         legal_name=None,
@@ -135,7 +111,7 @@ def sample_unverified_profile(db_session: Session) -> BaseProfile:
 
 @pytest.fixture
 def sample_pseudonymous_profile(db_session: Session) -> BaseProfile:
-    """Create a sample pseudonymous profile for testing"""
+    """Pseudonymous profile fixture."""
     profile = BaseProfile(
         account_type=AccountType.pseudonymous,
         legal_name=None,
@@ -151,7 +127,7 @@ def sample_pseudonymous_profile(db_session: Session) -> BaseProfile:
 
 @pytest.fixture
 def sample_identity_name(db_session: Session, sample_verified_profile: BaseProfile) -> IdentityName:
-    """Create a sample identity name for testing"""
+    """English full_name identity name for the verified profile."""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.full_name,
@@ -168,7 +144,7 @@ def sample_identity_name(db_session: Session, sample_verified_profile: BaseProfi
 
 @pytest.fixture
 def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseProfile) -> IdentityName:
-    """Create a sample multilingual identity name for testing"""
+    """Multilingual (en/zh/es) given name for the verified profile."""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.given,
@@ -189,7 +165,7 @@ def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseP
 
 @pytest.fixture
 def sample_deprecated_name(db_session: Session, sample_verified_profile: BaseProfile) -> IdentityName:
-    """Create a sample deprecated (deadname) for testing"""
+    """Deprecated (deadname) identity name with suppressed visibility."""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.given,
@@ -206,10 +182,9 @@ def sample_deprecated_name(db_session: Session, sample_verified_profile: BasePro
 
 @pytest.fixture
 def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
-    """Create multiple profiles with associated names for testing"""
+    """Three profiles: Western, Chinese, and Mononym naming conventions."""
     profiles = []
     
-    # Profile 1: Western naming
     profile1 = BaseProfile(
         account_type=AccountType.verified,
         legal_name="John Smith",
@@ -228,7 +203,6 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     db_session.add(name1)
     profiles.append(profile1)
     
-    # Profile 2: Chinese naming
     profile2 = BaseProfile(
         account_type=AccountType.unverified,
         primary_email="li.ming@example.com",
@@ -246,7 +220,6 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     db_session.add(name2)
     profiles.append(profile2)
     
-    # Profile 3: Mononym
     profile3 = BaseProfile(
         account_type=AccountType.verified,
         legal_name="Sukarno",
@@ -272,33 +245,25 @@ def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     return profiles
 
 
-# Repository and Service fixtures
-
 @pytest.fixture
 def profile_repository(db_session: Session) -> ProfileRepository:
-    """Create ProfileRepository instance for testing"""
     return ProfileRepository(db_session)
 
 
 @pytest.fixture
 def profile_service(profile_repository: ProfileRepository) -> ProfileService:
-    """Create ProfileService instance for testing"""
     return ProfileService(profile_repository)
 
 
 @pytest.fixture
 def audit_repository(db_session: Session) -> AuditRepository:
-    """Create AuditRepository instance for testing"""
     return AuditRepository(db_session)
 
 
 @pytest.fixture
 def audit_service(audit_repository: AuditRepository) -> AuditService:
-    """Create AuditService instance for testing"""
     return AuditService(audit_repository)
 
-
-# Authentication fixtures for endpoint tests requiring JWT
 
 @pytest.fixture
 def sample_verified_auth_user(db_session: Session, sample_verified_profile: BaseProfile) -> AuthUser:

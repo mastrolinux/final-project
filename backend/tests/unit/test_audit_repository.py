@@ -1,9 +1,4 @@
-"""
-Unit Tests for Audit Repository
-
-Tests hash chain computation, append-only log creation, filtering,
-and chain verification logic.
-"""
+"""Tests for audit repository: hash chain, log creation, and filtering."""
 
 import pytest
 import hashlib

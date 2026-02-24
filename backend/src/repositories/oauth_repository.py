@@ -30,9 +30,9 @@ class OAuthRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    # =========================================================================
+    #
     # Scope Operations
-    # =========================================================================
+    #
     
     def get_scope(self, scope_name: str) -> Optional[OAuthScope]:
         """Get a scope by name"""
@@ -50,9 +50,9 @@ class OAuthRepository:
         """List all available scopes"""
         return self.db.query(OAuthScope).all()
     
-    # =========================================================================
+    #
     # Client Operations
-    # =========================================================================
+    #
     
     def get_client(self, client_id: str) -> Optional[OAuthClient]:
         """Get a client by ID"""
@@ -113,15 +113,7 @@ class OAuthRepository:
         return False
 
     def purge_client(self, client_id: str) -> bool:
-        """Permanently delete a client and all related records.
-        
-        This performs a hard delete, removing the client from the database.
-        Related records (tokens, consents, authorization codes) are automatically
-        deleted via CASCADE constraints.
-        
-        Use this for testing cleanup or when a client_id needs to be reused.
-        """
-        # Find the client (including soft-deleted ones)
+        """Hard delete a client; CASCADE removes related tokens and consents."""
         client = self.db.query(OAuthClient).filter(
             OAuthClient.client_id == client_id
         ).first()
@@ -138,17 +130,7 @@ class OAuthRepository:
         offset: int = 0,
         limit: int = 20
     ) -> List[OAuthClient]:
-        """
-        List all OAuth clients with pagination.
-        
-        Args:
-            include_inactive: If True, include inactive clients
-            offset: Number of records to skip
-            limit: Maximum number of records to return
-            
-        Returns:
-            List of OAuthClient objects
-        """
+        """List all OAuth clients with pagination."""
         query = self.db.query(OAuthClient).filter(
             OAuthClient.deleted_at.is_(None)
         )
@@ -159,15 +141,7 @@ class OAuthRepository:
         return query.order_by(OAuthClient.created_at.desc()).offset(offset).limit(limit).all()
     
     def count_clients(self, include_inactive: bool = False) -> int:
-        """
-        Count total number of clients.
-        
-        Args:
-            include_inactive: If True, count inactive clients too
-            
-        Returns:
-            Total count of clients
-        """
+        """Count total number of non-deleted clients."""
         query = self.db.query(OAuthClient).filter(
             OAuthClient.deleted_at.is_(None)
         )
@@ -177,9 +151,9 @@ class OAuthRepository:
         
         return query.count()
     
-    # =========================================================================
+    #
     # Authorization Code Operations
-    # =========================================================================
+    #
     
     @staticmethod
     def generate_authorization_code() -> str:
@@ -258,9 +232,9 @@ class OAuthRepository:
         self.db.commit()
         return result
     
-    # =========================================================================
+    #
     # Access Token Operations
-    # =========================================================================
+    #
     
     @staticmethod
     def generate_token() -> str:
@@ -280,13 +254,7 @@ class OAuthRepository:
         context_profile_id: Optional[UUID] = None,
         expires_in_seconds: int = 3600  # 1 hour
     ) -> tuple[OAuthAccessToken, str]:
-        """
-        Create a new access token.
-        
-        Returns:
-            Tuple of (OAuthAccessToken model, raw token string)
-            The raw token is only returned once and should be sent to client.
-        """
+        """Create a new access token. Returns (model, raw token string)."""
         raw_token = self.generate_token()
         token_hash = self.hash_token(raw_token)
         
@@ -362,9 +330,9 @@ class OAuthRepository:
         self.db.commit()
         return result
     
-    # =========================================================================
+    #
     # Refresh Token Operations
-    # =========================================================================
+    #
     
     def create_refresh_token(
         self,
@@ -374,12 +342,7 @@ class OAuthRepository:
         scope: str,
         expires_in_seconds: int = 2592000  # 30 days
     ) -> tuple[OAuthRefreshToken, str]:
-        """
-        Create a new refresh token.
-        
-        Returns:
-            Tuple of (OAuthRefreshToken model, raw token string)
-        """
+        """Create a new refresh token. Returns (model, raw token string)."""
         raw_token = self.generate_token()
         token_hash = self.hash_token(raw_token)
         
@@ -428,13 +391,7 @@ class OAuthRepository:
         scope: str,
         expires_in_seconds: int = 2592000
     ) -> tuple[OAuthRefreshToken, str]:
-        """
-        Rotate a refresh token (issue new one, mark old as rotated).
-        
-        Returns:
-            Tuple of (new OAuthRefreshToken model, raw token string)
-        """
-        # Create new refresh token
+        """Issue a new refresh token and mark the old one as rotated."""
         new_token, raw_token = self.create_refresh_token(
             access_token_id=new_access_token_id,
             client_id=client_id,
@@ -442,8 +399,7 @@ class OAuthRepository:
             scope=scope,
             expires_in_seconds=expires_in_seconds
         )
-        
-        # Mark old token as rotated
+
         old_token = self.db.query(OAuthRefreshToken).filter(
             OAuthRefreshToken.id == old_token_id
         ).first()
@@ -485,9 +441,9 @@ class OAuthRepository:
         self.db.commit()
         return result
     
-    # =========================================================================
+    #
     # Consent Operations
-    # =========================================================================
+    #
     
     def get_consent(
         self,
@@ -518,13 +474,11 @@ class OAuthRepository:
         user_agent: Optional[str] = None,
         expires_at: Optional[datetime] = None
     ) -> OAuthConsent:
-        """Create or update a consent record"""
+        """Create or update a consent record for a user-client pair."""
         from src.models.oauth import ConsentMethod
-        
-        # Check if there's an existing active consent
+
         existing = self.get_consent(user_id, client_id)
         if existing:
-            # Update existing consent with new scopes
             existing.granted_scopes = granted_scopes
             existing.context_profile_id = context_profile_id
             existing.granted_at = datetime.now(timezone.utc)
@@ -534,8 +488,7 @@ class OAuthRepository:
             self.db.commit()
             self.db.refresh(existing)
             return existing
-        
-        # Create new consent
+
         consent = OAuthConsent(
             user_id=user_id,
             client_id=client_id,
@@ -561,8 +514,7 @@ class OAuthRepository:
         consent = self.get_consent(user_id, client_id)
         if consent:
             consent.withdrawn_at = datetime.now(timezone.utc)
-            
-            # Also revoke all tokens for this user-client pair
+
             self.db.query(OAuthAccessToken).filter(
                 OAuthAccessToken.user_id == user_id,
                 OAuthAccessToken.client_id == client_id,
@@ -594,16 +546,7 @@ class OAuthRepository:
         ).order_by(OAuthConsent.granted_at.desc()).all()
     
     def withdraw_all_user_consents(self, user_id: UUID) -> int:
-        """
-        Withdraw all active consents for a user.
-        Used during account soft deletion.
-
-        Args:
-            user_id: User ID
-
-        Returns:
-            Number of consents withdrawn
-        """
+        """Withdraw all active consents for a user. Used during account soft deletion."""
         now = datetime.now(timezone.utc)
         count = self.db.query(OAuthConsent).filter(
             OAuthConsent.user_id == user_id,

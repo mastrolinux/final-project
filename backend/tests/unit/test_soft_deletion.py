@@ -1,9 +1,4 @@
-"""
-Unit Tests for Soft Deletion and Account Restoration
-
-Tests GDPR Article 17 soft deletion, account restoration flow,
-permanent purge, and deletion status with mocked repositories.
-"""
+"""Tests for soft deletion, account restoration, purge, and deletion status."""
 
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -18,10 +13,6 @@ from src.services.privacy_service import (
 from src.services.auth_service import AuthService
 from src.models.audit import AuditEventType, AuditOperation
 
-
-# ---------------------------------------------------------------------------
-# Shared fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def mock_profile_repo():
@@ -74,10 +65,6 @@ def auth_service(mock_auth_repo, mock_profile_repo, mock_audit_service):
     )
 
 
-# ---------------------------------------------------------------------------
-# Mock builders
-# ---------------------------------------------------------------------------
-
 def _make_profile(user_id):
     profile = Mock()
     profile.user_id = user_id
@@ -100,10 +87,6 @@ def _make_auth_user(user_id, deleted_at=None, email="test@example.com"):
     auth.is_locked = Mock(return_value=False)
     return auth
 
-
-# ===================================================================
-# Privacy Service: Soft Delete Account
-# ===================================================================
 
 class TestSoftDeleteAccount:
     """Tests for PrivacyService.soft_delete_account."""
@@ -228,7 +211,6 @@ class TestSoftDeleteAccount:
 
         result = service.soft_delete_account(user_id=user_id)
 
-        # Permanent deletion date should be ~60 days out
         scheduled = datetime.fromisoformat(result["deletion_scheduled_at"])
         permanent = datetime.fromisoformat(result["permanent_deletion_date"])
         delta = (permanent - scheduled).days
@@ -251,10 +233,6 @@ class TestSoftDeleteAccount:
         assert "30 days" in result["message"]
 
 
-# ===================================================================
-# Privacy Service: Deletion Status
-# ===================================================================
-
 class TestDeletionStatus:
     """Tests for PrivacyService.get_deletion_status."""
 
@@ -274,11 +252,9 @@ class TestDeletionStatus:
     ):
         """Soft-deleted account within grace period returns 'scheduled'."""
         user_id = uuid4()
-        # get_by_user_id returns None (deleted_at filter)
         mock_auth_repo.get_by_user_id.return_value = None
         mock_auth_repo.get_by_email_including_deleted.return_value = None
 
-        # Direct DB query returns the soft-deleted user
         deleted_at = datetime.now(timezone.utc) - timedelta(days=5)
         mock_result = Mock()
         mock_scalars = Mock()
@@ -311,10 +287,6 @@ class TestDeletionStatus:
 
         assert result["status"] == "purged"
 
-
-# ===================================================================
-# Privacy Service: Purge Expired Accounts
-# ===================================================================
 
 class TestPurgeExpiredAccounts:
     """Tests for PrivacyService.purge_expired_accounts."""
@@ -392,10 +364,6 @@ class TestPurgeExpiredAccounts:
         mock_auth_repo.get_expired_soft_deleted_users.assert_called_once_with(45)
 
 
-# ===================================================================
-# Auth Service: Login with Soft-Deleted Account
-# ===================================================================
-
 class TestLoginSoftDeleted:
     """Tests for login behavior when account is soft-deleted."""
 
@@ -454,10 +422,6 @@ class TestLoginSoftDeleted:
         assert error == "Invalid email or password"
         assert data is None
 
-
-# ===================================================================
-# Auth Service: Registration with Recoverable Account
-# ===================================================================
 
 class TestRegisterRecoverable:
     """Tests for registration detecting a recoverable soft-deleted account."""
@@ -527,10 +491,6 @@ class TestRegisterRecoverable:
         assert data["email"] == "test@example.com"
         mock_auth_repo.create.assert_called_once()
 
-
-# ===================================================================
-# Auth Service: Request Account Restoration
-# ===================================================================
 
 class TestRequestAccountRestoration:
     """Tests for AuthService.request_account_restoration."""
@@ -607,10 +567,6 @@ class TestRequestAccountRestoration:
         assert error is None
 
 
-# ===================================================================
-# Auth Service: Confirm Account Restoration
-# ===================================================================
-
 class TestConfirmAccountRestoration:
     """Tests for AuthService.confirm_account_restoration."""
 
@@ -645,7 +601,6 @@ class TestConfirmAccountRestoration:
         mock_auth_repo.get_by_restoration_token.return_value = auth_user
         mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id)
 
-        # ContextRepository is created from mock_auth_repo.db inside the method
         success, error, data = auth_service.confirm_account_restoration(
             token="valid-token", new_password="NewSecurePass123!"
         )

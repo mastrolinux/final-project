@@ -1,9 +1,4 @@
-"""
-Test Data Factories using factory_boy + Faker
-
-Provides factories for generating test data for all models.
-Integrates Faker for realistic, culturally-diverse data generation.
-"""
+"""Test data factories using factory_boy + Faker."""
 
 from datetime import datetime, timezone
 from typing import Any
@@ -23,7 +18,6 @@ from src.models.profile import (
 )
 
 
-# Initialize Faker with multiple locales for diverse name generation
 fake = Faker()
 fake_zh = Faker('zh_CN')
 fake_es = Faker('es_ES')
@@ -32,22 +26,7 @@ fake_id = Faker('id_ID')
 
 
 class BaseProfileFactory(SQLAlchemyModelFactory):
-    """
-    Factory for BaseProfile model.
-    
-    Generates diverse profiles with realistic data.
-    Can be customized for different account types and cultural contexts.
-    
-    Usage:
-        # Create instance (doesn't save to DB)
-        profile = BaseProfileFactory.build()
-        
-        # Create and save to database
-        profile = BaseProfileFactory.create(session=db_session)
-        
-        # Create specific account type
-        verified_profile = BaseProfileFactory.build(account_type=AccountType.verified)
-    """
+    """Factory for BaseProfile model."""
     
     class Meta:
         model = BaseProfile
@@ -82,24 +61,7 @@ class PseudonymousProfileFactory(BaseProfileFactory):
 
 
 class IdentityNameFactory(SQLAlchemyModelFactory):
-    """
-    Factory for IdentityName model.
-    
-    Generates multilingual names with realistic data.
-    Supports diverse cultural naming conventions.
-    
-    Usage:
-        # Create with default English name
-        name = IdentityNameFactory.build()
-        
-        # Create multilingual name
-        name = IdentityNameFactory.build(
-            name_value={"en": "Sarah", "zh": "萨拉", "es": "Sara"}
-        )
-        
-        # Create with specific profile
-        name = IdentityNameFactory.build(identity_id=profile.user_id)
-    """
+    """Factory for IdentityName model."""
     
     class Meta:
         model = IdentityName
@@ -110,7 +72,6 @@ class IdentityNameFactory(SQLAlchemyModelFactory):
     identity_id = factory.LazyFunction(uuid.uuid4)  # Override in usage
     name_type = NameType.full_name
     
-    # Simple English name by default - factory_boy handles JSONB correctly!
     name_value = factory.LazyFunction(lambda: {"en": fake.name()})
     
     is_primary = True
@@ -126,11 +87,7 @@ class WesternNameFactory(IdentityNameFactory):
 
 
 class ChineseNameFactory(IdentityNameFactory):
-    """
-    Factory for Chinese naming convention.
-    
-    Generates names in Chinese characters with romanization.
-    """
+    """Factory for Chinese naming convention."""
     name_type = NameType.full_name
     name_value = factory.LazyFunction(lambda: {
         "zh": fake_zh.name(),
@@ -139,11 +96,7 @@ class ChineseNameFactory(IdentityNameFactory):
 
 
 class MultilingualNameFactory(IdentityNameFactory):
-    """
-    Factory for multilingual names.
-    
-    Generates names in multiple languages (English, Chinese, Spanish).
-    """
+    """Factory for multilingual names (en/zh/es)."""
     name_type = NameType.given
     name_value = factory.LazyFunction(lambda: {
         "en": fake.first_name(),
@@ -153,11 +106,7 @@ class MultilingualNameFactory(IdentityNameFactory):
 
 
 class MononymFactory(IdentityNameFactory):
-    """
-    Factory for mononym (single name) convention.
-    
-    Common in Indonesian and other cultures.
-    """
+    """Factory for mononym (single name) convention."""
     name_type = NameType.full_name
     name_value = factory.LazyFunction(lambda: {
         "id": fake_id.first_name(),
@@ -166,11 +115,7 @@ class MononymFactory(IdentityNameFactory):
 
 
 class DeprecatedNameFactory(IdentityNameFactory):
-    """
-    Factory for deprecated names (deadnames).
-    
-    Creates historical names with suppressed visibility.
-    """
+    """Factory for deprecated names (deadnames) with suppressed visibility."""
     name_type = NameType.given
     name_value = factory.LazyFunction(lambda: {"en": "[REDACTED]"})
     is_primary = False
@@ -196,24 +141,12 @@ class PreferredNameFactory(IdentityNameFactory):
     name_value = factory.LazyFunction(lambda: {"en": fake.first_name()})
 
 
-# Utility functions for complex test scenarios
-
 def create_profile_with_names(
     session: Any,
     account_type: AccountType = AccountType.verified,
     num_names: int = 2
 ) -> tuple[BaseProfile, list[IdentityName]]:
-    """
-    Create a profile with multiple associated names.
-    
-    Args:
-        session: Database session
-        account_type: Type of account to create
-        num_names: Number of names to create (default: 2)
-        
-    Returns:
-        Tuple of (profile, list of names)
-    """
+    """Create a profile with associated given/family names."""
     factory_map = {
         AccountType.verified: VerifiedProfileFactory,
         AccountType.unverified: UnverifiedProfileFactory,
@@ -244,25 +177,9 @@ def create_profile_with_names(
 
 
 def create_diverse_profiles(session: Any) -> list[BaseProfile]:
-    """
-    Create a diverse set of profiles demonstrating cultural inclusivity.
-    
-    Includes:
-    - Western naming (English)
-    - Chinese naming with romanization
-    - Mononym (Indonesian)
-    - Pseudonymous profile
-    - Profile with name change (deprecated name)
-    
-    Args:
-        session: Database session
-        
-    Returns:
-        List of created profiles
-    """
+    """Create Western, Chinese, Mononym, and Pseudonymous profiles."""
     profiles = []
     
-    # Western profile
     western_profile = VerifiedProfileFactory.build(
         legal_name="Sarah Elizabeth Chen",
         primary_email="sarah.chen@example.com",
@@ -278,7 +195,6 @@ def create_diverse_profiles(session: Any) -> list[BaseProfile]:
     session.add(western_name)
     profiles.append(western_profile)
     
-    # Chinese profile
     chinese_profile = UnverifiedProfileFactory.build(
         primary_email="li.ming@example.com",
         preferred_language="zh"
@@ -292,7 +208,6 @@ def create_diverse_profiles(session: Any) -> list[BaseProfile]:
     session.add(chinese_name)
     profiles.append(chinese_profile)
     
-    # Mononym profile
     mononym_profile = VerifiedProfileFactory.build(
         legal_name="Sukarno",
         primary_email="sukarno@example.id",
@@ -307,7 +222,6 @@ def create_diverse_profiles(session: Any) -> list[BaseProfile]:
     session.add(mononym_name)
     profiles.append(mononym_profile)
     
-    # Pseudonymous profile
     pseudonymous_profile = PseudonymousProfileFactory.build(
         primary_email="anonymous@protonmail.com",
         preferred_language="en"

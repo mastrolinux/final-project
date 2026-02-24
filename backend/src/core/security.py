@@ -15,9 +15,9 @@ from pydantic import BaseModel
 from src.core.config import settings
 
 
-# ============================================================================
+#
 # Password Hashing (Argon2id)
-# ============================================================================
+#
 
 # Argon2id configuration (NIST SP 800-63B recommended parameters)
 pwd_context = CryptContext(
@@ -30,35 +30,12 @@ pwd_context = CryptContext(
 
 
 def hash_password(password: str) -> str:
-    """
-    Hash password using Argon2id.
-    
-    Uses NIST-recommended parameters:
-    - Memory cost: 64 MB (resists GPU attacks)
-    - Time cost: 3 iterations
-    - Parallelism: 4 threads
-    - Variant: Argon2id (side-channel resistant)
-    
-    Args:
-        password: Plain text password
-        
-    Returns:
-        Argon2id hash string
-    """
+    """Hash password using Argon2id (NIST SP 800-63B parameters)."""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify password against Argon2id hash.
-    
-    Args:
-        plain_password: Plain text password to verify
-        hashed_password: Argon2id hash from database
-        
-    Returns:
-        True if password matches, False otherwise
-    """
+    """Verify password against Argon2id hash."""
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception:
@@ -77,21 +54,7 @@ _COMMON_PASSWORDS: frozenset[str] = frozenset(
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:
-    """
-    Validate password per NIST SP 800-63B Section 5.1.1.2.
-
-    Requirements:
-    - Minimum 8 characters
-    - Not in common/breached password list (case-insensitive)
-    - No composition rules (uppercase/lowercase/digit not required)
-    - All printable characters and Unicode accepted
-
-    Args:
-        password: Password to validate
-
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
+    """Validate password per NIST SP 800-63B Section 5.1.1.2."""
     if len(password) < 8:
         return False, "Password must be at least 8 characters"
 
@@ -101,11 +64,10 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, "Password meets requirements"
 
 
-# ============================================================================
+#
 # JWT Token Management (HS256)
-# ============================================================================
+#
 
-# JWT Configuration from settings
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 30    # 30 days
@@ -123,28 +85,7 @@ class TokenData(BaseModel):
 
 
 def create_access_token(user_id: str, email: str, account_type: str, is_admin: bool = False) -> str:
-    """
-    Generate JWT access token with HS256 signing.
-    
-    Token includes:
-    - sub: user_id
-    - email: user email
-    - account_type: verified/unverified/pseudonymous
-    - is_admin: admin privilege flag
-    - token_type: "access"
-    - exp: expiration timestamp (1 hour)
-    - iat: issued at timestamp
-    - jti: unique token ID
-    
-    Args:
-        user_id: User identifier from auth_users.user_id
-        email: User email
-        account_type: Account verification level
-        is_admin: Admin privilege flag
-        
-    Returns:
-        Encoded JWT token string
-    """
+    """Generate HS256 JWT access token (1-hour expiry)."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
         "sub": user_id,
@@ -160,18 +101,7 @@ def create_access_token(user_id: str, email: str, account_type: str, is_admin: b
 
 
 def create_refresh_token(user_id: str) -> str:
-    """
-    Generate JWT refresh token with HS256 signing.
-    
-    Refresh tokens are long-lived (30 days) and used to obtain new access tokens.
-    They contain minimal claims for security.
-    
-    Args:
-        user_id: User identifier from auth_users.user_id
-        
-    Returns:
-        Encoded JWT refresh token string
-    """
+    """Generate HS256 JWT refresh token (30-day expiry, minimal claims)."""
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": user_id,
@@ -184,29 +114,13 @@ def create_refresh_token(user_id: str) -> str:
 
 
 def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
-    """
-    Verify and decode JWT token.
-    
-    Validates:
-    - Signature (HS256)
-    - Expiration
-    - Token type (access vs refresh)
-    
-    Args:
-        token: JWT token string
-        token_type: Expected token type ("access" or "refresh")
-        
-    Returns:
-        TokenData if valid, None if invalid/expired
-    """
+    """Verify and decode HS256 JWT token, checking signature, expiry, and type."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[ALGORITHM])
         
-        # Verify token type matches expected
         if payload.get("token_type") != token_type:
             return None
         
-        # Convert timestamps to datetime objects if they're integers
         if isinstance(payload.get("exp"), (int, float)):
             payload["exp"] = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
         if isinstance(payload.get("iat"), (int, float)):
@@ -228,16 +142,9 @@ def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
 
 
 def decode_token_without_verification(token: str) -> Optional[dict]:
-    """
-    Decode JWT token without verification (for debugging/logging only).
-    
+    """Decode JWT token without verification.
+
     WARNING: Do not use for authentication. Only for logging and debugging.
-    
-    Args:
-        token: JWT token string
-        
-    Returns:
-        Token payload dict if decodable, None otherwise
     """
     try:
         return jwt.decode(token, options={"verify_signature": False})

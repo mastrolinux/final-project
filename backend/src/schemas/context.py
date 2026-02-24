@@ -196,12 +196,7 @@ class IdentityNameInResolved(BaseModel):
 
 
 class ResolvedProfileResponse(BaseModel):
-    """
-    Schema for fully resolved profile (base + context overrides applied)
-    
-    This is the unified view third-party applications receive via OAuth.
-    Demonstrates the inheritance engine merging base profile + context overrides.
-    """
+    """Schema for fully resolved profile (base + context overrides applied)."""
     
     user_id: UUID
     account_type: AccountType

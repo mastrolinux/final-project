@@ -1,10 +1,4 @@
-"""
-Verification Endpoint Integration Tests (User-Facing)
-
-Tests the full HTTP request cycle for document upload, status queries,
-and document listing, using the FastAPI TestClient with an in-memory
-SQLite database, InMemoryStorageClient, and a test EncryptionService.
-"""
+"""Integration tests for document upload, status queries, and listing."""
 
 import io
 
@@ -25,10 +19,9 @@ from src.models.profile import AccountType, BaseProfile
 from src.models.verification import VerificationStatus
 
 
-# Valid file content: PDF with standard prefix
 PDF_CONTENT = b"%PDF-1.4 test document content for integration testing"
 
-# Valid JPEG generated with Pillow (structurally valid for Pillow's verify)
+
 def _make_jpeg() -> bytes:
     img = Image.new("RGB", (50, 50), color="red")
     buf = io.BytesIO()
@@ -154,7 +147,6 @@ class TestUploadEndpoint:
         assert body["original_filename"] == "passport.pdf"
         assert body["content_type"] == "application/pdf"
         assert body["document_expiry_date"] == "2030-06-15"
-        # storage_path must not be exposed
         assert "storage_path" not in body
 
     def test_upload_jpeg_success(
@@ -233,7 +225,6 @@ class TestVerificationStatusEndpoint:
         """After uploading a document, the status must include it."""
         user_id = str(user_with_profile.user_id)
 
-        # Upload first
         client_with_deps.post(
             f"/api/v1/profiles/{user_id}/verification-documents",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -241,7 +232,7 @@ class TestVerificationStatusEndpoint:
             data={"document_type": "passport", "document_expiry_date": "2030-06-15"},
         )
 
-        # Check status
+
         resp = client_with_deps.get(
             f"/api/v1/profiles/{user_id}/verification-status",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -284,7 +275,6 @@ class TestDocumentListEndpoint:
         """Uploaded documents must appear in the listing."""
         user_id = str(user_with_profile.user_id)
 
-        # Upload two documents
         for _ in range(2):
             client_with_deps.post(
                 f"/api/v1/profiles/{user_id}/verification-documents",
@@ -312,7 +302,6 @@ class TestDocumentDownloadEndpoint:
         """Downloading an owned document must return the original content."""
         user_id = str(user_with_profile.user_id)
 
-        # Upload first
         upload_resp = client_with_deps.post(
             f"/api/v1/profiles/{user_id}/verification-documents",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -322,7 +311,6 @@ class TestDocumentDownloadEndpoint:
         assert upload_resp.status_code == 201
         doc_id = upload_resp.json()["id"]
 
-        # Download
         resp = client_with_deps.get(
             f"/api/v1/profiles/{user_id}/verification-documents/{doc_id}/download",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -418,7 +406,6 @@ class TestDocumentLinkResubmit:
         user_id = str(user_with_profile.user_id)
         context_id = str(rejected_context.id)
 
-        # Upload a document
         upload_resp = client_with_deps.post(
             f"/api/v1/profiles/{user_id}/verification-documents",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -428,14 +415,12 @@ class TestDocumentLinkResubmit:
         assert upload_resp.status_code == 201
         doc_id = upload_resp.json()["id"]
 
-        # Link the document to the rejected context
         link_resp = client_with_deps.post(
             f"/api/v1/profiles/{user_id}/contexts/{context_id}/documents/{doc_id}",
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert link_resp.status_code == 204
 
-        # Verify the context status changed to pending
         db_session.refresh(rejected_context)
         assert rejected_context.verification_status == VerificationStatus.pending
         assert rejected_context.rejection_reason is None

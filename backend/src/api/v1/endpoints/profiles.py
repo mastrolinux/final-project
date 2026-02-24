@@ -48,13 +48,7 @@ def create_profile(
     profile_data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service)
 ):
-    """
-    Create a new profile
-    
-    - **account_type**: verified, unverified, or pseudonymous
-    - **legal_name**: Required for verified accounts
-    - **primary_email**: Must be unique
-    """
+    """Create a new profile."""
     try:
         profile = service.create_profile(profile_data)
         return profile
@@ -75,11 +69,7 @@ def get_profile(
     user_id: UUID,
     service: ProfileService = Depends(get_profile_service)
 ):
-    """
-    Get profile by ID
-    
-    Returns profile details excluding soft-deleted profiles.
-    """
+    """Get profile by ID."""
     try:
         profile = service.get_profile(user_id)
         return profile
@@ -97,18 +87,10 @@ def update_profile(
     service: ProfileService = Depends(get_profile_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Update profile fields
-    
-    Validates business rules:
-    - Verified accounts require legal_name
-    - Cannot downgrade from verified account type
-    - Email must be unique
-    """
+    """Update profile fields."""
     try:
         profile = service.update_profile(user_id, update_data)
         response = ProfileResponse.model_validate(profile)
-        # Propagate the transient flag set by the service layer
         if getattr(profile, "email_verification_pending", False):
             response.email_verification_pending = True
         return response
@@ -130,11 +112,7 @@ def delete_profile(
     service: ProfileService = Depends(get_profile_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Soft delete a profile
-    
-    Sets deleted_at timestamp. Profile will no longer appear in queries.
-    """
+    """Soft-delete a profile."""
     try:
         service.delete_profile(user_id)
         return None
@@ -156,11 +134,7 @@ def add_identity_name(
     service: ProfileService = Depends(get_profile_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Add an identity name to a profile
-    
-    Supports multilingual names with JSONB storage.
-    """
+    """Add an identity name to a profile."""
     try:
         name = service.add_identity_name(user_id, name_data)
         return name
@@ -176,11 +150,7 @@ def get_identity_names(
     user_id: UUID,
     service: ProfileService = Depends(get_profile_service)
 ):
-    """
-    Get all identity names for a profile
-    
-    Returns list of identity names, excluding deprecated names by default.
-    """
+    """Get all identity names for a profile."""
     try:
         profile, names = service.get_profile_with_names(user_id)
         return names
@@ -202,12 +172,7 @@ def update_identity_name(
     service: ProfileService = Depends(get_profile_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Update an identity name
-
-    Validates that the name belongs to the specified user.
-    Only provided (non-null) fields are updated.
-    """
+    """Update an identity name."""
     try:
         name = service.update_identity_name(user_id, name_id, update_data)
         return name
@@ -233,11 +198,7 @@ def delete_identity_name(
     service: ProfileService = Depends(get_profile_service),
     _current_user: AuthUser = Depends(require_verified_user)
 ):
-    """
-    Delete an identity name
-
-    Hard deletes the name record. Validates ownership before deletion.
-    """
+    """Hard-delete an identity name."""
     try:
         service.delete_identity_name(user_id, name_id)
         return None
