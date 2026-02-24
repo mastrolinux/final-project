@@ -123,7 +123,7 @@ class VerificationRepository:
 
         Used by the daily expiry task to find documents that need processing.
         """
-        today = date.today()
+        today = datetime.now(timezone.utc).date()
         return (
             self.db.query(VerificationDocument)
             .filter(

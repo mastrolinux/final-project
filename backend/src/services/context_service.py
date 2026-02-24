@@ -298,17 +298,20 @@ class ContextService:
         expiry date has passed. This is a read-time enrichment that does not
         mutate the database row; the Celery Beat task handles canonical state
         transitions.
+
+        Uses set_committed_value to modify the in-memory attribute without
+        marking the object as dirty, so autoflush will not persist the change.
+        The object remains attached to the session, avoiding DetachedInstanceError
+        during Pydantic serialization.
         """
         if (
             context.verification_status == VerificationStatus.verified
             and context.document is not None
             and context.document.is_expired
         ):
-            from sqlalchemy.orm import make_transient
-            self.context_repo.db.expunge(context)
-            make_transient(context)
-            context.verification_status = VerificationStatus.expired
-            context.is_active = False
+            from sqlalchemy.orm.attributes import set_committed_value
+            set_committed_value(context, "verification_status", VerificationStatus.expired)
+            set_committed_value(context, "is_active", False)
         return context
 
     def get_context_profile(self, context_id: UUID) -> ContextProfile:
