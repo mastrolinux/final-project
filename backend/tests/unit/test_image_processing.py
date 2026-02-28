@@ -1,17 +1,18 @@
 """Tests for image validation, center-cropping, resizing, and WebP conversion."""
 
 import io
+
 import pytest
 from PIL import Image
 
 from src.core.image import (
+    AVATAR_SIZE,
+    MAX_FILE_SIZE_BYTES,
+    THUMBNAIL_SIZE,
     ImageProcessingError,
     ProcessedImage,
-    validate_image_bytes,
     process_avatar_image,
-    MAX_FILE_SIZE_BYTES,
-    AVATAR_SIZE,
-    THUMBNAIL_SIZE,
+    validate_image_bytes,
 )
 
 

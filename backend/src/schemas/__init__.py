@@ -4,39 +4,35 @@ Schemas Package
 Pydantic models for request/response validation.
 """
 
-from src.schemas.profile import ProfileCreate, ProfileUpdate, ProfileResponse
+from src.schemas.audit import AuditIntegrityResponse, AuditLogEntry, AuditTrailResponse
 from src.schemas.context import (
     ContextProfileCreate,
-    ContextProfileUpdate,
     ContextProfileResponse,
-    ResolvedProfileResponse
-)
-from src.schemas.audit import (
-    AuditLogEntry,
-    AuditTrailResponse,
-    AuditIntegrityResponse
+    ContextProfileUpdate,
+    ResolvedProfileResponse,
 )
 from src.schemas.oauth import (
     AuthorizationRequest,
     AuthorizationResponse,
-    TokenRequest,
-    TokenResponse,
-    IntrospectionRequest,
-    IntrospectionResponse,
-    RevocationRequest,
-    UserInfoResponse,
-    OAuthClientCreate,
-    OAuthClientResponse,
     ConsentRequest,
     ConsentResponse,
+    IntrospectionRequest,
+    IntrospectionResponse,
+    OAuthClientCreate,
+    OAuthClientResponse,
     OAuthServerMetadata,
-    ScopeInfo
+    RevocationRequest,
+    ScopeInfo,
+    TokenRequest,
+    TokenResponse,
+    UserInfoResponse,
 )
+from src.schemas.profile import ProfileCreate, ProfileResponse, ProfileUpdate
 
 __all__ = [
     # Profile schemas
     "ProfileCreate",
-    "ProfileUpdate", 
+    "ProfileUpdate",
     "ProfileResponse",
     # Context schemas
     "ContextProfileCreate",

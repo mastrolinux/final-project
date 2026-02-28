@@ -6,7 +6,6 @@ of identity verification documents and admin review operations.
 """
 
 from datetime import date, datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -25,10 +24,10 @@ class VerificationDocumentResponse(BaseModel):
     original_filename: str
     file_size_bytes: int
     content_type: str
-    document_expiry_date: Optional[date] = None
-    rejection_reason: Optional[str] = None
-    reviewer_notes: Optional[str] = None
-    reviewed_at: Optional[datetime] = None
+    document_expiry_date: date | None = None
+    rejection_reason: str | None = None
+    reviewer_notes: str | None = None
+    reviewed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -61,7 +60,7 @@ class VerificationStatusResponse(BaseModel):
 
     user_id: UUID
     account_type: AccountType
-    latest_document: Optional[VerificationDocumentResponse] = None
+    latest_document: VerificationDocumentResponse | None = None
     can_create_legal_context: bool
 
     model_config = ConfigDict(from_attributes=True)
@@ -74,16 +73,16 @@ class AdminVerificationReview(BaseModel):
         ...,
         description="Target status: must be 'verified' or 'rejected'",
     )
-    reviewer_notes: Optional[str] = Field(
+    reviewer_notes: str | None = Field(
         default=None,
         max_length=1000,
         description="Internal notes visible to admins only",
     )
-    document_expiry_date: Optional[date] = Field(
+    document_expiry_date: date | None = Field(
         default=None,
         description="Physical document expiry date; null means no expiry",
     )
-    rejection_reason: Optional[str] = Field(
+    rejection_reason: str | None = Field(
         default=None,
         max_length=500,
         description="Reason for rejection (required when rejecting)",
@@ -94,21 +93,14 @@ class AdminVerificationReview(BaseModel):
     def must_be_terminal_status(cls, v: VerificationStatus) -> VerificationStatus:
         """Only verified and rejected are valid review outcomes."""
         if v not in (VerificationStatus.verified, VerificationStatus.rejected):
-            raise ValueError(
-                "Review status must be 'verified' or 'rejected'"
-            )
+            raise ValueError("Review status must be 'verified' or 'rejected'")
         return v
 
     @model_validator(mode="after")
     def rejection_reason_required_when_rejected(self) -> "AdminVerificationReview":
         """Ensure a rejection reason is provided when rejecting."""
-        if (
-            self.verification_status == VerificationStatus.rejected
-            and not self.rejection_reason
-        ):
-            raise ValueError(
-                "rejection_reason is required when status is 'rejected'"
-            )
+        if self.verification_status == VerificationStatus.rejected and not self.rejection_reason:
+            raise ValueError("rejection_reason is required when status is 'rejected'")
         return self
 
     model_config = ConfigDict(
@@ -134,11 +126,11 @@ class AdminContextVerificationItem(BaseModel):
     context_id: UUID
     context_type: str
     context_name: str
-    display_name_override: Optional[str] = None
-    email_override: Optional[str] = None
+    display_name_override: str | None = None
+    email_override: str | None = None
     verification_status: str
     user_id: UUID
-    user_display_name: Optional[str] = None
+    user_display_name: str | None = None
     document_count: int
     created_at: datetime
 
@@ -151,14 +143,14 @@ class AdminContextVerificationDetail(BaseModel):
     context_id: UUID
     context_type: str
     context_name: str
-    display_name_override: Optional[str] = None
-    email_override: Optional[str] = None
-    phone_override: Optional[str] = None
-    bio: Optional[str] = None
+    display_name_override: str | None = None
+    email_override: str | None = None
+    phone_override: str | None = None
+    bio: str | None = None
     verification_status: str
-    rejection_reason: Optional[str] = None
+    rejection_reason: str | None = None
     user_id: UUID
-    user_display_name: Optional[str] = None
+    user_display_name: str | None = None
     documents: list[VerificationDocumentResponse]
     created_at: datetime
 

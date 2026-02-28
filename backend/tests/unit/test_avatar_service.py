@@ -1,17 +1,16 @@
 """Tests for avatar upload and deletion on base and context profiles."""
 
 import io
-import pytest
 from uuid import uuid4
 
+import pytest
 from PIL import Image
 
 from src.core.storage import InMemoryStorageClient
-from src.models.profile import BaseProfile, AccountType
 from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile
 from src.repositories.avatar_repository import AvatarRepository
 from src.services.avatar_service import AvatarService, AvatarServiceError
-
 
 
 def _make_jpeg(width: int = 200, height: int = 200) -> bytes:
@@ -70,12 +69,9 @@ def context_profile(db_session, sample_verified_profile):
 
 
 class TestUploadBaseAvatar:
-
     def test_upload_success(self, avatar_service, sample_verified_profile, storage):
         data = _make_jpeg()
-        result = avatar_service.upload_base_avatar(
-            sample_verified_profile.user_id, data
-        )
+        result = avatar_service.upload_base_avatar(sample_verified_profile.user_id, data)
 
         assert "avatar_url" in result
         assert "avatar_thumbnail_url" in result
@@ -88,9 +84,7 @@ class TestUploadBaseAvatar:
         storage.blobs["old/thumbnail.webp"] = b"old-thumb"
 
         data = _make_jpeg()
-        result = avatar_service.upload_base_avatar(
-            profile_with_avatar.user_id, data
-        )
+        result = avatar_service.upload_base_avatar(profile_with_avatar.user_id, data)
 
         assert "old/avatar.webp" not in storage.blobs
         assert "old/thumbnail.webp" not in storage.blobs
@@ -103,22 +97,17 @@ class TestUploadBaseAvatar:
 
     def test_upload_invalid_image_raises(self, avatar_service, sample_verified_profile):
         with pytest.raises(AvatarServiceError, match="not a valid image"):
-            avatar_service.upload_base_avatar(
-                sample_verified_profile.user_id, b"not an image"
-            )
+            avatar_service.upload_base_avatar(sample_verified_profile.user_id, b"not an image")
 
     def test_upload_gif_rejected(self, avatar_service, sample_verified_profile):
         img = Image.new("RGB", (100, 100))
         buf = io.BytesIO()
         img.save(buf, format="GIF")
         with pytest.raises(AvatarServiceError, match="not allowed"):
-            avatar_service.upload_base_avatar(
-                sample_verified_profile.user_id, buf.getvalue()
-            )
+            avatar_service.upload_base_avatar(sample_verified_profile.user_id, buf.getvalue())
 
 
 class TestDeleteBaseAvatar:
-
     def test_delete_success(self, avatar_service, profile_with_avatar, storage):
         storage.blobs["old/avatar.webp"] = b"data"
         storage.blobs["old/thumbnail.webp"] = b"data"
@@ -138,7 +127,6 @@ class TestDeleteBaseAvatar:
 
 
 class TestUploadContextAvatar:
-
     def test_upload_context_avatar_success(
         self, avatar_service, sample_verified_profile, context_profile, storage
     ):
@@ -151,18 +139,12 @@ class TestUploadContextAvatar:
         assert "avatar_thumbnail_url" in result
         assert len(storage.blobs) == 2
 
-    def test_upload_wrong_user_raises(
-        self, avatar_service, context_profile, storage
-    ):
+    def test_upload_wrong_user_raises(self, avatar_service, context_profile, storage):
         wrong_user = uuid4()
         with pytest.raises(AvatarServiceError, match="does not belong"):
-            avatar_service.upload_context_avatar(
-                wrong_user, context_profile.id, _make_jpeg()
-            )
+            avatar_service.upload_context_avatar(wrong_user, context_profile.id, _make_jpeg())
 
-    def test_upload_nonexistent_context_raises(
-        self, avatar_service, sample_verified_profile
-    ):
+    def test_upload_nonexistent_context_raises(self, avatar_service, sample_verified_profile):
         with pytest.raises(AvatarServiceError, match="not found"):
             avatar_service.upload_context_avatar(
                 sample_verified_profile.user_id, uuid4(), _make_jpeg()
@@ -170,7 +152,6 @@ class TestUploadContextAvatar:
 
 
 class TestDeleteContextAvatar:
-
     def test_delete_context_avatar_success(
         self, avatar_service, sample_verified_profile, context_profile, db_session, storage
     ):

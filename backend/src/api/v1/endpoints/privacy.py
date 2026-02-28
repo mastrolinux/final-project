@@ -9,24 +9,24 @@ Provides GDPR-inspired privacy features:
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from src.core.database import get_db
 from src.api.dependencies.auth import get_current_user, require_verified_user
+from src.core.database import get_db
 from src.models.auth import AuthUser
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.context_repository import ContextRepository
 from src.repositories.oauth_repository import OAuthRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
-from src.services.audit_service import AuditService
-from src.services.privacy_service import (
-    PrivacyService,
-    ProfileNotFoundError,
-    AccountAlreadyDeletedError,
-)
 from src.schemas.privacy import (
     DataExportResponse,
     DeletionRequestResponse,
     DeletionStatusResponse,
+)
+from src.services.audit_service import AuditService
+from src.services.privacy_service import (
+    AccountAlreadyDeletedError,
+    PrivacyService,
+    ProfileNotFoundError,
 )
 
 router = APIRouter()

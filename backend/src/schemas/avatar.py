@@ -6,16 +6,13 @@ Upload requests use FastAPI's UploadFile (multipart/form-data), so no
 request schema is needed here.
 """
 
-from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvatarResponse(BaseModel):
     """Response schema returned after a successful avatar upload."""
 
-    avatar_url: str = Field(
-        ..., description="Public URL of the avatar image (400x400 WebP)"
-    )
+    avatar_url: str = Field(..., description="Public URL of the avatar image (400x400 WebP)")
     avatar_thumbnail_url: str = Field(
         ..., description="Public URL of the avatar thumbnail (80x80 WebP)"
     )

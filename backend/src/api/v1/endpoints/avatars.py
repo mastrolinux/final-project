@@ -10,21 +10,21 @@ take precedence over the base avatar in the inheritance engine.
 
 import logging
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
+from src.api.dependencies.auth import require_verified_user
 from src.core.database import get_db
 from src.core.storage import StorageClient, get_storage_client
-from src.repositories.avatar_repository import AvatarRepository
-from src.repositories.audit_repository import AuditRepository
-from src.services.avatar_service import AvatarService, AvatarServiceError
-from src.services.audit_service import AuditService
-from src.schemas.avatar import AvatarResponse, AvatarDeleteResponse
-from src.api.dependencies.auth import require_verified_user
 from src.models.auth import AuthUser
+from src.repositories.audit_repository import AuditRepository
+from src.repositories.avatar_repository import AvatarRepository
+from src.schemas.avatar import AvatarDeleteResponse, AvatarResponse
+from src.services.audit_service import AuditService
+from src.services.avatar_service import AvatarService, AvatarServiceError
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -58,8 +58,12 @@ async def upload_base_avatar(
 ):
     """Upload or replace the base profile avatar."""
     file_data = await file.read()
-    logger.info("Avatar upload request: user_id=%s, file=%s, size=%d bytes",
-                user_id, file.filename, len(file_data))
+    logger.info(
+        "Avatar upload request: user_id=%s, file=%s, size=%d bytes",
+        user_id,
+        file.filename,
+        len(file_data),
+    )
     try:
         result = service.upload_base_avatar(user_id, file_data)
         return result
@@ -69,8 +73,7 @@ async def upload_base_avatar(
     except Exception as exc:
         logger.exception("Unexpected error during avatar upload for user %s", user_id)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Avatar upload failed: {exc}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Avatar upload failed: {exc}"
         )
 
 

@@ -1,12 +1,13 @@
 """Tests for audit service: logging, error handling, and integrity verification."""
 
-import pytest
 import logging
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 from uuid import uuid4
 
-from src.services.audit_service import AuditService
+import pytest
+
 from src.models.audit import AuditEventType, AuditOperation
+from src.services.audit_service import AuditService
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ class TestLogEvent:
             operation=AuditOperation.login,
             ip_address="10.0.0.1",
             user_agent="Mozilla/5.0",
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         mock_audit_repo.create_log.assert_called_once_with(
@@ -50,7 +51,7 @@ class TestLogEvent:
             changes=None,
             ip_address="10.0.0.1",
             user_agent="Mozilla/5.0",
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
     def test_log_event_with_changes(self, audit_service, mock_audit_repo):
@@ -65,7 +66,7 @@ class TestLogEvent:
             resource_type="profile",
             resource_id=str(user_id),
             operation=AuditOperation.update,
-            changes=changes
+            changes=changes,
         )
 
         call_kwargs = mock_audit_repo.create_log.call_args
@@ -83,7 +84,7 @@ class TestLogEvent:
             actor_id=user_id,
             resource_type="auth_user",
             resource_id=str(user_id),
-            operation=AuditOperation.login
+            operation=AuditOperation.login,
         )
 
     def test_log_event_logs_exception(self, audit_service, mock_audit_repo, caplog):
@@ -98,7 +99,7 @@ class TestLogEvent:
                 actor_id=user_id,
                 resource_type="auth_user",
                 resource_id=str(user_id),
-                operation=AuditOperation.login
+                operation=AuditOperation.login,
             )
 
         assert "Failed to record audit event" in caplog.text
@@ -107,9 +108,7 @@ class TestLogEvent:
 class TestGetUserAuditTrail:
     """Test paginated audit trail retrieval."""
 
-    def test_get_user_audit_trail_returns_paginated_dict(
-        self, audit_service, mock_audit_repo
-    ):
+    def test_get_user_audit_trail_returns_paginated_dict(self, audit_service, mock_audit_repo):
         """Returns dict with entries, total, limit, and offset."""
         user_id = uuid4()
         mock_entries = [Mock(), Mock()]
@@ -123,9 +122,7 @@ class TestGetUserAuditTrail:
         assert result["limit"] == 50
         assert result["offset"] == 0
 
-    def test_get_user_audit_trail_passes_filters(
-        self, audit_service, mock_audit_repo
-    ):
+    def test_get_user_audit_trail_passes_filters(self, audit_service, mock_audit_repo):
         """Passes event_type and resource_type filters to repository."""
         user_id = uuid4()
         mock_audit_repo.get_logs_for_user.return_value = []
@@ -136,7 +133,7 @@ class TestGetUserAuditTrail:
             event_type="auth.login.success",
             resource_type="auth_user",
             limit=10,
-            offset=5
+            offset=5,
         )
 
         mock_audit_repo.get_logs_for_user.assert_called_once_with(
@@ -144,16 +141,14 @@ class TestGetUserAuditTrail:
             event_type="auth.login.success",
             resource_type="auth_user",
             limit=10,
-            offset=5
+            offset=5,
         )
 
 
 class TestVerifyIntegrity:
     """Test hash chain integrity verification."""
 
-    def test_verify_integrity_delegates_to_repository(
-        self, audit_service, mock_audit_repo
-    ):
+    def test_verify_integrity_delegates_to_repository(self, audit_service, mock_audit_repo):
         """verify_integrity calls repository.verify_chain."""
         mock_audit_repo.verify_chain.return_value = (True, 100, None)
 
@@ -164,13 +159,9 @@ class TestVerifyIntegrity:
         assert error is None
         mock_audit_repo.verify_chain.assert_called_once_with(limit=100)
 
-    def test_verify_integrity_reports_failure(
-        self, audit_service, mock_audit_repo
-    ):
+    def test_verify_integrity_reports_failure(self, audit_service, mock_audit_repo):
         """verify_integrity surfaces chain corruption detected by repository."""
-        mock_audit_repo.verify_chain.return_value = (
-            False, 50, "Hash mismatch at entry 42"
-        )
+        mock_audit_repo.verify_chain.return_value = (False, 50, "Hash mismatch at entry 42")
 
         is_valid, count, error = audit_service.verify_integrity()
 

@@ -4,32 +4,43 @@ Authentication API Endpoints
 REST API endpoints for user authentication, registration, and email verification.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from datetime import UTC
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from src.api.dependencies.auth import require_verified_user
 from src.core.database import get_db
+from src.core.redis_client import TokenBlacklist, get_blacklist
+from src.models.auth import AuthUser
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
-from src.services.auth_service import AuthService
-from src.services.audit_service import AuditService
 from src.schemas.auth import (
-    RegisterRequest, RegisterResponse,
-    LoginRequest, LoginResponse,
-    VerifyEmailRequest, VerifyEmailResponse,
-    RequestPasswordResetRequest, RequestPasswordResetResponse,
-    ResetPasswordRequest, ResetPasswordResponse,
-    ResendVerificationRequest, ResendVerificationResponse,
-    RefreshTokenRequest, RefreshTokenResponse,
-    RestoreAccountRequest, RestoreAccountResponse,
-    RestoreAccountConfirmRequest, RestoreAccountConfirmResponse,
-    SetPasswordRequest, SetPasswordResponse,
+    LoginRequest,
+    LoginResponse,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+    RegisterRequest,
+    RegisterResponse,
+    RequestPasswordResetRequest,
+    RequestPasswordResetResponse,
+    ResendVerificationRequest,
+    ResendVerificationResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+    RestoreAccountConfirmRequest,
+    RestoreAccountConfirmResponse,
+    RestoreAccountRequest,
+    RestoreAccountResponse,
+    SetPasswordRequest,
+    SetPasswordResponse,
+    VerifyEmailRequest,
+    VerifyEmailResponse,
 )
-from src.core.redis_client import TokenBlacklist, get_blacklist
-from src.api.dependencies.auth import get_current_user, require_verified_user
-from src.models.auth import AuthUser
-
+from src.services.audit_service import AuditService
+from src.services.auth_service import AuthService
 
 router = APIRouter()
 
@@ -48,13 +59,9 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Register New User",
-    description="Register a new user account with email and password authentication"
+    description="Register a new user account with email and password authentication",
 )
-def register(
-    request: RegisterRequest,
-    http_request: Request,
-    db: Session = Depends(get_db)
-):
+def register(request: RegisterRequest, http_request: Request, db: Session = Depends(get_db)):
     """Register a new user with email/password authentication."""
     try:
         profile_repo = ProfileRepository(db)
@@ -62,34 +69,26 @@ def register(
         # Check for recoverable soft-deleted account before profile creation;
         # the unique constraint on primary_email covers soft-deleted rows.
         auth_repo = AuthRepository(db)
-        deleted_user = auth_repo.get_by_email_including_deleted(
-            request.email
-        )
+        deleted_user = auth_repo.get_by_email_including_deleted(request.email)
         if deleted_user and deleted_user.deleted_at is not None:
-            from datetime import timedelta, timezone, datetime
+            from datetime import datetime, timedelta
+
             from src.core.config import settings
+
             retention_days = settings.DELETION_RETENTION_DAYS
             deleted_at = deleted_user.deleted_at
             if deleted_at.tzinfo is None:
-                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
-            permanent_date = (
-                deleted_at + timedelta(days=retention_days)
-            )
-            if permanent_date > datetime.now(timezone.utc):
+                deleted_at = deleted_at.replace(tzinfo=UTC)
+            permanent_date = deleted_at + timedelta(days=retention_days)
+            if permanent_date > datetime.now(UTC):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
-                        "detail": (
-                            "A recoverable account exists for this email"
-                        ),
+                        "detail": ("A recoverable account exists for this email"),
                         "code": "ACCOUNT_RECOVERABLE",
                         "account_recoverable": True,
-                        "permanent_deletion_date": (
-                            permanent_date.isoformat()
-                        ),
-                        "restore_endpoint": (
-                            "/api/v1/auth/restore-account"
-                        ),
+                        "permanent_deletion_date": (permanent_date.isoformat()),
+                        "restore_endpoint": ("/api/v1/auth/restore-account"),
                     },
                 )
 
@@ -98,15 +97,14 @@ def register(
                 account_type=request.account_type,
                 primary_email=request.email,
                 preferred_language=request.preferred_language,
-                legal_name=request.preferred_name
+                legal_name=request.preferred_name,
             )
         except IntegrityError:
             db.rollback()
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered"
+                status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
             )
-        
+
         auth_repo = AuthRepository(db)
         audit_repo = AuditRepository(db)
         audit_service = AuditService(audit_repo)
@@ -121,9 +119,9 @@ def register(
             user_id=str(base_profile.user_id),
             display_name=request.preferred_name,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
-        
+
         if not success:
             db.rollback()
 
@@ -134,32 +132,24 @@ def register(
                         "detail": "A recoverable account exists for this email",
                         "code": "ACCOUNT_RECOVERABLE",
                         "account_recoverable": True,
-                        "permanent_deletion_date": data.get(
-                            "permanent_deletion_date"
-                        ),
+                        "permanent_deletion_date": data.get("permanent_deletion_date"),
                         "restore_endpoint": "/api/v1/auth/restore-account",
                     },
                 )
             elif "already registered" in error:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=error
-                )
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error)
             else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=error
-                )
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
         return RegisterResponse(**data)
-        
+
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration failed: {str(e)}"
+            detail=f"Registration failed: {str(e)}",
         )
 
 
@@ -168,24 +158,19 @@ def register(
     response_model=LoginResponse,
     status_code=status.HTTP_200_OK,
     summary="User Login",
-    description="Authenticate user and return JWT tokens"
+    description="Authenticate user and return JWT tokens",
 )
 def login(
-    request: LoginRequest,
-    http_request: Request,
-    service: AuthService = Depends(get_auth_service)
+    request: LoginRequest, http_request: Request, service: AuthService = Depends(get_auth_service)
 ):
     """Authenticate user with email/password and return JWT tokens."""
     ip_address = http_request.client.host if http_request.client else None
     user_agent = http_request.headers.get("user-agent")
 
     success, error, data = service.login(
-        email=request.email,
-        password=request.password,
-        ip_address=ip_address,
-        user_agent=user_agent
+        email=request.email, password=request.password, ip_address=ip_address, user_agent=user_agent
     )
-    
+
     if not success:
         if error == "ACCOUNT_DELETED":
             raise HTTPException(
@@ -194,22 +179,14 @@ def login(
                     "detail": "Account scheduled for deletion",
                     "code": "ACCOUNT_DELETED",
                     "deletion_scheduled_at": data.get("deletion_scheduled_at"),
-                    "permanent_deletion_date": data.get(
-                        "permanent_deletion_date"
-                    ),
+                    "permanent_deletion_date": data.get("permanent_deletion_date"),
                     "recovery_info": data.get("recovery_info"),
                 },
             )
         elif "locked" in error.lower():
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=error
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error)
         else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=error
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error)
 
     return LoginResponse(**data)
 
@@ -219,27 +196,24 @@ def login(
     response_model=VerifyEmailResponse,
     status_code=status.HTTP_200_OK,
     summary="Verify Email",
-    description="Verify email address with token from email"
+    description="Verify email address with token from email",
 )
 def verify_email(
     request: VerifyEmailRequest,
     service: AuthService = Depends(get_auth_service),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Verify user email with token sent during registration."""
     success, error = service.verify_email(request.token)
-    
+
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
     # Token is cleared on verification, so user info is unavailable here
     return VerifyEmailResponse(
         message="Email verified successfully",
         email="",  # Email already verified, token cleared
-        user_id=""
+        user_id="",
     )
 
 
@@ -248,11 +222,10 @@ def verify_email(
     response_model=RequestPasswordResetResponse,
     status_code=status.HTTP_200_OK,
     summary="Request Password Reset",
-    description="Request password reset email"
+    description="Request password reset email",
 )
 def request_password_reset(
-    request: RequestPasswordResetRequest,
-    service: AuthService = Depends(get_auth_service)
+    request: RequestPasswordResetRequest, service: AuthService = Depends(get_auth_service)
 ):
     """Send password reset email. Returns success even for non-existent addresses."""
     success, error = service.request_password_reset(request.email)
@@ -266,21 +239,15 @@ def request_password_reset(
     response_model=ResetPasswordResponse,
     status_code=status.HTTP_200_OK,
     summary="Reset Password",
-    description="Reset password with token from email"
+    description="Reset password with token from email",
 )
-def reset_password(
-    request: ResetPasswordRequest,
-    service: AuthService = Depends(get_auth_service)
-):
+def reset_password(request: ResetPasswordRequest, service: AuthService = Depends(get_auth_service)):
     """Reset user password with token from email."""
     success, error = service.reset_password(request.token, request.new_password)
-    
+
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
     return ResetPasswordResponse(
         message="Password reset successfully. You can now login with your new password."
     )
@@ -291,45 +258,36 @@ def reset_password(
     response_model=ResendVerificationResponse,
     status_code=status.HTTP_200_OK,
     summary="Resend Verification Email",
-    description="Resend email verification link"
+    description="Resend email verification link",
 )
 def resend_verification(
-    request: ResendVerificationRequest,
-    service: AuthService = Depends(get_auth_service)
+    request: ResendVerificationRequest, service: AuthService = Depends(get_auth_service)
 ):
     """Resend email verification link to user."""
     success, error = service.resend_verification_email(request.email)
-    
+
     if not success:
         if "already verified" in error.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
         else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=error
-            )
-    
-    return ResendVerificationResponse(
-        message="Verification email sent. Please check your inbox."
-    )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error)
+
+    return ResendVerificationResponse(message="Verification email sent. Please check your inbox.")
 
 
 def get_token_blacklist() -> TokenBlacklist:
     """Dependency to get TokenBlacklist singleton instance."""
     try:
         return get_blacklist()
-    except RuntimeError as e:
+    except RuntimeError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Token refresh service temporarily unavailable"
+            detail="Token refresh service temporarily unavailable",
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Token refresh service temporarily unavailable"
+            detail="Token refresh service temporarily unavailable",
         )
 
 
@@ -338,44 +296,39 @@ def get_token_blacklist() -> TokenBlacklist:
     response_model=RefreshTokenResponse,
     status_code=status.HTTP_200_OK,
     summary="Refresh Access Token",
-    description="Exchange valid refresh token for new access and refresh tokens"
+    description="Exchange valid refresh token for new access and refresh tokens",
 )
 def refresh_token(
     request: RefreshTokenRequest,
     service: AuthService = Depends(get_auth_service),
-    blacklist: TokenBlacklist = Depends(get_token_blacklist)
+    blacklist: TokenBlacklist = Depends(get_token_blacklist),
 ):
     """Exchange valid refresh token for new tokens (with rotation)."""
     success, error_code, data = service.refresh_access_token(
-        refresh_token=request.refresh_token,
-        blacklist=blacklist
+        refresh_token=request.refresh_token, blacklist=blacklist
     )
 
     if not success:
         if error_code in ("INVALID_TOKEN", "REVOKED_TOKEN", "USER_NOT_FOUND"):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired refresh token"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
             )
         elif error_code == "ACCOUNT_LOCKED":
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account temporarily locked"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Account temporarily locked"
             )
         elif error_code == "ACCOUNT_DELETED":
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account has been deactivated"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Account has been deactivated"
             )
         elif error_code == "SERVICE_UNAVAILABLE":
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Token refresh service temporarily unavailable"
+                detail="Token refresh service temporarily unavailable",
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Token refresh failed"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Token refresh failed"
             )
 
     return RefreshTokenResponse(**data)
@@ -400,8 +353,7 @@ def request_restore_account(
     service.request_account_restoration(request.email)
     return RestoreAccountResponse(
         message=(
-            "If a recoverable account exists for this email, "
-            "a restoration link has been sent."
+            "If a recoverable account exists for this email, a restoration link has been sent."
         )
     )
 
@@ -507,10 +459,7 @@ def set_password(
 
     if not success:
         if error_code == "USER_NOT_FOUND":
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         elif error_code == "NOT_OAUTH_USER":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -520,7 +469,7 @@ def set_password(
                         "Use reset-password to change an existing password."
                     ),
                     "code": "NOT_OAUTH_USER",
-                }
+                },
             )
         elif error_code == "PASSWORD_ALREADY_SET":
             raise HTTPException(
@@ -528,14 +477,10 @@ def set_password(
                 detail={
                     "detail": "Password already set. Use reset-password to change it.",
                     "code": "PASSWORD_ALREADY_SET",
-                }
+                },
             )
         else:
             # Password validation error
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_code
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_code)
 
     return SetPasswordResponse(**data)
-
