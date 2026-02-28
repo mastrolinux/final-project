@@ -5,8 +5,8 @@ Uses Mailpit (local dev) or Mailgun SMTP (production).
 
 import smtplib
 from contextlib import contextmanager
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from src.core.celery_app import celery_app
 from src.core.config import settings
@@ -32,7 +32,7 @@ def send_verification_email(self, email: str, token: str, user_name: str):
     try:
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
         api_verify_url = f"{settings.API_BASE_URL}/api/v1/auth/verify-email"
-        
+
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Verify your email address"
         msg["From"] = settings.SMTP_FROM_EMAIL
@@ -40,25 +40,25 @@ def send_verification_email(self, email: str, token: str, user_name: str):
 
         text = f"""
         Welcome, {user_name}!
-        
+
         Please verify your email address by visiting:
         {verification_url}
-        
+
         This link expires in 24 hours.
-        
+
         --- API Testing (Development) ---
         Token: {token}
-        
+
         curl -X POST {api_verify_url} \\
           -H "Content-Type: application/json" \\
           -d '{{"token": "{token}"}}'
-        
+
         If you didn't create this account, please ignore this email.
-        
+
         Best regards,
         Identity Management Team
         """
-        
+
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -66,9 +66,10 @@ def send_verification_email(self, email: str, token: str, user_name: str):
               <h2 style="color: #2563eb;">Welcome, {user_name}!</h2>
               <p>Please verify your email address by clicking the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{verification_url}" 
-                   style="background-color: #2563eb; color: white; padding: 12px 30px; 
-                          text-decoration: none; border-radius: 5px; display: inline-block;">
+                <a href="{verification_url}"
+                   style="background-color: #2563eb; color: white;
+                          padding: 12px 30px; text-decoration: none;
+                          border-radius: 5px; display: inline-block;">
                   Verify Email Address
                 </a>
               </div>
@@ -80,15 +81,23 @@ def send_verification_email(self, email: str, token: str, user_name: str):
                 This link expires in 24 hours.
               </p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-              <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p style="color: #475569; font-size: 12px; margin: 0 0 10px 0;">
+              <div style="background-color: #f8fafc; padding: 15px;
+                          border-radius: 5px; margin: 15px 0;">
+                <p style="color: #475569; font-size: 12px;
+                           margin: 0 0 10px 0;">
                   <strong>API Testing (Development Only)</strong>
                 </p>
-                <p style="color: #64748b; font-size: 11px; margin: 0 0 5px 0;">
-                  Token: <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">{token}</code>
+                <p style="color: #64748b; font-size: 11px;
+                           margin: 0 0 5px 0;">
+                  Token: <code style="background: #e2e8f0;
+                    padding: 2px 6px;
+                    border-radius: 3px;">{token}</code>
                 </p>
-                <p style="color: #64748b; font-size: 11px; margin: 0;">
-                  API: <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 3px;">{api_verify_url}</code>
+                <p style="color: #64748b; font-size: 11px;
+                           margin: 0;">
+                  API: <code style="background: #e2e8f0;
+                    padding: 2px 6px;
+                    border-radius: 3px;">{api_verify_url}</code>
                 </p>
               </div>
               <p style="color: #999; font-size: 12px;">
@@ -98,17 +107,17 @@ def send_verification_email(self, email: str, token: str, user_name: str):
           </body>
         </html>
         """
-        
+
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
-        
+
         with get_smtp_connection() as server:
             server.send_message(msg)
-            
+
         return {"status": "sent", "email": email}
-        
+
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @celery_app.task(name="send_password_reset_email", bind=True, max_retries=3)
@@ -117,33 +126,34 @@ def send_password_reset_email(self, email: str, token: str):
     try:
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
         api_reset_url = f"{settings.API_BASE_URL}/api/v1/auth/reset-password"
-        
+
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Reset your password"
         msg["From"] = settings.SMTP_FROM_EMAIL
         msg["To"] = email
-        
+
         text = f"""
         Password Reset Request
-        
+
         You requested to reset your password. Click the link below to proceed:
         {reset_url}
-        
+
         This link expires in 1 hour.
-        
+
         --- API Testing (Development) ---
         Token: {token}
-        
+
         curl -X POST {api_reset_url} \\
           -H "Content-Type: application/json" \\
           -d '{{"token": "{token}", "new_password": "YourNewPassword123!"}}'
-        
-        If you didn't request this, please ignore this email. Your password will remain unchanged.
-        
+
+        If you didn't request this, please ignore this email.
+        Your password will remain unchanged.
+
         Best regards,
         Identity Management Team
         """
-        
+
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -151,9 +161,10 @@ def send_password_reset_email(self, email: str, token: str):
               <h2 style="color: #dc2626;">Password Reset Request</h2>
               <p>You requested to reset your password. Click the button below to proceed:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="{reset_url}" 
-                   style="background-color: #dc2626; color: white; padding: 12px 30px; 
-                          text-decoration: none; border-radius: 5px; display: inline-block;">
+                <a href="{reset_url}"
+                   style="background-color: #dc2626; color: white;
+                          padding: 12px 30px; text-decoration: none;
+                          border-radius: 5px; display: inline-block;">
                   Reset Password
                 </a>
               </div>
@@ -165,35 +176,44 @@ def send_password_reset_email(self, email: str, token: str):
                 This link expires in 1 hour.
               </p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-              <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p style="color: #991b1b; font-size: 12px; margin: 0 0 10px 0;">
+              <div style="background-color: #fef2f2; padding: 15px;
+                          border-radius: 5px; margin: 15px 0;">
+                <p style="color: #991b1b; font-size: 12px;
+                           margin: 0 0 10px 0;">
                   <strong>API Testing (Development Only)</strong>
                 </p>
-                <p style="color: #b91c1c; font-size: 11px; margin: 0 0 5px 0;">
-                  Token: <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{token}</code>
+                <p style="color: #b91c1c; font-size: 11px;
+                           margin: 0 0 5px 0;">
+                  Token: <code style="background: #fee2e2;
+                    padding: 2px 6px;
+                    border-radius: 3px;">{token}</code>
                 </p>
-                <p style="color: #b91c1c; font-size: 11px; margin: 0;">
-                  API: <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{api_reset_url}</code>
+                <p style="color: #b91c1c; font-size: 11px;
+                           margin: 0;">
+                  API: <code style="background: #fee2e2;
+                    padding: 2px 6px;
+                    border-radius: 3px;">{api_reset_url}</code>
                 </p>
               </div>
               <p style="color: #999; font-size: 12px;">
-                If you didn't request this, please ignore this email. Your password will remain unchanged.
+                If you didn't request this, please ignore this
+                email. Your password will remain unchanged.
               </p>
             </div>
           </body>
         </html>
         """
-        
+
         msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))
-        
+
         with get_smtp_connection() as server:
             server.send_message(msg)
-            
+
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @celery_app.task(name="send_restoration_email", bind=True, max_retries=3)
@@ -201,9 +221,7 @@ def send_restoration_email(self, email: str, token: str):
     """Send account restoration link (expires in 24 hours)."""
     try:
         restore_url = f"{settings.FRONTEND_URL}/restore-account/confirm?token={token}"
-        api_restore_url = (
-            f"{settings.API_BASE_URL}/api/v1/auth/restore-account/confirm"
-        )
+        api_restore_url = f"{settings.API_BASE_URL}/api/v1/auth/restore-account/confirm"
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Restore your account"
@@ -288,7 +306,7 @@ def send_restoration_email(self, email: str, token: str):
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @celery_app.task(name="send_rejection_email", bind=True, max_retries=3)
@@ -366,7 +384,7 @@ def send_rejection_email(
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @celery_app.task(name="send_approval_email", bind=True, max_retries=3)
@@ -438,7 +456,7 @@ def send_approval_email(self, email: str, user_name: str, context_name: str):
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @celery_app.task(name="send_document_expiry_email", bind=True, max_retries=3)
@@ -476,9 +494,7 @@ def send_document_expiry_email(
         Identity Management Team
         """
 
-        contexts_html_items = "".join(
-            f"<li>{name}</li>" for name in context_names
-        )
+        contexts_html_items = "".join(f"<li>{name}</li>" for name in context_names)
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -523,4 +539,4 @@ def send_document_expiry_email(
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)

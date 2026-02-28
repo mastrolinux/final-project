@@ -5,24 +5,24 @@ SQLAlchemy models for the Identity and Profile Management API.
 Defines database entities and their relationships.
 """
 
-from src.models.profile import BaseProfile, IdentityName
-from src.models.context import ContextProfile, ContextType
+from src.models.audit import AuditEventType, AuditLog, AuditOperation
 from src.models.auth import AuthUser
+from src.models.context import ContextProfile, ContextType
 from src.models.oauth import (
-    OAuthScope,
-    OAuthClient,
-    OAuthAuthorizationCode,
-    OAuthAccessToken,
-    OAuthRefreshToken,
-    OAuthConsent,
     AccessLevel,
+    ConsentMethod,
+    OAuthAccessToken,
+    OAuthAuthorizationCode,
+    OAuthClient,
+    OAuthConsent,
+    OAuthRefreshToken,
+    OAuthScope,
     TokenEndpointAuthMethod,
-    ConsentMethod
 )
-from src.models.audit import AuditLog, AuditOperation, AuditEventType
+from src.models.profile import BaseProfile, IdentityName
 from src.models.verification import (
-    VerificationDocument,
     DocumentType,
+    VerificationDocument,
     VerificationStatus,
 )
 
@@ -48,4 +48,3 @@ __all__ = [
     "DocumentType",
     "VerificationStatus",
 ]
-

@@ -5,28 +5,27 @@ REST API endpoints for managing OAuth clients.
 All endpoints require admin privileges.
 """
 
-from typing import Optional
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from src.api.dependencies.auth import require_admin
 from src.core.database import get_db
 from src.core.security import hash_password
-from src.api.dependencies.auth import require_admin
-from src.models.auth import AuthUser
 from src.models.audit import AuditEventType, AuditOperation
+from src.models.auth import AuthUser
 from src.models.oauth import OAuthClient
-from src.repositories.oauth_repository import OAuthRepository
 from src.repositories.audit_repository import AuditRepository
-from src.services.audit_service import AuditService
+from src.repositories.oauth_repository import OAuthRepository
 from src.schemas.oauth import (
     OAuthClientCreate,
-    OAuthClientUpdate,
-    OAuthClientResponse,
     OAuthClientCreateResponse,
-    OAuthClientListResponse
+    OAuthClientListResponse,
+    OAuthClientResponse,
+    OAuthClientUpdate,
 )
-
+from src.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -45,29 +44,32 @@ def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
 # OAuth Client CRUD Endpoints
 #
 
+
 @router.post(
     "/clients",
     response_model=OAuthClientCreateResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create OAuth Client",
-    description="Register a new OAuth client. Requires admin privileges."
+    description="Register a new OAuth client. Requires admin privileges.",
 )
 def create_oauth_client(
     client_data: OAuthClientCreate,
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
-    audit_service: AuditService = Depends(get_audit_service)
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """Create a new OAuth client. Plain text secret is only returned in this response."""
     if oauth_repo.client_id_exists(client_data.client_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Client with ID '{client_data.client_id}' already exists or was previously deleted"
+            detail=(
+                f"Client with ID '{client_data.client_id}' already exists or was previously deleted"
+            ),
         )
-    
+
     plain_secret = None
     secret_hash = None
-    
+
     if client_data.is_confidential:
         if client_data.client_secret:
             plain_secret = client_data.client_secret
@@ -87,9 +89,9 @@ def create_oauth_client(
         default_context_type=client_data.default_context_type,
         is_confidential=client_data.is_confidential,
         is_first_party=client_data.is_first_party,
-        is_active=True
+        is_active=True,
     )
-    
+
     created_client = oauth_repo.create_client(client)
 
     audit_service.log_event(
@@ -100,7 +102,7 @@ def create_oauth_client(
         resource_id=created_client.client_id,
         operation=AuditOperation.create,
         changes={"client_name": created_client.client_name},
-        legal_basis="legitimate_interest"
+        legal_basis="legitimate_interest",
     )
 
     return OAuthClientCreateResponse(
@@ -116,7 +118,7 @@ def create_oauth_client(
         is_active=created_client.is_active,
         is_first_party=created_client.is_first_party,
         created_at=created_client.created_at,
-        client_secret=plain_secret
+        client_secret=plain_secret,
     )
 
 
@@ -124,24 +126,22 @@ def create_oauth_client(
     "/clients",
     response_model=OAuthClientListResponse,
     summary="List OAuth Clients",
-    description="List all registered OAuth clients. Requires admin privileges."
+    description="List all registered OAuth clients. Requires admin privileges.",
 )
 def list_oauth_clients(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     include_inactive: bool = Query(False, description="Include inactive clients"),
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
 ):
     """List all OAuth clients with pagination."""
     clients = oauth_repo.list_all_clients(
-        include_inactive=include_inactive,
-        offset=(page - 1) * page_size,
-        limit=page_size
+        include_inactive=include_inactive, offset=(page - 1) * page_size, limit=page_size
     )
-    
+
     total = oauth_repo.count_clients(include_inactive=include_inactive)
-    
+
     return OAuthClientListResponse(
         clients=[
             OAuthClientResponse(
@@ -157,13 +157,13 @@ def list_oauth_clients(
                 is_active=c.is_active,
                 is_first_party=c.is_first_party,
                 created_at=c.created_at,
-                updated_at=c.updated_at
+                updated_at=c.updated_at,
             )
             for c in clients
         ],
         total=total,
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
 
 
@@ -171,22 +171,21 @@ def list_oauth_clients(
     "/clients/{client_id}",
     response_model=OAuthClientResponse,
     summary="Get OAuth Client",
-    description="Get details of a specific OAuth client. Requires admin privileges."
+    description="Get details of a specific OAuth client. Requires admin privileges.",
 )
 def get_oauth_client(
     client_id: str,
     admin: AuthUser = Depends(require_admin),
-    oauth_repo: OAuthRepository = Depends(get_oauth_repository)
+    oauth_repo: OAuthRepository = Depends(get_oauth_repository),
 ):
     """Get details of a specific OAuth client. Secret is never returned."""
     client = oauth_repo.get_client(client_id)
-    
+
     if not client:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Client '{client_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Client '{client_id}' not found"
         )
-    
+
     return OAuthClientResponse(
         client_id=client.client_id,
         client_name=client.client_name,
@@ -200,7 +199,7 @@ def get_oauth_client(
         is_active=client.is_active,
         is_first_party=client.is_first_party,
         created_at=client.created_at,
-        updated_at=client.updated_at
+        updated_at=client.updated_at,
     )
 
 
@@ -208,35 +207,34 @@ def get_oauth_client(
     "/clients/{client_id}",
     response_model=OAuthClientResponse,
     summary="Update OAuth Client",
-    description="Update an OAuth client. Requires admin privileges."
+    description="Update an OAuth client. Requires admin privileges.",
 )
 def update_oauth_client(
     client_id: str,
     update_data: OAuthClientUpdate,
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
-    audit_service: AuditService = Depends(get_audit_service)
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """Update an OAuth client. Only provided fields are changed."""
     client = oauth_repo.get_client(client_id)
-    
+
     if not client:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Client '{client_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Client '{client_id}' not found"
         )
-    
+
     update_dict = update_data.model_dump(exclude_unset=True)
 
     if "client_secret" in update_dict:
         new_secret = update_dict.pop("client_secret")
         if new_secret:
             client.client_secret_hash = hash_password(new_secret)
-    
+
     for field, value in update_dict.items():
         if hasattr(client, field):
             setattr(client, field, value)
-    
+
     updated_client = oauth_repo.update_client(client)
 
     audit_service.log_event(
@@ -247,7 +245,7 @@ def update_oauth_client(
         resource_id=client_id,
         operation=AuditOperation.update,
         changes=update_data.model_dump(exclude_unset=True, exclude={"client_secret"}),
-        legal_basis="legitimate_interest"
+        legal_basis="legitimate_interest",
     )
 
     return OAuthClientResponse(
@@ -263,7 +261,7 @@ def update_oauth_client(
         is_active=updated_client.is_active,
         is_first_party=updated_client.is_first_party,
         created_at=updated_client.created_at,
-        updated_at=updated_client.updated_at
+        updated_at=updated_client.updated_at,
     )
 
 
@@ -271,23 +269,22 @@ def update_oauth_client(
     "/clients/{client_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete OAuth Client",
-    description="Soft-delete an OAuth client. Requires admin privileges."
+    description="Soft-delete an OAuth client. Requires admin privileges.",
 )
 def delete_oauth_client(
     client_id: str,
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
-    audit_service: AuditService = Depends(get_audit_service)
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """Soft-delete an OAuth client. Existing tokens remain valid until expiry."""
     client = oauth_repo.get_client(client_id)
-    
+
     if not client:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Client '{client_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Client '{client_id}' not found"
         )
-    
+
     oauth_repo.delete_client(client_id)
 
     audit_service.log_event(
@@ -297,7 +294,7 @@ def delete_oauth_client(
         resource_type="oauth_client",
         resource_id=client_id,
         operation=AuditOperation.delete,
-        legal_basis="legitimate_interest"
+        legal_basis="legitimate_interest",
     )
 
     return None
@@ -307,21 +304,20 @@ def delete_oauth_client(
     "/clients/{client_id}/purge",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Permanently Delete OAuth Client",
-    description="Hard-delete an OAuth client and all related records. Requires admin privileges."
+    description="Hard-delete an OAuth client and all related records. Requires admin privileges.",
 )
 def purge_oauth_client(
     client_id: str,
     admin: AuthUser = Depends(require_admin),
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
-    audit_service: AuditService = Depends(get_audit_service)
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """Hard-delete an OAuth client and all related records. Irreversible."""
     if not oauth_repo.client_id_exists(client_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Client '{client_id}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Client '{client_id}' not found"
         )
-    
+
     # Record audit event before purge since the data will be gone after
     audit_service.log_event(
         event_type=AuditEventType.client_purge,
@@ -331,7 +327,7 @@ def purge_oauth_client(
         resource_id=client_id,
         operation=AuditOperation.delete,
         changes={"hard_delete": True},
-        legal_basis="legitimate_interest"
+        legal_basis="legitimate_interest",
     )
 
     oauth_repo.purge_client(client_id)

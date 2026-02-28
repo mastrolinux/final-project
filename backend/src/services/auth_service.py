@@ -5,28 +5,28 @@ Business logic layer for authentication operations.
 Handles user registration, login, email verification, and password reset.
 """
 
-from datetime import datetime, timezone
-from typing import Optional, Tuple, TYPE_CHECKING
 import secrets
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from src.repositories.auth_repository import AuthRepository
-from src.repositories.profile_repository import ProfileRepository
 from src.core.config import settings
 from src.core.security import (
-    hash_password,
-    verify_password,
-    validate_password_strength,
     create_access_token,
     create_refresh_token,
-    verify_token
-)
-from src.tasks.email_tasks import (
-    send_verification_email,
-    send_password_reset_email,
-    send_restoration_email,
+    hash_password,
+    validate_password_strength,
+    verify_password,
+    verify_token,
 )
 from src.models.audit import AuditEventType, AuditOperation
+from src.repositories.auth_repository import AuthRepository
+from src.repositories.profile_repository import ProfileRepository
+from src.tasks.email_tasks import (
+    send_password_reset_email,
+    send_restoration_email,
+    send_verification_email,
+)
 
 if TYPE_CHECKING:
     from src.core.redis_client import TokenBlacklist
@@ -40,7 +40,7 @@ def _ensure_utc(dt: datetime) -> datetime:
     This helper normalizes both cases to UTC-aware datetimes.
     """
     if dt is not None and dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -51,7 +51,7 @@ class AuthService:
         self,
         auth_repo: AuthRepository,
         profile_repo: ProfileRepository,
-        audit_service: Optional["AuditService"] = None
+        audit_service: Optional["AuditService"] = None,
     ):
         self.auth_repo = auth_repo
         self.profile_repo = profile_repo
@@ -60,14 +60,14 @@ class AuthService:
     def _audit(
         self,
         event_type: AuditEventType,
-        user_id: Optional[UUID],
+        user_id: UUID | None,
         resource_type: str,
         resource_id: str,
         operation: AuditOperation,
-        changes: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        legal_basis: Optional[str] = None
+        changes: dict | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        legal_basis: str | None = None,
     ) -> None:
         """Helper to log audit events if audit_service is available."""
         if self.audit_service:
@@ -81,7 +81,7 @@ class AuthService:
                 changes=changes,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                legal_basis=legal_basis
+                legal_basis=legal_basis,
             )
 
     def register_user(
@@ -90,9 +90,9 @@ class AuthService:
         password: str,
         user_id: str,
         display_name: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[bool, str | None, dict | None]:
         """Register new user with email and password.
 
         Returns:
@@ -106,19 +106,25 @@ class AuthService:
         # Check for soft-deleted recoverable account
         deleted_user = self.auth_repo.get_by_email_including_deleted(email)
         if deleted_user and deleted_user.deleted_at is not None:
-            from src.core.config import settings
             from datetime import timedelta
+
+            from src.core.config import settings
+
             retention_days = settings.DELETION_RETENTION_DAYS
             deleted_at = _ensure_utc(deleted_user.deleted_at)
             permanent_date = deleted_at + timedelta(days=retention_days)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if permanent_date > now:
                 # Account is recoverable
-                return False, "ACCOUNT_RECOVERABLE", {
-                    "account_recoverable": True,
-                    "permanent_deletion_date": permanent_date.isoformat(),
-                    "restore_endpoint": "/api/v1/auth/restore-account",
-                }
+                return (
+                    False,
+                    "ACCOUNT_RECOVERABLE",
+                    {
+                        "account_recoverable": True,
+                        "permanent_deletion_date": permanent_date.isoformat(),
+                        "restore_endpoint": "/api/v1/auth/restore-account",
+                    },
+                )
             # Grace period expired, allow fresh registration
 
         # Validate password strength
@@ -149,23 +155,29 @@ class AuthService:
             changes={"email": email},
             ip_address=ip_address,
             user_agent=user_agent,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
-        return True, None, {
-            "user_id": str(auth_user.user_id),
-            "email": auth_user.email,
-            "is_email_verified": False,
-            "message": "Registration successful. Please check your email to verify your account."
-        }
+        return (
+            True,
+            None,
+            {
+                "user_id": str(auth_user.user_id),
+                "email": auth_user.email,
+                "is_email_verified": False,
+                "message": (
+                    "Registration successful. Please check your email to verify your account."
+                ),
+            },
+        )
 
     def login(
         self,
         email: str,
         password: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[bool, str | None, dict | None]:
         """Authenticate user and return JWT tokens.
 
         Returns:
@@ -178,20 +190,23 @@ class AuthService:
             deleted_user = self.auth_repo.get_by_email_including_deleted(email)
             if deleted_user and deleted_user.deleted_at is not None:
                 from datetime import timedelta
+
                 retention_days = settings.DELETION_RETENTION_DAYS
                 deleted_at = _ensure_utc(deleted_user.deleted_at)
-                permanent_date = deleted_at + timedelta(
-                    days=retention_days
-                )
-                if permanent_date > datetime.now(timezone.utc):
-                    return False, "ACCOUNT_DELETED", {
-                        "deletion_scheduled_at": deleted_user.deleted_at.isoformat(),
-                        "permanent_deletion_date": permanent_date.isoformat(),
-                        "recovery_info": (
-                            "Register again with the same email to restore "
-                            "your account before the permanent deletion date."
-                        ),
-                    }
+                permanent_date = deleted_at + timedelta(days=retention_days)
+                if permanent_date > datetime.now(UTC):
+                    return (
+                        False,
+                        "ACCOUNT_DELETED",
+                        {
+                            "deletion_scheduled_at": deleted_user.deleted_at.isoformat(),
+                            "permanent_deletion_date": permanent_date.isoformat(),
+                            "recovery_info": (
+                                "Register again with the same email to restore "
+                                "your account before the permanent deletion date."
+                            ),
+                        },
+                    )
             return False, "Invalid email or password", None
 
         # Check if account is locked
@@ -206,9 +221,13 @@ class AuthService:
                 changes={"reason": "account_locked"},
                 ip_address=ip_address,
                 user_agent=user_agent,
-                legal_basis="legitimate_interest"
+                legal_basis="legitimate_interest",
             )
-            return False, "Account temporarily locked due to failed login attempts. Please try again later.", None
+            return (
+                False,
+                "Account temporarily locked due to failed login attempts. Please try again later.",
+                None,
+            )
 
         # Verify password
         if not verify_password(password, auth_user.password_hash):
@@ -225,7 +244,7 @@ class AuthService:
                 changes={"reason": "invalid_password"},
                 ip_address=ip_address,
                 user_agent=user_agent,
-                legal_basis="legitimate_interest"
+                legal_basis="legitimate_interest",
             )
             return False, "Invalid email or password", None
 
@@ -237,16 +256,11 @@ class AuthService:
         account_type = base_profile.account_type.value if base_profile else "unverified"
 
         # Check admin status from database OR environment config
-        is_admin = auth_user.is_admin or (
-            auth_user.email.lower() in settings.admin_emails
-        )
+        is_admin = auth_user.is_admin or (auth_user.email.lower() in settings.admin_emails)
 
         # Generate JWT tokens
         access_token = create_access_token(
-            str(auth_user.user_id),
-            auth_user.email,
-            account_type,
-            is_admin
+            str(auth_user.user_id), auth_user.email, account_type, is_admin
         )
         refresh_token = create_refresh_token(str(auth_user.user_id))
 
@@ -259,24 +273,28 @@ class AuthService:
             operation=AuditOperation.login,
             ip_address=ip_address,
             user_agent=user_agent,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
-        return True, None, {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": 3600,  # 1 hour
-            "user_id": str(auth_user.user_id),
-            "email": auth_user.email,
-            "is_email_verified": auth_user.is_email_verified,
-            "account_type": account_type,
-            "is_admin": is_admin,
-            "provider": auth_user.provider,
-            "has_custom_password": auth_user.has_custom_password
-        }
+        return (
+            True,
+            None,
+            {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_type": "bearer",
+                "expires_in": 3600,  # 1 hour
+                "user_id": str(auth_user.user_id),
+                "email": auth_user.email,
+                "is_email_verified": auth_user.is_email_verified,
+                "account_type": account_type,
+                "is_admin": is_admin,
+                "provider": auth_user.provider,
+                "has_custom_password": auth_user.has_custom_password,
+            },
+        )
 
-    def verify_email(self, token: str) -> Tuple[bool, Optional[str]]:
+    def verify_email(self, token: str) -> tuple[bool, str | None]:
         """Verify email with verification token."""
         # Find auth user by verification token
         auth_user = self.auth_repo.get_by_verification_token(token)
@@ -297,7 +315,7 @@ class AuthService:
             resource_type="auth_user",
             resource_id=str(auth_user.user_id),
             operation=AuditOperation.verify,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         return True, None
@@ -306,9 +324,9 @@ class AuthService:
         self,
         user_id: str,
         new_password: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[bool, str | None, dict | None]:
         """Set a password for an OAuth-only user who has not yet set one.
 
         Error codes: USER_NOT_FOUND, NOT_OAUTH_USER, PASSWORD_ALREADY_SET
@@ -349,16 +367,20 @@ class AuthService:
             },
             ip_address=ip_address,
             user_agent=user_agent,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
-        return True, None, {
-            "message": "Password set successfully. You can now login with email and password.",
-            "user_id": user_id,
-            "email": auth_user.email
-        }
+        return (
+            True,
+            None,
+            {
+                "message": "Password set successfully. You can now login with email and password.",
+                "user_id": user_id,
+                "email": auth_user.email,
+            },
+        )
 
-    def request_password_reset(self, email: str) -> Tuple[bool, Optional[str]]:
+    def request_password_reset(self, email: str) -> tuple[bool, str | None]:
         """Request password reset email. Always returns success to prevent enumeration."""
         # Get auth user
         auth_user = self.auth_repo.get_by_email(email)
@@ -386,16 +408,12 @@ class AuthService:
             resource_type="auth_user",
             resource_id=str(auth_user.user_id),
             operation=AuditOperation.update,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         return True, None
 
-    def reset_password(
-        self,
-        token: str,
-        new_password: str
-    ) -> Tuple[bool, Optional[str]]:
+    def reset_password(self, token: str, new_password: str) -> tuple[bool, str | None]:
         """Reset password with reset token."""
         # Find auth user by reset token
         auth_user = self.auth_repo.get_by_reset_token(token)
@@ -425,12 +443,12 @@ class AuthService:
             resource_type="auth_user",
             resource_id=str(auth_user.user_id),
             operation=AuditOperation.update,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         return True, None
 
-    def resend_verification_email(self, email: str) -> Tuple[bool, Optional[str]]:
+    def resend_verification_email(self, email: str) -> tuple[bool, str | None]:
         """Resend verification email to user."""
         # Get auth user
         auth_user = self.auth_repo.get_by_email(email)
@@ -447,7 +465,9 @@ class AuthService:
 
         # Generate new verification token
         verification_token = secrets.token_urlsafe(32)
-        self.auth_repo.set_verification_token(str(auth_user.user_id), verification_token, expires_hours=24)
+        self.auth_repo.set_verification_token(
+            str(auth_user.user_id), verification_token, expires_hours=24
+        )
 
         # Send verification email asynchronously
         send_verification_email.delay(email, verification_token, display_name)
@@ -455,10 +475,8 @@ class AuthService:
         return True, None
 
     def refresh_access_token(
-        self,
-        refresh_token: str,
-        blacklist: "TokenBlacklist"
-    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        self, refresh_token: str, blacklist: "TokenBlacklist"
+    ) -> tuple[bool, str | None, dict | None]:
         """Exchange valid refresh token for new tokens (refresh token rotation).
 
         Error codes: INVALID_TOKEN, REVOKED_TOKEN, USER_NOT_FOUND,
@@ -492,10 +510,10 @@ class AuthService:
 
         # Step 5: Blacklist old token BEFORE issuing new tokens
         # Calculate TTL: use remaining time until token expiry
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         token_exp = token_data.exp
         if token_exp.tzinfo is None:
-            token_exp = token_exp.replace(tzinfo=timezone.utc)
+            token_exp = token_exp.replace(tzinfo=UTC)
 
         remaining_ttl = int((token_exp - now).total_seconds())
         if remaining_ttl > 0:
@@ -509,30 +527,26 @@ class AuthService:
         account_type = base_profile.account_type.value if base_profile else "unverified"
 
         # Check admin status from database OR environment config
-        is_admin = auth_user.is_admin or (
-            auth_user.email.lower() in settings.admin_emails
-        )
+        is_admin = auth_user.is_admin or (auth_user.email.lower() in settings.admin_emails)
 
         # Step 7: Generate new tokens
         new_access_token = create_access_token(
-            str(auth_user.user_id),
-            auth_user.email,
-            account_type,
-            is_admin
+            str(auth_user.user_id), auth_user.email, account_type, is_admin
         )
         new_refresh_token = create_refresh_token(str(auth_user.user_id))
 
-        return True, None, {
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token,
-            "token_type": "bearer",
-            "expires_in": 3600  # 1 hour
-        }
+        return (
+            True,
+            None,
+            {
+                "access_token": new_access_token,
+                "refresh_token": new_refresh_token,
+                "token_type": "bearer",
+                "expires_in": 3600,  # 1 hour
+            },
+        )
 
-    def request_account_restoration(
-        self,
-        email: str
-    ) -> Tuple[bool, Optional[str]]:
+    def request_account_restoration(self, email: str) -> tuple[bool, str | None]:
         """Request account restoration after soft deletion.
         Always returns success to prevent email enumeration."""
         from datetime import timedelta
@@ -547,7 +561,7 @@ class AuthService:
         retention_days = settings.DELETION_RETENTION_DAYS
         deleted_at = _ensure_utc(auth_user.deleted_at)
         permanent_date = deleted_at + timedelta(days=retention_days)
-        if permanent_date <= datetime.now(timezone.utc):
+        if permanent_date <= datetime.now(UTC):
             # Grace period expired, return success without sending email
             return True, None
 
@@ -565,10 +579,10 @@ class AuthService:
     def confirm_account_restoration(
         self,
         token: str,
-        new_password: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[bool, Optional[str], Optional[dict]]:
+        new_password: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[bool, str | None, dict | None]:
         """Confirm account restoration with token and optional new password.
 
         Error codes: INVALID_RESTORATION_TOKEN, ACCOUNT_PERMANENTLY_DELETED,
@@ -592,7 +606,7 @@ class AuthService:
             # Account already restored or was never deleted
             return False, "INVALID_RESTORATION_TOKEN", None
         permanent_date = deleted_at + timedelta(days=retention_days)
-        if permanent_date <= datetime.now(timezone.utc):
+        if permanent_date <= datetime.now(UTC):
             return False, "ACCOUNT_PERMANENTLY_DELETED", None
 
         # Check if this is an OAuth user (has provider like 'google')
@@ -617,26 +631,46 @@ class AuthService:
         if not profile_restored:
             # Profile restoration failed - check why
             # Use method that includes deleted profiles to verify existence
-            existing_profile = self.profile_repo.get_profile_by_id_including_deleted(auth_user.user_id)
+            existing_profile = self.profile_repo.get_profile_by_id_including_deleted(
+                auth_user.user_id
+            )
             if not existing_profile:
-                return False, "PROFILE_NOT_FOUND", {
-                    "message": f"Base profile for user {auth_user.user_id} not found. Data integrity issue - auth_user exists but base_profile is missing.",
-                    "user_id": str(auth_user.user_id)
-                }
+                return (
+                    False,
+                    "PROFILE_NOT_FOUND",
+                    {
+                        "message": (
+                            f"Base profile for user {auth_user.user_id}"
+                            " not found. Data integrity issue"
+                            " - auth_user exists but base_profile"
+                            " is missing."
+                        ),
+                        "user_id": str(auth_user.user_id),
+                    },
+                )
             # Profile exists but restoration failed - check if already restored
             if existing_profile.deleted_at is None:
                 # Profile was already restored, continue
                 pass
             else:
                 # Profile is still deleted despite restoration attempt - database error
-                return False, "PROFILE_NOT_FOUND", {
-                    "message": f"Failed to restore base profile for user {auth_user.user_id}. Database error or constraint violation.",
-                    "user_id": str(auth_user.user_id),
-                    "profile_deleted_at": existing_profile.deleted_at.isoformat()
-                }
+                return (
+                    False,
+                    "PROFILE_NOT_FOUND",
+                    {
+                        "message": (
+                            f"Failed to restore base profile for"
+                            f" user {auth_user.user_id}."
+                            " Database error or constraint violation."
+                        ),
+                        "user_id": str(auth_user.user_id),
+                        "profile_deleted_at": existing_profile.deleted_at.isoformat(),
+                    },
+                )
 
         # Restore context profiles
         from src.repositories.context_repository import ContextRepository
+
         # Access context repo if available through the profile_repo's db session
         context_repo = ContextRepository(self.auth_repo.db)
         context_repo.restore_user_contexts(auth_user.user_id)
@@ -652,28 +686,31 @@ class AuthService:
         base_profile = self.profile_repo.get_profile_by_id(auth_user.user_id)
         if not base_profile:
             # This should not happen if restore succeeded, but check anyway
-            return False, "PROFILE_NOT_FOUND", {
-                "message": f"Base profile for user {auth_user.user_id} not found after restoration. This should not happen.",
-                "user_id": str(auth_user.user_id)
-            }
-        
+            return (
+                False,
+                "PROFILE_NOT_FOUND",
+                {
+                    "message": (
+                        f"Base profile for user {auth_user.user_id}"
+                        " not found after restoration."
+                        " This should not happen."
+                    ),
+                    "user_id": str(auth_user.user_id),
+                },
+            )
+
         account_type = base_profile.account_type.value
 
         # Check admin status from database OR environment config
-        is_admin = auth_user.is_admin or (
-            auth_user.email.lower() in settings.admin_emails
-        )
+        is_admin = auth_user.is_admin or (auth_user.email.lower() in settings.admin_emails)
 
         # Generate new JWT tokens
         access_token = create_access_token(
-            str(auth_user.user_id),
-            auth_user.email,
-            account_type,
-            is_admin
+            str(auth_user.user_id), auth_user.email, account_type, is_admin
         )
         refresh_token_val = create_refresh_token(str(auth_user.user_id))
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Audit: account restoration
         self._audit(
@@ -685,13 +722,17 @@ class AuthService:
             changes={"restored_at": now.isoformat()},
             ip_address=ip_address,
             user_agent=user_agent,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
-        return True, None, {
-            "message": "Account restored successfully",
-            "access_token": access_token,
-            "refresh_token": refresh_token_val,
-            "token_type": "bearer",
-            "restored_at": now.isoformat(),
-        }
+        return (
+            True,
+            None,
+            {
+                "message": "Account restored successfully",
+                "access_token": access_token,
+                "refresh_token": refresh_token_val,
+                "token_type": "bearer",
+                "restored_at": now.isoformat(),
+            },
+        )

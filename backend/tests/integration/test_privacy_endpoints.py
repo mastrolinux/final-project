@@ -4,12 +4,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from src.main import app
 from src.core.database import get_db
 from src.core.security import create_access_token
+from src.main import app
 from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
 from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile, IdentityName, NameType, VisibilityLevel
 
 
 class TestPrivacyExportEndpoint:
@@ -18,11 +18,13 @@ class TestPrivacyExportEndpoint:
     @pytest.fixture
     def client(self, db_session: Session):
         """Test client with database override."""
+
         def override_get_db():
             try:
                 yield db_session
             finally:
                 pass
+
         app.dependency_overrides[get_db] = override_get_db
         yield TestClient(app)
         app.dependency_overrides.clear()
@@ -166,9 +168,7 @@ class TestPrivacyExportEndpoint:
         assert len(deprecated) == 1
         assert deprecated[0]["visibility_level"] == "historical_suppressed"
 
-    def test_export_includes_multilingual_names(
-        self, client, user_token, user_profile
-    ):
+    def test_export_includes_multilingual_names(self, client, user_token, user_profile):
         """Name values preserve multilingual JSONB structure."""
         response = client.get(
             "/api/v1/privacy/export",
@@ -180,9 +180,7 @@ class TestPrivacyExportEndpoint:
         assert full_name["name_value"]["en"] == "Export Test User"
         assert full_name["name_value"]["es"] == "Usuario de Prueba"
 
-    def test_export_includes_context_profiles(
-        self, client, user_token, user_profile
-    ):
+    def test_export_includes_context_profiles(self, client, user_token, user_profile):
         """Export includes context profiles with override fields."""
         response = client.get(
             "/api/v1/privacy/export",
@@ -196,9 +194,7 @@ class TestPrivacyExportEndpoint:
         assert contexts[0]["display_name_override"] == "Dr. Export User"
         assert contexts[0]["email_override"] == "export@work.com"
 
-    def test_export_auth_excludes_sensitive_fields(
-        self, client, user_token, user_profile
-    ):
+    def test_export_auth_excludes_sensitive_fields(self, client, user_token, user_profile):
         """Authentication section excludes password hash and tokens."""
         response = client.get(
             "/api/v1/privacy/export",
@@ -212,9 +208,7 @@ class TestPrivacyExportEndpoint:
         assert auth["email"] == "export.user@example.com"
         assert auth["is_email_verified"] is True
 
-    def test_export_gdpr_metadata_present(
-        self, client, user_token, user_profile
-    ):
+    def test_export_gdpr_metadata_present(self, client, user_token, user_profile):
         """GDPR metadata contains required informational sections."""
         response = client.get(
             "/api/v1/privacy/export",
@@ -237,9 +231,7 @@ class TestPrivacyExportEndpoint:
         )
         assert response.json()["oauth_consents"] == []
 
-    def test_export_returns_only_own_data(
-        self, client, user_token, user_profile, db_session
-    ):
+    def test_export_returns_only_own_data(self, client, user_token, user_profile, db_session):
         """Authenticated user receives only their own data, not other users'."""
         other_profile = BaseProfile(
             user_id="00000000-0000-0000-0000-000000000061",

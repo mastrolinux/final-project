@@ -4,10 +4,10 @@ Context Profile Schemas
 Pydantic models for context profile request/response validation.
 """
 
-from typing import Optional, List, Dict
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from src.models.context import ContextType
 from src.models.profile import AccountType, NameType
@@ -15,37 +15,29 @@ from src.models.profile import AccountType, NameType
 
 class ContextProfileCreate(BaseModel):
     """Schema for creating a new context profile"""
-    
+
     context_type: ContextType = Field(
-        ...,
-        description="Type of context: professional, social, legal, or healthcare"
+        ..., description="Type of context: professional, social, legal, or healthcare"
     )
     context_name: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="User-defined context name (e.g., 'Work', 'LinkedIn', 'Family')"
+        description="User-defined context name (e.g., 'Work', 'LinkedIn', 'Family')",
     )
-    display_name_override: Optional[str] = Field(
-        default=None,
-        max_length=255,
-        description="Override display name for this context"
+    display_name_override: str | None = Field(
+        default=None, max_length=255, description="Override display name for this context"
     )
-    email_override: Optional[EmailStr] = Field(
-        default=None,
-        description="Override email for this context"
+    email_override: EmailStr | None = Field(
+        default=None, description="Override email for this context"
     )
-    phone_override: Optional[str] = Field(
-        default=None,
-        max_length=50,
-        description="Override phone number for this context"
+    phone_override: str | None = Field(
+        default=None, max_length=50, description="Override phone number for this context"
     )
-    bio: Optional[str] = Field(
-        default=None,
-        max_length=1000,
-        description="Context-specific biography or description"
+    bio: str | None = Field(
+        default=None, max_length=1000, description="Context-specific biography or description"
     )
-    
+
     @field_validator("context_name", mode="before")
     @classmethod
     def strip_context_name(cls, v):
@@ -53,15 +45,17 @@ class ContextProfileCreate(BaseModel):
         if isinstance(v, str):
             return v.strip()
         return v
-    
-    @field_validator("display_name_override", "email_override", "phone_override", "bio", mode="before")
+
+    @field_validator(
+        "display_name_override", "email_override", "phone_override", "bio", mode="before"
+    )
     @classmethod
     def empty_string_to_none(cls, v):
         """Convert empty strings to None"""
         if v == "":
             return None
         return v
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -70,7 +64,7 @@ class ContextProfileCreate(BaseModel):
                     "context_name": "LinkedIn",
                     "display_name_override": "Dr. Sarah Chen, MD, PhD",
                     "email_override": "s.chen@hospital.org",
-                    "bio": "Board-certified psychiatrist specializing in trauma and PTSD"
+                    "bio": "Board-certified psychiatrist specializing in trauma and PTSD",
                 }
             ]
         }
@@ -79,27 +73,14 @@ class ContextProfileCreate(BaseModel):
 
 class ContextProfileUpdate(BaseModel):
     """Schema for updating an existing context profile"""
-    
-    context_name: Optional[str] = Field(
-        default=None,
-        min_length=1,
-        max_length=100
-    )
-    display_name_override: Optional[str] = Field(
-        default=None,
-        max_length=255
-    )
-    email_override: Optional[EmailStr] = None
-    phone_override: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-    bio: Optional[str] = Field(
-        default=None,
-        max_length=1000
-    )
-    is_active: Optional[bool] = None
-    
+
+    context_name: str | None = Field(default=None, min_length=1, max_length=100)
+    display_name_override: str | None = Field(default=None, max_length=255)
+    email_override: EmailStr | None = None
+    phone_override: str | None = Field(default=None, max_length=50)
+    bio: str | None = Field(default=None, max_length=1000)
+    is_active: bool | None = None
+
     @field_validator("context_name", mode="before")
     @classmethod
     def strip_context_name(cls, v):
@@ -107,49 +88,46 @@ class ContextProfileUpdate(BaseModel):
         if isinstance(v, str):
             return v.strip()
         return v
-    
-    @field_validator("display_name_override", "email_override", "phone_override", "bio", mode="before")
+
+    @field_validator(
+        "display_name_override", "email_override", "phone_override", "bio", mode="before"
+    )
     @classmethod
     def empty_string_to_none(cls, v):
         """Convert empty strings to None"""
         if v == "":
             return None
         return v
-    
+
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [
-                {
-                    "bio": "Updated professional biography",
-                    "is_active": True
-                }
-            ]
+            "examples": [{"bio": "Updated professional biography", "is_active": True}]
         }
     )
 
 
 class ContextProfileResponse(BaseModel):
     """Schema for context profile response (raw context with overrides only)"""
-    
+
     id: UUID
     user_id: UUID
     context_type: ContextType
     context_name: str
-    display_name_override: Optional[str] = None
-    email_override: Optional[str] = None
-    phone_override: Optional[str] = None
-    bio: Optional[str] = None
-    avatar_override_url: Optional[str] = None
-    avatar_override_thumbnail_url: Optional[str] = None
+    display_name_override: str | None = None
+    email_override: str | None = None
+    phone_override: str | None = None
+    bio: str | None = None
+    avatar_override_url: str | None = None
+    avatar_override_thumbnail_url: str | None = None
     is_active: bool
-    verification_status: Optional[str] = None
-    rejection_reason: Optional[str] = None
+    verification_status: str | None = None
+    rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
     valid_from: datetime
-    valid_to: Optional[datetime] = None
-    
+    valid_to: datetime | None = None
+
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
@@ -168,27 +146,27 @@ class ContextProfileResponse(BaseModel):
                     "updated_at": "2025-01-01T00:00:00Z",
                     "deleted_at": None,
                     "valid_from": "2025-01-01T00:00:00Z",
-                    "valid_to": None
+                    "valid_to": None,
                 }
             ]
-        }
+        },
     )
 
 
 class IdentityNameInResolved(BaseModel):
     """Schema for identity name in resolved profile"""
-    
+
     name_type: NameType
-    name_value: Dict[str, str]
+    name_value: dict[str, str]
     is_primary: bool
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
                     "name_type": "full_name",
                     "name_value": {"en": "Dr. Sarah Chen", "zh": "陈莎拉博士"},
-                    "is_primary": True
+                    "is_primary": True,
                 }
             ]
         }
@@ -197,47 +175,36 @@ class IdentityNameInResolved(BaseModel):
 
 class ResolvedProfileResponse(BaseModel):
     """Schema for fully resolved profile (base + context overrides applied)."""
-    
+
     user_id: UUID
     account_type: AccountType
-    display_name: Optional[str] = Field(
-        None,
-        description="Display name (from context override or None if not overridden)"
+    display_name: str | None = Field(
+        None, description="Display name (from context override or None if not overridden)"
     )
-    email: str = Field(
-        ...,
-        description="Email address (from context override or base profile)"
-    )
-    phone: Optional[str] = Field(
-        None,
-        description="Phone number (from context override or base profile)"
+    email: str = Field(..., description="Email address (from context override or base profile)")
+    phone: str | None = Field(
+        None, description="Phone number (from context override or base profile)"
     )
     preferred_language: str
-    bio: Optional[str] = Field(
+    bio: str | None = Field(None, description="Biography (context-specific if available)")
+    avatar_url: str | None = Field(
         None,
-        description="Biography (context-specific if available)"
+        description=("Avatar URL (from context override only; not inherited from base profile)"),
     )
-    avatar_url: Optional[str] = Field(
+    avatar_thumbnail_url: str | None = Field(
         None,
-        description="Avatar URL (from context override only; not inherited from base profile)"
+        description=(
+            "Avatar thumbnail URL (from context override only; not inherited from base profile)"
+        ),
     )
-    avatar_thumbnail_url: Optional[str] = Field(
-        None,
-        description="Avatar thumbnail URL (from context override only; not inherited from base profile)"
+    context_type: ContextType | None = Field(
+        None, description="Context type this profile is resolved for"
     )
-    context_type: Optional[ContextType] = Field(
-        None,
-        description="Context type this profile is resolved for"
+    context_name: str | None = Field(None, description="Context name this profile is resolved for")
+    identity_names: list[IdentityNameInResolved] = Field(
+        default_factory=list, description="Identity names (filtered for deprecated if applicable)"
     )
-    context_name: Optional[str] = Field(
-        None,
-        description="Context name this profile is resolved for"
-    )
-    identity_names: List[IdentityNameInResolved] = Field(
-        default_factory=list,
-        description="Identity names (filtered for deprecated if applicable)"
-    )
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -255,19 +222,10 @@ class ResolvedProfileResponse(BaseModel):
                         {
                             "name_type": "full_name",
                             "name_value": {"en": "Dr. Sarah Chen"},
-                            "is_primary": True
+                            "is_primary": True,
                         }
-                    ]
+                    ],
                 }
             ]
         }
     )
-
-
-
-
-
-
-
-
-

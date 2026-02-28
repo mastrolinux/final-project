@@ -6,25 +6,22 @@ Implements Authorization Code Flow with PKCE for secure authentication.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from src.core.database import get_db
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
+from src.schemas.auth import LoginResponse
+from src.services.audit_service import AuditService
 from src.services.social_auth_service import (
-    SocialAuthService,
+    AccountLinkingError,
     OAuthProviderNotConfiguredError,
     OAuthStateValidationError,
     OAuthTokenExchangeError,
     OAuthTokenVerificationError,
-    AccountLinkingError
+    SocialAuthService,
 )
-from src.services.audit_service import AuditService
-from src.schemas.auth import LoginResponse
-
 
 router = APIRouter(prefix="/social", tags=["Social Authentication"])
 
@@ -42,13 +39,13 @@ def get_social_auth_service(db: Session = Depends(get_db)) -> SocialAuthService:
     "/{provider}/authorize",
     status_code=status.HTTP_200_OK,
     summary="Generate OAuth Authorization URL",
-    description="Generate OAuth 2.0 authorization URL with PKCE for social login"
+    description="Generate OAuth 2.0 authorization URL with PKCE for social login",
 )
 def authorize(
     provider: str,
     http_request: Request,
     response: Response,
-    service: SocialAuthService = Depends(get_social_auth_service)
+    service: SocialAuthService = Depends(get_social_auth_service),
 ):
     """Generate OAuth 2.0 authorization URL with PKCE for social login."""
     try:
@@ -58,34 +55,29 @@ def authorize(
             "authorization_url": authorization_url,
             "state": state,
             "code_verifier": code_verifier,
-            "message": f"Redirect user to authorization_url. Store code_verifier and state in sessionStorage."
+            "message": (
+                "Redirect user to authorization_url."
+                " Store code_verifier and state in sessionStorage."
+            ),
         }
 
     except OAuthProviderNotConfiguredError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "oauth_not_configured",
-                "message": str(e),
-                "provider": provider
-            }
+            detail={"code": "oauth_not_configured", "message": str(e), "provider": provider},
         )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "invalid_provider",
-                "message": str(e),
-                "provider": provider
-            }
+            detail={"code": "invalid_provider", "message": str(e), "provider": provider},
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "code": "authorization_url_failed",
-                "message": f"Failed to generate authorization URL: {str(e)}"
-            }
+                "message": f"Failed to generate authorization URL: {str(e)}",
+            },
         )
 
 
@@ -93,7 +85,7 @@ def authorize(
     "/{provider}/callback",
     response_model=LoginResponse,
     summary="OAuth Callback Endpoint",
-    description="Handle OAuth 2.0 provider callback and issue JWT tokens"
+    description="Handle OAuth 2.0 provider callback and issue JWT tokens",
 )
 async def callback(
     provider: str,
@@ -102,7 +94,7 @@ async def callback(
     code_verifier: str,
     expected_state: str,
     http_request: Request,
-    service: SocialAuthService = Depends(get_social_auth_service)
+    service: SocialAuthService = Depends(get_social_auth_service),
 ):
     """Handle OAuth provider callback, verify code, and issue JWT tokens."""
     try:
@@ -114,17 +106,14 @@ async def callback(
             code=code,
             code_verifier=code_verifier,
             state=state,
-            expected_state=expected_state
+            expected_state=expected_state,
         )
 
         id_token = token_response.get("id_token")
         if not id_token:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "code": "missing_id_token",
-                    "message": "Provider did not return ID token"
-                }
+                detail={"code": "missing_id_token", "message": "Provider did not return ID token"},
             )
 
         claims = service.verify_google_id_token(id_token)
@@ -134,14 +123,24 @@ async def callback(
         display_name = claims.get("name", email)
         email_verified = claims.get("email_verified", False)
 
-        access_token, refresh_token, user_id, is_new_user, account_type, is_email_verified, is_admin, oauth_provider, has_custom_password = service.authenticate_or_create_user(
+        (
+            access_token,
+            refresh_token,
+            user_id,
+            is_new_user,
+            account_type,
+            is_email_verified,
+            is_admin,
+            oauth_provider,
+            has_custom_password,
+        ) = service.authenticate_or_create_user(
             provider=provider,
             provider_id=provider_id,
             email=email,
             display_name=display_name,
             email_verified=email_verified,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         return LoginResponse(
@@ -155,32 +154,23 @@ async def callback(
             account_type=account_type,
             is_admin=is_admin,
             provider=oauth_provider,
-            has_custom_password=has_custom_password
+            has_custom_password=has_custom_password,
         )
 
     except OAuthStateValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "invalid_state",
-                "message": str(e)
-            }
+            detail={"code": "invalid_state", "message": str(e)},
         )
     except OAuthTokenExchangeError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "token_exchange_failed",
-                "message": str(e)
-            }
+            detail={"code": "token_exchange_failed", "message": str(e)},
         )
     except OAuthTokenVerificationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "token_verification_failed",
-                "message": str(e)
-            }
+            detail={"code": "token_verification_failed", "message": str(e)},
         )
     except AccountLinkingError as e:
         error_message = str(e)
@@ -195,24 +185,18 @@ async def callback(
                     "code": "ACCOUNT_RECOVERABLE",
                     "message": "This account was previously deleted and can be restored.",
                     "permanent_deletion_date": permanent_deletion_date,
-                    "restore_endpoint": "/api/v1/auth/restore-account"
-                }
+                    "restore_endpoint": "/api/v1/auth/restore-account",
+                },
             )
 
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "account_linking_required",
-                "message": error_message
-            }
+            detail={"code": "account_linking_required", "message": error_message},
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "code": "callback_failed",
-                "message": f"OAuth callback failed: {str(e)}"
-            }
+            detail={"code": "callback_failed", "message": f"OAuth callback failed: {str(e)}"},
         )

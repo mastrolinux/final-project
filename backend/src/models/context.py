@@ -5,23 +5,22 @@ SQLAlchemy models for context-dependent identity profiles.
 Implements multi-context identity presentation based on Goffman's dramaturgical theory.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Optional
-import uuid as uuid_pkg
 import enum
-from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, 
-    Enum as SQLEnum, Text
-)
+import uuid as uuid_pkg
+from typing import Any
+
+from sqlalchemy import Boolean, Column, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from src.core.database import Base
-from src.models.profile import UUID, TimestampMixin, SoftDeleteMixin, TemporalMixin
+from src.models.profile import UUID, SoftDeleteMixin, TemporalMixin, TimestampMixin
 from src.models.verification import VerificationStatus
 
 
 class ContextType(str, enum.Enum):
     """Context type enumeration for different social contexts"""
+
     professional = "professional"
     social = "social"
     legal = "legal"
@@ -32,30 +31,19 @@ class ContextType(str, enum.Enum):
 
 class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     """Context-dependent identity overrides; null fields inherit from base profile."""
+
     __tablename__ = "context_profiles"
 
-    id = Column(
-        UUID(),
-        primary_key=True,
-        default=uuid_pkg.uuid4
-    )
-    
+    id = Column(UUID(), primary_key=True, default=uuid_pkg.uuid4)
+
     user_id = Column(
-        UUID(),
-        ForeignKey("base_profiles.user_id", ondelete="CASCADE"),
-        nullable=False
+        UUID(), ForeignKey("base_profiles.user_id", ondelete="CASCADE"), nullable=False
     )
-    
-    context_type = Column(
-        SQLEnum(ContextType, name="context_type"),
-        nullable=False
-    )
-    
-    context_name = Column(
-        Text,
-        nullable=False
-    )
-    
+
+    context_type = Column(SQLEnum(ContextType, name="context_type"), nullable=False)
+
+    context_name = Column(Text, nullable=False)
+
     display_name_override = Column(Text, nullable=True)
     email_override = Column(String(255), nullable=True)
     phone_override = Column(String(50), nullable=True)
@@ -72,11 +60,7 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     )
     rejection_reason = Column(Text, nullable=True)
 
-    base_profile = relationship(
-        "BaseProfile",
-        foreign_keys=[user_id],
-        backref="context_profiles"
-    )
+    base_profile = relationship("BaseProfile", foreign_keys=[user_id], backref="context_profiles")
     document_id = Column(
         UUID(),
         ForeignKey("verification_documents.id", ondelete="SET NULL"),
@@ -89,8 +73,11 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<ContextProfile(id={self.id}, user_id={self.user_id}, type={self.context_type}, name={self.context_name})>"
-    
+        return (
+            f"<ContextProfile(id={self.id}, user_id={self.user_id},"
+            f" type={self.context_type}, name={self.context_name})>"
+        )
+
     @property
     def requires_verification(self) -> bool:
         """Return True if this context type requires identity verification."""
@@ -103,37 +90,30 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
 
     def has_overrides(self) -> bool:
         """Check if this context has any field overrides"""
-        return any([
-            self.display_name_override is not None,
-            self.email_override is not None,
-            self.phone_override is not None,
-            self.bio is not None,
-            self.avatar_override_url is not None,
-        ])
-    
+        return any(
+            [
+                self.display_name_override is not None,
+                self.email_override is not None,
+                self.phone_override is not None,
+                self.bio is not None,
+                self.avatar_override_url is not None,
+            ]
+        )
+
     def get_override_fields(self) -> dict[str, Any]:
         """Get non-null override fields as a dict."""
         overrides = {}
-        
+
         if self.display_name_override is not None:
-            overrides['display_name'] = self.display_name_override
+            overrides["display_name"] = self.display_name_override
         if self.email_override is not None:
-            overrides['email'] = self.email_override
+            overrides["email"] = self.email_override
         if self.phone_override is not None:
-            overrides['phone'] = self.phone_override
+            overrides["phone"] = self.phone_override
         if self.bio is not None:
-            overrides['bio'] = self.bio
+            overrides["bio"] = self.bio
         if self.avatar_override_url is not None:
-            overrides['avatar_url'] = self.avatar_override_url
-            overrides['avatar_thumbnail_url'] = self.avatar_override_thumbnail_url
+            overrides["avatar_url"] = self.avatar_override_url
+            overrides["avatar_thumbnail_url"] = self.avatar_override_thumbnail_url
 
         return overrides
-
-
-
-
-
-
-
-
-
