@@ -22,3 +22,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
