@@ -56,8 +56,7 @@ def validate_document(data: bytes, claimed_content_type: str = "") -> str:
     mime_type = _PILLOW_FORMAT_TO_MIME.get(detected_format or "")
     if mime_type is None:
         raise DocumentValidationError(
-            f"Image format '{detected_format}' is not allowed. "
-            "Accepted formats: PDF, JPEG, PNG"
+            f"Image format '{detected_format}' is not allowed. Accepted formats: PDF, JPEG, PNG"
         )
 
     if claimed_content_type and claimed_content_type != mime_type:

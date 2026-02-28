@@ -1,18 +1,19 @@
 """Integration tests for soft deletion and account restoration endpoints."""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.main import app
 from src.core.database import get_db
 from src.core.security import create_access_token, hash_password
+from src.main import app
 from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
 from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile, IdentityName, NameType, VisibilityLevel
 
 
 class TestSoftDeletionEndpoints:
@@ -21,11 +22,13 @@ class TestSoftDeletionEndpoints:
     @pytest.fixture
     def client(self, db_session: Session):
         """Test client with database override."""
+
         def override_get_db():
             try:
                 yield db_session
             finally:
                 pass
+
         app.dependency_overrides[get_db] = override_get_db
         yield TestClient(app)
         app.dependency_overrides.clear()
@@ -95,9 +98,7 @@ class TestSoftDeletionEndpoints:
     def _get_auth_user_raw(self, db_session):
         """Helper: query AuthUser without deleted_at filter."""
         db_session.expire_all()
-        stmt = select(AuthUser).where(
-            AuthUser.user_id == "00000000-0000-0000-0000-000000000070"
-        )
+        stmt = select(AuthUser).where(AuthUser.user_id == "00000000-0000-0000-0000-000000000070")
         result = db_session.execute(stmt)
         return result.scalars().first()
 
@@ -114,9 +115,7 @@ class TestSoftDeletionEndpoints:
         response = client.post("/api/v1/privacy/deletion-request")
         assert response.status_code == 401
 
-    def test_deleted_user_cannot_reauthenticate(
-        self, client, user_token, user_profile
-    ):
+    def test_deleted_user_cannot_reauthenticate(self, client, user_token, user_profile):
         """After soft deletion, JWT-authenticated requests return 401."""
         self._delete_account(client, user_token)
         response = client.post(
@@ -139,9 +138,7 @@ class TestSoftDeletionEndpoints:
         response = client.get("/api/v1/privacy/deletion-status")
         assert response.status_code == 401
 
-    def test_login_after_deletion_returns_403(
-        self, client, user_token, user_profile
-    ):
+    def test_login_after_deletion_returns_403(self, client, user_token, user_profile):
         """Login attempt for soft-deleted account returns 403 with deletion info."""
         self._delete_account(client, user_token)
         response = client.post(
@@ -178,9 +175,7 @@ class TestSoftDeletionEndpoints:
         assert "restore_endpoint" in data["detail"]
 
     @patch("src.services.auth_service.send_restoration_email")
-    def test_restore_account_returns_202(
-        self, mock_send_email, client, user_token, user_profile
-    ):
+    def test_restore_account_returns_202(self, mock_send_email, client, user_token, user_profile):
         """POST /auth/restore-account returns 202 for recoverable account."""
         self._delete_account(client, user_token)
         response = client.post(
@@ -191,9 +186,7 @@ class TestSoftDeletionEndpoints:
         mock_send_email.delay.assert_called_once()
 
     @patch("src.services.auth_service.send_restoration_email")
-    def test_restore_account_nonexistent_returns_202(
-        self, mock_send_email, client
-    ):
+    def test_restore_account_nonexistent_returns_202(self, mock_send_email, client):
         """POST /auth/restore-account returns 202 for unknown email (enumeration prevention)."""
         response = client.post(
             "/api/v1/auth/restore-account",
@@ -258,7 +251,7 @@ class TestSoftDeletionEndpoints:
 
         auth_user = self._get_auth_user_raw(db_session)
         token = auth_user.restoration_token
-        auth_user.deleted_at = datetime.now(timezone.utc) - timedelta(days=35)
+        auth_user.deleted_at = datetime.now(UTC) - timedelta(days=35)
         db_session.commit()
 
         # Attempt confirmation
@@ -289,34 +282,46 @@ class TestSoftDeletionEndpoints:
         assert response.status_code == 401
 
         # 4. Login fails with 403 (includes deletion info)
-        response = client.post("/api/v1/auth/login", json={
-            "email": "delete.test@example.com",
-            "password": "SecurePass123!",
-        })
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "delete.test@example.com",
+                "password": "SecurePass123!",
+            },
+        )
         assert response.status_code == 403
 
         # 5. Request restoration
-        client.post("/api/v1/auth/restore-account", json={
-            "email": "delete.test@example.com",
-        })
+        client.post(
+            "/api/v1/auth/restore-account",
+            json={
+                "email": "delete.test@example.com",
+            },
+        )
 
         # 6. Get token from DB
         auth_user = self._get_auth_user_raw(db_session)
         token = auth_user.restoration_token
 
         # 7. Confirm restoration
-        response = client.post("/api/v1/auth/restore-account/confirm", json={
-            "token": token,
-            "new_password": "RestoredSecure123!",
-        })
+        response = client.post(
+            "/api/v1/auth/restore-account/confirm",
+            json={
+                "token": token,
+                "new_password": "RestoredSecure123!",
+            },
+        )
         assert response.status_code == 200
         new_access_token = response.json()["access_token"]
 
         # 8. Login with new password succeeds
-        response = client.post("/api/v1/auth/login", json={
-            "email": "delete.test@example.com",
-            "password": "RestoredSecure123!",
-        })
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "delete.test@example.com",
+                "password": "RestoredSecure123!",
+            },
+        )
         assert response.status_code == 200
         assert "access_token" in response.json()
 

@@ -6,7 +6,8 @@ import logging
 from typing import Optional
 
 import redis
-from redis.exceptions import ConnectionError as RedisConnectionError, RedisError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
 
 from src.core.config import settings
 
@@ -20,7 +21,7 @@ class TokenBlacklist:
     """Redis-backed JTI blacklist with fail-closed semantics and TTL-based cleanup."""
 
     _instance: Optional["TokenBlacklist"] = None
-    _redis_client: Optional[redis.Redis] = None
+    _redis_client: redis.Redis | None = None
 
     def __init__(self, redis_url: str):
         self._redis_url = redis_url
@@ -34,7 +35,7 @@ class TokenBlacklist:
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_timeout=5,
-                retry_on_timeout=True
+                retry_on_timeout=True,
             )
             self._redis_client.ping()
             logger.info("Redis connection established for token blacklist")
@@ -101,9 +102,7 @@ class TokenBlacklist:
             count = 0
             while True:
                 cursor, keys = self._redis_client.scan(
-                    cursor=cursor,
-                    match="blacklist:*",
-                    count=100
+                    cursor=cursor, match="blacklist:*", count=100
                 )
                 count += len(keys)
                 if cursor == 0:
@@ -114,7 +113,7 @@ class TokenBlacklist:
             return {
                 "blacklisted_tokens": count,
                 "redis_memory_used": info.get("used_memory_human", "unknown"),
-                "redis_connected": True
+                "redis_connected": True,
             }
 
         except (RedisConnectionError, RedisError) as e:
@@ -122,7 +121,7 @@ class TokenBlacklist:
             raise ConnectionError("Redis unavailable for stats") from e
 
 
-_blacklist_instance: Optional[TokenBlacklist] = None
+_blacklist_instance: TokenBlacklist | None = None
 
 
 def get_blacklist() -> TokenBlacklist:

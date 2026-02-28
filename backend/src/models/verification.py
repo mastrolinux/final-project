@@ -8,19 +8,19 @@ verification workflow: pending -> under_review -> verified/rejected.
 
 import enum
 import uuid as uuid_pkg
-from datetime import date, datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlalchemy import (
-    Boolean,
     Column,
     Date,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Integer,
     String,
     Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import relationship
 
@@ -30,12 +30,14 @@ from src.models.profile import UUID, SoftDeleteMixin, TimestampMixin
 
 class DocumentType(str, enum.Enum):
     """Supported government-issued ID document types."""
+
     passport = "passport"
     national_id = "national_id"
 
 
 class VerificationStatus(str, enum.Enum):
     """Verification workflow states."""
+
     pending = "pending"
     under_review = "under_review"
     verified = "verified"
@@ -111,7 +113,7 @@ class VerificationDocument(Base, TimestampMixin, SoftDeleteMixin):
         """Return True if the physical document has passed its expiry date (UTC)."""
         if self.document_expiry_date is None:
             return False
-        return self.document_expiry_date < datetime.now(timezone.utc).date()
+        return self.document_expiry_date < datetime.now(UTC).date()
 
     def __repr__(self) -> str:
         return (

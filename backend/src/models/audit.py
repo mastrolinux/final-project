@@ -7,17 +7,19 @@ Implements tamper-evident audit trail for privacy accountability.
 
 import enum
 import uuid as uuid_pkg
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, DateTime, Enum as SQLEnum, ForeignKey, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLEnum
 
 from src.core.database import Base
-from src.models.profile import UUID, JSONBType
 from src.models.oauth import InetType
+from src.models.profile import UUID, JSONBType
 
 
 class AuditOperation(str, enum.Enum):
     """Audit operation types matching the database enum."""
+
     create = "create"
     update = "update"
     delete = "delete"
@@ -35,6 +37,7 @@ class AuditOperation(str, enum.Enum):
 
 class AuditEventType(str, enum.Enum):
     """Audit event types (VARCHAR in DB, enforced at application layer)."""
+
     login_success = "auth.login.success"
     login_failure = "auth.login.failure"
     logout = "auth.logout"
@@ -83,41 +86,28 @@ GENESIS_HASH = "901131d838b17aac0f7885b81e03cbdc9f5157a00343d30ab22083685ed1416a
 
 class AuditLog(Base):
     """Immutable audit log entry with SHA-256 hash chaining."""
+
     __tablename__ = "audit_logs"
 
-    log_id = Column(
-        UUID(),
-        primary_key=True,
-        default=lambda: str(uuid_pkg.uuid4())
-    )
+    log_id = Column(UUID(), primary_key=True, default=lambda: str(uuid_pkg.uuid4()))
 
-    created_at = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc)
-    )
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
     event_type = Column(String(100), nullable=False)
 
     user_id = Column(
-        UUID(),
-        ForeignKey("base_profiles.user_id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
+        UUID(), ForeignKey("base_profiles.user_id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     actor_id = Column(
-        UUID(),
-        ForeignKey("base_profiles.user_id", ondelete="SET NULL"),
-        nullable=True
+        UUID(), ForeignKey("base_profiles.user_id", ondelete="SET NULL"), nullable=True
     )
 
     resource_type = Column(String(100), nullable=False)
     resource_id = Column(String(255), nullable=False)
 
     operation = Column(
-        SQLEnum(AuditOperation, name="audit_operation", create_type=False),
-        nullable=False
+        SQLEnum(AuditOperation, name="audit_operation", create_type=False), nullable=False
     )
 
     changes = Column(JSONBType, nullable=True)

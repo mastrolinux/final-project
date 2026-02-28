@@ -4,7 +4,7 @@ Protocol-based storage abstraction with Supabase and in-memory implementations.
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StorageUploadResult:
     """Outcome of a successful upload operation."""
+
     storage_path: str
     public_url: str
 
@@ -32,7 +33,7 @@ class StorageClient(Protocol):
         """Return the public URL for a given storage path."""
         ...
 
-    def download(self, path: str) -> Optional[bytes]:
+    def download(self, path: str) -> bytes | None:
         """Download a blob by storage path. Returns None if not found."""
         ...
 
@@ -44,6 +45,7 @@ class SupabaseStorageClient:
 
     def __init__(self, supabase_url: str, supabase_key: str, public_url: str = ""):
         from supabase import create_client
+
         self._client = create_client(supabase_url, supabase_key)
         self._supabase_url = supabase_url.rstrip("/")
         self._public_url = public_url.rstrip("/") if public_url else ""
@@ -66,9 +68,9 @@ class SupabaseStorageClient:
                 logger.info("Created storage bucket '%s'", self.BUCKET)
             except Exception as exc:
                 logger.warning(
-                    "Could not create bucket '%s': %s. "
-                    "Will retry on first upload.",
-                    self.BUCKET, exc,
+                    "Could not create bucket '%s': %s. Will retry on first upload.",
+                    self.BUCKET,
+                    exc,
                 )
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
@@ -101,7 +103,7 @@ class SupabaseStorageClient:
             url = url.replace(self._supabase_url, self._public_url, 1)
         return url
 
-    def download(self, path: str) -> Optional[bytes]:
+    def download(self, path: str) -> bytes | None:
         """Download raw bytes from Supabase Storage."""
         try:
             data = self._client.storage.from_(self.BUCKET).download(path)
@@ -119,6 +121,7 @@ class SupabaseDocumentStorageClient:
 
     def __init__(self, supabase_url: str, supabase_key: str, public_url: str = ""):
         from supabase import create_client
+
         self._client = create_client(supabase_url, supabase_key)
         self._supabase_url = supabase_url.rstrip("/")
         self._public_url = public_url.rstrip("/") if public_url else ""
@@ -141,9 +144,9 @@ class SupabaseDocumentStorageClient:
                 logger.info("Created private storage bucket '%s'", self.BUCKET)
             except Exception as exc:
                 logger.warning(
-                    "Could not create bucket '%s': %s. "
-                    "Will retry on first upload.",
-                    self.BUCKET, exc,
+                    "Could not create bucket '%s': %s. Will retry on first upload.",
+                    self.BUCKET,
+                    exc,
                 )
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
@@ -175,7 +178,7 @@ class SupabaseDocumentStorageClient:
         """Documents in the private bucket do not have public URLs."""
         return ""
 
-    def download(self, path: str) -> Optional[bytes]:
+    def download(self, path: str) -> bytes | None:
         """Download encrypted bytes from the private bucket."""
         try:
             data = self._client.storage.from_(self.BUCKET).download(path)
@@ -192,7 +195,7 @@ class InMemoryStorageClient:
     BASE_URL = "https://storage.test"
 
     def __init__(self) -> None:
-        self.blobs: Dict[str, bytes] = {}
+        self.blobs: dict[str, bytes] = {}
 
     def upload(self, path: str, data: bytes, content_type: str) -> StorageUploadResult:
         self.blobs[path] = data
@@ -207,20 +210,19 @@ class InMemoryStorageClient:
     def get_public_url(self, path: str) -> str:
         return f"{self.BASE_URL}/{path}"
 
-    def download(self, path: str) -> Optional[bytes]:
+    def download(self, path: str) -> bytes | None:
         return self.blobs.get(path)
 
 
-_storage_client: Optional[StorageClient] = None
-_document_storage_client: Optional[StorageClient] = None
+_storage_client: StorageClient | None = None
+_document_storage_client: StorageClient | None = None
 
 
 def get_storage_client() -> StorageClient:
     """FastAPI dependency returning the configured StorageClient singleton."""
     if _storage_client is None:
         raise RuntimeError(
-            "Storage client not configured. "
-            "Call configure_storage_client() at application startup."
+            "Storage client not configured. Call configure_storage_client() at application startup."
         )
     return _storage_client
 

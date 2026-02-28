@@ -5,7 +5,7 @@ Pydantic models for GDPR Article 15 data export API responses.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -13,94 +13,101 @@ from pydantic import BaseModel, ConfigDict
 
 class ProfileExport(BaseModel):
     """Base profile data for export."""
+
     user_id: UUID
     account_type: str
-    legal_name: Optional[str] = None
+    legal_name: str | None = None
     primary_email: str
-    primary_phone: Optional[str] = None
+    primary_phone: str | None = None
     preferred_language: str
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class IdentityNameExport(BaseModel):
     """Identity name data for export."""
+
     id: UUID
     name_type: str
-    name_value: Dict[str, Any]
+    name_value: dict[str, Any]
     is_primary: bool
     is_deprecated: bool
     visibility_level: str
-    context_id: Optional[UUID] = None
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    context_id: UUID | None = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ContextProfileExport(BaseModel):
     """Context profile data for export."""
+
     id: UUID
     context_type: str
     context_name: str
-    display_name_override: Optional[str] = None
-    email_override: Optional[str] = None
-    phone_override: Optional[str] = None
-    bio: Optional[str] = None
+    display_name_override: str | None = None
+    email_override: str | None = None
+    phone_override: str | None = None
+    bio: str | None = None
     is_active: bool
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class AuthenticationExport(BaseModel):
     """Authentication metadata for export (excludes sensitive fields)."""
+
     email: str
     is_email_verified: bool
-    email_verified_at: Optional[datetime] = None
-    last_login_at: Optional[datetime] = None
-    password_changed_at: Optional[datetime] = None
+    email_verified_at: datetime | None = None
+    last_login_at: datetime | None = None
+    password_changed_at: datetime | None = None
     is_admin: bool
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class OAuthConsentExport(BaseModel):
     """OAuth consent record for export."""
+
     id: UUID
     client_id: str
-    granted_scopes: List[str]
-    context_profile_id: Optional[UUID] = None
+    granted_scopes: list[str]
+    context_profile_id: UUID | None = None
     consent_method: str
-    granted_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
-    withdrawn_at: Optional[datetime] = None
+    granted_at: datetime | None = None
+    expires_at: datetime | None = None
+    withdrawn_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class GDPRMetadata(BaseModel):
     """Static GDPR Article 15 metadata accompanying the export."""
-    processing_purposes: List[str]
-    retention_periods: Dict[str, str]
-    data_subject_rights: List[str]
-    data_sources: List[str]
-    recipients_or_categories: List[str]
+
+    processing_purposes: list[str]
+    retention_periods: dict[str, str]
+    data_subject_rights: list[str]
+    data_sources: list[str]
+    recipients_or_categories: list[str]
     automated_decision_making: str
 
 
 class ExportMetadata(BaseModel):
     """Export envelope metadata."""
+
     exported_at: datetime
     user_id: UUID
     format_version: str
@@ -109,17 +116,19 @@ class ExportMetadata(BaseModel):
 
 class DataExportResponse(BaseModel):
     """Complete GDPR Article 15 data export response."""
+
     export_metadata: ExportMetadata
     profile: ProfileExport
-    identity_names: List[IdentityNameExport]
-    context_profiles: List[ContextProfileExport]
+    identity_names: list[IdentityNameExport]
+    context_profiles: list[ContextProfileExport]
     authentication: AuthenticationExport
-    oauth_consents: List[OAuthConsentExport]
+    oauth_consents: list[OAuthConsentExport]
     gdpr_metadata: GDPRMetadata
 
 
 class DeletionRequestResponse(BaseModel):
     """Response for account deletion request."""
+
     status: str
     deletion_scheduled_at: str
     permanent_deletion_date: str
@@ -128,6 +137,7 @@ class DeletionRequestResponse(BaseModel):
 
 class DeletionStatusResponse(BaseModel):
     """Response for deletion status check."""
+
     status: str
-    deletion_scheduled_at: Optional[str] = None
-    permanent_deletion_date: Optional[str] = None
+    deletion_scheduled_at: str | None = None
+    permanent_deletion_date: str | None = None

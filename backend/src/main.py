@@ -1,10 +1,11 @@
 """Identity and Profile Management API - Main Application."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.v1.router import api_router
 from src.core.config import settings
 from src.core.encryption import configure_encryption_service
 from src.core.storage import (
@@ -13,11 +14,12 @@ from src.core.storage import (
     configure_document_storage_client,
     configure_storage_client,
 )
-from src.api.v1.router import api_router
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Identity and Profile Management API - Multi-context, privacy oriented identity system",
+    description=(
+        "Identity and Profile Management API - Multi-context, privacy oriented identity system"
+    ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -68,11 +70,11 @@ async def health_check():
 async def detailed_health_check():
     """Detailed health check covering database, Supabase, and table status."""
     from src.core.database import (
+        check_database_tables,
         check_db_connection,
         check_supabase_connection,
-        check_database_tables
     )
-    
+
     db_health = check_db_connection()
     supabase_health = check_supabase_connection()
     tables_health = check_database_tables()
@@ -85,18 +87,14 @@ async def detailed_health_check():
         overall_status = "degraded"
     elif supabase_health["status"] == "unhealthy":
         overall_status = "degraded"
-    
+
     return {
         "status": overall_status,
         "service": settings.APP_NAME,
         "version": "1.0.0",
         "environment": settings.ENVIRONMENT,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "components": {
-            "database": db_health,
-            "supabase": supabase_health,
-            "tables": tables_health
-        }
+        "timestamp": datetime.now(UTC).isoformat(),
+        "components": {"database": db_health, "supabase": supabase_health, "tables": tables_health},
     }
 
 
@@ -109,4 +107,3 @@ async def root():
         "docs": "/docs",
         "health": "/health",
     }
-
