@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
-import httpx  # noqa: F401 - used in verify_google_id_token; module-level needed for test patching
+import httpx  # noqa: F401 - module-level import needed for test patching
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.jose import jwt
 from authlib.jose.errors import JoseError
