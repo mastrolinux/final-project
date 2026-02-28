@@ -150,44 +150,14 @@ quarto render --to html
 
 **Configuration**: `render.yaml` (root level)
 
-```yaml
-services:
-  - type: web
-    name: identity-api-backend
-    rootDir: backend
-    env: python
-```
-
 **Deployment**:
 
-- Auto-deploy from `main` branch
+- CI on Pull Requests
+- Auto-deploy from `main` branch with GH Actions
 - Environment: Production PostgreSQL (Supabase)
 - Scaling: Auto-scale based on load
 
-**Live URL**: `https://identity-api-backend.onrender.com`
-
-### Frontend -> Render.com (When Ready)
-
-**Configuration**: Commented out in `render.yaml`
-
-Uncomment and configure when frontend is implemented.
-
-### Thesis -> GitHub Pages (Optional)
-
-HTML version can be published to GitHub Pages.
-
-## Project Status
-
-| Component | Status | Progress |
-|-----------|--------|----------|
-| Architecture Docs | Complete | 100% |
-| Thesis Structure | Complete | 100% |
-| Backend API | In Progress | 40% |
-| Database Schema | In Progress | 60% |
-| Frontend UI | Planned | 0% |
-| Integration Tests | Planned | 0% |
-| OAuth Implementation | Planned | 0% |
-| GDPR Considerations | Planned | 0% |
+**Live URL**: `https://identity.okrbusiness.com`
 
 ## Academic Context
 
@@ -202,7 +172,7 @@ HTML version can be published to GitHub Pages.
 | Solid security and privacy (GDPR) | Complete | Security architecture, GDPR design |
 | Data model beyond simplest cases | Complete | Multi-context, multilingual, temporal |
 | Robust, widely applicable API | Complete | RESTful design, OAuth 2.0 |
-| Frontend demonstrating use cases | Planned | Vue.js SPA |
+| Frontend demonstrating use cases | Complete | Vue.js SPA |
 
 ## Development Workflow
 
@@ -213,6 +183,8 @@ cd backend
 docker compose up -d       # Start services
 docker compose logs -f     # View logs
 docker compose exec api pytest  # Run tests
+# or shortly
+./scripts/start.sh
 ```
 
 ### Working on Frontend
@@ -231,19 +203,6 @@ quarto preview           # Live preview
 quarto render           # Generate PDF/HTML
 ```
 
-### Committing Changes
-
-```bash
-# Make changes across backend, frontend, docs
-git add backend/ frontend/ architecture/
-git commit -m "Implement user authentication
-
-- Backend: Add JWT authentication endpoints
-- Frontend: Add login/logout UI components  
-- Thesis: Document authentication architecture
-"
-git push
-```
 
 ## Documentation
 
@@ -262,7 +221,7 @@ git push
 
 ## Monorepo Benefits
 
-### Why This Structure?
+### Why A Monorepo?
 
 - Version Coherence: Frontend, backend, docs always in sync
 - Atomic Changes: Update API + UI + docs in single commit
@@ -279,7 +238,7 @@ GitHub: [@mastrolinux](https://github.com/mastrolinux)
 ## License
 
 This project is submitted as academic coursework.
-See [LICENSE](LICENSE) for details.
+It cannot be re-used yet, after my graduation I will release it as Open Source
 
 ## Getting Started (New Developers)
 
@@ -290,8 +249,7 @@ cd final-project
 
 # 2. Start backend
 cd backend
-supabase start
-docker compose up -d
+./scripts/start.sh
 
 # 3. Preview thesis
 cd ..
@@ -299,6 +257,7 @@ quarto preview
 
 # 4. Access services
 # Backend API: http://localhost:8000/docs
+# Frontend Vue.js: http://localhost:3000/
 # Supabase: http://127.0.0.1:54323
 # Mailpit: http://127.0.0.1:54324/
 ```
