@@ -60,7 +60,8 @@ class TokenBlacklist:
 
         try:
             key = f"blacklist:{jti}"
-            assert self._redis_client is not None
+            if self._redis_client is None:
+                raise RuntimeError("Redis client is not initialized")
             result = self._redis_client.exists(key)
 
             if result:
@@ -84,7 +85,8 @@ class TokenBlacklist:
 
         try:
             key = f"blacklist:{jti}"
-            assert self._redis_client is not None
+            if self._redis_client is None:
+                raise RuntimeError("Redis client is not initialized")
             self._redis_client.setex(key, ttl_seconds, "1")
             logger.info(f"Token {jti[:8]}... blacklisted for {ttl_seconds}s")
 
@@ -97,7 +99,8 @@ class TokenBlacklist:
     def get_stats(self) -> dict:
         """Return blacklist statistics for health monitoring."""
         try:
-            assert self._redis_client is not None
+            if self._redis_client is None:
+                raise RuntimeError("Redis client is not initialized")
             cursor = 0
             count = 0
             while True:
@@ -148,6 +151,6 @@ def reset_blacklist() -> None:
         try:
             if _blacklist_instance._redis_client:
                 _blacklist_instance._redis_client.close()
-        except Exception:
-            pass
+        except Exception:  # nosec: B110
+            pass  # best-effort cleanup during teardown
         _blacklist_instance = None
