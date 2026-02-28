@@ -1,34 +1,30 @@
 """Tests for PKCE validation, scope filtering, token issuance, and consent management."""
 
-import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, MagicMock, patch
-from uuid import uuid4, UUID
+from datetime import UTC, datetime, timedelta
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
+import pytest
+
+from src.models.context import ContextType
+from src.models.oauth import (
+    OAuthAccessToken,
+    OAuthAuthorizationCode,
+    OAuthClient,
+    OAuthConsent,
+    OAuthRefreshToken,
+    OAuthScope,
+)
+from src.models.profile import AccountType
 from src.services.oauth_service import (
-    OAuthService,
-    OAuthServiceError,
+    IntrospectionResult,
     InvalidClientError,
     InvalidGrantError,
     InvalidRequestError,
     InvalidScopeError,
-    AccessDeniedError,
-    UnauthorizedClientError,
+    OAuthService,
     TokenResponse,
-    IntrospectionResult
 )
-from src.models.oauth import (
-    OAuthClient,
-    OAuthAuthorizationCode,
-    OAuthAccessToken,
-    OAuthRefreshToken,
-    OAuthConsent,
-    OAuthScope,
-    TokenEndpointAuthMethod,
-    ConsentMethod
-)
-from src.models.profile import AccountType
-from src.models.context import ContextType
 
 
 class TestPKCEValidation:
@@ -112,7 +108,9 @@ class TestClientValidation:
         client.client_secret_hash = None
         client.is_redirect_uri_valid = Mock(return_value=True)
         client.can_request_scope = Mock(side_effect=lambda s: s in ["profile:read:basic", "email"])
-        client.can_request_scopes = Mock(side_effect=lambda scopes: all(s in ["profile:read:basic", "email"] for s in scopes))
+        client.can_request_scopes = Mock(
+            side_effect=lambda scopes: all(s in ["profile:read:basic", "email"] for s in scopes)
+        )
         return client
 
     def test_get_client_returns_active_client(self, oauth_service, mock_oauth_repo, sample_client):
@@ -156,7 +154,7 @@ class TestClientValidation:
 
         assert "secret required" in str(exc_info.value.error_description)
 
-    @patch('passlib.hash.argon2.verify')
+    @patch("passlib.hash.argon2.verify")
     def test_validate_client_credentials_confidential_client_valid_secret(
         self, mock_verify, oauth_service, mock_oauth_repo, sample_client
     ):
@@ -171,7 +169,7 @@ class TestClientValidation:
         assert result == sample_client
         mock_verify.assert_called_once_with("valid-secret", "$argon2id$...")
 
-    @patch('passlib.hash.argon2.verify')
+    @patch("passlib.hash.argon2.verify")
     def test_validate_client_credentials_confidential_client_invalid_secret(
         self, mock_verify, oauth_service, mock_oauth_repo, sample_client
     ):
@@ -231,7 +229,7 @@ class TestScopeValidation:
             scopes = {
                 "profile:read:basic": basic_scope,
                 "email": email_scope,
-                "contexts:legal:read": legal_scope
+                "contexts:legal:read": legal_scope,
             }
             return scopes.get(name)
 
@@ -245,7 +243,9 @@ class TestScopeValidation:
         client.client_id = "test-client"
         client.allowed_scopes = ["profile:read:basic", "email", "openid", "contexts:legal:read"]
         client.can_request_scope = Mock(
-            side_effect=lambda s: s in ["profile:read:basic", "email", "openid", "contexts:legal:read"]
+            side_effect=lambda s: (
+                s in ["profile:read:basic", "email", "openid", "contexts:legal:read"]
+            )
         )
         return client
 
@@ -257,8 +257,7 @@ class TestScopeValidation:
     def test_validate_scopes_valid_scopes(self, oauth_service, sample_client):
         """Test scope validation passes for valid scopes."""
         result = oauth_service.validate_scopes(
-            client=sample_client,
-            requested_scopes=["profile:read:basic", "email"]
+            client=sample_client, requested_scopes=["profile:read:basic", "email"]
         )
 
         assert "profile:read:basic" in result
@@ -267,8 +266,7 @@ class TestScopeValidation:
     def test_validate_scopes_includes_openid(self, oauth_service, sample_client):
         """Test scope validation includes openid scope."""
         result = oauth_service.validate_scopes(
-            client=sample_client,
-            requested_scopes=["openid", "profile:read:basic"]
+            client=sample_client, requested_scopes=["openid", "profile:read:basic"]
         )
 
         assert "openid" in result
@@ -279,10 +277,7 @@ class TestScopeValidation:
         sample_client.can_request_scope = Mock(return_value=False)
 
         with pytest.raises(InvalidScopeError) as exc_info:
-            oauth_service.validate_scopes(
-                client=sample_client,
-                requested_scopes=["admin:full"]
-            )
+            oauth_service.validate_scopes(client=sample_client, requested_scopes=["admin:full"])
 
         assert "not authorized" in str(exc_info.value.error_description)
 
@@ -292,47 +287,36 @@ class TestScopeValidation:
         sample_client.can_request_scope = Mock(return_value=True)
 
         with pytest.raises(InvalidScopeError) as exc_info:
-            oauth_service.validate_scopes(
-                client=sample_client,
-                requested_scopes=["unknown:scope"]
-            )
+            oauth_service.validate_scopes(client=sample_client, requested_scopes=["unknown:scope"])
 
         assert "Unknown scope" in str(exc_info.value.error_description)
 
-    def test_validate_scopes_context_restricted_without_context(
-        self, oauth_service, sample_client
-    ):
+    def test_validate_scopes_context_restricted_without_context(self, oauth_service, sample_client):
         """Test context-restricted scope requires context type."""
         with pytest.raises(InvalidScopeError) as exc_info:
             oauth_service.validate_scopes(
-                client=sample_client,
-                requested_scopes=["contexts:legal:read"],
-                context_type=None
+                client=sample_client, requested_scopes=["contexts:legal:read"], context_type=None
             )
 
         assert "requires context type" in str(exc_info.value.error_description)
 
-    def test_validate_scopes_context_restricted_wrong_context(
-        self, oauth_service, sample_client
-    ):
+    def test_validate_scopes_context_restricted_wrong_context(self, oauth_service, sample_client):
         """Test context-restricted scope fails with wrong context."""
         with pytest.raises(InvalidScopeError) as exc_info:
             oauth_service.validate_scopes(
                 client=sample_client,
                 requested_scopes=["contexts:legal:read"],
-                context_type=ContextType.social  # Wrong context
+                context_type=ContextType.social,  # Wrong context
             )
 
         assert "requires context type" in str(exc_info.value.error_description)
 
-    def test_validate_scopes_context_restricted_correct_context(
-        self, oauth_service, sample_client
-    ):
+    def test_validate_scopes_context_restricted_correct_context(self, oauth_service, sample_client):
         """Test context-restricted scope passes with correct context."""
         result = oauth_service.validate_scopes(
             client=sample_client,
             requested_scopes=["contexts:legal:read"],
-            context_type=ContextType.legal
+            context_type=ContextType.legal,
         )
 
         assert "contexts:legal:read" in result
@@ -349,7 +333,7 @@ class TestScopeValidation:
                 client=sample_client,
                 requested_scopes=["contexts:legal:read"],
                 user_profile=mock_profile,
-                context_type=ContextType.legal
+                context_type=ContextType.legal,
             )
 
         assert "Pseudonymous accounts cannot access" in str(exc_info.value.error_description)
@@ -359,10 +343,7 @@ class TestScopeValidation:
         sample_client.can_request_scope = Mock(return_value=False)
 
         with pytest.raises(InvalidScopeError):
-            oauth_service.validate_scopes(
-                client=sample_client,
-                requested_scopes=[]
-            )
+            oauth_service.validate_scopes(client=sample_client, requested_scopes=[])
 
 
 class TestScopeBasedFiltering:
@@ -382,12 +363,11 @@ class TestScopeBasedFiltering:
             "avatar_url": "https://example.com/avatar.webp",
             "avatar_thumbnail_url": "https://example.com/thumb.webp",
             "primary_email": "sarah@example.com",
-            "primary_phone": "+1-555-0101"
+            "primary_phone": "+1-555-0101",
         }
 
         result = oauth_service.filter_profile_fields_by_scopes(
-            profile_data=profile_data,
-            scopes=["profile:read:basic"]
+            profile_data=profile_data, scopes=["profile:read:basic"]
         )
 
         assert "preferred_name" in result
@@ -404,12 +384,11 @@ class TestScopeBasedFiltering:
             "display_name": "Dr. Sarah Chen",
             "primary_email": "sarah@example.com",
             "email": "sarah@example.com",
-            "email_verified": True
+            "email_verified": True,
         }
 
         result = oauth_service.filter_profile_fields_by_scopes(
-            profile_data=profile_data,
-            scopes=["email"]
+            profile_data=profile_data, scopes=["email"]
         )
 
         assert "email" in result
@@ -425,12 +404,11 @@ class TestScopeBasedFiltering:
             "display_name": "Dr. Sarah Chen",
             "primary_email": "sarah@example.com",
             "email_verified": True,
-            "primary_phone": "+1-555-0101"
+            "primary_phone": "+1-555-0101",
         }
 
         result = oauth_service.filter_profile_fields_by_scopes(
-            profile_data=profile_data,
-            scopes=["profile:read:basic", "email"]
+            profile_data=profile_data, scopes=["profile:read:basic", "email"]
         )
 
         assert "preferred_name" in result
@@ -441,15 +419,11 @@ class TestScopeBasedFiltering:
 
     def test_filter_profile_fields_always_includes_sub(self, oauth_service):
         """Test sub claim is always included."""
-        profile_data = {
-            "sub": "user-123",
-            "user_id": "user-123",
-            "account_type": "verified"
-        }
+        profile_data = {"sub": "user-123", "user_id": "user-123", "account_type": "verified"}
 
         result = oauth_service.filter_profile_fields_by_scopes(
             profile_data=profile_data,
-            scopes=[]  # No scopes
+            scopes=[],  # No scopes
         )
 
         assert "sub" in result
@@ -483,9 +457,7 @@ class TestAuthorizationCodeFlow:
         client.is_redirect_uri_valid = Mock(return_value=True)
         return client
 
-    def test_create_authorization_code_success(
-        self, oauth_service, mock_oauth_repo, sample_client
-    ):
+    def test_create_authorization_code_success(self, oauth_service, mock_oauth_repo, sample_client):
         """Test successful authorization code creation."""
         user_id = uuid4()
         mock_oauth_repo.get_active_client.return_value = sample_client
@@ -500,7 +472,7 @@ class TestAuthorizationCodeFlow:
             redirect_uri="https://example.com/callback",
             scope="profile:read:basic email",
             code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
-            code_challenge_method="S256"
+            code_challenge_method="S256",
         )
 
         assert result == mock_auth_code
@@ -520,7 +492,7 @@ class TestAuthorizationCodeFlow:
                 redirect_uri="https://example.com/callback",
                 scope="profile:read:basic",
                 code_challenge="plain-challenge",
-                code_challenge_method="plain"  # Not allowed in OAuth 2.1
+                code_challenge_method="plain",  # Not allowed in OAuth 2.1
             )
 
         assert "S256" in str(exc_info.value.error_description)
@@ -574,16 +546,22 @@ class TestTokenExchange:
 
         access_token_model = Mock(spec=OAuthAccessToken)
         access_token_model.id = uuid4()
-        mock_oauth_repo.create_access_token.return_value = (access_token_model, "access-token-value")
+        mock_oauth_repo.create_access_token.return_value = (
+            access_token_model,
+            "access-token-value",
+        )
 
         refresh_token_model = Mock(spec=OAuthRefreshToken)
-        mock_oauth_repo.create_refresh_token.return_value = (refresh_token_model, "refresh-token-value")
+        mock_oauth_repo.create_refresh_token.return_value = (
+            refresh_token_model,
+            "refresh-token-value",
+        )
 
         result = oauth_service.exchange_authorization_code(
             code="test-auth-code",
             client_id="test-client",
             redirect_uri="https://example.com/callback",
-            code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+            code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
         )
 
         assert isinstance(result, TokenResponse)
@@ -606,7 +584,7 @@ class TestTokenExchange:
                 code="invalid-code",
                 client_id="test-client",
                 redirect_uri="https://example.com/callback",
-                code_verifier="verifier"
+                code_verifier="verifier",
             )
 
         assert "invalid or expired" in str(exc_info.value.error_description)
@@ -624,7 +602,7 @@ class TestTokenExchange:
                 code="test-auth-code",
                 client_id="test-client",
                 redirect_uri="https://example.com/callback",
-                code_verifier="verifier"
+                code_verifier="verifier",
             )
 
         assert "another client" in str(exc_info.value.error_description)
@@ -641,7 +619,7 @@ class TestTokenExchange:
                 code="test-auth-code",
                 client_id="test-client",
                 redirect_uri="https://evil.com/callback",  # Wrong URI
-                code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+                code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
             )
 
         assert "redirect_uri mismatch" in str(exc_info.value.error_description)
@@ -658,7 +636,7 @@ class TestTokenExchange:
                 code="test-auth-code",
                 client_id="test-client",
                 redirect_uri="https://example.com/callback",
-                code_verifier="wrong-verifier"  # PKCE will fail
+                code_verifier="wrong-verifier",  # PKCE will fail
             )
 
         assert "PKCE verification failed" in str(exc_info.value.error_description)
@@ -714,8 +692,7 @@ class TestRefreshTokenRotation:
         mock_oauth_repo.rotate_refresh_token.return_value = (new_refresh_token, "new-refresh-token")
 
         result = oauth_service.refresh_access_token(
-            refresh_token="old-refresh-token",
-            client_id="test-client"
+            refresh_token="old-refresh-token", client_id="test-client"
         )
 
         assert isinstance(result, TokenResponse)
@@ -733,8 +710,7 @@ class TestRefreshTokenRotation:
 
         with pytest.raises(InvalidGrantError) as exc_info:
             oauth_service.refresh_access_token(
-                refresh_token="invalid-token",
-                client_id="test-client"
+                refresh_token="invalid-token", client_id="test-client"
             )
 
         assert "invalid or expired" in str(exc_info.value.error_description)
@@ -749,8 +725,7 @@ class TestRefreshTokenRotation:
 
         with pytest.raises(InvalidGrantError) as exc_info:
             oauth_service.refresh_access_token(
-                refresh_token="refresh-token",
-                client_id="test-client"
+                refresh_token="refresh-token", client_id="test-client"
             )
 
         assert "another client" in str(exc_info.value.error_description)
@@ -773,7 +748,7 @@ class TestRefreshTokenRotation:
         result = oauth_service.refresh_access_token(
             refresh_token="refresh-token",
             client_id="test-client",
-            scope="profile:read:basic offline_access"  # Reduced scope
+            scope="profile:read:basic offline_access",  # Reduced scope
         )
 
         assert result.scope == "profile:read:basic offline_access"
@@ -790,7 +765,7 @@ class TestRefreshTokenRotation:
             oauth_service.refresh_access_token(
                 refresh_token="refresh-token",
                 client_id="test-client",
-                scope="profile:read:basic email offline_access"  # Trying to add email
+                scope="profile:read:basic email offline_access",  # Trying to add email
             )
 
         assert "subset" in str(exc_info.value.error_description)
@@ -818,8 +793,8 @@ class TestTokenIntrospection:
         access_token.client_id = "test-client"
         access_token.user_id = user_id
         access_token.context_profile_id = None
-        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        access_token.issued_at = datetime.now(timezone.utc)
+        access_token.expires_at = datetime.now(UTC) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(UTC)
 
         mock_oauth_repo.get_access_token_by_raw.return_value = access_token
 
@@ -861,8 +836,8 @@ class TestTokenIntrospection:
         refresh_token.scope = "profile:read:basic offline_access"
         refresh_token.client_id = "test-client"
         refresh_token.user_id = user_id
-        refresh_token.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-        refresh_token.issued_at = datetime.now(timezone.utc)
+        refresh_token.expires_at = datetime.now(UTC) + timedelta(days=30)
+        refresh_token.issued_at = datetime.now(UTC)
 
         mock_oauth_repo.get_refresh_token_by_raw.return_value = refresh_token
 
@@ -936,9 +911,7 @@ class TestConsentManagement:
         client.can_request_scope = Mock(return_value=True)
         return client
 
-    def test_record_consent_success(
-        self, oauth_service, mock_oauth_repo, sample_client
-    ):
+    def test_record_consent_success(self, oauth_service, mock_oauth_repo, sample_client):
         """Test successful consent recording."""
         user_id = uuid4()
         mock_oauth_repo.get_active_client.return_value = sample_client
@@ -956,7 +929,7 @@ class TestConsentManagement:
             client_id="test-client",
             granted_scopes=["profile:read:basic"],
             ip_address="192.168.1.1",
-            user_agent="Mozilla/5.0"
+            user_agent="Mozilla/5.0",
         )
 
         assert result == consent
@@ -968,9 +941,7 @@ class TestConsentManagement:
         mock_oauth_repo.has_valid_consent.return_value = True
 
         result = oauth_service.check_consent(
-            user_id=user_id,
-            client_id="test-client",
-            required_scopes=["profile:read:basic"]
+            user_id=user_id, client_id="test-client", required_scopes=["profile:read:basic"]
         )
 
         assert result is True
@@ -981,9 +952,7 @@ class TestConsentManagement:
         mock_oauth_repo.has_valid_consent.return_value = False
 
         result = oauth_service.check_consent(
-            user_id=user_id,
-            client_id="test-client",
-            required_scopes=["profile:read:basic"]
+            user_id=user_id, client_id="test-client", required_scopes=["profile:read:basic"]
         )
 
         assert result is False
@@ -1071,7 +1040,7 @@ class TestContextVerificationGuard:
             scope="profile:read:basic",
             code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
             code_challenge_method="S256",
-            context_profile_id=context_id
+            context_profile_id=context_id,
         )
 
         assert result == mock_auth_code
@@ -1097,7 +1066,7 @@ class TestContextVerificationGuard:
             scope="profile:read:basic",
             code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
             code_challenge_method="S256",
-            context_profile_id=context_id
+            context_profile_id=context_id,
         )
 
         assert result == mock_auth_code
@@ -1121,7 +1090,7 @@ class TestContextVerificationGuard:
                 scope="profile:read:basic",
                 code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
                 code_challenge_method="S256",
-                context_profile_id=context_id
+                context_profile_id=context_id,
             )
 
         assert "verification" in exc_info.value.error_description.lower()
@@ -1145,7 +1114,7 @@ class TestContextVerificationGuard:
                 scope="profile:read:basic",
                 code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
                 code_challenge_method="S256",
-                context_profile_id=context_id
+                context_profile_id=context_id,
             )
 
     def test_rejects_healthcare_context_when_under_review(
@@ -1167,7 +1136,7 @@ class TestContextVerificationGuard:
                 scope="profile:read:basic",
                 code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
                 code_challenge_method="S256",
-                context_profile_id=context_id
+                context_profile_id=context_id,
             )
 
     def test_no_context_passes_through(
@@ -1187,7 +1156,7 @@ class TestContextVerificationGuard:
             scope="profile:read:basic",
             code_challenge="E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
             code_challenge_method="S256",
-            context_profile_id=None
+            context_profile_id=None,
         )
 
         assert result == mock_auth_code
@@ -1208,8 +1177,8 @@ class TestContextVerificationGuard:
         access_token.client_id = "test-client"
         access_token.user_id = user_id
         access_token.context_profile_id = context_id
-        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        access_token.issued_at = datetime.now(timezone.utc)
+        access_token.expires_at = datetime.now(UTC) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(UTC)
         mock_oauth_repo.get_access_token_by_raw.return_value = access_token
 
         mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
@@ -1236,8 +1205,8 @@ class TestContextVerificationGuard:
         access_token.client_id = "test-client"
         access_token.user_id = user_id
         access_token.context_profile_id = context_id
-        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        access_token.issued_at = datetime.now(timezone.utc)
+        access_token.expires_at = datetime.now(UTC) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(UTC)
         mock_oauth_repo.get_access_token_by_raw.return_value = access_token
 
         mock_context_repo.get_context_profile_by_id.return_value = self._make_context(
@@ -1264,8 +1233,8 @@ class TestContextVerificationGuard:
         access_token.client_id = "test-client"
         access_token.user_id = user_id
         access_token.context_profile_id = context_id
-        access_token.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        access_token.issued_at = datetime.now(timezone.utc)
+        access_token.expires_at = datetime.now(UTC) + timedelta(hours=1)
+        access_token.issued_at = datetime.now(UTC)
         mock_oauth_repo.get_access_token_by_raw.return_value = access_token
 
         mock_context_repo.get_context_profile_by_id.return_value = self._make_context(

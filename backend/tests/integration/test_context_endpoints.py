@@ -1,10 +1,10 @@
 """Integration tests for context profile endpoints."""
 
-import pytest
+from datetime import UTC
+
 from fastapi.testclient import TestClient
 
-from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, IdentityName, NameType
+from src.models.profile import BaseProfile, IdentityName
 
 
 class TestCreateContextProfile:
@@ -24,7 +24,7 @@ class TestCreateContextProfile:
                 "context_name": "LinkedIn",
                 "display_name_override": "Dr. Sarah Chen, MD",
                 "email_override": "work@hospital.org",
-                "bio": "Psychiatrist specializing in trauma"
+                "bio": "Psychiatrist specializing in trauma",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -48,10 +48,7 @@ class TestCreateContextProfile:
         """Test creating context with only required fields"""
         response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "social",
-                "context_name": "Personal"
-            },
+            json={"context_type": "social", "context_name": "Personal"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
 
@@ -62,16 +59,11 @@ class TestCreateContextProfile:
         assert data["display_name_override"] is None
         assert data["email_override"] is None
 
-    def test_create_context_for_nonexistent_user(
-        self, client: TestClient, verified_token: str
-    ):
+    def test_create_context_for_nonexistent_user(self, client: TestClient, verified_token: str):
         """Test creating context for non-existent user returns 404"""
         response = client.post(
             "/api/v1/profiles/00000000-0000-0000-0000-000000000999/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "Work"
-            },
+            json={"context_type": "professional", "context_name": "Work"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
 
@@ -87,19 +79,13 @@ class TestCreateContextProfile:
         headers = {"Authorization": f"Bearer {verified_token}"}
         client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "LinkedIn"
-            },
+            json={"context_type": "professional", "context_name": "LinkedIn"},
             headers=headers,
         )
 
         response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "LinkedIn"
-            },
+            json={"context_type": "professional", "context_name": "LinkedIn"},
             headers=headers,
         )
 
@@ -114,10 +100,7 @@ class TestCreateContextProfile:
         """Test pseudonymous account cannot create legal context"""
         response = client.post(
             f"/api/v1/profiles/{sample_pseudonymous_profile.user_id}/contexts",
-            json={
-                "context_type": "legal",
-                "context_name": "Government"
-            },
+            json={"context_type": "legal", "context_name": "Government"},
             headers={"Authorization": f"Bearer {pseudonymous_token}"},
         )
 
@@ -129,10 +112,7 @@ class TestCreateContextProfile:
         """Test creating context without JWT returns 401"""
         response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "social",
-                "context_name": "Personal"
-            },
+            json={"context_type": "social", "context_name": "Personal"},
         )
 
         assert response.status_code == 401
@@ -141,15 +121,9 @@ class TestCreateContextProfile:
 class TestListUserContexts:
     """Test GET /profiles/{user_id}/contexts"""
 
-    def test_list_contexts_empty(
-        self,
-        client: TestClient,
-        sample_verified_profile: BaseProfile
-    ):
+    def test_list_contexts_empty(self, client: TestClient, sample_verified_profile: BaseProfile):
         """Test listing contexts for user with no contexts"""
-        response = client.get(
-            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts"
-        )
+        response = client.get(f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts")
 
         assert response.status_code == 200
         assert response.json() == []
@@ -173,9 +147,7 @@ class TestListUserContexts:
             headers=headers,
         )
 
-        response = client.get(
-            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts"
-        )
+        response = client.get(f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts")
 
         assert response.status_code == 200
         data = response.json()
@@ -200,7 +172,7 @@ class TestGetContextProfile:
             json={
                 "context_type": "professional",
                 "context_name": "Work",
-                "display_name_override": "Dr. Sarah Chen"
+                "display_name_override": "Dr. Sarah Chen",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -217,9 +189,7 @@ class TestGetContextProfile:
         assert data["display_name_override"] == "Dr. Sarah Chen"
 
     def test_get_nonexistent_context(
-        self,
-        client: TestClient,
-        sample_verified_profile: BaseProfile
+        self, client: TestClient, sample_verified_profile: BaseProfile
     ):
         """Test getting non-existent context returns 404"""
         response = client.get(
@@ -269,7 +239,7 @@ class TestGetResolvedContextProfile:
                 "display_name_override": "Dr. Sarah Chen",
                 "email_override": "work@hospital.org",
                 "phone_override": "+1-555-9999",
-                "bio": "Professional bio"
+                "bio": "Professional bio",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -307,7 +277,7 @@ class TestGetResolvedContextProfile:
             json={
                 "context_type": "professional",
                 "context_name": "Work",
-                "email_override": "work@company.com"
+                "email_override": "work@company.com",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -333,10 +303,7 @@ class TestGetResolvedContextProfile:
         """Test resolving context with no overrides returns base values."""
         create_response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "social",
-                "context_name": "Personal"
-            },
+            json={"context_type": "social", "context_name": "Personal"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
         context_id = create_response.json()["id"]
@@ -361,12 +328,10 @@ class TestGetResolvedBaseProfile:
         self,
         client: TestClient,
         sample_verified_profile: BaseProfile,
-        sample_identity_name: IdentityName
+        sample_identity_name: IdentityName,
     ):
         """Test resolving base profile without context"""
-        response = client.get(
-            f"/api/v1/profiles/{sample_verified_profile.user_id}/resolved"
-        )
+        response = client.get(f"/api/v1/profiles/{sample_verified_profile.user_id}/resolved")
 
         assert response.status_code == 200
         data = response.json()
@@ -396,21 +361,14 @@ class TestUpdateContextProfile:
         headers = {"Authorization": f"Bearer {verified_token}"}
         create_response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "Work",
-                "bio": "Old bio"
-            },
+            json={"context_type": "professional", "context_name": "Work", "bio": "Old bio"},
             headers=headers,
         )
         context_id = create_response.json()["id"]
 
         response = client.patch(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}",
-            json={
-                "bio": "New bio",
-                "email_override": "newemail@work.com"
-            },
+            json={"bio": "New bio", "email_override": "newemail@work.com"},
             headers=headers,
         )
 
@@ -455,7 +413,7 @@ class TestUpdateContextProfile:
                 "context_name": "Hospital",
                 "phone_override": "+1-555-0100",
                 "email_override": "hospital@example.com",
-                "bio": "Medical professional"
+                "bio": "Medical professional",
             },
             headers=headers,
         )
@@ -471,10 +429,7 @@ class TestUpdateContextProfile:
 
         update_response = client.patch(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}",
-            json={
-                "phone_override": None,
-                "bio": "Updated bio"
-            },
+            json={"phone_override": None, "bio": "Updated bio"},
             headers=headers,
         )
 
@@ -559,7 +514,7 @@ class TestEndToEndScenario:
                 "context_name": "Hospital Network",
                 "display_name_override": "Dr. Sarah Chen, MD, PhD",
                 "email_override": "s.chen@hospital.org",
-                "bio": "Board-certified psychiatrist specializing in trauma and PTSD"
+                "bio": "Board-certified psychiatrist specializing in trauma and PTSD",
             },
             headers=headers,
         )
@@ -572,7 +527,7 @@ class TestEndToEndScenario:
                 "context_type": "social",
                 "context_name": "Fitness App",
                 "display_name_override": "Sarah",
-                "bio": "Health and wellness enthusiast"
+                "bio": "Health and wellness enthusiast",
             },
             headers=headers,
         )
@@ -614,7 +569,7 @@ class TestAcceptLanguageHeaderParsing:
             json={
                 "context_type": "professional",
                 "context_name": "Work",
-                "display_name_override": "李明工程师"
+                "display_name_override": "李明工程师",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -623,7 +578,7 @@ class TestAcceptLanguageHeaderParsing:
 
         response = client.get(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
-            headers={"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"}
+            headers={"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"},
         )
 
         assert response.status_code == 200
@@ -643,7 +598,7 @@ class TestAcceptLanguageHeaderParsing:
             json={
                 "context_type": "social",
                 "context_name": "Friends",
-                "display_name_override": "Mike"
+                "display_name_override": "Mike",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
@@ -652,7 +607,7 @@ class TestAcceptLanguageHeaderParsing:
 
         response = client.get(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
-            headers={"Accept-Language": "en-US,en;q=0.9"}
+            headers={"Accept-Language": "en-US,en;q=0.9"},
         )
 
         assert response.status_code == 200
@@ -668,10 +623,7 @@ class TestAcceptLanguageHeaderParsing:
         """Test missing Accept-Language header defaults to English"""
         context_response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "Default"
-            },
+            json={"context_type": "professional", "context_name": "Default"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
         assert context_response.status_code == 201
@@ -692,10 +644,7 @@ class TestAcceptLanguageHeaderParsing:
         """Test complex Accept-Language header with quality values"""
         context_response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "social",
-                "context_name": "International"
-            },
+            json={"context_type": "social", "context_name": "International"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
         assert context_response.status_code == 201
@@ -703,7 +652,7 @@ class TestAcceptLanguageHeaderParsing:
 
         response = client.get(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts/{context_id}/resolved",
-            headers={"Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,*;q=0.5"}
+            headers={"Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,*;q=0.5"},
         )
 
         assert response.status_code == 200
@@ -720,7 +669,8 @@ class TestTemporalValidityIntegration:
         verified_token: str,
     ):
         """Test expired context returns HTTP 410 Gone"""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta
+
         from sqlalchemy import text
 
         context_response = client.post(
@@ -728,17 +678,17 @@ class TestTemporalValidityIntegration:
             json={
                 "context_type": "professional",
                 "context_name": "Old Job",
-                "display_name_override": "Former Title"
+                "display_name_override": "Former Title",
             },
             headers={"Authorization": f"Bearer {verified_token}"},
         )
         assert context_response.status_code == 201
         context_id = context_response.json()["id"]
 
-        past_date = datetime.now(timezone.utc) - timedelta(days=1)
+        past_date = datetime.now(UTC) - timedelta(days=1)
         db_session.execute(
             text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
-            {"valid_to": past_date, "id": context_id}
+            {"valid_to": past_date, "id": context_id},
         )
         db_session.commit()
 
@@ -757,24 +707,22 @@ class TestTemporalValidityIntegration:
         verified_token: str,
     ):
         """Test context with future valid_to resolves successfully"""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta
+
         from sqlalchemy import text
 
         context_response = client.post(
             f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts",
-            json={
-                "context_type": "professional",
-                "context_name": "Current Job"
-            },
+            json={"context_type": "professional", "context_name": "Current Job"},
             headers={"Authorization": f"Bearer {verified_token}"},
         )
         assert context_response.status_code == 201
         context_id = context_response.json()["id"]
 
-        future_date = datetime.now(timezone.utc) + timedelta(days=365)
+        future_date = datetime.now(UTC) + timedelta(days=365)
         db_session.execute(
             text("UPDATE context_profiles SET valid_to = :valid_to WHERE id = :id"),
-            {"valid_to": future_date, "id": context_id}
+            {"valid_to": future_date, "id": context_id},
         )
         db_session.commit()
 
@@ -797,10 +745,7 @@ class TestEmailVerificationEnforcement:
         """Unverified-email user cannot create context profiles."""
         response = client.post(
             f"/api/v1/profiles/{sample_unverified_profile.user_id}/contexts",
-            json={
-                "context_type": "social",
-                "context_name": "Personal"
-            },
+            json={"context_type": "social", "context_name": "Personal"},
             headers={"Authorization": f"Bearer {unverified_email_token}"},
         )
 
@@ -870,9 +815,7 @@ class TestEmailVerificationEnforcement:
         )
         context_id = create_response.json()["id"]
 
-        list_response = client.get(
-            f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts"
-        )
+        list_response = client.get(f"/api/v1/profiles/{sample_verified_profile.user_id}/contexts")
         assert list_response.status_code == 200
 
         get_response = client.get(

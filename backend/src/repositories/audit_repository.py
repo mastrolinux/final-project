@@ -8,14 +8,13 @@ No update or delete methods exist by design.
 
 import hashlib
 import json
-from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from src.models.audit import AuditLog, AuditOperation, GENESIS_HASH
+from src.models.audit import GENESIS_HASH, AuditLog, AuditOperation
 
 
 class AuditRepository:
@@ -32,22 +31,20 @@ class AuditRepository:
         self,
         timestamp: datetime,
         event_type: str,
-        user_id: Optional[str],
-        actor_id: Optional[str],
+        user_id: str | None,
+        actor_id: str | None,
         resource_type: str,
         resource_id: str,
         operation: str,
-        changes: Optional[dict],
-        previous_hash: str
+        changes: dict | None,
+        previous_hash: str,
     ) -> str:
         """Compute SHA-256 hash for an audit log entry.
 
         Concatenates all significant fields plus the previous entry's
         hash with pipe separators for deterministic chaining.
         """
-        changes_json = json.dumps(
-            changes, sort_keys=True, default=str
-        ) if changes else ""
+        changes_json = json.dumps(changes, sort_keys=True, default=str) if changes else ""
 
         # Normalize: strip tzinfo before isoformat for consistent hashing.
         # Some databases (SQLite) strip timezone on read-back; PostgreSQL
@@ -55,17 +52,19 @@ class AuditRepository:
         # of the storage backend.
         normalized_ts = timestamp.replace(tzinfo=None)
 
-        hash_input = "|".join([
-            normalized_ts.isoformat(),
-            event_type,
-            str(user_id) if user_id else "",
-            str(actor_id) if actor_id else "",
-            resource_type,
-            resource_id,
-            operation,
-            changes_json,
-            previous_hash
-        ])
+        hash_input = "|".join(
+            [
+                normalized_ts.isoformat(),
+                event_type,
+                str(user_id) if user_id else "",
+                str(actor_id) if actor_id else "",
+                resource_type,
+                resource_id,
+                operation,
+                changes_json,
+                previous_hash,
+            ]
+        )
 
         return hashlib.sha256(hash_input.encode("utf-8")).hexdigest()
 
@@ -87,18 +86,18 @@ class AuditRepository:
     def create_log(
         self,
         event_type: str,
-        user_id: Optional[UUID],
-        actor_id: Optional[UUID],
+        user_id: UUID | None,
+        actor_id: UUID | None,
         resource_type: str,
         resource_id: str,
         operation: AuditOperation,
-        changes: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        legal_basis: Optional[str] = None
+        changes: dict | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        legal_basis: str | None = None,
     ) -> AuditLog:
         """Create a new audit log entry with hash chaining."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         previous_hash = self._get_latest_hash()
 
         entry_hash = self._compute_entry_hash(
@@ -110,7 +109,7 @@ class AuditRepository:
             resource_id=resource_id,
             operation=operation.value,
             changes=changes,
-            previous_hash=previous_hash
+            previous_hash=previous_hash,
         )
 
         log_entry = AuditLog(
@@ -126,7 +125,7 @@ class AuditRepository:
             user_agent=user_agent,
             legal_basis=legal_basis,
             previous_hash=previous_hash,
-            entry_hash=entry_hash
+            entry_hash=entry_hash,
         )
 
         self.db.add(log_entry)
@@ -137,43 +136,28 @@ class AuditRepository:
     def get_logs_for_user(
         self,
         user_id: UUID,
-        event_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
+        event_type: str | None = None,
+        resource_type: str | None = None,
         limit: int = 50,
-        offset: int = 0
-    ) -> List[AuditLog]:
+        offset: int = 0,
+    ) -> list[AuditLog]:
         """Get audit logs for a specific user, newest first."""
-        query = (
-            self.db.query(AuditLog)
-            .filter(AuditLog.user_id == user_id)
-        )
+        query = self.db.query(AuditLog).filter(AuditLog.user_id == user_id)
 
         if event_type:
             query = query.filter(AuditLog.event_type == event_type)
         if resource_type:
             query = query.filter(AuditLog.resource_type == resource_type)
 
-        return (
-            query.order_by(desc(AuditLog.created_at))
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        return query.order_by(desc(AuditLog.created_at)).offset(offset).limit(limit).all()
 
     def get_logs_for_resource(
-        self,
-        resource_type: str,
-        resource_id: str,
-        limit: int = 50,
-        offset: int = 0
-    ) -> List[AuditLog]:
+        self, resource_type: str, resource_id: str, limit: int = 50, offset: int = 0
+    ) -> list[AuditLog]:
         """Get audit logs for a specific resource, newest first."""
         return (
             self.db.query(AuditLog)
-            .filter(
-                AuditLog.resource_type == resource_type,
-                AuditLog.resource_id == resource_id
-            )
+            .filter(AuditLog.resource_type == resource_type, AuditLog.resource_id == resource_id)
             .order_by(desc(AuditLog.created_at))
             .offset(offset)
             .limit(limit)
@@ -182,16 +166,9 @@ class AuditRepository:
 
     def count_logs_for_user(self, user_id: UUID) -> int:
         """Count total audit logs for a user."""
-        return (
-            self.db.query(AuditLog)
-            .filter(AuditLog.user_id == user_id)
-            .count()
-        )
+        return self.db.query(AuditLog).filter(AuditLog.user_id == user_id).count()
 
-    def verify_chain(
-        self,
-        limit: int = 1000
-    ) -> Tuple[bool, int, Optional[str]]:
+    def verify_chain(self, limit: int = 1000) -> tuple[bool, int, str | None]:
         """Verify hash chain integrity for the most recent entries.
 
         Walks newest to oldest, recomputing each hash and checking
@@ -219,7 +196,7 @@ class AuditRepository:
                 resource_id=entry.resource_id,
                 operation=entry.operation.value,
                 changes=entry.changes,
-                previous_hash=entry.previous_hash
+                previous_hash=entry.previous_hash,
             )
 
             if recomputed != entry.entry_hash:
@@ -227,7 +204,7 @@ class AuditRepository:
                     False,
                     entries_verified,
                     f"Hash mismatch at log_id={entry.log_id}: "
-                    f"stored={entry.entry_hash}, computed={recomputed}"
+                    f"stored={entry.entry_hash}, computed={recomputed}",
                 )
 
             if i + 1 < len(entries):
@@ -238,7 +215,7 @@ class AuditRepository:
                         entries_verified,
                         f"Chain break at log_id={entry.log_id}: "
                         f"previous_hash={entry.previous_hash} does not "
-                        f"match older entry_hash={older_entry.entry_hash}"
+                        f"match older entry_hash={older_entry.entry_hash}",
                     )
 
             entries_verified += 1

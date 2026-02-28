@@ -75,16 +75,12 @@ class TestValidateDocument:
 
     def test_claimed_content_type_ignored_for_detection(self):
         """The claimed MIME type does not affect detection logic."""
-        result = validate_document(
-            PDF_HEADER, claimed_content_type="image/jpeg"
-        )
+        result = validate_document(PDF_HEADER, claimed_content_type="image/jpeg")
         assert result == "application/pdf"
 
     def test_claimed_content_type_matching(self):
         """When the claim matches the detected type, no warning is logged."""
-        result = validate_document(
-            JPEG_BYTES, claimed_content_type="image/jpeg"
-        )
+        result = validate_document(JPEG_BYTES, claimed_content_type="image/jpeg")
         assert result == "image/jpeg"
 
     def test_pdf_with_trailing_content(self):
@@ -112,7 +108,5 @@ class TestValidateDocument:
     def test_claimed_mismatch_still_returns_detected(self):
         """When the claim differs from the actual format, the detected
         type is returned (not the claimed type)."""
-        result = validate_document(
-            PNG_BYTES, claimed_content_type="image/jpeg"
-        )
+        result = validate_document(PNG_BYTES, claimed_content_type="image/jpeg")
         assert result == "image/png"

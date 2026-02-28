@@ -2,13 +2,14 @@
 Unit Tests for ProfileService
 """
 
-import pytest
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
+import pytest
+
+from src.models.profile import AccountType, BaseProfile
+from src.schemas.profile import ProfileCreate, ProfileUpdate
 from src.services.profile_service import ProfileService, ProfileServiceError
-from src.schemas.profile import ProfileCreate, ProfileUpdate, IdentityNameCreate
-from src.models.profile import BaseProfile, IdentityName, AccountType, NameType
 
 
 @pytest.fixture
@@ -33,35 +34,31 @@ def profile_service_with_auth(mock_repository, mock_auth_repository):
 
 def test_create_verified_with_legal_name(profile_service, mock_repository):
     profile_data = ProfileCreate(
-        account_type=AccountType.verified,
-        legal_name="John Doe",
-        primary_email="john@example.com"
+        account_type=AccountType.verified, legal_name="John Doe", primary_email="john@example.com"
     )
-    
+
     mock_profile = BaseProfile(
         user_id=uuid4(),
         account_type=AccountType.verified,
         legal_name="John Doe",
         primary_email="john@example.com",
-        preferred_language="en"
+        preferred_language="en",
     )
     mock_repository.create_profile.return_value = mock_profile
     mock_repository.get_profile_by_email.return_value = None
-    
+
     result = profile_service.create_profile(profile_data)
-    
+
     assert result.account_type == AccountType.verified
 
 
 def test_create_verified_without_legal_name_raises_error(profile_service, mock_repository):
     profile_data = ProfileCreate(
-        account_type=AccountType.verified,
-        legal_name=None,
-        primary_email="john@example.com"
+        account_type=AccountType.verified, legal_name=None, primary_email="john@example.com"
     )
-    
+
     mock_repository.get_profile_by_email.return_value = None
-    
+
     with pytest.raises(ProfileServiceError):
         profile_service.create_profile(profile_data)
 
@@ -69,20 +66,18 @@ def test_create_verified_without_legal_name_raises_error(profile_service, mock_r
 def test_get_profile_existing(profile_service, mock_repository):
     user_id = uuid4()
     mock_profile = BaseProfile(
-        user_id=user_id,
-        primary_email="user@example.com",
-        preferred_language="en"
+        user_id=user_id, primary_email="user@example.com", preferred_language="en"
     )
     mock_repository.get_profile_by_id.return_value = mock_profile
-    
+
     result = profile_service.get_profile(user_id)
-    
+
     assert result.user_id == user_id
 
 
 def test_get_profile_nonexistent_raises_error(profile_service, mock_repository):
     mock_repository.get_profile_by_id.return_value = None
-    
+
     with pytest.raises(ProfileServiceError):
         profile_service.get_profile(uuid4())
 
@@ -125,9 +120,7 @@ class TestEmailChangeReverification:
             mock_send.delay = Mock()
             profile_service_with_auth.update_profile(user_id, update)
 
-        mock_auth_repository.update_email.assert_called_once_with(
-            str(user_id), new_email
-        )
+        mock_auth_repository.update_email.assert_called_once_with(str(user_id), new_email)
 
     def test_email_change_dispatches_verification_email(
         self, profile_service_with_auth, mock_repository, mock_auth_repository
@@ -148,14 +141,10 @@ class TestEmailChangeReverification:
 
         update = ProfileUpdate(primary_email="new@example.com")
 
-        with patch(
-            "src.tasks.email_tasks.send_verification_email"
-        ) as mock_task:
+        with patch("src.tasks.email_tasks.send_verification_email") as mock_task:
             mock_task.delay = Mock()
             profile_service_with_auth.update_profile(user_id, update)
-            mock_task.delay.assert_called_once_with(
-                "new@example.com", "token-xyz", "Alice"
-            )
+            mock_task.delay.assert_called_once_with("new@example.com", "token-xyz", "Alice")
 
     def test_email_change_sets_pending_flag(
         self, profile_service_with_auth, mock_repository, mock_auth_repository
@@ -201,9 +190,7 @@ class TestEmailChangeReverification:
 
         mock_auth_repository.update_email.assert_not_called()
 
-    def test_no_auth_repo_no_reverification(
-        self, profile_service, mock_repository
-    ):
+    def test_no_auth_repo_no_reverification(self, profile_service, mock_repository):
         """Without auth_repository injected, email change must not fail."""
         user_id = uuid4()
         existing = BaseProfile(

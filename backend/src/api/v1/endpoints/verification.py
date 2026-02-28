@@ -10,7 +10,6 @@ authorization (users can only access their own documents).
 
 import logging
 from datetime import date
-from typing import List
 from uuid import UUID
 
 from fastapi import (
@@ -83,9 +82,7 @@ def get_verification_service(
 )
 async def upload_verification_document(
     user_id: UUID,
-    file: UploadFile = File(
-        ..., description="ID document file (PDF, JPEG, or PNG, max 10 MB)"
-    ),
+    file: UploadFile = File(..., description="ID document file (PDF, JPEG, or PNG, max 10 MB)"),
     document_type: DocumentType = Form(
         ..., description="Type of document: passport or national_id"
     ),
@@ -105,7 +102,10 @@ async def upload_verification_document(
     file_data = await file.read()
     logger.info(
         "Document upload request: user_id=%s, file=%s, type=%s, size=%d bytes",
-        user_id, file.filename, document_type.value, len(file_data),
+        user_id,
+        file.filename,
+        document_type.value,
+        len(file_data),
     )
 
     try:
@@ -121,9 +121,7 @@ async def upload_verification_document(
     except VerificationServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
     except Exception as exc:
-        logger.exception(
-            "Unexpected error during document upload for user %s", user_id
-        )
+        logger.exception("Unexpected error during document upload for user %s", user_id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Document upload failed: {exc}",
@@ -164,7 +162,7 @@ async def get_verification_status(
 
 @router.get(
     "/profiles/{user_id}/verification-documents",
-    response_model=List[VerificationDocumentResponse],
+    response_model=list[VerificationDocumentResponse],
 )
 async def list_verification_documents(
     user_id: UUID,
@@ -232,7 +230,7 @@ async def download_own_document(
 
 @router.get(
     "/profiles/{user_id}/contexts/{context_id}/documents",
-    response_model=List[VerificationDocumentResponse],
+    response_model=list[VerificationDocumentResponse],
 )
 async def list_context_documents(
     user_id: UUID,

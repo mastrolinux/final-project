@@ -6,7 +6,6 @@ Business logic for uploading and deleting profile avatars.
 
 import logging
 import uuid as uuid_pkg
-from typing import Optional
 from uuid import UUID
 
 from src.core.image import ImageProcessingError, process_avatar_image
@@ -34,23 +33,18 @@ class AvatarService:
         self,
         avatar_repo: AvatarRepository,
         storage: StorageClient,
-        audit_service: Optional[AuditService] = None,
+        audit_service: AuditService | None = None,
     ):
         self.avatar_repo = avatar_repo
         self.storage = storage
         self.audit_service = audit_service
 
-
-# Base profile avatar
-    def upload_base_avatar(
-        self, user_id: UUID, file_data: bytes
-    ) -> dict:
+    # Base profile avatar
+    def upload_base_avatar(self, user_id: UUID, file_data: bytes) -> dict:
         """Upload or replace the base profile avatar."""
         profile = self.avatar_repo.get_base_profile(user_id)
         if not profile:
-            raise AvatarServiceError(
-                f"Profile {user_id} not found", status_code=404
-            )
+            raise AvatarServiceError(f"Profile {user_id} not found", status_code=404)
 
         try:
             processed = process_avatar_image(file_data)
@@ -92,9 +86,7 @@ class AvatarService:
         """Remove the base profile avatar."""
         profile = self.avatar_repo.get_base_profile(user_id)
         if not profile:
-            raise AvatarServiceError(
-                f"Profile {user_id} not found", status_code=404
-            )
+            raise AvatarServiceError(f"Profile {user_id} not found", status_code=404)
 
         if not profile.avatar_storage_path:
             raise AvatarServiceError("Profile does not have an avatar")
@@ -117,10 +109,8 @@ class AvatarService:
 
         return {"message": "Avatar deleted successfully"}
 
-# Context profile avatar override
-    def upload_context_avatar(
-        self, user_id: UUID, context_id: UUID, file_data: bytes
-    ) -> dict:
+    # Context profile avatar override
+    def upload_context_avatar(self, user_id: UUID, context_id: UUID, file_data: bytes) -> dict:
         """Upload or replace a context-specific avatar override."""
         context = self._get_verified_context(user_id, context_id)
 
@@ -165,9 +155,7 @@ class AvatarService:
         context = self._get_verified_context(user_id, context_id)
 
         if not context.avatar_override_storage_path:
-            raise AvatarServiceError(
-                "Context profile does not have an avatar override"
-            )
+            raise AvatarServiceError("Context profile does not have an avatar override")
 
         self._delete_storage_pair(context.avatar_override_storage_path)
 
@@ -187,15 +175,12 @@ class AvatarService:
 
         return {"message": "Context avatar deleted successfully"}
 
-
-# Helpers
+    # Helpers
     def _get_verified_context(self, user_id: UUID, context_id: UUID):
         """Load a context profile and verify it belongs to the given user."""
         context = self.avatar_repo.get_context_profile(context_id)
         if not context:
-            raise AvatarServiceError(
-                f"Context profile {context_id} not found", status_code=404
-            )
+            raise AvatarServiceError(f"Context profile {context_id} not found", status_code=404)
         if context.user_id != user_id:
             raise AvatarServiceError(
                 f"Context {context_id} does not belong to user {user_id}",

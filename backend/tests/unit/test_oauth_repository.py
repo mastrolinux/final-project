@@ -1,25 +1,19 @@
 """Tests for OAuth 2.1 data access layer."""
 
-import pytest
-from datetime import datetime, timezone, timedelta
-from uuid import uuid4
+from datetime import UTC, datetime
 
+import pytest
 from sqlalchemy.orm import Session
 
-from src.repositories.oauth_repository import OAuthRepository
 from src.models.oauth import (
-    OAuthScope,
-    OAuthClient,
-    OAuthAuthorizationCode,
+    AccessLevel,
     OAuthAccessToken,
-    OAuthRefreshToken,
-    OAuthConsent,
+    OAuthClient,
+    OAuthScope,
     TokenEndpointAuthMethod,
-    ConsentMethod,
-    AccessLevel
 )
-from src.models.profile import BaseProfile, AccountType
-from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile
+from src.repositories.oauth_repository import OAuthRepository
 
 
 class TestOAuthScopeOperations:
@@ -38,7 +32,7 @@ class TestOAuthScopeOperations:
             description="Test scope for unit tests",
             access_level=AccessLevel.read,
             allowed_fields=["field1", "field2"],
-            is_sensitive=False
+            is_sensitive=False,
         )
         db_session.add(scope)
         db_session.commit()
@@ -105,7 +99,7 @@ class TestOAuthClientOperations:
             is_confidential=False,
             is_active=True,
             is_first_party=False,
-            token_endpoint_auth_method=TokenEndpointAuthMethod.none
+            token_endpoint_auth_method=TokenEndpointAuthMethod.none,
         )
         db_session.add(client)
         db_session.commit()
@@ -122,7 +116,7 @@ class TestOAuthClientOperations:
 
     def test_get_client_returns_none_for_deleted(self, oauth_repo, db_session, sample_client):
         """Test deleted client is not returned."""
-        sample_client.deleted_at = datetime.now(timezone.utc)
+        sample_client.deleted_at = datetime.now(UTC)
         db_session.commit()
 
         result = oauth_repo.get_client("test-client-123")
@@ -136,7 +130,9 @@ class TestOAuthClientOperations:
         assert result is not None
         assert result.is_active is True
 
-    def test_get_active_client_returns_none_for_inactive(self, oauth_repo, db_session, sample_client):
+    def test_get_active_client_returns_none_for_inactive(
+        self, oauth_repo, db_session, sample_client
+    ):
         """Test inactive client is not returned."""
         sample_client.is_active = False
         db_session.commit()
@@ -176,7 +172,7 @@ class TestAuthorizationCodeOperations:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -191,7 +187,7 @@ class TestAuthorizationCodeOperations:
             client_name="Auth Code Client",
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["profile:read:basic"],
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -215,7 +211,7 @@ class TestAuthorizationCodeOperations:
             scope="profile:read:basic",
             code_challenge="test-challenge",
             code_challenge_method="S256",
-            state="test-state"
+            state="test-state",
         )
 
         assert auth_code is not None
@@ -227,8 +223,8 @@ class TestAuthorizationCodeOperations:
         # Check expiry is in the future (SQLite returns naive datetimes)
         expires_at = auth_code.expires_at
         if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        assert expires_at > datetime.now(timezone.utc)
+            expires_at = expires_at.replace(tzinfo=UTC)
+        assert expires_at > datetime.now(UTC)
 
     def test_get_valid_authorization_code(self, oauth_repo, sample_profile, sample_client):
         """Test getting valid authorization code."""
@@ -237,7 +233,7 @@ class TestAuthorizationCodeOperations:
             user_id=sample_profile.user_id,
             redirect_uri="https://example.com/callback",
             scope="profile:read:basic",
-            code_challenge="test-challenge"
+            code_challenge="test-challenge",
         )
 
         result = oauth_repo.get_valid_authorization_code(auth_code.code)
@@ -254,9 +250,9 @@ class TestAuthorizationCodeOperations:
             user_id=sample_profile.user_id,
             redirect_uri="https://example.com/callback",
             scope="profile:read:basic",
-            code_challenge="test-challenge"
+            code_challenge="test-challenge",
         )
-        auth_code.used_at = datetime.now(timezone.utc)
+        auth_code.used_at = datetime.now(UTC)
         db_session.commit()
 
         result = oauth_repo.get_valid_authorization_code(auth_code.code)
@@ -270,7 +266,7 @@ class TestAuthorizationCodeOperations:
             user_id=sample_profile.user_id,
             redirect_uri="https://example.com/callback",
             scope="profile:read:basic",
-            code_challenge="test-challenge"
+            code_challenge="test-challenge",
         )
 
         result = oauth_repo.mark_authorization_code_used(auth_code.code)
@@ -294,7 +290,7 @@ class TestAccessTokenOperations:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="token-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -309,7 +305,7 @@ class TestAccessTokenOperations:
             client_name="Token Client",
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["profile:read:basic"],
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -340,7 +336,7 @@ class TestAccessTokenOperations:
         token_model, raw_token = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         assert token_model is not None
@@ -351,15 +347,15 @@ class TestAccessTokenOperations:
         # Check expiry is in the future (SQLite returns naive datetimes)
         expires_at = token_model.expires_at
         if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        assert expires_at > datetime.now(timezone.utc)
+            expires_at = expires_at.replace(tzinfo=UTC)
+        assert expires_at > datetime.now(UTC)
 
     def test_get_active_access_token(self, oauth_repo, sample_profile, sample_client):
         """Test getting active access token by raw value."""
         token_model, raw_token = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         result = oauth_repo.get_active_access_token(raw_token)
@@ -374,9 +370,9 @@ class TestAccessTokenOperations:
         token_model, raw_token = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
-        token_model.revoked_at = datetime.now(timezone.utc)
+        token_model.revoked_at = datetime.now(UTC)
         db_session.commit()
 
         result = oauth_repo.get_active_access_token(raw_token)
@@ -388,7 +384,7 @@ class TestAccessTokenOperations:
         token_model, raw_token = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         result = oauth_repo.revoke_access_token(token_model.id)
@@ -402,7 +398,7 @@ class TestAccessTokenOperations:
         token_model, raw_token = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         result = oauth_repo.revoke_access_token_by_raw(raw_token)
@@ -424,7 +420,7 @@ class TestRefreshTokenOperations:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="refresh-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -439,7 +435,7 @@ class TestRefreshTokenOperations:
             client_name="Refresh Client",
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["profile:read:basic", "offline_access"],
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -454,7 +450,7 @@ class TestRefreshTokenOperations:
         return oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic offline_access"
+            scope="profile:read:basic offline_access",
         )
 
     def test_create_refresh_token(
@@ -467,7 +463,7 @@ class TestRefreshTokenOperations:
             access_token_id=access_token.id,
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic offline_access"
+            scope="profile:read:basic offline_access",
         )
 
         assert refresh_model is not None
@@ -477,8 +473,8 @@ class TestRefreshTokenOperations:
         # Check expiry is in the future (SQLite returns naive datetimes)
         expires_at = refresh_model.expires_at
         if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        assert expires_at > datetime.now(timezone.utc)
+            expires_at = expires_at.replace(tzinfo=UTC)
+        assert expires_at > datetime.now(UTC)
 
     def test_get_active_refresh_token(
         self, oauth_repo, sample_profile, sample_client, sample_access_token
@@ -490,7 +486,7 @@ class TestRefreshTokenOperations:
             access_token_id=access_token.id,
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         result = oauth_repo.get_active_refresh_token(raw_refresh)
@@ -508,13 +504,13 @@ class TestRefreshTokenOperations:
             access_token_id=access_token.id,
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic offline_access"
+            scope="profile:read:basic offline_access",
         )
 
         new_access, _ = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic offline_access"
+            scope="profile:read:basic offline_access",
         )
 
         new_refresh, new_raw = oauth_repo.rotate_refresh_token(
@@ -522,7 +518,7 @@ class TestRefreshTokenOperations:
             new_access_token_id=new_access.id,
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic offline_access"
+            scope="profile:read:basic offline_access",
         )
 
         assert new_refresh is not None
@@ -550,7 +546,7 @@ class TestConsentOperations:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="consent-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -565,7 +561,7 @@ class TestConsentOperations:
             client_name="Consent Client",
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["profile:read:basic", "email"],
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -580,7 +576,7 @@ class TestConsentOperations:
             granted_scopes=["profile:read:basic", "email"],
             consent_method="explicit",
             ip_address="192.168.1.1",
-            user_agent="Mozilla/5.0"
+            user_agent="Mozilla/5.0",
         )
 
         assert consent is not None
@@ -595,7 +591,7 @@ class TestConsentOperations:
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
 
         result = oauth_repo.get_consent(sample_profile.user_id, sample_client.client_id)
@@ -610,9 +606,9 @@ class TestConsentOperations:
         consent = oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
-        consent.withdrawn_at = datetime.now(timezone.utc)
+        consent.withdrawn_at = datetime.now(UTC)
         db_session.commit()
 
         result = oauth_repo.get_consent(sample_profile.user_id, sample_client.client_id)
@@ -624,7 +620,7 @@ class TestConsentOperations:
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
 
         result = oauth_repo.withdraw_consent(sample_profile.user_id, sample_client.client_id)
@@ -633,20 +629,18 @@ class TestConsentOperations:
         consent = oauth_repo.get_consent(sample_profile.user_id, sample_client.client_id)
         assert consent is None
 
-    def test_withdraw_consent_revokes_tokens(
-        self, oauth_repo, sample_profile, sample_client
-    ):
+    def test_withdraw_consent_revokes_tokens(self, oauth_repo, sample_profile, sample_client):
         """Test withdrawing consent revokes associated tokens."""
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic", "offline_access"]
+            granted_scopes=["profile:read:basic", "offline_access"],
         )
 
         access_token, raw_access = oauth_repo.create_access_token(
             client_id=sample_client.client_id,
             user_id=sample_profile.user_id,
-            scope="profile:read:basic"
+            scope="profile:read:basic",
         )
 
         oauth_repo.withdraw_consent(sample_profile.user_id, sample_client.client_id)
@@ -659,31 +653,29 @@ class TestConsentOperations:
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic", "email"]
+            granted_scopes=["profile:read:basic", "email"],
         )
 
         result = oauth_repo.has_valid_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            required_scopes=["profile:read:basic"]
+            required_scopes=["profile:read:basic"],
         )
 
         assert result is True
 
-    def test_has_valid_consent_false_missing_scope(
-        self, oauth_repo, sample_profile, sample_client
-    ):
+    def test_has_valid_consent_false_missing_scope(self, oauth_repo, sample_profile, sample_client):
         """Test checking consent with missing scope returns false."""
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
 
         result = oauth_repo.has_valid_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            required_scopes=["profile:read:basic", "email"]  # email not granted
+            required_scopes=["profile:read:basic", "email"],  # email not granted
         )
 
         assert result is False
@@ -694,13 +686,13 @@ class TestConsentOperations:
             client_id="consent-client-1",
             client_name="Client 1",
             redirect_uris=["https://example1.com/callback"],
-            is_active=True
+            is_active=True,
         )
         client2 = OAuthClient(
             client_id="consent-client-2",
             client_name="Client 2",
             redirect_uris=["https://example2.com/callback"],
-            is_active=True
+            is_active=True,
         )
         db_session.add_all([client1, client2])
         db_session.commit()
@@ -708,32 +700,28 @@ class TestConsentOperations:
         oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=client1.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
         oauth_repo.create_consent(
-            user_id=sample_profile.user_id,
-            client_id=client2.client_id,
-            granted_scopes=["email"]
+            user_id=sample_profile.user_id, client_id=client2.client_id, granted_scopes=["email"]
         )
 
         result = oauth_repo.get_user_active_consents(sample_profile.user_id)
 
         assert len(result) == 2
 
-    def test_create_consent_updates_existing(
-        self, oauth_repo, sample_profile, sample_client
-    ):
+    def test_create_consent_updates_existing(self, oauth_repo, sample_profile, sample_client):
         """Test creating consent updates existing consent instead of creating duplicate."""
         consent1 = oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic"]
+            granted_scopes=["profile:read:basic"],
         )
 
         consent2 = oauth_repo.create_consent(
             user_id=sample_profile.user_id,
             client_id=sample_client.client_id,
-            granted_scopes=["profile:read:basic", "email"]
+            granted_scopes=["profile:read:basic", "email"],
         )
 
         assert consent1.id == consent2.id

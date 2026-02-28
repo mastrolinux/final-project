@@ -8,11 +8,11 @@ import sys
 
 from src.core.config import settings
 from src.core.database import SessionLocal
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.context_repository import ContextRepository
 from src.repositories.oauth_repository import OAuthRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
 from src.services.audit_service import AuditService
 from src.services.privacy_service import PrivacyService
 

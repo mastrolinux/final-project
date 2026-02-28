@@ -4,11 +4,10 @@ import pytest
 from sqlalchemy.orm import Session
 
 from src.models.context import ContextType
-from src.models.profile import AccountType, BaseProfile
 from src.models.verification import VerificationStatus
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.context_repository import ContextRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
 from src.services.audit_service import AuditService
 from src.services.context_service import ContextService, ContextServiceError
 
@@ -26,9 +25,7 @@ def context_service(db_session: Session):
 class TestContextVerificationRule:
     """Tests for the context-bound legal/healthcare verification rules."""
 
-    def test_verified_can_create_legal_context(
-        self, context_service, sample_verified_profile
-    ):
+    def test_verified_can_create_legal_context(self, context_service, sample_verified_profile):
         """A verified account creates a legal context starting as pending."""
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,
@@ -39,9 +36,7 @@ class TestContextVerificationRule:
         assert context.verification_status == VerificationStatus.pending
         assert context.is_active is False
 
-    def test_verified_can_create_healthcare_context(
-        self, context_service, sample_verified_profile
-    ):
+    def test_verified_can_create_healthcare_context(self, context_service, sample_verified_profile):
         """A verified account creates a healthcare context starting as pending."""
         context = context_service.create_context_profile(
             user_id=sample_verified_profile.user_id,

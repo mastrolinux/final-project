@@ -4,20 +4,17 @@ import io
 
 import pytest
 from cryptography.fernet import Fernet
-from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from src.main import app
-from src.core.database import get_db
 from src.core.encryption import EncryptionService, get_encryption_service
 from src.core.security import create_access_token
 from src.core.storage import InMemoryStorageClient, get_document_storage_client
+from src.main import app
 from src.models.auth import AuthUser
 from src.models.context import ContextProfile, ContextType
 from src.models.profile import AccountType, BaseProfile
 from src.models.verification import VerificationStatus
-
 
 PDF_CONTENT = b"%PDF-1.4 test document content for integration testing"
 
@@ -27,6 +24,7 @@ def _make_jpeg() -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     return buf.getvalue()
+
 
 JPEG_CONTENT = _make_jpeg()
 
@@ -129,9 +127,7 @@ def other_token(other_user):
 class TestUploadEndpoint:
     """Integration tests for POST /profiles/{user_id}/verification-documents."""
 
-    def test_upload_pdf_success(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_upload_pdf_success(self, client_with_deps, user_with_profile, user_token):
         """Uploading a valid PDF must return 201 with document metadata."""
         user_id = str(user_with_profile.user_id)
         resp = client_with_deps.post(
@@ -149,9 +145,7 @@ class TestUploadEndpoint:
         assert body["document_expiry_date"] == "2030-06-15"
         assert "storage_path" not in body
 
-    def test_upload_jpeg_success(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_upload_jpeg_success(self, client_with_deps, user_with_profile, user_token):
         """Uploading a JPEG document must be accepted."""
         user_id = str(user_with_profile.user_id)
         resp = client_with_deps.post(
@@ -204,9 +198,7 @@ class TestUploadEndpoint:
 class TestVerificationStatusEndpoint:
     """Integration tests for GET /profiles/{user_id}/verification-status."""
 
-    def test_status_no_documents(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_status_no_documents(self, client_with_deps, user_with_profile, user_token):
         """A user with no documents must see can_create_legal_context=False."""
         user_id = str(user_with_profile.user_id)
         resp = client_with_deps.get(
@@ -219,9 +211,7 @@ class TestVerificationStatusEndpoint:
         assert body["can_create_legal_context"] is False
         assert body["latest_document"] is None
 
-    def test_status_after_upload(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_status_after_upload(self, client_with_deps, user_with_profile, user_token):
         """After uploading a document, the status must include it."""
         user_id = str(user_with_profile.user_id)
 
@@ -231,7 +221,6 @@ class TestVerificationStatusEndpoint:
             files={"file": ("passport.pdf", io.BytesIO(PDF_CONTENT), "application/pdf")},
             data={"document_type": "passport", "document_expiry_date": "2030-06-15"},
         )
-
 
         resp = client_with_deps.get(
             f"/api/v1/profiles/{user_id}/verification-status",
@@ -257,9 +246,7 @@ class TestVerificationStatusEndpoint:
 class TestDocumentListEndpoint:
     """Integration tests for GET /profiles/{user_id}/verification-documents."""
 
-    def test_list_empty(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_list_empty(self, client_with_deps, user_with_profile, user_token):
         """A user with no documents must get an empty list."""
         user_id = str(user_with_profile.user_id)
         resp = client_with_deps.get(
@@ -269,9 +256,7 @@ class TestDocumentListEndpoint:
         assert resp.status_code == 200
         assert resp.json() == []
 
-    def test_list_after_uploads(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_list_after_uploads(self, client_with_deps, user_with_profile, user_token):
         """Uploaded documents must appear in the listing."""
         user_id = str(user_with_profile.user_id)
 
@@ -279,9 +264,7 @@ class TestDocumentListEndpoint:
             client_with_deps.post(
                 f"/api/v1/profiles/{user_id}/verification-documents",
                 headers={"Authorization": f"Bearer {user_token}"},
-                files={
-                    "file": ("doc.pdf", io.BytesIO(PDF_CONTENT), "application/pdf")
-                },
+                files={"file": ("doc.pdf", io.BytesIO(PDF_CONTENT), "application/pdf")},
                 data={"document_type": "passport", "document_expiry_date": "2030-06-15"},
             )
 
@@ -296,9 +279,7 @@ class TestDocumentListEndpoint:
 class TestDocumentDownloadEndpoint:
     """Integration tests for GET /profiles/{user_id}/verification-documents/{doc_id}/download."""
 
-    def test_download_own_document_success(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_download_own_document_success(self, client_with_deps, user_with_profile, user_token):
         """Downloading an owned document must return the original content."""
         user_id = str(user_with_profile.user_id)
 
@@ -319,9 +300,7 @@ class TestDocumentDownloadEndpoint:
         assert resp.headers["content-type"] == "application/pdf"
         assert resp.content == PDF_CONTENT
 
-    def test_download_jpeg_returns_image(
-        self, client_with_deps, user_with_profile, user_token
-    ):
+    def test_download_jpeg_returns_image(self, client_with_deps, user_with_profile, user_token):
         """Downloading a JPEG document must return the original image bytes."""
         user_id = str(user_with_profile.user_id)
 
