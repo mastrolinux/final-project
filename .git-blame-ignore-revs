@@ -1,2 +1,5 @@
 # Comment simplification pass (cosmetic, no behavioral changes)
 87b93b3adffbf52a170fc7a4a735b58c4291168b
+
+# Ruff linter auto-fixes (import reordering, type annotation modernization, whitespace)
+1caf0aeb4725a3570d3587d7e5b48cd308162df8
