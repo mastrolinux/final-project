@@ -324,7 +324,7 @@ Privacy & Compliance
 ## Development Tools
 - **Testing**: pytest, pytest-cov
 - **Type Checking**: mypy
-- **Linting**: ruff, black
+- **Linting**: ruff (lint + format) [@ruff]
 - **API Docs**: OpenAPI/Swagger (auto-generated)
 - **Database Migrations**: Supabase CLI
 

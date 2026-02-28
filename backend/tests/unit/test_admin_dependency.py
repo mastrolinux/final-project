@@ -2,8 +2,9 @@
 Unit tests for admin authentication dependency.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi import HTTPException
 
 from src.api.dependencies.auth import require_admin
@@ -58,7 +59,7 @@ class TestRequireAdmin:
             mock_settings.admin_emails = []
             with pytest.raises(HTTPException) as exc_info:
                 await require_admin(mock_regular_user)
-            
+
             assert exc_info.value.status_code == 403
             assert "Admin access required" in str(exc_info.value.detail)
 

@@ -4,19 +4,16 @@ import io
 
 import pytest
 from cryptography.fernet import Fernet
-from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from src.main import app
-from src.core.database import get_db
 from src.core.encryption import EncryptionService, get_encryption_service
 from src.core.security import create_access_token
 from src.core.storage import InMemoryStorageClient, get_document_storage_client
+from src.main import app
 from src.models.auth import AuthUser
 from src.models.context import ContextProfile, ContextType
 from src.models.profile import AccountType, BaseProfile
 from src.models.verification import VerificationDocument, VerificationStatus
-
 
 PDF_CONTENT = b"%PDF-1.4 test document for admin review"
 
@@ -110,9 +107,7 @@ def regular_token(regular_user):
 
 
 @pytest.fixture
-def legal_context_with_document(
-    client_with_deps, regular_user, regular_token, db_session
-):
+def legal_context_with_document(client_with_deps, regular_user, regular_token, db_session):
     """
     Create a legal context and upload + link a document to it.
 
@@ -181,9 +176,7 @@ class TestAdminListPendingContexts:
         assert items[0]["context_type"] == "legal"
         assert items[0]["document_count"] >= 1
 
-    def test_list_pending_requires_admin(
-        self, client_with_deps, regular_user, regular_token
-    ):
+    def test_list_pending_requires_admin(self, client_with_deps, regular_user, regular_token):
         """Non-admin users must be rejected with 403."""
         resp = client_with_deps.get(
             "/api/v1/admin/verifications/contexts/pending",
@@ -211,9 +204,7 @@ class TestAdminGetContextVerification:
         assert body["display_name_override"] == "Jane Doe"
         assert len(body["documents"]) >= 1
 
-    def test_get_nonexistent_returns_404(
-        self, client_with_deps, admin_user, admin_token
-    ):
+    def test_get_nonexistent_returns_404(self, client_with_deps, admin_user, admin_token):
         """Requesting a non-existent context must return 404."""
         resp = client_with_deps.get(
             "/api/v1/admin/verifications/contexts/99999999-9999-9999-9999-999999999999",
@@ -251,18 +242,14 @@ class TestAdminContextReview:
 
         profile = (
             db_session.query(BaseProfile)
-            .filter(
-                BaseProfile.user_id == legal_context_with_document["user_id"]
-            )
+            .filter(BaseProfile.user_id == legal_context_with_document["user_id"])
             .first()
         )
         assert profile.account_type == AccountType.verified
 
         doc = (
             db_session.query(VerificationDocument)
-            .filter(
-                VerificationDocument.id == legal_context_with_document["document_id"]
-            )
+            .filter(VerificationDocument.id == legal_context_with_document["document_id"])
             .first()
         )
         assert doc.verification_status == VerificationStatus.verified
@@ -292,18 +279,14 @@ class TestAdminContextReview:
 
         profile = (
             db_session.query(BaseProfile)
-            .filter(
-                BaseProfile.user_id == legal_context_with_document["user_id"]
-            )
+            .filter(BaseProfile.user_id == legal_context_with_document["user_id"])
             .first()
         )
         assert profile.account_type == AccountType.unverified
 
         doc = (
             db_session.query(VerificationDocument)
-            .filter(
-                VerificationDocument.id == legal_context_with_document["document_id"]
-            )
+            .filter(VerificationDocument.id == legal_context_with_document["document_id"])
             .first()
         )
         assert doc.verification_status == VerificationStatus.rejected

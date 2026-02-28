@@ -126,7 +126,7 @@ The backend implementation uses Python 3.12 with FastAPI, selected for its async
 
 Authentication uses custom JWT implementation with Argon2id password hashing, providing full control over token lifecycle and claims structure. The OAuth 2.1 authorization server implements the authorization code flow with mandatory PKCE as specified in the current IETF draft [@oauth21-draft]. Social authentication operates in a hybrid mode, leveraging Supabase OAuth provider configuration for redirect handling while maintaining user data in custom tables with custom-issued tokens.
 
-Testing uses pytest with pytest-cov (80% minimum coverage), mypy (strict mode), ruff and black (linting). Deployment targets Render.com and Supabase with GitHub Actions CI/CD.
+Testing uses pytest with pytest-cov (80% minimum coverage), mypy (strict mode), ruff (linting and formatting). Deployment targets Render.com and Supabase with GitHub Actions CI/CD.
 
 ## Development Methods
 

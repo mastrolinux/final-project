@@ -8,8 +8,7 @@ machine-readable export.
 
 import hashlib
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from src.core.config import settings
@@ -25,16 +24,19 @@ logger = logging.getLogger(__name__)
 
 class PrivacyServiceError(Exception):
     """Base exception for privacy service errors."""
+
     pass
 
 
 class ProfileNotFoundError(PrivacyServiceError):
     """Raised when the requested profile does not exist."""
+
     pass
 
 
 class AccountAlreadyDeletedError(PrivacyServiceError):
     """Raised when a deletion request targets an already-deleted account."""
+
     pass
 
 
@@ -46,9 +48,15 @@ GDPR_METADATA = {
         "Audit logging for security and accountability",
     ],
     "retention_periods": {
-        "profile_data": "Retained until account deletion; 30-day recovery window after soft delete",
-        "authentication_data": "Retained while account is active; 30-day recovery window after soft delete",
-        "oauth_consents": "Retained for the duration of the consent; withdrawn consents kept for audit purposes",
+        "profile_data": (
+            "Retained until account deletion; 30-day recovery window after soft delete"
+        ),
+        "authentication_data": (
+            "Retained while account is active; 30-day recovery window after soft delete"
+        ),
+        "oauth_consents": (
+            "Retained for the duration of the consent; withdrawn consents kept for audit purposes"
+        ),
         "audit_logs": "7-year retention for legal and security accountability",
     },
     "data_subject_rights": [
@@ -82,7 +90,7 @@ class PrivacyService:
         context_repo: ContextRepository,
         auth_repo: AuthRepository,
         oauth_repo: OAuthRepository,
-        audit_service: Optional[AuditService] = None,
+        audit_service: AuditService | None = None,
     ):
         self.profile_repo = profile_repo
         self.context_repo = context_repo
@@ -93,9 +101,9 @@ class PrivacyService:
     def export_user_data(
         self,
         user_id: UUID,
-        actor_id: Optional[UUID] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        actor_id: UUID | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> dict:
         """Export all personal data for a user (GDPR Art. 15).
 
@@ -104,13 +112,9 @@ class PrivacyService:
         """
         profile = self.profile_repo.get_profile_by_id(user_id)
         if not profile:
-            raise ProfileNotFoundError(
-                f"Profile not found for user_id: {user_id}"
-            )
+            raise ProfileNotFoundError(f"Profile not found for user_id: {user_id}")
 
-        identity_names = self.profile_repo.get_identity_names(
-            user_id, include_deprecated=True
-        )
+        identity_names = self.profile_repo.get_identity_names(user_id, include_deprecated=True)
         context_profiles = self.context_repo.get_user_context_profiles(
             user_id, include_inactive=True
         )
@@ -131,22 +135,24 @@ class PrivacyService:
 
         consents_export: list[dict] = []
         for consent in oauth_consents:
-            consents_export.append({
-                "id": consent.id,
-                "client_id": consent.client_id,
-                "granted_scopes": consent.granted_scopes or [],
-                "context_profile_id": consent.context_profile_id,
-                "consent_method": (
-                    consent.consent_method.value
-                    if hasattr(consent.consent_method, "value")
-                    else str(consent.consent_method)
-                ),
-                "granted_at": consent.granted_at,
-                "expires_at": consent.expires_at,
-                "withdrawn_at": consent.withdrawn_at,
-            })
+            consents_export.append(
+                {
+                    "id": consent.id,
+                    "client_id": consent.client_id,
+                    "granted_scopes": consent.granted_scopes or [],
+                    "context_profile_id": consent.context_profile_id,
+                    "consent_method": (
+                        consent.consent_method.value
+                        if hasattr(consent.consent_method, "value")
+                        else str(consent.consent_method)
+                    ),
+                    "granted_at": consent.granted_at,
+                    "expires_at": consent.expires_at,
+                    "withdrawn_at": consent.withdrawn_at,
+                }
+            )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         export = {
             "export_metadata": {
@@ -239,29 +245,23 @@ class PrivacyService:
     def soft_delete_account(
         self,
         user_id: UUID,
-        actor_id: Optional[UUID] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        actor_id: UUID | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> dict:
         """Soft delete account and revoke all OAuth tokens/consents (GDPR Art. 17)."""
         profile = self.profile_repo.get_profile_by_id(user_id)
         if not profile:
-            raise ProfileNotFoundError(
-                f"Profile not found for user_id: {user_id}"
-            )
+            raise ProfileNotFoundError(f"Profile not found for user_id: {user_id}")
 
         auth_user = self.auth_repo.get_by_user_id(str(user_id))
         if not auth_user:
-            raise ProfileNotFoundError(
-                f"Auth user not found for user_id: {user_id}"
-            )
+            raise ProfileNotFoundError(f"Auth user not found for user_id: {user_id}")
 
         if auth_user.deleted_at is not None:
-            raise AccountAlreadyDeletedError(
-                f"Account already deleted for user_id: {user_id}"
-            )
+            raise AccountAlreadyDeletedError(f"Account already deleted for user_id: {user_id}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         retention_days = settings.DELETION_RETENTION_DAYS
         permanent_deletion_date = now + timedelta(days=retention_days)
 
@@ -308,11 +308,10 @@ class PrivacyService:
         if auth_user:
             return {"status": "active"}
 
-        auth_user_deleted = self.auth_repo.get_by_email_including_deleted(
-            ""  # placeholder
-        )
         from sqlalchemy import select
+
         from src.models.auth import AuthUser
+
         stmt = select(AuthUser).where(AuthUser.user_id == str(user_id))
         result = self.auth_repo.db.execute(stmt)
         auth_user_any = result.scalars().first()
@@ -321,7 +320,7 @@ class PrivacyService:
             retention_days = settings.DELETION_RETENTION_DAYS
             deleted_at = auth_user_any.deleted_at
             if deleted_at.tzinfo is None:
-                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+                deleted_at = deleted_at.replace(tzinfo=UTC)
             permanent_date = deleted_at + timedelta(days=retention_days)
             return {
                 "status": "scheduled",
@@ -333,15 +332,13 @@ class PrivacyService:
 
     def purge_expired_accounts(
         self,
-        retention_days: Optional[int] = None,
+        retention_days: int | None = None,
     ) -> int:
         """Hard-delete accounts past the retention grace period (GDPR Art. 17)."""
         if retention_days is None:
             retention_days = settings.DELETION_RETENTION_DAYS
 
-        expired_users = self.auth_repo.get_expired_soft_deleted_users(
-            retention_days
-        )
+        expired_users = self.auth_repo.get_expired_soft_deleted_users(retention_days)
 
         purged_count = 0
         for auth_user in expired_users:
@@ -361,7 +358,7 @@ class PrivacyService:
                     operation=AuditOperation.delete,
                     changes={
                         "retention_days": retention_days,
-                        "purged_at": datetime.now(timezone.utc).isoformat(),
+                        "purged_at": datetime.now(UTC).isoformat(),
                     },
                     legal_basis="gdpr_art_17_retention_expiry",
                 )
@@ -375,12 +372,8 @@ class PrivacyService:
         )
         return purged_count
 
-    def list_soft_deleted_users(
-        self, offset: int = 0, limit: int = 20
-    ) -> tuple:
+    def list_soft_deleted_users(self, offset: int = 0, limit: int = 20) -> tuple:
         """List all soft-deleted users with pagination."""
-        users = self.auth_repo.get_all_soft_deleted_users(
-            offset=offset, limit=limit
-        )
+        users = self.auth_repo.get_all_soft_deleted_users(offset=offset, limit=limit)
         total = self.auth_repo.count_soft_deleted_users()
         return users, total

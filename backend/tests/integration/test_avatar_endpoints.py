@@ -1,18 +1,17 @@
 """Integration tests for avatar upload and deletion endpoints."""
 
 import io
-import pytest
 from uuid import uuid4
 
+import pytest
 from PIL import Image
-from fastapi.testclient import TestClient
 
-from src.main import app
 from src.core.security import create_access_token
 from src.core.storage import InMemoryStorageClient, get_storage_client
+from src.main import app
 from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, AccountType
 from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile
 
 
 def _make_jpeg(width: int = 200, height: int = 200) -> bytes:
@@ -118,7 +117,6 @@ def context(db_session, profile) -> ContextProfile:
 
 
 class TestBaseAvatarUpload:
-
     def test_upload_jpeg(self, client_with_storage, profile, storage_client, auth_headers):
         resp = client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
@@ -165,7 +163,9 @@ class TestBaseAvatarUpload:
         )
         assert resp.status_code == 404
 
-    def test_upload_replaces_previous(self, client_with_storage, profile, storage_client, auth_headers):
+    def test_upload_replaces_previous(
+        self, client_with_storage, profile, storage_client, auth_headers
+    ):
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
             files={"file": ("v1.jpg", _make_jpeg(), "image/jpeg")},
@@ -193,7 +193,6 @@ class TestBaseAvatarUpload:
 
 
 class TestBaseAvatarDelete:
-
     def test_delete_success(self, client_with_storage, profile, storage_client, auth_headers):
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
@@ -227,8 +226,9 @@ class TestBaseAvatarDelete:
 
 
 class TestContextAvatarUpload:
-
-    def test_upload_context_avatar(self, client_with_storage, profile, context, storage_client, auth_headers):
+    def test_upload_context_avatar(
+        self, client_with_storage, profile, context, storage_client, auth_headers
+    ):
         resp = client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/contexts/{context.id}/avatar",
             files={"file": ("work.jpg", _make_jpeg(), "image/jpeg")},
@@ -259,8 +259,9 @@ class TestContextAvatarUpload:
 
 
 class TestContextAvatarDelete:
-
-    def test_delete_context_avatar(self, client_with_storage, profile, context, storage_client, auth_headers):
+    def test_delete_context_avatar(
+        self, client_with_storage, profile, context, storage_client, auth_headers
+    ):
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/contexts/{context.id}/avatar",
             files={"file": ("work.jpg", _make_jpeg(), "image/jpeg")},
@@ -284,7 +285,6 @@ class TestContextAvatarDelete:
 
 
 class TestProfileResponseIncludesAvatar:
-
     def test_get_profile_shows_avatar_fields(self, client_with_storage, profile, auth_headers):
         client_with_storage.post(
             f"/api/v1/profiles/{profile.user_id}/avatar",
@@ -312,7 +312,6 @@ class TestProfileResponseIncludesAvatar:
 
 
 class TestAvatarEmailVerificationEnforcement:
-
     @pytest.fixture
     def unverified_auth_user(self, db_session, profile) -> AuthUser:
         """Create an AuthUser with unverified email for the test profile."""

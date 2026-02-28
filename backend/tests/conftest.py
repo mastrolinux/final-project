@@ -1,24 +1,25 @@
 """Test fixtures for database, client, and sample data."""
 
+from collections.abc import Generator
+
 import pytest
-from typing import Generator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.main import app
 from src.core.database import Base, get_db
 from src.core.security import create_access_token
+from src.main import app
 from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
-from src.repositories.profile_repository import ProfileRepository
+from src.models.profile import AccountType, BaseProfile, IdentityName, NameType, VisibilityLevel
 from src.repositories.audit_repository import AuditRepository
-from src.services.profile_service import ProfileService
+from src.repositories.profile_repository import ProfileRepository
 from src.services.audit_service import AuditService
-
+from src.services.profile_service import ProfileService
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+
 
 @pytest.fixture(scope="function")
 def db_engine():
@@ -28,13 +29,13 @@ def db_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    
+
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
-    
+
     Base.metadata.create_all(bind=engine)
 
     yield engine
@@ -50,9 +51,9 @@ def db_session(db_engine) -> Generator[Session, None, None]:
     transaction = connection.begin()
     SessionLocal = sessionmaker(bind=connection)
     session = SessionLocal()
-    
+
     yield session
-    
+
     session.close()
     # Only rollback if transaction is still active
     if transaction.is_active:
@@ -63,17 +64,18 @@ def db_session(db_engine) -> Generator[Session, None, None]:
 @pytest.fixture(scope="function")
 def client(db_session: Session) -> Generator[TestClient, None, None]:
     """FastAPI test client using the test database session."""
+
     def override_get_db():
         try:
             yield db_session
         finally:
             pass
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -85,7 +87,7 @@ def sample_verified_profile(db_session: Session) -> BaseProfile:
         legal_name="Sarah Elizabeth Chen",
         primary_email="sarah.chen@example.com",
         primary_phone="+1-555-0101",
-        preferred_language="en"
+        preferred_language="en",
     )
     db_session.add(profile)
     db_session.commit()
@@ -101,7 +103,7 @@ def sample_unverified_profile(db_session: Session) -> BaseProfile:
         legal_name=None,
         primary_email="john.doe@example.com",
         primary_phone="+1-555-0202",
-        preferred_language="en"
+        preferred_language="en",
     )
     db_session.add(profile)
     db_session.commit()
@@ -117,7 +119,7 @@ def sample_pseudonymous_profile(db_session: Session) -> BaseProfile:
         legal_name=None,
         primary_email="anonymous@protonmail.com",
         primary_phone=None,
-        preferred_language="en"
+        preferred_language="en",
     )
     db_session.add(profile)
     db_session.commit()
@@ -134,7 +136,7 @@ def sample_identity_name(db_session: Session, sample_verified_profile: BaseProfi
         name_value={"en": "Dr. Sarah Chen"},
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.public
+        visibility_level=VisibilityLevel.public,
     )
     db_session.add(name)
     db_session.commit()
@@ -143,19 +145,17 @@ def sample_identity_name(db_session: Session, sample_verified_profile: BaseProfi
 
 
 @pytest.fixture
-def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseProfile) -> IdentityName:
+def sample_multilingual_name(
+    db_session: Session, sample_verified_profile: BaseProfile
+) -> IdentityName:
     """Multilingual (en/zh/es) given name for the verified profile."""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.given,
-        name_value={
-            "en": "Sarah",
-            "zh": "萨拉",
-            "es": "Sara"
-        },
+        name_value={"en": "Sarah", "zh": "萨拉", "es": "Sara"},
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.public
+        visibility_level=VisibilityLevel.public,
     )
     db_session.add(name)
     db_session.commit()
@@ -164,7 +164,9 @@ def sample_multilingual_name(db_session: Session, sample_verified_profile: BaseP
 
 
 @pytest.fixture
-def sample_deprecated_name(db_session: Session, sample_verified_profile: BaseProfile) -> IdentityName:
+def sample_deprecated_name(
+    db_session: Session, sample_verified_profile: BaseProfile
+) -> IdentityName:
     """Deprecated (deadname) identity name with suppressed visibility."""
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
@@ -172,7 +174,7 @@ def sample_deprecated_name(db_session: Session, sample_verified_profile: BasePro
         name_value={"en": "[REDACTED]"},
         is_primary=False,
         is_deprecated=True,
-        visibility_level=VisibilityLevel.historical_suppressed
+        visibility_level=VisibilityLevel.historical_suppressed,
     )
     db_session.add(name)
     db_session.commit()
@@ -184,64 +186,64 @@ def sample_deprecated_name(db_session: Session, sample_verified_profile: BasePro
 def sample_profiles_with_names(db_session: Session) -> list[BaseProfile]:
     """Three profiles: Western, Chinese, and Mononym naming conventions."""
     profiles = []
-    
+
     profile1 = BaseProfile(
         account_type=AccountType.verified,
         legal_name="John Smith",
         primary_email="john.smith@example.com",
-        preferred_language="en"
+        preferred_language="en",
     )
     db_session.add(profile1)
     db_session.flush()
-    
+
     name1 = IdentityName(
         identity_id=profile1.user_id,
         name_type=NameType.full_name,
         name_value={"en": "John Smith"},
-        is_primary=True
+        is_primary=True,
     )
     db_session.add(name1)
     profiles.append(profile1)
-    
+
     profile2 = BaseProfile(
         account_type=AccountType.unverified,
         primary_email="li.ming@example.com",
-        preferred_language="zh"
+        preferred_language="zh",
     )
     db_session.add(profile2)
     db_session.flush()
-    
+
     name2 = IdentityName(
         identity_id=profile2.user_id,
         name_type=NameType.full_name,
         name_value={"zh": "李明", "en": "Li Ming"},
-        is_primary=True
+        is_primary=True,
     )
     db_session.add(name2)
     profiles.append(profile2)
-    
+
     profile3 = BaseProfile(
         account_type=AccountType.verified,
         legal_name="Sukarno",
         primary_email="sukarno@example.id",
-        preferred_language="id"
+        preferred_language="id",
     )
     db_session.add(profile3)
     db_session.flush()
-    
+
     name3 = IdentityName(
         identity_id=profile3.user_id,
         name_type=NameType.full_name,
         name_value={"id": "Sukarno", "en": "Sukarno"},
-        is_primary=True
+        is_primary=True,
     )
     db_session.add(name3)
     profiles.append(profile3)
-    
+
     db_session.commit()
     for profile in profiles:
         db_session.refresh(profile)
-    
+
     return profiles
 
 
@@ -266,7 +268,9 @@ def audit_service(audit_repository: AuditRepository) -> AuditService:
 
 
 @pytest.fixture
-def sample_verified_auth_user(db_session: Session, sample_verified_profile: BaseProfile) -> AuthUser:
+def sample_verified_auth_user(
+    db_session: Session, sample_verified_profile: BaseProfile
+) -> AuthUser:
     """Create an AuthUser with verified email for the sample verified profile."""
     auth_user = AuthUser(
         user_id=str(sample_verified_profile.user_id),
@@ -345,4 +349,3 @@ def unverified_email_token(unverified_email_auth_user: AuthUser) -> str:
         email=unverified_email_auth_user.email,
         account_type="unverified",
     )
-

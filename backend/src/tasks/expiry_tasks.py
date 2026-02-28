@@ -18,13 +18,13 @@ def check_expired_documents(self):
     Creates its own DB session (Celery workers run outside FastAPI lifecycle).
     """
     from src.core.database import SessionLocal
+    from src.repositories.audit_repository import AuditRepository
     from src.repositories.context_repository import ContextRepository
     from src.repositories.profile_repository import ProfileRepository
     from src.repositories.verification_repository import (
         VerificationRepository,
     )
     from src.services.audit_service import AuditService
-    from src.repositories.audit_repository import AuditRepository
     from src.services.verification_service import VerificationService
 
     db = SessionLocal()
@@ -39,9 +39,7 @@ def check_expired_documents(self):
         logger.info("check_expired_documents completed: %s", result)
         return result
     except Exception as exc:
-        logger.error(
-            "check_expired_documents failed: %s", exc, exc_info=True
-        )
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.error("check_expired_documents failed: %s", exc, exc_info=True)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
     finally:
         db.close()

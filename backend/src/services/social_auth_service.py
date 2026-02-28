@@ -5,52 +5,56 @@ Business logic for OAuth 2.0 social login (Google, GitHub, etc.)
 Implements Authorization Code Flow with PKCE for secure authentication.
 """
 
-import secrets
-import hashlib
 import base64
-import httpx
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, Tuple
-from uuid import UUID, uuid4
+import hashlib
+import secrets
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Optional
+from uuid import UUID
 
+import httpx  # noqa: F401 - module-level import needed for test patching
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.jose import jwt
 from authlib.jose.errors import JoseError
 
-from src.repositories.auth_repository import AuthRepository
-from src.repositories.profile_repository import ProfileRepository
 from src.core.config import settings
 from src.core.security import create_access_token, create_refresh_token, hash_password
-from src.models.profile import AccountType
 from src.models.audit import AuditEventType, AuditOperation
+from src.models.profile import AccountType
+from src.repositories.auth_repository import AuthRepository
+from src.repositories.profile_repository import ProfileRepository
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.services.audit_service import AuditService
 
 
 class OAuthProviderNotConfiguredError(Exception):
     """Raised when OAuth provider credentials are not configured."""
+
     pass
 
 
 class OAuthStateValidationError(Exception):
     """Raised when OAuth state parameter validation fails (CSRF protection)."""
+
     pass
 
 
 class OAuthTokenExchangeError(Exception):
     """Raised when token exchange with provider fails."""
+
     pass
 
 
 class OAuthTokenVerificationError(Exception):
     """Raised when ID token verification fails."""
+
     pass
 
 
 class AccountLinkingError(Exception):
     """Raised when account linking fails due to business logic violations."""
+
     pass
 
 
@@ -66,7 +70,7 @@ class SocialAuthService:
         self,
         auth_repo: AuthRepository,
         profile_repo: ProfileRepository,
-        audit_service: Optional["AuditService"] = None
+        audit_service: Optional["AuditService"] = None,
     ):
         self.auth_repo = auth_repo
         self.profile_repo = profile_repo
@@ -75,14 +79,14 @@ class SocialAuthService:
     def _audit(
         self,
         event_type: AuditEventType,
-        user_id: Optional[UUID],
+        user_id: UUID | None,
         resource_type: str,
         resource_id: str,
         operation: AuditOperation,
-        changes: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        legal_basis: Optional[str] = None
+        changes: dict | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        legal_basis: str | None = None,
     ) -> None:
         """Log audit event if audit service available."""
         if self.audit_service:
@@ -96,22 +100,22 @@ class SocialAuthService:
                 changes=changes,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                legal_basis=legal_basis
+                legal_basis=legal_basis,
             )
 
-    def generate_pkce_pair(self) -> Tuple[str, str]:
+    def generate_pkce_pair(self) -> tuple[str, str]:
         """Generate PKCE code_verifier and S256 code_challenge (RFC 7636)."""
-        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
-        challenge_bytes = hashlib.sha256(code_verifier.encode('utf-8')).digest()
-        code_challenge = base64.urlsafe_b64encode(challenge_bytes).decode('utf-8').rstrip('=')
+        code_verifier = (
+            base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("utf-8").rstrip("=")
+        )
+        challenge_bytes = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+        code_challenge = base64.urlsafe_b64encode(challenge_bytes).decode("utf-8").rstrip("=")
 
         return code_verifier, code_challenge
 
     def generate_authorization_url(
-        self,
-        provider: str,
-        state: Optional[str] = None
-    ) -> Tuple[str, str, str]:
+        self, provider: str, state: str | None = None
+    ) -> tuple[str, str, str]:
         """Generate OAuth authorization URL with PKCE.
 
         Returns:
@@ -122,18 +126,19 @@ class SocialAuthService:
 
         if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
             raise OAuthProviderNotConfiguredError(
-                "Google OAuth credentials not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET."
+                "Google OAuth credentials not configured."
+                " Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET."
             )
 
         if not state:
-            state = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+            state = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("utf-8").rstrip("=")
 
         code_verifier, code_challenge = self.generate_pkce_pair()
 
         client = OAuth2Client(
             client_id=settings.GOOGLE_CLIENT_ID,
             client_secret=settings.GOOGLE_CLIENT_SECRET,
-            redirect_uri=settings.GOOGLE_REDIRECT_URI
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
         )
 
         authorization_url, _ = client.create_authorization_url(
@@ -143,19 +148,14 @@ class SocialAuthService:
             code_challenge_method="S256",
             scope="openid email profile",
             access_type="offline",
-            prompt="consent"
+            prompt="consent",
         )
 
         return authorization_url, state, code_verifier
 
     def exchange_code_for_token(
-        self,
-        provider: str,
-        code: str,
-        code_verifier: str,
-        state: str,
-        expected_state: str
-    ) -> Dict[str, Any]:
+        self, provider: str, code: str, code_verifier: str, state: str, expected_state: str
+    ) -> dict[str, Any]:
         """Exchange authorization code for tokens, validating state for CSRF protection."""
         if provider != "google":
             raise ValueError(f"Unsupported OAuth provider: {provider}")
@@ -166,7 +166,7 @@ class SocialAuthService:
         client = OAuth2Client(
             client_id=settings.GOOGLE_CLIENT_ID,
             client_secret=settings.GOOGLE_CLIENT_SECRET,
-            redirect_uri=settings.GOOGLE_REDIRECT_URI
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
         )
 
         try:
@@ -174,17 +174,18 @@ class SocialAuthService:
                 url=self.GOOGLE_TOKEN_ENDPOINT,
                 grant_type="authorization_code",
                 code=code,
-                code_verifier=code_verifier
+                code_verifier=code_verifier,
             )
 
             return token_response
         except Exception as e:
             raise OAuthTokenExchangeError(f"Failed to exchange authorization code: {str(e)}")
 
-    def verify_google_id_token(self, id_token: str) -> Dict[str, Any]:
+    def verify_google_id_token(self, id_token: str) -> dict[str, Any]:
         """Verify and decode a Google ID token against Google JWKS."""
         try:
             import httpx
+
             jwks_response = httpx.get(self.GOOGLE_JWKS_URI, timeout=10.0)
             jwks_response.raise_for_status()
             jwks = jwks_response.json()
@@ -193,9 +194,12 @@ class SocialAuthService:
                 id_token,
                 jwks,
                 claims_options={
-                    "iss": {"essential": True, "values": ["https://accounts.google.com", "accounts.google.com"]},
-                    "aud": {"essential": True, "value": settings.GOOGLE_CLIENT_ID}
-                }
+                    "iss": {
+                        "essential": True,
+                        "values": ["https://accounts.google.com", "accounts.google.com"],
+                    },
+                    "aud": {"essential": True, "value": settings.GOOGLE_CLIENT_ID},
+                },
             )
 
             if "sub" not in claims or "email" not in claims:
@@ -215,9 +219,9 @@ class SocialAuthService:
         email: str,
         display_name: str,
         email_verified: bool = False,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[str, str, str, bool, str, bool, bool, str, bool]:
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str, str, str, bool, str, bool, bool, str, bool]:
         """Authenticate existing OAuth user or create a new account.
 
         Returns:
@@ -233,11 +237,14 @@ class SocialAuthService:
             account_type = profile.account_type.value if profile else "unverified"
 
             from src.core.config import settings
+
             is_admin = existing_oauth_user.is_admin or email.lower() in settings.admin_emails
 
             self.auth_repo.update_last_login(UUID(user_id_str))
 
-            access_token = create_access_token(user_id=user_id_str, email=email, account_type=account_type, is_admin=is_admin)
+            access_token = create_access_token(
+                user_id=user_id_str, email=email, account_type=account_type, is_admin=is_admin
+            )
             refresh_token = create_refresh_token(user_id=user_id_str)
 
             self._audit(
@@ -248,26 +255,38 @@ class SocialAuthService:
                 operation=AuditOperation.login,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
+                legal_basis="Performance of contract (Art. 6(1)(b) GDPR)",
             )
 
-            return access_token, refresh_token, user_id_str, False, account_type, existing_oauth_user.is_email_verified, is_admin, provider, existing_oauth_user.has_custom_password
+            return (
+                access_token,
+                refresh_token,
+                user_id_str,
+                False,
+                account_type,
+                existing_oauth_user.is_email_verified,
+                is_admin,
+                provider,
+                existing_oauth_user.has_custom_password,
+            )
 
         deleted_oauth_user = self.auth_repo.get_by_provider_including_deleted(provider, provider_id)
         if deleted_oauth_user and deleted_oauth_user.deleted_at is not None:
-            from src.core.config import settings
             from datetime import timedelta
+
+            from src.core.config import settings
 
             retention_days = settings.DELETION_RETENTION_DAYS
             deleted_at = deleted_oauth_user.deleted_at
             if deleted_at.tzinfo is None:
-                deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+                deleted_at = deleted_at.replace(tzinfo=UTC)
 
             permanent_date = deleted_at + timedelta(days=retention_days)
 
-            if permanent_date > datetime.now(timezone.utc):
+            if permanent_date > datetime.now(UTC):
                 raise AccountLinkingError(
-                    f"Account for {provider} user {provider_id} was deleted on {deleted_at.isoformat()}. "
+                    f"Account for {provider} user {provider_id}"
+                    f" was deleted on {deleted_at.isoformat()}. "
                     f"ACCOUNT_RECOVERABLE|{permanent_date.isoformat()}"
                 )
             else:
@@ -298,6 +317,7 @@ class SocialAuthService:
         random_password_hash = hash_password(secrets.token_urlsafe(32))
 
         from src.core.config import settings
+
         is_admin = email.lower() in settings.admin_emails
 
         self.auth_repo.create_user(
@@ -306,10 +326,12 @@ class SocialAuthService:
             password_hash=random_password_hash,
             is_email_verified=email_verified,
             provider=provider,
-            provider_id=provider_id
+            provider_id=provider_id,
         )
 
-        access_token = create_access_token(user_id=user_id_str, email=email, account_type=account_type.value, is_admin=is_admin)
+        access_token = create_access_token(
+            user_id=user_id_str, email=email, account_type=account_type.value, is_admin=is_admin
+        )
         refresh_token = create_refresh_token(user_id=user_id_str)
 
         self._audit(
@@ -318,14 +340,20 @@ class SocialAuthService:
             resource_type="auth_user",
             resource_id=user_id_str,
             operation=AuditOperation.create,
-            changes={
-                "provider": provider,
-                "email": email,
-                "is_email_verified": email_verified
-            },
+            changes={"provider": provider, "email": email, "is_email_verified": email_verified},
             ip_address=ip_address,
             user_agent=user_agent,
-            legal_basis="Performance of contract (Art. 6(1)(b) GDPR)"
+            legal_basis="Performance of contract (Art. 6(1)(b) GDPR)",
         )
 
-        return access_token, refresh_token, user_id_str, True, account_type.value, email_verified, is_admin, provider, False
+        return (
+            access_token,
+            refresh_token,
+            user_id_str,
+            True,
+            account_type.value,
+            email_verified,
+            is_admin,
+            provider,
+            False,
+        )

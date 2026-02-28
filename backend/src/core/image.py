@@ -5,7 +5,6 @@ Image validation and processing for avatar uploads (magic-byte detection, WebP o
 import io
 import logging
 from dataclasses import dataclass
-from typing import Tuple
 
 from PIL import Image
 
@@ -20,12 +19,14 @@ ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 class ImageProcessingError(Exception):
     """Raised when image validation or processing fails."""
+
     pass
 
 
 @dataclass
 class ProcessedImage:
     """Result of image processing: avatar and thumbnail as WebP bytes."""
+
     avatar: bytes
     thumbnail: bytes
     content_type: str = "image/webp"
@@ -43,9 +44,7 @@ def validate_image_bytes(data: bytes) -> Image.Image:
         img.verify()
         img = Image.open(io.BytesIO(data))
     except Exception as exc:
-        raise ImageProcessingError(
-            f"File is not a valid image: {exc}"
-        ) from exc
+        raise ImageProcessingError(f"File is not a valid image: {exc}") from exc
 
     detected_format = img.format
     if detected_format not in ALLOWED_FORMATS:
@@ -71,7 +70,7 @@ def _center_crop_square(img: Image.Image) -> Image.Image:
 
 def _resize_and_encode_webp(
     img: Image.Image,
-    size: Tuple[int, int],
+    size: tuple[int, int],
     quality: int = WEBP_QUALITY,
 ) -> bytes:
     """Resize to given dimensions and encode as WebP (LANCZOS resampling)."""

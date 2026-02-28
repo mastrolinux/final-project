@@ -3,17 +3,15 @@ Security utilities for authentication and authorization.
 Implements Argon2id password hashing and JWT token management.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
 import pathlib
 import uuid
+from datetime import UTC, datetime, timedelta
 
-from passlib.context import CryptContext
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from src.core.config import settings
-
 
 #
 # Password Hashing (Argon2id)
@@ -22,10 +20,10 @@ from src.core.config import settings
 # Argon2id configuration (NIST SP 800-63B recommended parameters)
 pwd_context = CryptContext(
     schemes=["argon2"],
-    argon2__memory_cost=65536,      # 64 MB memory usage
-    argon2__time_cost=3,            # 3 iterations
-    argon2__parallelism=4,          # 4 parallel threads
-    argon2__type="id"               # Use Argon2id variant (best security)
+    argon2__memory_cost=65536,  # 64 MB memory usage
+    argon2__time_cost=3,  # 3 iterations
+    argon2__parallelism=4,  # 4 parallel threads
+    argon2__type="id",  # Use Argon2id variant (best security)
 )
 
 
@@ -47,9 +45,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Loaded once at module import; frozenset provides O(1) lookup.
 _COMMON_PASSWORDS_PATH = pathlib.Path(__file__).parent / "common_passwords.txt"
 _COMMON_PASSWORDS: frozenset[str] = frozenset(
-    line.strip().lower()
-    for line in _COMMON_PASSWORDS_PATH.read_text().splitlines()
-    if line.strip()
+    line.strip().lower() for line in _COMMON_PASSWORDS_PATH.read_text().splitlines() if line.strip()
 )
 
 
@@ -70,14 +66,15 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
-REFRESH_TOKEN_EXPIRE_DAYS = 30    # 30 days
+REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
 
 
 class TokenData(BaseModel):
     """JWT token payload data structure."""
+
     user_id: str
-    email: Optional[str] = None
-    account_type: Optional[str] = None
+    email: str | None = None
+    account_type: str | None = None
     token_type: str  # "access" or "refresh"
     exp: datetime
     iat: datetime
@@ -86,7 +83,7 @@ class TokenData(BaseModel):
 
 def create_access_token(user_id: str, email: str, account_type: str, is_admin: bool = False) -> str:
     """Generate HS256 JWT access token (1-hour expiry)."""
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
         "sub": user_id,
         "email": email,
@@ -94,38 +91,38 @@ def create_access_token(user_id: str, email: str, account_type: str, is_admin: b
         "is_admin": is_admin,
         "token_type": "access",
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "jti": str(uuid.uuid4())
+        "iat": datetime.now(UTC),
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(user_id: str) -> str:
     """Generate HS256 JWT refresh token (30-day expiry, minimal claims)."""
-    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": user_id,
         "token_type": "refresh",
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "jti": str(uuid.uuid4())
+        "iat": datetime.now(UTC),
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
+def verify_token(token: str, token_type: str = "access") -> TokenData | None:
     """Verify and decode HS256 JWT token, checking signature, expiry, and type."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         if payload.get("token_type") != token_type:
             return None
-        
+
         if isinstance(payload.get("exp"), (int, float)):
-            payload["exp"] = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+            payload["exp"] = datetime.fromtimestamp(payload["exp"], tz=UTC)
         if isinstance(payload.get("iat"), (int, float)):
-            payload["iat"] = datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
-        
+            payload["iat"] = datetime.fromtimestamp(payload["iat"], tz=UTC)
+
         return TokenData(
             user_id=payload["sub"],
             email=payload.get("email"),
@@ -133,7 +130,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
             token_type=payload["token_type"],
             exp=payload["exp"],
             iat=payload["iat"],
-            jti=payload["jti"]
+            jti=payload["jti"],
         )
     except JWTError:
         return None
@@ -141,7 +138,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
         return None
 
 
-def decode_token_without_verification(token: str) -> Optional[dict]:
+def decode_token_without_verification(token: str) -> dict | None:
     """Decode JWT token without verification.
 
     WARNING: Do not use for authentication. Only for logging and debugging.
@@ -150,4 +147,3 @@ def decode_token_without_verification(token: str) -> Optional[dict]:
         return jwt.decode(token, options={"verify_signature": False})
     except Exception:
         return None
-
