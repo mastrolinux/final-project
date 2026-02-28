@@ -1,12 +1,10 @@
 """Tests for BaseProfile and IdentityName models."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
-from src.models.profile import (
-    BaseProfile, IdentityName, AccountType, NameType, VisibilityLevel
-)
+from src.models.profile import AccountType, BaseProfile, IdentityName, NameType, VisibilityLevel
 
 
 def test_create_base_profile(db_session: Session):
@@ -16,13 +14,13 @@ def test_create_base_profile(db_session: Session):
         legal_name="John Doe",
         primary_email="john@example.com",
         primary_phone="+1-555-0123",
-        preferred_language="en"
+        preferred_language="en",
     )
-    
+
     db_session.add(profile)
     db_session.commit()
     db_session.refresh(profile)
-    
+
     assert profile.user_id is not None
     assert profile.account_type == AccountType.verified
     assert profile.legal_name == "John Doe"
@@ -33,14 +31,12 @@ def test_create_base_profile(db_session: Session):
 
 def test_base_profile_defaults(db_session: Session):
     """Test BaseProfile default values"""
-    profile = BaseProfile(
-        primary_email="test@example.com"
-    )
-    
+    profile = BaseProfile(primary_email="test@example.com")
+
     db_session.add(profile)
     db_session.commit()
     db_session.refresh(profile)
-    
+
     assert profile.account_type == AccountType.unverified
     assert profile.preferred_language == "en"
     assert profile.legal_name is None
@@ -50,10 +46,10 @@ def test_base_profile_defaults(db_session: Session):
 def test_base_profile_soft_delete(db_session: Session, sample_verified_profile: BaseProfile):
     """Test soft delete functionality"""
     assert sample_verified_profile.is_deleted is False
-    
-    sample_verified_profile.deleted_at = datetime.now(timezone.utc)
+
+    sample_verified_profile.deleted_at = datetime.now(UTC)
     db_session.commit()
-    
+
     assert sample_verified_profile.is_deleted is True
 
 
@@ -72,13 +68,13 @@ def test_create_identity_name(db_session: Session, sample_verified_profile: Base
         name_value={"en": "Dr. John Doe"},
         is_primary=True,
         is_deprecated=False,
-        visibility_level=VisibilityLevel.public
+        visibility_level=VisibilityLevel.public,
     )
-    
+
     db_session.add(name)
     db_session.commit()
     db_session.refresh(name)
-    
+
     assert name.id is not None
     assert name.identity_id == sample_verified_profile.user_id
     assert name.name_type == NameType.full_name
@@ -92,18 +88,18 @@ def test_identity_name_relationship(db_session: Session, sample_verified_profile
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.given,
         name_value={"en": "John"},
-        is_primary=True
+        is_primary=True,
     )
     name2 = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.family,
         name_value={"en": "Doe"},
-        is_primary=True
+        is_primary=True,
     )
-    
+
     db_session.add_all([name1, name2])
     db_session.commit()
-    
+
     names = sample_verified_profile.identity_names.all()
     assert len(names) == 2
 
@@ -113,39 +109,36 @@ def test_identity_name_multilingual(db_session: Session, sample_verified_profile
     name = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.full_name,
-        name_value={
-            "en": "John Doe",
-            "es": "Juan Doe",
-            "zh": "约翰·多伊",
-            "ar": "جون دو"
-        },
-        is_primary=True
+        name_value={"en": "John Doe", "es": "Juan Doe", "zh": "约翰·多伊", "ar": "جون دو"},
+        is_primary=True,
     )
-    
+
     db_session.add(name)
     db_session.commit()
     db_session.refresh(name)
-    
+
     assert name.name_value["en"] == "John Doe"
     assert name.name_value["zh"] == "约翰·多伊"
     assert name.name_value["ar"] == "جون دو"
 
 
-def test_identity_name_get_name_for_language(db_session: Session, sample_multilingual_name: IdentityName):
+def test_identity_name_get_name_for_language(
+    db_session: Session, sample_multilingual_name: IdentityName
+):
     """Test get_name_for_language method"""
     # Request existing languages - check they return values from name_value dict
     en_name = sample_multilingual_name.get_name_for_language("en")
     zh_name = sample_multilingual_name.get_name_for_language("zh")
     es_name = sample_multilingual_name.get_name_for_language("es")
-    
+
     assert en_name is not None
     assert en_name == sample_multilingual_name.name_value.get("en")
     assert zh_name == sample_multilingual_name.name_value.get("zh")
     assert es_name == sample_multilingual_name.name_value.get("es")
-    
+
     # Request non-existing language with fallback
     assert sample_multilingual_name.get_name_for_language("fr", fallback="en") == en_name
-    
+
     # Request with no match should return first available
     result = sample_multilingual_name.get_name_for_language("ar", fallback="de")
     assert result in [en_name, zh_name, es_name]
@@ -165,29 +158,33 @@ def test_cascade_delete(db_session: Session, sample_verified_profile: BaseProfil
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.given,
         name_value={"en": "John"},
-        is_primary=True
+        is_primary=True,
     )
     name2 = IdentityName(
         identity_id=sample_verified_profile.user_id,
         name_type=NameType.family,
         name_value={"en": "Doe"},
-        is_primary=True
+        is_primary=True,
     )
-    
+
     db_session.add_all([name1, name2])
     db_session.commit()
-    
-    names_count = db_session.query(IdentityName).filter(
-        IdentityName.identity_id == sample_verified_profile.user_id
-    ).count()
+
+    names_count = (
+        db_session.query(IdentityName)
+        .filter(IdentityName.identity_id == sample_verified_profile.user_id)
+        .count()
+    )
     assert names_count == 2
-    
+
     db_session.delete(sample_verified_profile)
     db_session.commit()
-    
-    names_count = db_session.query(IdentityName).filter(
-        IdentityName.identity_id == sample_verified_profile.user_id
-    ).count()
+
+    names_count = (
+        db_session.query(IdentityName)
+        .filter(IdentityName.identity_id == sample_verified_profile.user_id)
+        .count()
+    )
     assert names_count == 0
 
 
@@ -212,4 +209,3 @@ def test_visibility_level_enum():
     assert VisibilityLevel.public.value == "public"
     assert VisibilityLevel.private.value == "private"
     assert VisibilityLevel.historical_suppressed.value == "historical_suppressed"
-

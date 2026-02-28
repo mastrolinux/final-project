@@ -8,10 +8,9 @@ dependency.
 """
 
 import logging
-from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -69,7 +68,7 @@ def get_verification_service(
 
 @router.get(
     "/verifications/contexts/pending",
-    response_model=List[AdminContextVerificationItem],
+    response_model=list[AdminContextVerificationItem],
 )
 async def list_pending_contexts(
     limit: int = Query(default=50, ge=1, le=100),
@@ -145,9 +144,7 @@ async def get_context_verification(
         rejection_reason=ctx.rejection_reason,
         user_id=ctx.user_id,
         user_display_name=display_name,
-        documents=[
-            VerificationDocumentResponse.model_validate(d) for d in docs
-        ],
+        documents=[VerificationDocumentResponse.model_validate(d) for d in docs],
         created_at=ctx.created_at,
     )
 
@@ -183,10 +180,7 @@ async def review_context_verification(
     docs = service.verification_repo.get_documents_for_context(context_id)
 
     display_name = None
-    if (
-        updated_ctx.base_profile
-        and hasattr(updated_ctx.base_profile, "display_name")
-    ):
+    if updated_ctx.base_profile and hasattr(updated_ctx.base_profile, "display_name"):
         display_name = updated_ctx.base_profile.display_name
 
     return AdminContextVerificationDetail(
@@ -201,9 +195,7 @@ async def review_context_verification(
         rejection_reason=updated_ctx.rejection_reason,
         user_id=updated_ctx.user_id,
         user_display_name=display_name,
-        documents=[
-            VerificationDocumentResponse.model_validate(d) for d in docs
-        ],
+        documents=[VerificationDocumentResponse.model_validate(d) for d in docs],
         created_at=updated_ctx.created_at,
     )
 

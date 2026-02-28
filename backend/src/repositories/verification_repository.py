@@ -6,8 +6,7 @@ All queries exclude soft-deleted records unless explicitly requested.
 """
 
 import logging
-from datetime import date, datetime, timezone
-from typing import List, Optional
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 from sqlalchemy import and_
@@ -41,7 +40,7 @@ class VerificationRepository:
         original_filename: str,
         file_size_bytes: int,
         content_type: str,
-        document_expiry_date: Optional[date] = None,
+        document_expiry_date: date | None = None,
     ) -> VerificationDocument:
         """Persist a new verification document with status ``pending``."""
         doc = VerificationDocument(
@@ -63,9 +62,7 @@ class VerificationRepository:
     # Read
     #
 
-    def get_document_by_id(
-        self, document_id: UUID
-    ) -> Optional[VerificationDocument]:
+    def get_document_by_id(self, document_id: UUID) -> VerificationDocument | None:
         """Fetch a single document by primary key, excluding soft-deleted."""
         return (
             self.db.query(VerificationDocument)
@@ -78,9 +75,7 @@ class VerificationRepository:
             .first()
         )
 
-    def get_user_documents(
-        self, user_id: UUID
-    ) -> List[VerificationDocument]:
+    def get_user_documents(self, user_id: UUID) -> list[VerificationDocument]:
         """Return all non-deleted documents for a user, newest first."""
         return (
             self.db.query(VerificationDocument)
@@ -94,9 +89,7 @@ class VerificationRepository:
             .all()
         )
 
-    def get_latest_user_document(
-        self, user_id: UUID
-    ) -> Optional[VerificationDocument]:
+    def get_latest_user_document(self, user_id: UUID) -> VerificationDocument | None:
         """Return the most recently created non-deleted document for a user."""
         return (
             self.db.query(VerificationDocument)
@@ -110,18 +103,17 @@ class VerificationRepository:
             .first()
         )
 
-    def get_expired_verified_documents(self) -> List[VerificationDocument]:
+    def get_expired_verified_documents(self) -> list[VerificationDocument]:
         """Return verified, non-deleted documents whose expiry date has passed.
 
         Used by the daily expiry task to find documents that need processing.
         """
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
         return (
             self.db.query(VerificationDocument)
             .filter(
                 and_(
-                    VerificationDocument.verification_status
-                    == VerificationStatus.verified,
+                    VerificationDocument.verification_status == VerificationStatus.verified,
                     VerificationDocument.document_expiry_date.isnot(None),
                     VerificationDocument.document_expiry_date < today,
                     VerificationDocument.deleted_at.is_(None),
@@ -130,9 +122,7 @@ class VerificationRepository:
             .all()
         )
 
-    def mark_document_expired(
-        self, document_id: UUID
-    ) -> Optional[VerificationDocument]:
+    def mark_document_expired(self, document_id: UUID) -> VerificationDocument | None:
         """Transition a document to ``expired`` status.
 
         Prevents re-processing on subsequent expiry task runs.
@@ -142,17 +132,17 @@ class VerificationRepository:
             return None
 
         doc.verification_status = VerificationStatus.expired
-        doc.updated_at = datetime.now(timezone.utc)
+        doc.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(doc)
         return doc
 
     def get_documents_by_status(
         self,
-        statuses: List[VerificationStatus],
+        statuses: list[VerificationStatus],
         limit: int = 50,
         offset: int = 0,
-    ) -> List[VerificationDocument]:
+    ) -> list[VerificationDocument]:
         """Return documents matching any of the given statuses (paginated)."""
         return (
             self.db.query(VerificationDocument)
@@ -168,15 +158,9 @@ class VerificationRepository:
             .all()
         )
 
-    def get_documents_for_context(
-        self, context_id: UUID
-    ) -> List[VerificationDocument]:
+    def get_documents_for_context(self, context_id: UUID) -> list[VerificationDocument]:
         """Return the document linked to a context (0 or 1 items)."""
-        ctx = (
-            self.db.query(ContextProfile)
-            .filter(ContextProfile.id == str(context_id))
-            .first()
-        )
+        ctx = self.db.query(ContextProfile).filter(ContextProfile.id == str(context_id)).first()
         if ctx is None or ctx.document_id is None:
             return []
         doc = self.get_document_by_id(ctx.document_id)
@@ -186,44 +170,26 @@ class VerificationRepository:
     # Context-document link (one document per context via FK)
     #
 
-    def link_document_to_context(
-        self, context_id: UUID, document_id: UUID
-    ) -> None:
+    def link_document_to_context(self, context_id: UUID, document_id: UUID) -> None:
         """Set a context's linked document (replaces any existing link)."""
-        ctx = (
-            self.db.query(ContextProfile)
-            .filter(ContextProfile.id == str(context_id))
-            .first()
-        )
+        ctx = self.db.query(ContextProfile).filter(ContextProfile.id == str(context_id)).first()
         if ctx is None:
             return
         ctx.document_id = str(document_id)
         self.db.commit()
 
-    def unlink_document_from_context(
-        self, context_id: UUID, document_id: UUID
-    ) -> bool:
+    def unlink_document_from_context(self, context_id: UUID, document_id: UUID) -> bool:
         """Clear the context's document FK if it matches. Returns False otherwise."""
-        ctx = (
-            self.db.query(ContextProfile)
-            .filter(ContextProfile.id == str(context_id))
-            .first()
-        )
+        ctx = self.db.query(ContextProfile).filter(ContextProfile.id == str(context_id)).first()
         if ctx is None or str(ctx.document_id) != str(document_id):
             return False
         ctx.document_id = None
         self.db.commit()
         return True
 
-    def is_document_linked_to_context(
-        self, context_id: UUID, document_id: UUID
-    ) -> bool:
+    def is_document_linked_to_context(self, context_id: UUID, document_id: UUID) -> bool:
         """Check whether the context references this document."""
-        ctx = (
-            self.db.query(ContextProfile)
-            .filter(ContextProfile.id == str(context_id))
-            .first()
-        )
+        ctx = self.db.query(ContextProfile).filter(ContextProfile.id == str(context_id)).first()
         return ctx is not None and str(ctx.document_id) == str(document_id)
 
     #
@@ -235,10 +201,10 @@ class VerificationRepository:
         document_id: UUID,
         status: VerificationStatus,
         reviewer_id: UUID,
-        reviewer_notes: Optional[str] = None,
-        document_expiry_date: Optional[date] = None,
-        rejection_reason: Optional[str] = None,
-    ) -> Optional[VerificationDocument]:
+        reviewer_notes: str | None = None,
+        document_expiry_date: date | None = None,
+        rejection_reason: str | None = None,
+    ) -> VerificationDocument | None:
         """
         Transition a document to a new verification status.
 
@@ -251,11 +217,11 @@ class VerificationRepository:
 
         doc.verification_status = status
         doc.reviewer_id = str(reviewer_id)
-        doc.reviewed_at = datetime.now(timezone.utc)
+        doc.reviewed_at = datetime.now(UTC)
         doc.reviewer_notes = reviewer_notes
         doc.document_expiry_date = document_expiry_date
         doc.rejection_reason = rejection_reason
-        doc.updated_at = datetime.now(timezone.utc)
+        doc.updated_at = datetime.now(UTC)
 
         self.db.commit()
         self.db.refresh(doc)
@@ -271,6 +237,6 @@ class VerificationRepository:
         if doc is None:
             return False
 
-        doc.deleted_at = datetime.now(timezone.utc)
+        doc.deleted_at = datetime.now(UTC)
         self.db.commit()
         return True

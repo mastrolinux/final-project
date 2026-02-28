@@ -1,7 +1,8 @@
 """Tests for token blacklist operations with mocked Redis."""
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 
@@ -22,18 +23,20 @@ class TestTokenBlacklist:
     @pytest.fixture
     def blacklist_with_mock(self, mock_redis_client):
         """Create TokenBlacklist with mocked Redis."""
-        with patch('src.core.redis_client.redis.from_url') as mock_from_url:
+        with patch("src.core.redis_client.redis.from_url") as mock_from_url:
             mock_from_url.return_value = mock_redis_client
             from src.core.redis_client import TokenBlacklist
+
             blacklist = TokenBlacklist("redis://localhost:6379/0")
             return blacklist, mock_redis_client
 
     def test_init_connects_to_redis(self, mock_redis_client):
         """Test TokenBlacklist establishes Redis connection on init."""
-        with patch('src.core.redis_client.redis.from_url') as mock_from_url:
+        with patch("src.core.redis_client.redis.from_url") as mock_from_url:
             mock_from_url.return_value = mock_redis_client
 
             from src.core.redis_client import TokenBlacklist
+
             blacklist = TokenBlacklist("redis://localhost:6379/0")
 
             mock_from_url.assert_called_once()
@@ -41,12 +44,13 @@ class TestTokenBlacklist:
 
     def test_init_raises_on_connection_failure(self):
         """Test TokenBlacklist raises ConnectionError if Redis unavailable."""
-        with patch('src.core.redis_client.redis.from_url') as mock_from_url:
+        with patch("src.core.redis_client.redis.from_url") as mock_from_url:
             mock_redis = Mock()
             mock_redis.ping.side_effect = RedisConnectionError("Connection refused")
             mock_from_url.return_value = mock_redis
 
             from src.core.redis_client import TokenBlacklist
+
             with pytest.raises(ConnectionError) as exc_info:
                 TokenBlacklist("redis://localhost:6379/0")
 
@@ -113,11 +117,7 @@ class TestTokenBlacklist:
 
         blacklist.blacklist_token(jti, ttl)
 
-        mock_redis.setex.assert_called_once_with(
-            f"blacklist:{jti}",
-            ttl,
-            "1"
-        )
+        mock_redis.setex.assert_called_once_with(f"blacklist:{jti}", ttl, "1")
 
     def test_blacklist_token_uses_default_ttl(self, blacklist_with_mock):
         """Test blacklist_token uses 30-day default TTL."""
@@ -189,14 +189,16 @@ class TestGetBlacklistSingleton:
 
     def test_get_blacklist_raises_when_disabled(self):
         """Test get_blacklist raises RuntimeError when Redis disabled."""
-        with patch('src.core.redis_client.settings') as mock_settings:
+        with patch("src.core.redis_client.settings") as mock_settings:
             mock_settings.REDIS_ENABLED = False
 
             import src.core.redis_client as redis_module
+
             redis_module._blacklist_instance = None
 
             with pytest.raises(RuntimeError) as exc_info:
                 from src.core.redis_client import get_blacklist
+
                 get_blacklist()
 
             assert "Redis is disabled" in str(exc_info.value)
@@ -206,13 +208,16 @@ class TestGetBlacklistSingleton:
         mock_redis = Mock()
         mock_redis.ping.return_value = True
 
-        with patch('src.core.redis_client.settings') as mock_settings, \
-             patch('src.core.redis_client.redis.from_url') as mock_from_url:
+        with (
+            patch("src.core.redis_client.settings") as mock_settings,
+            patch("src.core.redis_client.redis.from_url") as mock_from_url,
+        ):
             mock_settings.REDIS_ENABLED = True
             mock_settings.REDIS_URL = "redis://localhost:6379/0"
             mock_from_url.return_value = mock_redis
 
             import src.core.redis_client as redis_module
+
             redis_module._blacklist_instance = None
 
             from src.core.redis_client import get_blacklist
@@ -231,13 +236,16 @@ class TestResetBlacklist:
         mock_redis = Mock()
         mock_redis.ping.return_value = True
 
-        with patch('src.core.redis_client.settings') as mock_settings, \
-             patch('src.core.redis_client.redis.from_url') as mock_from_url:
+        with (
+            patch("src.core.redis_client.settings") as mock_settings,
+            patch("src.core.redis_client.redis.from_url") as mock_from_url,
+        ):
             mock_settings.REDIS_ENABLED = True
             mock_settings.REDIS_URL = "redis://localhost:6379/0"
             mock_from_url.return_value = mock_redis
 
             import src.core.redis_client as redis_module
+
             redis_module._blacklist_instance = None
 
             from src.core.redis_client import get_blacklist, reset_blacklist

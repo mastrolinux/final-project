@@ -1,30 +1,27 @@
 """Integration tests for OAuth 2.1 endpoint flows."""
 
-import pytest
-import json
-import hashlib
 import base64
+import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
-from urllib.parse import parse_qs, urlparse
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from src.core.security import create_access_token
 from src.models.auth import AuthUser
-from src.models.profile import BaseProfile, AccountType
 from src.models.context import ContextProfile, ContextType
-from src.models.verification import VerificationStatus
 from src.models.oauth import (
-    OAuthClient,
-    OAuthAccessToken,
-    OAuthScope,
-    OAuthConsent,
     AccessLevel,
-    TokenEndpointAuthMethod
+    OAuthAccessToken,
+    OAuthClient,
+    OAuthConsent,
+    OAuthScope,
+    TokenEndpointAuthMethod,
 )
+from src.models.profile import AccountType, BaseProfile
+from src.models.verification import VerificationStatus
 
 
 class TestOAuthDiscovery:
@@ -54,9 +51,7 @@ class TestOAuthDiscovery:
     def test_get_scopes_endpoint(self, client: TestClient, db_session: Session):
         """Test /oauth/scopes returns available scopes."""
         scope = OAuthScope(
-            scope_name="test:read",
-            description="Test read scope",
-            access_level=AccessLevel.read
+            scope_name="test:read", description="Test read scope", access_level=AccessLevel.read
         )
         db_session.add(scope)
         db_session.commit()
@@ -79,7 +74,7 @@ class TestAuthorizationEndpoint:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="oauth-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -98,7 +93,7 @@ class TestAuthorizationEndpoint:
             is_confidential=False,
             is_active=True,
             is_first_party=False,
-            token_endpoint_auth_method=TokenEndpointAuthMethod.none
+            token_endpoint_auth_method=TokenEndpointAuthMethod.none,
         )
         db_session.add(client)
         db_session.commit()
@@ -110,28 +105,26 @@ class TestAuthorizationEndpoint:
         """Create sample OAuth scopes."""
         scopes = [
             OAuthScope(
-                scope_name="openid",
-                description="OpenID Connect",
-                access_level=AccessLevel.read
+                scope_name="openid", description="OpenID Connect", access_level=AccessLevel.read
             ),
             OAuthScope(
                 scope_name="profile:read:basic",
                 description="Basic profile information",
                 access_level=AccessLevel.read,
-                allowed_fields=["preferred_name", "display_name", "photo_url"]
+                allowed_fields=["preferred_name", "display_name", "photo_url"],
             ),
             OAuthScope(
                 scope_name="email",
                 description="Email address",
                 access_level=AccessLevel.read,
                 allowed_fields=["email", "email_verified", "primary_email"],
-                is_sensitive=True
+                is_sensitive=True,
             ),
             OAuthScope(
                 scope_name="offline_access",
                 description="Refresh token access",
-                access_level=AccessLevel.read
-            )
+                access_level=AccessLevel.read,
+            ),
         ]
         db_session.add_all(scopes)
         db_session.commit()
@@ -141,19 +134,18 @@ class TestAuthorizationEndpoint:
     def generate_pkce_pair() -> tuple[str, str]:
         """Generate PKCE code_verifier and code_challenge."""
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
-        code_challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(code_verifier.encode()).digest()
-        ).rstrip(b"=").decode()
+        code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .rstrip(b"=")
+            .decode()
+        )
         return code_verifier, code_challenge
 
     def test_authorize_missing_client_id(self, client: TestClient):
         """Test authorization fails without client_id (missing required param)."""
         response = client.get(
             "/api/v1/oauth/authorize",
-            params={
-                "response_type": "code",
-                "redirect_uri": "https://example.com/callback"
-            }
+            params={"response_type": "code", "redirect_uri": "https://example.com/callback"},
         )
 
         # FastAPI returns 422 for missing required query parameters
@@ -170,9 +162,9 @@ class TestAuthorizationEndpoint:
                 "client_id": "unknown-client",
                 "redirect_uri": "https://example.com/callback",
                 "code_challenge": code_challenge,
-                "code_challenge_method": "S256"
+                "code_challenge_method": "S256",
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         # OAuth spec: redirect with error in query params
@@ -194,9 +186,9 @@ class TestAuthorizationEndpoint:
                 "client_id": sample_oauth_client.client_id,
                 "redirect_uri": "https://evil.com/callback",
                 "code_challenge": code_challenge,
-                "code_challenge_method": "S256"
+                "code_challenge_method": "S256",
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         # OAuth spec: redirect with error when redirect_uri is invalid
@@ -206,9 +198,7 @@ class TestAuthorizationEndpoint:
         assert "error=" in location
         assert "invalid_request" in location
 
-    def test_authorize_missing_pkce(
-        self, client: TestClient, sample_oauth_client, sample_scopes
-    ):
+    def test_authorize_missing_pkce(self, client: TestClient, sample_oauth_client, sample_scopes):
         """Test authorization fails without PKCE (missing required code_challenge)."""
         response = client.get(
             "/api/v1/oauth/authorize",
@@ -216,8 +206,8 @@ class TestAuthorizationEndpoint:
                 "response_type": "code",
                 "client_id": sample_oauth_client.client_id,
                 "redirect_uri": "https://example.com/callback",
-                "scope": "openid profile:read:basic"
-            }
+                "scope": "openid profile:read:basic",
+            },
         )
 
         # FastAPI returns 422 for missing required query parameters
@@ -235,9 +225,9 @@ class TestAuthorizationEndpoint:
                 "redirect_uri": "https://example.com/callback",
                 "code_challenge": "plain-challenge",
                 "code_challenge_method": "plain",
-                "scope": "openid profile:read:basic"
+                "scope": "openid profile:read:basic",
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         # OAuth spec: redirect with error
@@ -262,9 +252,9 @@ class TestAuthorizationEndpoint:
                 "code_challenge": code_challenge,
                 "code_challenge_method": "S256",
                 "scope": "openid profile:read:basic",
-                "state": "test-state-123"
+                "state": "test-state-123",
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         # Should return consent page info (200) or redirect to consent
@@ -284,7 +274,7 @@ class TestTokenEndpoint:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="token-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -300,7 +290,7 @@ class TestTokenEndpoint:
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["openid", "profile:read:basic", "offline_access"],
             is_confidential=False,
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -312,20 +302,18 @@ class TestTokenEndpoint:
         """Create sample OAuth scopes."""
         scopes = [
             OAuthScope(
-                scope_name="openid",
-                description="OpenID Connect",
-                access_level=AccessLevel.read
+                scope_name="openid", description="OpenID Connect", access_level=AccessLevel.read
             ),
             OAuthScope(
                 scope_name="profile:read:basic",
                 description="Basic profile",
-                access_level=AccessLevel.read
+                access_level=AccessLevel.read,
             ),
             OAuthScope(
                 scope_name="offline_access",
                 description="Refresh token",
-                access_level=AccessLevel.read
-            )
+                access_level=AccessLevel.read,
+            ),
         ]
         db_session.add_all(scopes)
         db_session.commit()
@@ -335,9 +323,11 @@ class TestTokenEndpoint:
     def generate_pkce_pair() -> tuple[str, str]:
         """Generate PKCE code_verifier and code_challenge."""
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
-        code_challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(code_verifier.encode()).digest()
-        ).rstrip(b"=").decode()
+        code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .rstrip(b"=")
+            .decode()
+        )
         return code_verifier, code_challenge
 
     def test_token_invalid_grant_type(self, client: TestClient):
@@ -347,16 +337,18 @@ class TestTokenEndpoint:
             data={
                 "grant_type": "password",  # Not allowed in OAuth 2.1
                 "username": "user",
-                "password": "pass"
-            }
+                "password": "pass",
+            },
         )
 
         assert response.status_code == 400
         data = response.json()
         # Error may be wrapped in detail
         error_info = data.get("detail", data)
-        assert error_info.get("error") == "unsupported_grant_type" or \
-               error_info.get("error") == "invalid_request"
+        assert (
+            error_info.get("error") == "unsupported_grant_type"
+            or error_info.get("error") == "invalid_request"
+        )
 
     def test_token_missing_code(self, client: TestClient, sample_oauth_client):
         """Test token endpoint requires authorization code."""
@@ -365,8 +357,8 @@ class TestTokenEndpoint:
             data={
                 "grant_type": "authorization_code",
                 "client_id": sample_oauth_client.client_id,
-                "redirect_uri": "https://example.com/callback"
-            }
+                "redirect_uri": "https://example.com/callback",
+            },
         )
 
         assert response.status_code == 400
@@ -386,8 +378,8 @@ class TestTokenEndpoint:
                 "code": "invalid-authorization-code",
                 "client_id": sample_oauth_client.client_id,
                 "redirect_uri": "https://example.com/callback",
-                "code_verifier": code_verifier
-            }
+                "code_verifier": code_verifier,
+            },
         )
 
         assert response.status_code == 400
@@ -402,10 +394,7 @@ class TestIntrospectionEndpoint:
 
     def test_introspect_invalid_token(self, client: TestClient):
         """Test introspection returns inactive for invalid token."""
-        response = client.post(
-            "/api/v1/oauth/introspect",
-            data={"token": "invalid-token"}
-        )
+        response = client.post("/api/v1/oauth/introspect", data={"token": "invalid-token"})
 
         assert response.status_code == 200
         data = response.json()
@@ -424,10 +413,7 @@ class TestRevocationEndpoint:
 
     def test_revoke_unknown_token_succeeds(self, client: TestClient):
         """Test revocation returns success for unknown token (RFC 7009)."""
-        response = client.post(
-            "/api/v1/oauth/revoke",
-            data={"token": "unknown-token"}
-        )
+        response = client.post("/api/v1/oauth/revoke", data={"token": "unknown-token"})
 
         # Per RFC 7009, should return success
         assert response.status_code == 200
@@ -449,7 +435,7 @@ class TestConsentManagement:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="consent-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -464,7 +450,7 @@ class TestConsentManagement:
             client_name="Consent Test Client",
             redirect_uris=["https://example.com/callback"],
             allowed_scopes=["profile:read:basic"],
-            is_active=True
+            is_active=True,
         )
         db_session.add(client)
         db_session.commit()
@@ -480,7 +466,7 @@ class TestConsentManagement:
             user_id=sample_profile.user_id,
             client_id=sample_oauth_client.client_id,
             granted_scopes=["profile:read:basic"],
-            consent_method="explicit"
+            consent_method="explicit",
         )
         db_session.add(consent)
         db_session.commit()
@@ -515,8 +501,7 @@ class TestUserInfoEndpoint:
     def test_userinfo_with_invalid_token(self, client: TestClient):
         """Test UserInfo endpoint rejects invalid token."""
         response = client.get(
-            "/api/v1/oauth/userinfo",
-            headers={"Authorization": "Bearer invalid-token"}
+            "/api/v1/oauth/userinfo", headers={"Authorization": "Bearer invalid-token"}
         )
 
         assert response.status_code in [401, 403]
@@ -527,10 +512,7 @@ class TestOAuthErrorResponses:
 
     def test_error_response_format(self, client: TestClient):
         """Test error responses follow OAuth 2.0 format."""
-        response = client.post(
-            "/api/v1/oauth/token",
-            data={"grant_type": "invalid_grant_type"}
-        )
+        response = client.post("/api/v1/oauth/token", data={"grant_type": "invalid_grant_type"})
 
         assert response.status_code == 400
         data = response.json()
@@ -554,7 +536,7 @@ class TestOAuthErrorResponses:
         """Test unsupported_grant_type error code."""
         response = client.post(
             "/api/v1/oauth/token",
-            data={"grant_type": "client_credentials"}  # Not supported
+            data={"grant_type": "client_credentials"},  # Not supported
         )
 
         assert response.status_code == 400
@@ -574,7 +556,7 @@ class TestConsentContextVerification:
         profile = BaseProfile(
             account_type=AccountType.verified,
             primary_email="consent-ctx-test@example.com",
-            preferred_language="en"
+            preferred_language="en",
         )
         db_session.add(profile)
         db_session.commit()
@@ -632,12 +614,12 @@ class TestConsentContextVerification:
 
     @staticmethod
     def generate_pkce_pair() -> tuple[str, str]:
-        code_verifier = base64.urlsafe_b64encode(
-            secrets.token_bytes(32)
-        ).rstrip(b"=").decode()
-        code_challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(code_verifier.encode()).digest()
-        ).rstrip(b"=").decode()
+        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+        code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .rstrip(b"=")
+            .decode()
+        )
         return code_verifier, code_challenge
 
     def _consent_payload(self, oauth_client, context_id=None):
@@ -657,8 +639,13 @@ class TestConsentContextVerification:
         return payload
 
     def test_consent_rejects_unverified_legal_context(
-        self, client: TestClient, db_session: Session,
-        user_with_auth, auth_headers, oauth_client, sample_scopes,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_auth,
+        auth_headers,
+        oauth_client,
+        sample_scopes,
     ):
         """Consent must fail when binding a legal context with pending
         verification status."""
@@ -685,8 +672,13 @@ class TestConsentContextVerification:
         assert "error=invalid_request" in data["redirect_to"]
 
     def test_consent_allows_verified_legal_context(
-        self, client: TestClient, db_session: Session,
-        user_with_auth, auth_headers, oauth_client, sample_scopes,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_auth,
+        auth_headers,
+        oauth_client,
+        sample_scopes,
     ):
         """Consent must succeed when binding a legal context that has been
         verified by an admin."""
@@ -714,8 +706,13 @@ class TestConsentContextVerification:
         assert "error" not in data["redirect_to"]
 
     def test_consent_allows_professional_context_without_verification(
-        self, client: TestClient, db_session: Session,
-        user_with_auth, auth_headers, oauth_client, sample_scopes,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_auth,
+        auth_headers,
+        oauth_client,
+        sample_scopes,
     ):
         """Professional contexts do not require verification and must pass
         through regardless."""
@@ -794,8 +791,8 @@ class TestUserInfoContextVerification:
             client_id=client_id,
             user_id=user_id,
             scope="profile:read:basic",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
-            issued_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            issued_at=datetime.now(UTC),
             context_profile_id=context_profile_id,
         )
         db_session.add(token)
@@ -806,8 +803,11 @@ class TestUserInfoContextVerification:
         return token
 
     def test_userinfo_returns_403_for_rejected_legal_context(
-        self, client: TestClient, db_session: Session,
-        user_with_profile, oauth_client,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_profile,
+        oauth_client,
     ):
         """UserInfo must return 403 when the bound legal context has been
         rejected after the token was issued."""
@@ -823,8 +823,10 @@ class TestUserInfoContextVerification:
         db_session.refresh(ctx)
 
         token = self._create_access_token_record(
-            db_session, user_with_profile.user_id,
-            oauth_client.client_id, context_profile_id=ctx.id,
+            db_session,
+            user_with_profile.user_id,
+            oauth_client.client_id,
+            context_profile_id=ctx.id,
         )
 
         response = client.get(
@@ -837,8 +839,11 @@ class TestUserInfoContextVerification:
         assert data["detail"]["code"] == "context_not_verified"
 
     def test_userinfo_serves_verified_legal_context(
-        self, client: TestClient, db_session: Session,
-        user_with_profile, oauth_client,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_profile,
+        oauth_client,
     ):
         """UserInfo must serve data when the bound legal context is verified."""
         ctx = ContextProfile(
@@ -854,8 +859,10 @@ class TestUserInfoContextVerification:
         db_session.refresh(ctx)
 
         token = self._create_access_token_record(
-            db_session, user_with_profile.user_id,
-            oauth_client.client_id, context_profile_id=ctx.id,
+            db_session,
+            user_with_profile.user_id,
+            oauth_client.client_id,
+            context_profile_id=ctx.id,
         )
 
         response = client.get(
@@ -869,8 +876,11 @@ class TestUserInfoContextVerification:
         assert data["context"] == "legal"
 
     def test_userinfo_serves_professional_context_without_verification(
-        self, client: TestClient, db_session: Session,
-        user_with_profile, oauth_client,
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_profile,
+        oauth_client,
     ):
         """UserInfo must serve data for professional contexts regardless of
         verification status (they do not require it)."""
@@ -886,8 +896,10 @@ class TestUserInfoContextVerification:
         db_session.refresh(ctx)
 
         token = self._create_access_token_record(
-            db_session, user_with_profile.user_id,
-            oauth_client.client_id, context_profile_id=ctx.id,
+            db_session,
+            user_with_profile.user_id,
+            oauth_client.client_id,
+            context_profile_id=ctx.id,
         )
 
         response = client.get(

@@ -19,34 +19,26 @@ class TestEncryptionService:
         """Create an EncryptionService with a valid key."""
         return EncryptionService(valid_key)
 
-    def test_encrypt_decrypt_round_trip(
-        self, encryption_service: EncryptionService
-    ):
+    def test_encrypt_decrypt_round_trip(self, encryption_service: EncryptionService):
         """Encrypting then decrypting must return the original plaintext."""
         plaintext = b"Sensitive document content for verification"
         ciphertext = encryption_service.encrypt(plaintext)
         assert ciphertext != plaintext
         assert encryption_service.decrypt(ciphertext) == plaintext
 
-    def test_encrypt_decrypt_empty_bytes(
-        self, encryption_service: EncryptionService
-    ):
+    def test_encrypt_decrypt_empty_bytes(self, encryption_service: EncryptionService):
         """Empty byte strings must round-trip correctly."""
         plaintext = b""
         ciphertext = encryption_service.encrypt(plaintext)
         assert encryption_service.decrypt(ciphertext) == plaintext
 
-    def test_encrypt_decrypt_large_payload(
-        self, encryption_service: EncryptionService
-    ):
+    def test_encrypt_decrypt_large_payload(self, encryption_service: EncryptionService):
         """A 10 MB payload (max document size) must round-trip."""
         plaintext = b"A" * (10 * 1024 * 1024)
         ciphertext = encryption_service.encrypt(plaintext)
         assert encryption_service.decrypt(ciphertext) == plaintext
 
-    def test_ciphertext_differs_across_calls(
-        self, encryption_service: EncryptionService
-    ):
+    def test_ciphertext_differs_across_calls(self, encryption_service: EncryptionService):
         """Fernet uses random IVs, so encrypting the same data twice
         must produce different ciphertext."""
         plaintext = b"test data"
@@ -63,9 +55,7 @@ class TestEncryptionService:
         with pytest.raises(EncryptionError, match="invalid token or wrong key"):
             service2.decrypt(ciphertext)
 
-    def test_decrypt_corrupted_token_raises(
-        self, encryption_service: EncryptionService
-    ):
+    def test_decrypt_corrupted_token_raises(self, encryption_service: EncryptionService):
         """Corrupted ciphertext must raise EncryptionError."""
         with pytest.raises(EncryptionError):
             encryption_service.decrypt(b"not-a-valid-fernet-token")
@@ -80,9 +70,7 @@ class TestEncryptionService:
         with pytest.raises(EncryptionError, match="Invalid encryption key"):
             EncryptionService("not-a-valid-fernet-key")
 
-    def test_binary_data_round_trip(
-        self, encryption_service: EncryptionService
-    ):
+    def test_binary_data_round_trip(self, encryption_service: EncryptionService):
         """Binary data (e.g. PDF magic bytes) must survive round-trip."""
         pdf_header = b"%PDF-1.4 binary\x00\xff\xfe content"
         ciphertext = encryption_service.encrypt(pdf_header)

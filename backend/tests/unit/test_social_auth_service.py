@@ -1,20 +1,19 @@
 """Tests for OAuth 2.0 social login business logic."""
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime, timezone
-import secrets
+from unittest.mock import Mock, patch
 
+import pytest
+
+from src.models.auth import AuthUser
+from src.models.profile import AccountType
 from src.services.social_auth_service import (
-    SocialAuthService,
+    AccountLinkingError,
     OAuthProviderNotConfiguredError,
     OAuthStateValidationError,
     OAuthTokenExchangeError,
     OAuthTokenVerificationError,
-    AccountLinkingError
+    SocialAuthService,
 )
-from src.models.auth import AuthUser
-from src.models.profile import AccountType
 
 
 class TestPKCEGeneration:
@@ -28,11 +27,11 @@ class TestPKCEGeneration:
 
         assert len(code_verifier) >= 43
         assert len(code_verifier) <= 128
-        assert all(c.isalnum() or c in '-_' for c in code_verifier)
+        assert all(c.isalnum() or c in "-_" for c in code_verifier)
 
         # SHA-256 -> 32 bytes -> 43 chars base64url
         assert len(code_challenge) == 43
-        assert all(c.isalnum() or c in '-_' for c in code_challenge)
+        assert all(c.isalnum() or c in "-_" for c in code_challenge)
 
         assert code_verifier != code_challenge
 
@@ -50,12 +49,14 @@ class TestPKCEGeneration:
 class TestAuthorizationURLGeneration:
     """Test OAuth authorization URL generation."""
 
-    @patch('src.services.social_auth_service.settings')
+    @patch("src.services.social_auth_service.settings")
     def test_generate_authorization_url_google(self, mock_settings):
         """Test Google authorization URL generation."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
         mock_settings.GOOGLE_CLIENT_SECRET = "test-client-secret"
-        mock_settings.GOOGLE_REDIRECT_URI = "http://localhost:8000/api/v1/auth/social/google/callback"
+        mock_settings.GOOGLE_REDIRECT_URI = (
+            "http://localhost:8000/api/v1/auth/social/google/callback"
+        )
 
         service = SocialAuthService(Mock(), Mock())
 
@@ -66,13 +67,15 @@ class TestAuthorizationURLGeneration:
         assert "redirect_uri=" in auth_url
         assert "code_challenge=" in auth_url
         assert "code_challenge_method=S256" in auth_url
-        assert "scope=openid+email+profile" in auth_url or "scope=openid%20email%20profile" in auth_url
+        assert (
+            "scope=openid+email+profile" in auth_url or "scope=openid%20email%20profile" in auth_url
+        )
         assert "state=" in auth_url
 
         assert len(state) >= 32
         assert len(code_verifier) >= 43
 
-    @patch('src.services.social_auth_service.settings')
+    @patch("src.services.social_auth_service.settings")
     def test_generate_authorization_url_custom_state(self, mock_settings):
         """Test authorization URL generation with custom state."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
@@ -82,12 +85,14 @@ class TestAuthorizationURLGeneration:
         service = SocialAuthService(Mock(), Mock())
         custom_state = "custom-state-value"
 
-        auth_url, state, code_verifier = service.generate_authorization_url("google", state=custom_state)
+        auth_url, state, code_verifier = service.generate_authorization_url(
+            "google", state=custom_state
+        )
 
         assert state == custom_state
         assert f"state={custom_state}" in auth_url
 
-    @patch('src.services.social_auth_service.settings')
+    @patch("src.services.social_auth_service.settings")
     def test_generate_authorization_url_not_configured(self, mock_settings):
         """Test error when OAuth credentials not configured."""
         mock_settings.GOOGLE_CLIENT_ID = None
@@ -100,7 +105,7 @@ class TestAuthorizationURLGeneration:
 
         assert "Google OAuth credentials not configured" in str(exc_info.value)
 
-    @patch('src.services.social_auth_service.settings')
+    @patch("src.services.social_auth_service.settings")
     def test_generate_authorization_url_invalid_provider(self, mock_settings):
         """Test error for unsupported provider."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
@@ -117,8 +122,8 @@ class TestAuthorizationURLGeneration:
 class TestTokenExchange:
     """Test authorization code exchange for tokens."""
 
-    @patch('src.services.social_auth_service.settings')
-    @patch('src.services.social_auth_service.OAuth2Client')
+    @patch("src.services.social_auth_service.settings")
+    @patch("src.services.social_auth_service.OAuth2Client")
     def test_exchange_code_for_token_success(self, mock_oauth_client_class, mock_settings):
         """Test successful token exchange."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
@@ -130,7 +135,7 @@ class TestTokenExchange:
             "access_token": "mock-access-token",
             "id_token": "mock-id-token",
             "refresh_token": "mock-refresh-token",
-            "expires_in": 3600
+            "expires_in": 3600,
         }
         mock_oauth_client_class.return_value = mock_client
 
@@ -141,14 +146,14 @@ class TestTokenExchange:
             code="mock-auth-code",
             code_verifier="mock-verifier",
             state="state-123",
-            expected_state="state-123"
+            expected_state="state-123",
         )
 
         assert token_response["access_token"] == "mock-access-token"
         assert token_response["id_token"] == "mock-id-token"
         assert "refresh_token" in token_response
 
-    @patch('src.services.social_auth_service.settings')
+    @patch("src.services.social_auth_service.settings")
     def test_exchange_code_state_mismatch(self, mock_settings):
         """Test state validation (CSRF protection)."""
         service = SocialAuthService(Mock(), Mock())
@@ -159,13 +164,13 @@ class TestTokenExchange:
                 code="mock-code",
                 code_verifier="mock-verifier",
                 state="wrong-state",
-                expected_state="correct-state"
+                expected_state="correct-state",
             )
 
         assert "State parameter mismatch" in str(exc_info.value)
 
-    @patch('src.services.social_auth_service.settings')
-    @patch('src.services.social_auth_service.OAuth2Client')
+    @patch("src.services.social_auth_service.settings")
+    @patch("src.services.social_auth_service.OAuth2Client")
     def test_exchange_code_token_exchange_fails(self, mock_oauth_client_class, mock_settings):
         """Test error when token exchange fails."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
@@ -184,7 +189,7 @@ class TestTokenExchange:
                 code="mock-code",
                 code_verifier="mock-verifier",
                 state="state-123",
-                expected_state="state-123"
+                expected_state="state-123",
             )
 
         assert "Failed to exchange authorization code" in str(exc_info.value)
@@ -193,9 +198,9 @@ class TestTokenExchange:
 class TestIDTokenVerification:
     """Test Google ID token verification."""
 
-    @patch('src.services.social_auth_service.settings')
-    @patch('src.services.social_auth_service.httpx.get')
-    @patch('src.services.social_auth_service.jwt.decode')
+    @patch("src.services.social_auth_service.settings")
+    @patch("src.services.social_auth_service.httpx.get")
+    @patch("src.services.social_auth_service.jwt.decode")
     def test_verify_google_id_token_success(self, mock_jwt_decode, mock_httpx_get, mock_settings):
         """Test successful ID token verification."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
@@ -209,7 +214,7 @@ class TestIDTokenVerification:
             "sub": "google-user-123",
             "email": "user@gmail.com",
             "name": "Test User",
-            "email_verified": True
+            "email_verified": True,
         }
 
         service = SocialAuthService(Mock(), Mock())
@@ -220,10 +225,12 @@ class TestIDTokenVerification:
         assert claims["email"] == "user@gmail.com"
         assert claims["email_verified"] is True
 
-    @patch('src.services.social_auth_service.settings')
-    @patch('src.services.social_auth_service.httpx.get')
-    @patch('src.services.social_auth_service.jwt.decode')
-    def test_verify_google_id_token_missing_claims(self, mock_jwt_decode, mock_httpx_get, mock_settings):
+    @patch("src.services.social_auth_service.settings")
+    @patch("src.services.social_auth_service.httpx.get")
+    @patch("src.services.social_auth_service.jwt.decode")
+    def test_verify_google_id_token_missing_claims(
+        self, mock_jwt_decode, mock_httpx_get, mock_settings
+    ):
         """Test error when required claims missing."""
         mock_settings.GOOGLE_CLIENT_ID = "test-client-id"
 
@@ -251,7 +258,8 @@ class TestAuthenticateOrCreateUser:
 
     def test_existing_oauth_user_authentication(self):
         """Test authentication of existing OAuth user."""
-        from uuid import uuid4, UUID
+        from uuid import uuid4
+
         from src.models.profile import BaseProfile
 
         mock_auth_repo = Mock()
@@ -267,7 +275,7 @@ class TestAuthenticateOrCreateUser:
             provider_id="google-123",
             is_email_verified=True,
             is_admin=False,
-            has_custom_password=False
+            has_custom_password=False,
         )
         mock_auth_repo.get_by_provider = Mock(return_value=existing_user)
         mock_auth_repo.get_by_provider_including_deleted = Mock(return_value=None)
@@ -279,14 +287,22 @@ class TestAuthenticateOrCreateUser:
 
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
-        (access_token, refresh_token, user_id, is_new_user,
-         account_type, is_email_verified, is_admin,
-         ret_provider, has_custom_password) = service.authenticate_or_create_user(
+        (
+            access_token,
+            refresh_token,
+            user_id,
+            is_new_user,
+            account_type,
+            is_email_verified,
+            is_admin,
+            ret_provider,
+            has_custom_password,
+        ) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-123",
             email="user@gmail.com",
             display_name="Test User",
-            email_verified=True
+            email_verified=True,
         )
 
         assert access_token is not None
@@ -317,7 +333,7 @@ class TestAuthenticateOrCreateUser:
             email="user@gmail.com",
             password_hash="hashed",
             provider=None,  # Email/password user
-            provider_id=None
+            provider_id=None,
         )
         mock_auth_repo.get_by_email = Mock(return_value=existing_email_user)
 
@@ -329,7 +345,7 @@ class TestAuthenticateOrCreateUser:
                 provider_id="google-new",
                 email="user@gmail.com",
                 display_name="Test User",
-                email_verified=True
+                email_verified=True,
             )
 
         assert "already registered with email/password" in str(exc_info.value)
@@ -337,6 +353,7 @@ class TestAuthenticateOrCreateUser:
     def test_create_new_oauth_user(self):
         """Test creating new user with OAuth credentials."""
         from uuid import uuid4
+
         from src.models.profile import BaseProfile
 
         mock_auth_repo = Mock()
@@ -353,14 +370,22 @@ class TestAuthenticateOrCreateUser:
 
         service = SocialAuthService(mock_auth_repo, mock_profile_repo)
 
-        (access_token, refresh_token, user_id, is_new_user,
-         account_type, is_email_verified, is_admin,
-         ret_provider, has_custom_password) = service.authenticate_or_create_user(
+        (
+            access_token,
+            refresh_token,
+            user_id,
+            is_new_user,
+            account_type,
+            is_email_verified,
+            is_admin,
+            ret_provider,
+            has_custom_password,
+        ) = service.authenticate_or_create_user(
             provider="google",
             provider_id="google-new",
             email="newuser@gmail.com",
             display_name="New User",
-            email_verified=True
+            email_verified=True,
         )
 
         assert access_token is not None

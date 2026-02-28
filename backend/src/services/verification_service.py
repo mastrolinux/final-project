@@ -7,8 +7,7 @@ and admin review of context verification requests.
 
 import logging
 import uuid as uuid_pkg
-from datetime import date, datetime, timezone
-from typing import Dict, List, Optional
+from datetime import date
 from uuid import UUID
 
 from src.core.document import DocumentValidationError, validate_document
@@ -46,10 +45,10 @@ class VerificationService:
         self,
         verification_repo: VerificationRepository,
         profile_repo: ProfileRepository,
-        storage: Optional[StorageClient] = None,
-        encryption: Optional[EncryptionService] = None,
-        audit_service: Optional[AuditService] = None,
-        context_repo: Optional[ContextRepository] = None,
+        storage: StorageClient | None = None,
+        encryption: EncryptionService | None = None,
+        audit_service: AuditService | None = None,
+        context_repo: ContextRepository | None = None,
     ) -> None:
         self.verification_repo = verification_repo
         self.profile_repo = profile_repo
@@ -65,7 +64,7 @@ class VerificationService:
         filename: str,
         claimed_content_type: str,
         document_type: DocumentType,
-        document_expiry_date: Optional[date] = None,
+        document_expiry_date: date | None = None,
     ) -> VerificationDocument:
         """Upload and store a new verification document.
 
@@ -74,14 +73,10 @@ class VerificationService:
         """
         profile = self.profile_repo.get_profile_by_id(user_id)
         if profile is None:
-            raise VerificationServiceError(
-                f"Profile {user_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Profile {user_id} not found", status_code=404)
 
         try:
-            detected_content_type = validate_document(
-                file_data, claimed_content_type
-            )
+            detected_content_type = validate_document(file_data, claimed_content_type)
         except DocumentValidationError as exc:
             raise VerificationServiceError(str(exc)) from exc
 
@@ -89,21 +84,15 @@ class VerificationService:
             encrypted_data = self.encryption.encrypt(file_data)
         except EncryptionError as exc:
             logger.error("Encryption failed for user %s: %s", user_id, exc)
-            raise VerificationServiceError(
-                "Document encryption failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document encryption failed", status_code=500) from exc
 
         blob_id = str(uuid_pkg.uuid4())
         storage_path = f"{user_id}/{blob_id}/{filename}"
         try:
-            result = self.storage.upload(
-                storage_path, encrypted_data, "application/octet-stream"
-            )
+            result = self.storage.upload(storage_path, encrypted_data, "application/octet-stream")
         except Exception as exc:
             logger.error("Storage upload failed for user %s: %s", user_id, exc)
-            raise VerificationServiceError(
-                "Document storage failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document storage failed", status_code=500) from exc
 
         doc = self.verification_repo.create_document(
             user_id=user_id,
@@ -129,9 +118,7 @@ class VerificationService:
                         "original_filename": filename,
                         "file_size_bytes": len(file_data),
                         "document_expiry_date": (
-                            str(document_expiry_date)
-                            if document_expiry_date
-                            else None
+                            str(document_expiry_date) if document_expiry_date else None
                         ),
                     },
                     legal_basis="consent",
@@ -145,7 +132,9 @@ class VerificationService:
 
         logger.info(
             "Document uploaded: id=%s, user=%s, type=%s",
-            doc.id, user_id, document_type.value,
+            doc.id,
+            user_id,
+            document_type.value,
         )
         return doc
 
@@ -161,29 +150,19 @@ class VerificationService:
         that the link does not already exist.
         """
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
 
         doc = self.verification_repo.get_document_by_id(document_id)
         if doc is None:
-            raise VerificationServiceError(
-                f"Document {document_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Document {document_id} not found", status_code=404)
         if str(doc.user_id) != str(user_id):
-            raise VerificationServiceError(
-                "Document does not belong to this user", status_code=403
-            )
+            raise VerificationServiceError("Document does not belong to this user", status_code=403)
 
         ctx = self.context_repo.get_context_profile_by_id(context_id)
         if ctx is None:
-            raise VerificationServiceError(
-                f"Context {context_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Context {context_id} not found", status_code=404)
         if str(ctx.user_id) != str(user_id):
-            raise VerificationServiceError(
-                "Context does not belong to this user", status_code=403
-            )
+            raise VerificationServiceError("Context does not belong to this user", status_code=403)
         if not ctx.requires_verification:
             raise VerificationServiceError(
                 f"Context type '{ctx.context_type.value}' does not require verification"
@@ -228,9 +207,7 @@ class VerificationService:
                 context_id,
             )
 
-        logger.info(
-            "Document %s linked to context %s", document_id, context_id
-        )
+        logger.info("Document %s linked to context %s", document_id, context_id)
         return doc
 
     def unlink_document_from_context(
@@ -241,62 +218,44 @@ class VerificationService:
     ) -> None:
         """Remove the link between a document and a context profile."""
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
 
         ctx = self.context_repo.get_context_profile_by_id(context_id)
         if ctx is None:
-            raise VerificationServiceError(
-                f"Context {context_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Context {context_id} not found", status_code=404)
         if str(ctx.user_id) != str(user_id):
-            raise VerificationServiceError(
-                "Context does not belong to this user", status_code=403
-            )
+            raise VerificationServiceError("Context does not belong to this user", status_code=403)
 
-        removed = self.verification_repo.unlink_document_from_context(
-            context_id, document_id
-        )
+        removed = self.verification_repo.unlink_document_from_context(context_id, document_id)
         if not removed:
             raise VerificationServiceError(
                 "Document is not linked to this context", status_code=404
             )
 
-        logger.info(
-            "Document %s unlinked from context %s", document_id, context_id
-        )
+        logger.info("Document %s unlinked from context %s", document_id, context_id)
 
     def get_documents_for_context(
         self,
         user_id: UUID,
         context_id: UUID,
-    ) -> List[VerificationDocument]:
+    ) -> list[VerificationDocument]:
         """Return all documents linked to a context profile owned by the user."""
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
 
         ctx = self.context_repo.get_context_profile_by_id(context_id)
         if ctx is None:
-            raise VerificationServiceError(
-                f"Context {context_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Context {context_id} not found", status_code=404)
         if str(ctx.user_id) != str(user_id):
-            raise VerificationServiceError(
-                "Context does not belong to this user", status_code=403
-            )
+            raise VerificationServiceError("Context does not belong to this user", status_code=403)
 
         return self.verification_repo.get_documents_for_context(context_id)
 
-    def get_verification_status(self, user_id: UUID) -> Dict:
+    def get_verification_status(self, user_id: UUID) -> dict:
         """Return the user's account type, latest document, and legal-context eligibility."""
         profile = self.profile_repo.get_profile_by_id(user_id)
         if profile is None:
-            raise VerificationServiceError(
-                f"Profile {user_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Profile {user_id} not found", status_code=404)
 
         latest_doc = self.verification_repo.get_latest_user_document(user_id)
 
@@ -304,58 +263,36 @@ class VerificationService:
             "user_id": user_id,
             "account_type": profile.account_type,
             "latest_document": latest_doc,
-            "can_create_legal_context": (
-                profile.account_type == AccountType.verified
-            ),
+            "can_create_legal_context": (profile.account_type == AccountType.verified),
         }
 
-    def get_user_documents(
-        self, user_id: UUID
-    ) -> List[VerificationDocument]:
+    def get_user_documents(self, user_id: UUID) -> list[VerificationDocument]:
         """Return all non-deleted documents for a user."""
         profile = self.profile_repo.get_profile_by_id(user_id)
         if profile is None:
-            raise VerificationServiceError(
-                f"Profile {user_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Profile {user_id} not found", status_code=404)
         return self.verification_repo.get_user_documents(user_id)
 
-    def get_document_by_id(
-        self, document_id: UUID
-    ) -> VerificationDocument:
+    def get_document_by_id(self, document_id: UUID) -> VerificationDocument:
         """Fetch a single document or raise."""
         doc = self.verification_repo.get_document_by_id(document_id)
         if doc is None:
-            raise VerificationServiceError(
-                f"Document {document_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Document {document_id} not found", status_code=404)
         return doc
 
-    def get_pending_contexts(
-        self, limit: int = 50, offset: int = 0
-    ) -> List[ContextProfile]:
+    def get_pending_contexts(self, limit: int = 50, offset: int = 0) -> list[ContextProfile]:
         """Return contexts awaiting verification that have linked documents."""
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
-        return self.context_repo.get_contexts_pending_verification(
-            limit=limit, offset=offset
-        )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
+        return self.context_repo.get_contexts_pending_verification(limit=limit, offset=offset)
 
-    def get_context_for_review(
-        self, context_id: UUID
-    ) -> ContextProfile:
+    def get_context_for_review(self, context_id: UUID) -> ContextProfile:
         """Fetch a context profile for admin review."""
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
         ctx = self.context_repo.get_context_profile_by_id(context_id)
         if ctx is None:
-            raise VerificationServiceError(
-                f"Context {context_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Context {context_id} not found", status_code=404)
         return ctx
 
     def review_context(
@@ -363,9 +300,9 @@ class VerificationService:
         context_id: UUID,
         reviewer_id: UUID,
         status: VerificationStatus,
-        reviewer_notes: Optional[str] = None,
-        document_expiry_date: Optional[date] = None,
-        rejection_reason: Optional[str] = None,
+        reviewer_notes: str | None = None,
+        document_expiry_date: date | None = None,
+        rejection_reason: str | None = None,
     ) -> ContextProfile:
         """Approve or reject a context's verification request.
 
@@ -374,23 +311,18 @@ class VerificationService:
         the reason.
         """
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
 
         ctx = self.context_repo.get_context_profile_by_id(context_id)
         if ctx is None:
-            raise VerificationServiceError(
-                f"Context {context_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Context {context_id} not found", status_code=404)
 
         if ctx.verification_status not in (
             VerificationStatus.pending,
             VerificationStatus.under_review,
         ):
             raise VerificationServiceError(
-                f"Context is in status '{ctx.verification_status.value}' "
-                f"and cannot be reviewed",
+                f"Context is in status '{ctx.verification_status.value}' and cannot be reviewed",
                 status_code=409,
             )
 
@@ -398,14 +330,10 @@ class VerificationService:
             VerificationStatus.verified,
             VerificationStatus.rejected,
         ):
-            raise VerificationServiceError(
-                "Review status must be 'verified' or 'rejected'"
-            )
+            raise VerificationServiceError("Review status must be 'verified' or 'rejected'")
 
         if status == VerificationStatus.rejected and not rejection_reason:
-            raise VerificationServiceError(
-                "rejection_reason is required when rejecting"
-            )
+            raise VerificationServiceError("rejection_reason is required when rejecting")
 
         docs = self.verification_repo.get_documents_for_context(context_id)
         if not docs:
@@ -422,12 +350,11 @@ class VerificationService:
                 rejection_reason=None,
             )
 
-            self.profile_repo.update_profile(
-                ctx.user_id, account_type=AccountType.verified
-            )
+            self.profile_repo.update_profile(ctx.user_id, account_type=AccountType.verified)
             logger.info(
                 "Context %s verified, account %s promoted",
-                context_id, ctx.user_id,
+                context_id,
+                ctx.user_id,
             )
 
             for doc in docs:
@@ -530,36 +457,30 @@ class VerificationService:
         """
         doc = self.verification_repo.get_document_by_id(document_id)
         if doc is None:
-            raise VerificationServiceError(
-                f"Document {document_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Document {document_id} not found", status_code=404)
 
         if not doc.storage_path:
-            raise VerificationServiceError(
-                "Document has no associated file", status_code=404
-            )
+            raise VerificationServiceError("Document has no associated file", status_code=404)
 
         try:
             encrypted_data = self.storage.download(doc.storage_path)
         except Exception as exc:
             logger.error(
                 "Storage download failed for document %s: %s",
-                document_id, exc,
+                document_id,
+                exc,
             )
-            raise VerificationServiceError(
-                "Document download failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document download failed", status_code=500) from exc
 
         try:
             plaintext = self.encryption.decrypt(encrypted_data)
         except EncryptionError as exc:
             logger.error(
                 "Decryption failed for document %s: %s",
-                document_id, exc,
+                document_id,
+                exc,
             )
-            raise VerificationServiceError(
-                "Document decryption failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document decryption failed", status_code=500) from exc
 
         if self.audit_service:
             try:
@@ -592,9 +513,7 @@ class VerificationService:
         """
         doc = self.verification_repo.get_document_by_id(document_id)
         if doc is None:
-            raise VerificationServiceError(
-                f"Document {document_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Document {document_id} not found", status_code=404)
 
         if str(doc.user_id) != str(owner_id):
             raise VerificationServiceError(
@@ -603,31 +522,27 @@ class VerificationService:
             )
 
         if not doc.storage_path:
-            raise VerificationServiceError(
-                "Document has no associated file", status_code=404
-            )
+            raise VerificationServiceError("Document has no associated file", status_code=404)
 
         try:
             encrypted_data = self.storage.download(doc.storage_path)
         except Exception as exc:
             logger.error(
                 "Storage download failed for document %s: %s",
-                document_id, exc,
+                document_id,
+                exc,
             )
-            raise VerificationServiceError(
-                "Document download failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document download failed", status_code=500) from exc
 
         try:
             plaintext = self.encryption.decrypt(encrypted_data)
         except EncryptionError as exc:
             logger.error(
                 "Decryption failed for document %s: %s",
-                document_id, exc,
+                document_id,
+                exc,
             )
-            raise VerificationServiceError(
-                "Document decryption failed", status_code=500
-            ) from exc
+            raise VerificationServiceError("Document decryption failed", status_code=500) from exc
 
         if self.audit_service:
             try:
@@ -649,15 +564,11 @@ class VerificationService:
 
         return (plaintext, doc.content_type)
 
-    def delete_document(
-        self, document_id: UUID, actor_id: UUID
-    ) -> bool:
+    def delete_document(self, document_id: UUID, actor_id: UUID) -> bool:
         """Soft-delete a verification document and remove its encrypted blob."""
         doc = self.verification_repo.get_document_by_id(document_id)
         if doc is None:
-            raise VerificationServiceError(
-                f"Document {document_id} not found", status_code=404
-            )
+            raise VerificationServiceError(f"Document {document_id} not found", status_code=404)
 
         if doc.storage_path:
             try:
@@ -691,25 +602,19 @@ class VerificationService:
 
         return result
 
-    def process_expired_documents(self) -> Dict:
+    def process_expired_documents(self) -> dict:
         """Deactivate contexts linked to expired documents and send notifications.
 
         Returns counts of expired documents and deactivated contexts.
         """
         if self.context_repo is None:
-            raise VerificationServiceError(
-                "Context repository not configured", status_code=500
-            )
+            raise VerificationServiceError("Context repository not configured", status_code=500)
 
-        expired_docs = (
-            self.verification_repo.get_expired_verified_documents()
-        )
+        expired_docs = self.verification_repo.get_expired_verified_documents()
         deactivated_count = 0
 
         for doc in expired_docs:
-            contexts = self.context_repo.get_active_contexts_by_document_id(
-                doc.id
-            )
+            contexts = self.context_repo.get_active_contexts_by_document_id(doc.id)
 
             for ctx in contexts:
                 self.context_repo.update_verification_status(
@@ -718,9 +623,7 @@ class VerificationService:
                     is_active=False,
                 )
 
-                self.verification_repo.unlink_document_from_context(
-                    ctx.id, doc.id
-                )
+                self.verification_repo.unlink_document_from_context(ctx.id, doc.id)
                 deactivated_count += 1
 
                 if self.audit_service:
@@ -735,9 +638,7 @@ class VerificationService:
                             changes={
                                 "reason": "document_expired",
                                 "document_id": str(doc.id),
-                                "document_expiry_date": str(
-                                    doc.document_expiry_date
-                                ),
+                                "document_expiry_date": str(doc.document_expiry_date),
                                 "previous_verification_status": (
                                     ctx.verification_status.value
                                     if ctx.verification_status
@@ -748,22 +649,21 @@ class VerificationService:
                         )
                     except Exception:
                         logger.warning(
-                            "Audit logging failed for document expiry "
-                            "context %s",
+                            "Audit logging failed for document expiry context %s",
                             ctx.id,
                             exc_info=True,
                         )
 
                 logger.info(
                     "Context %s deactivated: document %s expired on %s",
-                    ctx.id, doc.id, doc.document_expiry_date,
+                    ctx.id,
+                    doc.id,
+                    doc.document_expiry_date,
                 )
 
             self.verification_repo.mark_document_expired(doc.id)
 
-            context_names = [
-                c.context_name or c.context_type.value for c in contexts
-            ]
+            context_names = [c.context_name or c.context_type.value for c in contexts]
             if context_names:
                 profile = self.profile_repo.get_profile_by_id(doc.user_id)
                 if profile and profile.primary_email:
@@ -786,9 +686,9 @@ class VerificationService:
                         )
 
         logger.info(
-            "Document expiry check complete: %d documents, %d contexts "
-            "deactivated",
-            len(expired_docs), deactivated_count,
+            "Document expiry check complete: %d documents, %d contexts deactivated",
+            len(expired_docs),
+            deactivated_count,
         )
 
         return {

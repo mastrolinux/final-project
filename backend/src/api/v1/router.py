@@ -2,6 +2,22 @@
 
 from fastapi import APIRouter
 
+from src.api.v1.endpoints import (
+    admin_oauth,
+    admin_users,
+    admin_verification,
+    audit,
+    auth,
+    avatars,
+    contexts,
+    database,
+    oauth,
+    privacy,
+    profiles,
+    social_auth,
+    verification,
+)
+
 api_router = APIRouter()
 
 
@@ -15,44 +31,29 @@ async def api_health():
     }
 
 
-from src.api.v1.endpoints import database
+# Database testing
 api_router.include_router(database.router, prefix="/database", tags=["Database Testing"])
-
-from src.api.v1.endpoints import profiles
+# Profiles
 api_router.include_router(profiles.router, tags=["Profiles"])
-
-from src.api.v1.endpoints import contexts
+# Contexts
 api_router.include_router(contexts.router, tags=["Contexts"])
-
-from src.api.v1.endpoints import auth
+# Authentication
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-
-from src.api.v1.endpoints import social_auth
+# Social authentication
 api_router.include_router(social_auth.router, prefix="/auth", tags=["Social Authentication"])
-
-from src.api.v1.endpoints import oauth
+# OAuth 2.1
 api_router.include_router(oauth.router, prefix="/oauth", tags=["OAuth 2.1"])
-
-from src.api.v1.endpoints import admin_oauth
+# Admin - OAuth
 api_router.include_router(admin_oauth.router, prefix="/admin/oauth", tags=["Admin - OAuth"])
-
-from src.api.v1.endpoints import admin_users
+# Admin - Users
 api_router.include_router(admin_users.router, prefix="/admin", tags=["Admin - Users"])
-
-from src.api.v1.endpoints import audit
+# Audit
 api_router.include_router(audit.router, prefix="/audit", tags=["Audit"])
-
-from src.api.v1.endpoints import privacy
+# Privacy
 api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
-
-from src.api.v1.endpoints import avatars
+# Avatars
 api_router.include_router(avatars.router, tags=["Avatars"])
-
-from src.api.v1.endpoints import verification
+# Verification
 api_router.include_router(verification.router, tags=["Verification"])
-
-from src.api.v1.endpoints import admin_verification
-api_router.include_router(
-    admin_verification.router, prefix="/admin", tags=["Admin - Verification"]
-)
-
+# Admin - Verification
+api_router.include_router(admin_verification.router, prefix="/admin", tags=["Admin - Verification"])

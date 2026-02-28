@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "F",   # Pyflakes
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+ignore = [
+    "UP042",  # str(Enum) pattern required for SQLAlchemy enum compatibility
+    "E712",   # == True/False required in SQLAlchemy filter expressions
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports in package init files
+"tests/**/*.py" = ["E501", "F841"] # allow longer lines and unused vars in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
