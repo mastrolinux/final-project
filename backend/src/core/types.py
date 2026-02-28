@@ -2,7 +2,7 @@
 Sentinel value to distinguish "not provided" from "explicitly null" in updates.
 """
 
-from typing import TypeVar
+from typing import TypeAlias, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -26,4 +26,4 @@ class _Unset:
 
 UNSET: _Unset = _Unset()
 
-Nullable = T | None | _Unset
+Nullable: TypeAlias = Union[T, None, _Unset]
