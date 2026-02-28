@@ -3,7 +3,7 @@
 # Runs backend and frontend quality checks on every push and pull request.
 # Callable as a reusable workflow from deploy.yml for CD gating.
 #
-# Backend checks: mypy (type checking), pytest (with coverage)
+# Backend checks: ruff (lint), mypy (type checking), bandit (security), pytest (with coverage)
 # Frontend checks: vue-tsc (type checking), eslint, vitest (with coverage)
 #
 # No external services required. Backend tests use SQLite in-memory
@@ -55,6 +55,9 @@ jobs:
 
       - name: Type check with mypy
         run: mypy src/ --ignore-missing-imports
+
+      - name: Security scan with bandit
+        run: bandit -r src/ -c pyproject.toml --severity-level medium -q
 
       - name: Run tests with coverage
         env:
