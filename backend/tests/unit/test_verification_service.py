@@ -1,7 +1,7 @@
 """Tests for document upload, status queries, and admin review."""
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,8 +9,8 @@ from cryptography.fernet import Fernet
 
 from src.core.encryption import EncryptionService
 from src.core.storage import InMemoryStorageClient
-from src.models.profile import AccountType, BaseProfile
 from src.models.context import ContextProfile, ContextType
+from src.models.profile import AccountType, BaseProfile
 from src.models.verification import (
     DocumentType,
     VerificationDocument,
@@ -20,7 +20,6 @@ from src.services.verification_service import (
     VerificationService,
     VerificationServiceError,
 )
-
 
 #
 # Fixtures
@@ -95,9 +94,7 @@ def service_with_context(
     )
 
 
-def _make_profile(
-    user_id=None, account_type=AccountType.unverified
-) -> MagicMock:
+def _make_profile(user_id=None, account_type=AccountType.unverified) -> MagicMock:
     """Create a mock profile with the given account type."""
     profile = MagicMock(spec=BaseProfile)
     profile.user_id = str(user_id or uuid.uuid4())
@@ -133,8 +130,8 @@ def _make_document(
     doc.reviewer_notes = None
     doc.document_expiry_date = None
     doc.rejection_reason = None
-    doc.created_at = datetime.now(timezone.utc)
-    doc.updated_at = datetime.now(timezone.utc)
+    doc.created_at = datetime.now(UTC)
+    doc.updated_at = datetime.now(UTC)
     return doc
 
 
@@ -162,8 +159,8 @@ def _make_context(
     ctx.bio = None
     ctx.base_profile = None
     ctx.document_id = None
-    ctx.created_at = datetime.now(timezone.utc)
-    ctx.updated_at = datetime.now(timezone.utc)
+    ctx.created_at = datetime.now(UTC)
+    ctx.updated_at = datetime.now(UTC)
     return ctx
 
 
@@ -208,12 +205,8 @@ class TestUploadDocument:
     ):
         """Uploaded data must be encrypted before storage."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
-        mock_verification_repo.create_document.return_value = _make_document(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
+        mock_verification_repo.create_document.return_value = _make_document(user_id=user_id)
 
         service.upload_document(
             user_id=user_id,
@@ -245,14 +238,10 @@ class TestUploadDocument:
             )
         assert exc_info.value.status_code == 404
 
-    def test_upload_invalid_format_rejected(
-        self, service, mock_profile_repo
-    ):
+    def test_upload_invalid_format_rejected(self, service, mock_profile_repo):
         """A GIF file (unsupported) must be rejected during upload."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
 
         with pytest.raises(VerificationServiceError, match="Unsupported"):
             service.upload_document(
@@ -266,9 +255,7 @@ class TestUploadDocument:
     def test_upload_empty_file_rejected(self, service, mock_profile_repo):
         """An empty file must be rejected."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
 
         with pytest.raises(VerificationServiceError, match="Empty file"):
             service.upload_document(
@@ -284,12 +271,8 @@ class TestUploadDocument:
     ):
         """Uploading without an expiry date must pass None to the repository."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
-        mock_verification_repo.create_document.return_value = _make_document(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
+        mock_verification_repo.create_document.return_value = _make_document(user_id=user_id)
 
         service.upload_document(
             user_id=user_id,
@@ -307,12 +290,8 @@ class TestUploadDocument:
     ):
         """A successful upload must log an audit event."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
-        mock_verification_repo.create_document.return_value = _make_document(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
+        mock_verification_repo.create_document.return_value = _make_document(user_id=user_id)
 
         service.upload_document(
             user_id=user_id,
@@ -336,9 +315,7 @@ class TestUploadDocument:
 class TestGetVerificationStatus:
     """Tests for VerificationService.get_verification_status."""
 
-    def test_status_verified_user(
-        self, service, mock_profile_repo, mock_verification_repo
-    ):
+    def test_status_verified_user(self, service, mock_profile_repo, mock_verification_repo):
         """A verified user must have can_create_legal_context=True."""
         user_id = uuid.uuid4()
         profile = _make_profile(user_id=user_id, account_type=AccountType.verified)
@@ -349,9 +326,7 @@ class TestGetVerificationStatus:
         assert result["can_create_legal_context"] is True
         assert result["account_type"] == AccountType.verified
 
-    def test_status_unverified_user(
-        self, service, mock_profile_repo, mock_verification_repo
-    ):
+    def test_status_unverified_user(self, service, mock_profile_repo, mock_verification_repo):
         """An unverified user must have can_create_legal_context=False."""
         user_id = uuid.uuid4()
         profile = _make_profile(user_id=user_id, account_type=AccountType.unverified)
@@ -361,14 +336,10 @@ class TestGetVerificationStatus:
         result = service.get_verification_status(user_id)
         assert result["can_create_legal_context"] is False
 
-    def test_status_with_pending_document(
-        self, service, mock_profile_repo, mock_verification_repo
-    ):
+    def test_status_with_pending_document(self, service, mock_profile_repo, mock_verification_repo):
         """A pending document must be included in the status response."""
         user_id = uuid.uuid4()
-        mock_profile_repo.get_profile_by_id.return_value = _make_profile(
-            user_id=user_id
-        )
+        mock_profile_repo.get_profile_by_id.return_value = _make_profile(user_id=user_id)
         doc = _make_document(user_id=user_id, status=VerificationStatus.pending)
         mock_verification_repo.get_latest_user_document.return_value = doc
 
@@ -493,13 +464,9 @@ class TestReviewContext:
         """Rejecting without a reason must raise."""
         ctx = _make_context()
         mock_context_repo.get_context_profile_by_id.return_value = ctx
-        mock_verification_repo.get_documents_for_context.return_value = [
-            _make_document()
-        ]
+        mock_verification_repo.get_documents_for_context.return_value = [_make_document()]
 
-        with pytest.raises(
-            VerificationServiceError, match="rejection_reason is required"
-        ):
+        with pytest.raises(VerificationServiceError, match="rejection_reason is required"):
             service_with_context.review_context(
                 context_id=uuid.uuid4(),
                 reviewer_id=uuid.uuid4(),
@@ -546,13 +513,9 @@ class TestReviewContext:
         """Setting status to 'pending' in a review must be rejected."""
         ctx = _make_context()
         mock_context_repo.get_context_profile_by_id.return_value = ctx
-        mock_verification_repo.get_documents_for_context.return_value = [
-            _make_document()
-        ]
+        mock_verification_repo.get_documents_for_context.return_value = [_make_document()]
 
-        with pytest.raises(
-            VerificationServiceError, match="must be 'verified' or 'rejected'"
-        ):
+        with pytest.raises(VerificationServiceError, match="must be 'verified' or 'rejected'"):
             service_with_context.review_context(
                 context_id=uuid.uuid4(),
                 reviewer_id=uuid.uuid4(),
@@ -570,9 +533,7 @@ class TestReviewContext:
         mock_context_repo.get_context_profile_by_id.return_value = ctx
         mock_verification_repo.get_documents_for_context.return_value = []
 
-        with pytest.raises(
-            VerificationServiceError, match="no linked verification documents"
-        ):
+        with pytest.raises(VerificationServiceError, match="no linked verification documents"):
             service_with_context.review_context(
                 context_id=uuid.uuid4(),
                 reviewer_id=uuid.uuid4(),
@@ -592,9 +553,7 @@ class TestReviewContext:
         """A review must log an audit event with reviewer details."""
         ctx = _make_context()
         mock_context_repo.get_context_profile_by_id.return_value = ctx
-        mock_verification_repo.get_documents_for_context.return_value = [
-            _make_document()
-        ]
+        mock_verification_repo.get_documents_for_context.return_value = [_make_document()]
         mock_context_repo.update_verification_status.return_value = ctx
         mock_profile_repo.get_profile_by_id.return_value = _make_profile()
 
@@ -766,9 +725,7 @@ class TestReviewContext:
 class TestDeleteDocument:
     """Tests for VerificationService.delete_document."""
 
-    def test_delete_removes_storage_blob(
-        self, service, mock_verification_repo, storage
-    ):
+    def test_delete_removes_storage_blob(self, service, mock_verification_repo, storage):
         """Deleting a document must remove its encrypted blob from storage."""
         doc = _make_document()
         mock_verification_repo.get_document_by_id.return_value = doc
@@ -855,7 +812,8 @@ class TestDocumentContextLinking:
         )
 
         mock_verification_repo.link_document_to_context.assert_called_once_with(
-            context_id, new_doc_id,
+            context_id,
+            new_doc_id,
         )
         mock_context_repo.update_verification_status.assert_not_called()
 
@@ -888,7 +846,8 @@ class TestDocumentContextLinking:
         )
 
         mock_verification_repo.link_document_to_context.assert_called_once_with(
-            context_id, new_doc_id,
+            context_id,
+            new_doc_id,
         )
         mock_context_repo.update_verification_status.assert_called_once_with(
             context_id=context_id,
@@ -1027,9 +986,7 @@ class TestDocumentContextLinking:
         )
         mock_context_repo.get_context_profile_by_id.return_value = ctx
 
-        with pytest.raises(
-            VerificationServiceError, match="does not require verification"
-        ):
+        with pytest.raises(VerificationServiceError, match="does not require verification"):
             service_with_context.link_document_to_context(
                 user_id=user_id,
                 context_id=uuid.uuid4(),
@@ -1167,9 +1124,7 @@ class TestDocumentContextLinking:
         )
 
         assert result == docs
-        mock_verification_repo.get_documents_for_context.assert_called_once_with(
-            context_id
-        )
+        mock_verification_repo.get_documents_for_context.assert_called_once_with(context_id)
 
 
 #
@@ -1219,18 +1174,14 @@ class TestDownloadDocument:
         assert call_kwargs["event_type"].value == "verification.document.view"
         assert call_kwargs["operation"].value == "read"
 
-    def test_download_nonexistent_raises(
-        self, service, mock_verification_repo
-    ):
+    def test_download_nonexistent_raises(self, service, mock_verification_repo):
         """Downloading a non-existent document must raise 404."""
         mock_verification_repo.get_document_by_id.return_value = None
 
         with pytest.raises(VerificationServiceError, match="not found"):
             service.download_document(uuid.uuid4(), uuid.uuid4())
 
-    def test_download_no_storage_path_raises(
-        self, service, mock_verification_repo
-    ):
+    def test_download_no_storage_path_raises(self, service, mock_verification_repo):
         """Downloading a document without storage_path must raise 404."""
         doc = _make_document()
         doc.storage_path = None
@@ -1270,9 +1221,7 @@ class TestDownloadDocumentForOwner:
         call_kwargs = mock_audit_service.log_event.call_args.kwargs
         assert call_kwargs["legal_basis"] == "consent"
 
-    def test_download_wrong_user_raises(
-        self, service, mock_verification_repo
-    ):
+    def test_download_wrong_user_raises(self, service, mock_verification_repo):
         """Downloading another user's document must raise 403."""
         doc = _make_document(user_id=uuid.uuid4())
         mock_verification_repo.get_document_by_id.return_value = doc
@@ -1283,9 +1232,7 @@ class TestDownloadDocumentForOwner:
                 owner_id=uuid.uuid4(),
             )
 
-    def test_download_nonexistent_raises(
-        self, service, mock_verification_repo
-    ):
+    def test_download_nonexistent_raises(self, service, mock_verification_repo):
         """Downloading a non-existent document must raise 404."""
         mock_verification_repo.get_document_by_id.return_value = None
 

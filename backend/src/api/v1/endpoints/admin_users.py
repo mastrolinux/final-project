@@ -5,25 +5,25 @@ REST API endpoints for managing user accounts.
 All endpoints require admin privileges.
 """
 
-from fastapi import APIRouter, Depends, Request, status, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from src.core.database import get_db
 from src.api.dependencies.auth import require_admin
-from src.models.auth import AuthUser
+from src.core.database import get_db
 from src.models.audit import AuditEventType, AuditOperation
+from src.models.auth import AuthUser
+from src.repositories.audit_repository import AuditRepository
 from src.repositories.auth_repository import AuthRepository
 from src.repositories.context_repository import ContextRepository
 from src.repositories.oauth_repository import OAuthRepository
 from src.repositories.profile_repository import ProfileRepository
-from src.repositories.audit_repository import AuditRepository
+from src.schemas.admin_users import (
+    PurgeExpiredResponse,
+    SoftDeletedUserListResponse,
+    SoftDeletedUserResponse,
+)
 from src.services.audit_service import AuditService
 from src.services.privacy_service import PrivacyService
-from src.schemas.admin_users import (
-    SoftDeletedUserResponse,
-    SoftDeletedUserListResponse,
-    PurgeExpiredResponse,
-)
 
 router = APIRouter()
 
@@ -54,10 +54,7 @@ def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
     "/users/soft-deleted",
     response_model=SoftDeletedUserListResponse,
     summary="List Soft-Deleted Users",
-    description=(
-        "List all soft-deleted user accounts with pagination. "
-        "Requires admin privileges."
-    ),
+    description=("List all soft-deleted user accounts with pagination. Requires admin privileges."),
 )
 def list_soft_deleted_users(
     page: int = Query(1, ge=1, description="Page number"),
@@ -67,9 +64,7 @@ def list_soft_deleted_users(
 ):
     """List all soft-deleted user accounts."""
     offset = (page - 1) * page_size
-    users, total = service.list_soft_deleted_users(
-        offset=offset, limit=page_size
-    )
+    users, total = service.list_soft_deleted_users(offset=offset, limit=page_size)
     return SoftDeletedUserListResponse(
         users=[
             SoftDeletedUserResponse(

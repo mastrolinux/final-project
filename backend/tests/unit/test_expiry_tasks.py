@@ -1,7 +1,7 @@
 """Tests for automatic context deactivation when verification documents expire."""
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -30,15 +30,13 @@ def _make_expired_document(
     doc.user_id = str(user_id or uuid.uuid4())
     doc.document_type = DocumentType.passport
     doc.verification_status = VerificationStatus.verified
-    doc.document_expiry_date = expiry_date or (
-        date.today() - timedelta(days=1)
-    )
+    doc.document_expiry_date = expiry_date or (date.today() - timedelta(days=1))
     doc.storage_path = f"{doc.user_id}/blob/doc.pdf"
     doc.original_filename = "passport.pdf"
     doc.file_size_bytes = 2048
     doc.content_type = "application/pdf"
-    doc.created_at = datetime.now(timezone.utc)
-    doc.updated_at = datetime.now(timezone.utc)
+    doc.created_at = datetime.now(UTC)
+    doc.updated_at = datetime.now(UTC)
     return doc
 
 
@@ -154,9 +152,7 @@ class TestProcessExpiredDocuments:
             verification_status=VerificationStatus.pending,
             is_active=False,
         )
-        mock_verification_repo.unlink_document_from_context.assert_called_once_with(
-            ctx.id, doc.id
-        )
+        mock_verification_repo.unlink_document_from_context.assert_called_once_with(ctx.id, doc.id)
 
     def test_marks_document_as_expired_after_processing(
         self,
@@ -171,9 +167,7 @@ class TestProcessExpiredDocuments:
 
         result = service.process_expired_documents()
 
-        mock_verification_repo.mark_document_expired.assert_called_once_with(
-            doc.id
-        )
+        mock_verification_repo.mark_document_expired.assert_called_once_with(doc.id)
         assert result["expired_documents"] == 1
 
     def test_unlinks_document_from_each_context(
@@ -195,9 +189,7 @@ class TestProcessExpiredDocuments:
         profile = _make_profile(user_id=user_id)
 
         mock_verification_repo.get_expired_verified_documents.return_value = [doc]
-        mock_context_repo.get_active_contexts_by_document_id.return_value = [
-            ctx1, ctx2
-        ]
+        mock_context_repo.get_active_contexts_by_document_id.return_value = [ctx1, ctx2]
         mock_profile_repo.get_profile_by_id.return_value = profile
 
         with patch("src.tasks.email_tasks.send_document_expiry_email"):
@@ -267,12 +259,8 @@ class TestProcessExpiredDocuments:
         profile1 = _make_profile(user_id=user_id_1)
         profile2 = _make_profile(user_id=user_id_2)
 
-        mock_verification_repo.get_expired_verified_documents.return_value = [
-            doc1, doc2
-        ]
-        mock_context_repo.get_active_contexts_by_document_id.side_effect = [
-            [ctx1], [ctx2]
-        ]
+        mock_verification_repo.get_expired_verified_documents.return_value = [doc1, doc2]
+        mock_context_repo.get_active_contexts_by_document_id.side_effect = [[ctx1], [ctx2]]
         mock_profile_repo.get_profile_by_id.side_effect = [profile1, profile2]
 
         with patch(
@@ -301,9 +289,7 @@ class TestProcessExpiredDocuments:
         profile = _make_profile(user_id=user_id)
 
         mock_verification_repo.get_expired_verified_documents.return_value = [doc]
-        mock_context_repo.get_active_contexts_by_document_id.return_value = [
-            ctx1, ctx2
-        ]
+        mock_context_repo.get_active_contexts_by_document_id.return_value = [ctx1, ctx2]
         mock_profile_repo.get_profile_by_id.return_value = profile
 
         with patch("src.tasks.email_tasks.send_document_expiry_email"):
@@ -320,9 +306,7 @@ class TestProcessExpiredDocuments:
     ):
         """Multiple expired documents are all processed in a single run."""
         docs = [_make_expired_document() for _ in range(3)]
-        contexts = [
-            [_make_active_context(user_id=d.user_id)] for d in docs
-        ]
+        contexts = [[_make_active_context(user_id=d.user_id)] for d in docs]
 
         mock_verification_repo.get_expired_verified_documents.return_value = docs
         mock_context_repo.get_active_contexts_by_document_id.side_effect = contexts
@@ -346,9 +330,7 @@ class TestProcessExpiredDocuments:
         """Counts reflect total documents and total contexts deactivated."""
         user_id = str(uuid.uuid4())
         doc = _make_expired_document(user_id=user_id)
-        contexts = [
-            _make_active_context(user_id=user_id) for _ in range(3)
-        ]
+        contexts = [_make_active_context(user_id=user_id) for _ in range(3)]
         profile = _make_profile(user_id=user_id)
 
         mock_verification_repo.get_expired_verified_documents.return_value = [doc]

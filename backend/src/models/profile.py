@@ -5,28 +5,29 @@ SQLAlchemy models for base profiles and identity names.
 Implements core identity aggregate from data architecture.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Optional
-import uuid as uuid_pkg
-from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, 
-    Enum as SQLEnum, Text, text, TypeDecorator
-)
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
-from sqlalchemy.types import CHAR, JSON
-from sqlalchemy.orm import relationship
 import enum
+import uuid as uuid_pkg
+from datetime import UTC, datetime
+from typing import Any
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, TypeDecorator
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import relationship
+from sqlalchemy.types import CHAR, JSON
 
 from src.core.database import Base
 
 
 class UUID(TypeDecorator):
     """Platform-independent UUID type (PostgreSQL UUID or SQLite CHAR(36))."""
+
     impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(PG_UUID(as_uuid=True))
         else:
             return dialect.type_descriptor(CHAR(36))
@@ -34,7 +35,7 @@ class UUID(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
+        elif dialect.name == "postgresql":
             return str(value) if isinstance(value, uuid_pkg.UUID) else value
         else:
             if isinstance(value, uuid_pkg.UUID):
@@ -51,11 +52,12 @@ class UUID(TypeDecorator):
 
 class JSONBType(TypeDecorator):
     """Platform-independent JSONB type (PostgreSQL JSONB or SQLite JSON)."""
+
     impl = JSON
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(JSONB())
         else:
             return dialect.type_descriptor(JSON())
@@ -63,6 +65,7 @@ class JSONBType(TypeDecorator):
 
 class AccountType(str, enum.Enum):
     """Account type enumeration"""
+
     verified = "verified"
     unverified = "unverified"
     pseudonymous = "pseudonymous"
@@ -70,6 +73,7 @@ class AccountType(str, enum.Enum):
 
 class NameType(str, enum.Enum):
     """Name type enumeration"""
+
     given = "given"
     family = "family"
     preferred = "preferred"
@@ -81,6 +85,7 @@ class NameType(str, enum.Enum):
 
 class VisibilityLevel(str, enum.Enum):
     """Visibility level enumeration"""
+
     public = "public"
     private = "private"
     historical_suppressed = "historical_suppressed"
@@ -88,12 +93,19 @@ class VisibilityLevel(str, enum.Enum):
 
 class TimestampMixin:
     """Mixin for timestamp fields"""
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class SoftDeleteMixin:
     """Mixin for soft delete functionality"""
+
     deleted_at = Column(DateTime, nullable=True)
 
     @property
@@ -104,41 +116,43 @@ class SoftDeleteMixin:
 
 class TemporalMixin:
     """Mixin for temporal validity"""
-    valid_from = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    valid_from = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     valid_to = Column(DateTime, nullable=True)
 
     @property
     def is_valid(self) -> bool:
         """Check if entity is currently valid"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Make stored datetimes timezone-aware for comparison if they're naive
-        valid_from = self.valid_from.replace(tzinfo=timezone.utc) if self.valid_from.tzinfo is None else self.valid_from
-        
+        valid_from = (
+            self.valid_from.replace(tzinfo=UTC)
+            if self.valid_from.tzinfo is None
+            else self.valid_from
+        )
+
         if self.valid_to is None:
             return valid_from <= now
-        
-        valid_to = self.valid_to.replace(tzinfo=timezone.utc) if self.valid_to.tzinfo is None else self.valid_to
+
+        valid_to = (
+            self.valid_to.replace(tzinfo=UTC) if self.valid_to.tzinfo is None else self.valid_to
+        )
         return valid_from <= now <= valid_to
 
 
 class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     """Core user profile with three account types (verified, unverified, pseudonymous)."""
+
     __tablename__ = "base_profiles"
 
-    user_id = Column[Any](
-        UUID(),
-        primary_key=True,
-        default=uuid_pkg.uuid4
-    )
-    
+    user_id = Column[Any](UUID(), primary_key=True, default=uuid_pkg.uuid4)
+
     account_type = Column[str](
-        SQLEnum(AccountType, name="account_type"),
-        nullable=False,
-        default=AccountType.unverified
+        SQLEnum(AccountType, name="account_type"), nullable=False, default=AccountType.unverified
     )
-    
+
     legal_name = Column[str](Text, nullable=True)
-    
+
     primary_email = Column[str](String(255), nullable=False, unique=True)
     primary_phone = Column[str](String(50), nullable=True)
     preferred_language = Column[str](String(10), nullable=False, default="en")
@@ -148,58 +162,54 @@ class BaseProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
     avatar_storage_path = Column[str](Text, nullable=True)
 
     identity_names = relationship(
-        "IdentityName",
-        back_populates="profile",
-        cascade="all, delete-orphan",
-        lazy="dynamic"
+        "IdentityName", back_populates="profile", cascade="all, delete-orphan", lazy="dynamic"
     )
 
     def __repr__(self) -> str:
-        return f"<BaseProfile(user_id={self.user_id}, email={self.primary_email}, type={self.account_type})>"
+        return (
+            f"<BaseProfile(user_id={self.user_id},"
+            f" email={self.primary_email},"
+            f" type={self.account_type})>"
+        )
 
 
 class IdentityName(Base, TimestampMixin, TemporalMixin):
     """Multilingual name storage using JSONB with deprecation and visibility controls."""
+
     __tablename__ = "identity_names"
 
-    id = Column(
-        UUID(),
-        primary_key=True,
-        default=uuid_pkg.uuid4
-    )
-    
+    id = Column(UUID(), primary_key=True, default=uuid_pkg.uuid4)
+
     identity_id = Column(
-        UUID(),
-        ForeignKey("base_profiles.user_id", ondelete="CASCADE"),
-        nullable=False
+        UUID(), ForeignKey("base_profiles.user_id", ondelete="CASCADE"), nullable=False
     )
-    
-    name_type = Column(
-        SQLEnum(NameType, name="name_type"),
-        nullable=False
-    )
-    
+
+    name_type = Column(SQLEnum(NameType, name="name_type"), nullable=False)
+
     name_value = Column(JSONBType, nullable=False)
-    
+
     is_primary = Column(Boolean, nullable=False, default=False)
-    
+
     is_deprecated = Column(Boolean, nullable=False, default=False)
-    
+
     visibility_level = Column(
         SQLEnum(VisibilityLevel, name="visibility_level"),
         nullable=False,
-        default=VisibilityLevel.public
+        default=VisibilityLevel.public,
     )
-    
+
     context_id = Column(UUID(), nullable=True)
 
     profile = relationship("BaseProfile", back_populates="identity_names")
 
     def __repr__(self) -> str:
         return f"<IdentityName(id={self.id}, type={self.name_type}, primary={self.is_primary})>"
-    
-    def get_name_for_language(self, lang: str, fallback: str = "en") -> Optional[str]:
-        """Get name value for a language with fallback chain: lang -> fallback -> first available."""
+
+    def get_name_for_language(self, lang: str, fallback: str = "en") -> str | None:
+        """Get name value for a language with fallback chain.
+
+        Fallback order: lang -> fallback -> first available.
+        """
         if not isinstance(self.name_value, dict):
             return None
 
@@ -211,6 +221,5 @@ class IdentityName(Base, TimestampMixin, TemporalMixin):
 
         if self.name_value:
             return next(iter(self.name_value.values()))
-        
-        return None
 
+        return None

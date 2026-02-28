@@ -1,14 +1,6 @@
 """Tests for AuditLog model, enums, and hash chain constants."""
 
-import pytest
-from datetime import datetime, timezone
-
-from src.models.audit import (
-    AuditLog,
-    AuditEventType,
-    AuditOperation,
-    GENESIS_HASH
-)
+from src.models.audit import GENESIS_HASH, AuditEventType, AuditLog, AuditOperation
 
 
 class TestAuditOperation:
@@ -17,9 +9,19 @@ class TestAuditOperation:
     def test_operation_values(self):
         """Verify all operation enum values are lowercase strings."""
         expected = {
-            "create", "update", "delete", "login", "logout",
-            "register", "verify", "grant", "withdraw", "revoke",
-            "restore", "review", "read"
+            "create",
+            "update",
+            "delete",
+            "login",
+            "logout",
+            "register",
+            "verify",
+            "grant",
+            "withdraw",
+            "revoke",
+            "restore",
+            "review",
+            "read",
         }
         actual = {op.value for op in AuditOperation}
         assert actual == expected
@@ -83,6 +85,7 @@ class TestGenesisHash:
     def test_genesis_hash_deterministic(self):
         """GENESIS_HASH matches SHA-256 of b'GENESIS'."""
         import hashlib
+
         expected = hashlib.sha256(b"GENESIS").hexdigest()
         assert GENESIS_HASH == expected
 
@@ -108,10 +111,20 @@ class TestAuditLogModel:
         """AuditLog has all required columns for audit trail."""
         column_names = {c.name for c in AuditLog.__table__.columns}
         required = {
-            "log_id", "created_at", "event_type", "user_id",
-            "actor_id", "resource_type", "resource_id", "operation",
-            "changes", "ip_address", "user_agent", "legal_basis",
-            "previous_hash", "entry_hash"
+            "log_id",
+            "created_at",
+            "event_type",
+            "user_id",
+            "actor_id",
+            "resource_type",
+            "resource_id",
+            "operation",
+            "changes",
+            "ip_address",
+            "user_agent",
+            "legal_basis",
+            "previous_hash",
+            "entry_hash",
         }
         assert required.issubset(column_names)
 

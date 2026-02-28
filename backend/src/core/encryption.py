@@ -3,7 +3,6 @@ Fernet symmetric encryption (AES-128-CBC + HMAC-SHA256) for documents at rest.
 """
 
 import logging
-from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -30,9 +29,7 @@ class EncryptionService:
         try:
             self._fernet = Fernet(key.encode() if isinstance(key, str) else key)
         except Exception as exc:
-            raise EncryptionError(
-                f"Invalid encryption key format: {exc}"
-            ) from exc
+            raise EncryptionError(f"Invalid encryption key format: {exc}") from exc
 
     def encrypt(self, data: bytes) -> bytes:
         """Encrypt *data* and return the Fernet token (ciphertext + HMAC)."""
@@ -46,14 +43,12 @@ class EncryptionService:
         try:
             return self._fernet.decrypt(token)
         except InvalidToken as exc:
-            raise EncryptionError(
-                "Decryption failed: invalid token or wrong key"
-            ) from exc
+            raise EncryptionError("Decryption failed: invalid token or wrong key") from exc
         except Exception as exc:
             raise EncryptionError(f"Decryption failed: {exc}") from exc
 
 
-_encryption_service: Optional[EncryptionService] = None
+_encryption_service: EncryptionService | None = None
 
 
 def get_encryption_service() -> EncryptionService:

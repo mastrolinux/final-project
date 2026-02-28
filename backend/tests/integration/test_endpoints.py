@@ -1,13 +1,12 @@
 """Integration tests for profile and identity name API endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 
 def test_root_endpoint(client: TestClient):
     """Test root endpoint returns correct response"""
     response = client.get("/")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["message"] == "Identity and Profile Management API"
@@ -18,7 +17,7 @@ def test_root_endpoint(client: TestClient):
 def test_health_endpoint(client: TestClient):
     """Test basic health check endpoint"""
     response = client.get("/health")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
@@ -29,7 +28,7 @@ def test_health_endpoint(client: TestClient):
 def test_detailed_health_endpoint(client: TestClient):
     """Test detailed health check endpoint"""
     response = client.get("/health/detailed")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "status" in data
@@ -37,7 +36,6 @@ def test_detailed_health_endpoint(client: TestClient):
     assert "database" in data["components"]
     assert "supabase" in data["components"]
     assert "tables" in data["components"]
-
 
     db_component = data["components"]["database"]
     assert "status" in db_component
@@ -47,7 +45,7 @@ def test_detailed_health_endpoint(client: TestClient):
 def test_api_v1_health_endpoint(client: TestClient):
     """Test API v1 health endpoint"""
     response = client.get("/api/v1/health")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
@@ -57,7 +55,7 @@ def test_api_v1_health_endpoint(client: TestClient):
 def test_database_test_endpoint_empty_database(client: TestClient):
     """Test database test endpoint with empty database"""
     response = client.get("/api/v1/database/test")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
@@ -69,18 +67,18 @@ def test_database_test_endpoint_empty_database(client: TestClient):
 def test_database_test_endpoint_with_data(client: TestClient, sample_profiles_with_names):
     """Test database test endpoint with sample data"""
     response = client.get("/api/v1/database/test")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["profile_count"] == 3  
+    assert data["data"]["profile_count"] == 3
     assert len(data["data"]["sample_profiles"]) <= 5  # Max 5 samples
 
 
 def test_profile_counts_endpoint_empty(client: TestClient):
     """Test profile counts endpoint with empty database"""
     response = client.get("/api/v1/database/profiles/count")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
@@ -90,11 +88,11 @@ def test_profile_counts_endpoint_empty(client: TestClient):
 def test_profile_counts_endpoint_with_data(client: TestClient, sample_profiles_with_names):
     """Test profile counts endpoint with sample data"""
     response = client.get("/api/v1/database/profiles/count")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["total"] == 3  
+    assert data["data"]["total"] == 3
     assert "by_type" in data["data"]
 
 
@@ -102,7 +100,7 @@ def test_get_profile_by_id(client: TestClient, sample_verified_profile, sample_i
     """Test getting a specific profile by ID"""
     user_id = str(sample_verified_profile.user_id)
     response = client.get(f"/api/v1/database/profiles/{user_id}")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
@@ -115,7 +113,7 @@ def test_get_nonexistent_profile(client: TestClient):
     """Test getting a nonexistent profile returns 404"""
     fake_uuid = "00000000-0000-0000-0000-000000000999"
     response = client.get(f"/api/v1/database/profiles/{fake_uuid}")
-    
+
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -123,17 +121,16 @@ def test_get_nonexistent_profile(client: TestClient):
 def test_openapi_docs_accessible(client: TestClient):
     """Test that OpenAPI documentation is accessible"""
     response = client.get("/docs")
-    
+
     assert response.status_code == 200
 
 
 def test_openapi_json_accessible(client: TestClient):
     """Test that OpenAPI JSON schema is accessible"""
     response = client.get("/openapi.json")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "openapi" in data
     assert "info" in data
     assert "paths" in data
-

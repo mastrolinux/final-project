@@ -1,15 +1,16 @@
 """Tests for GDPR Article 15 data export with mocked repositories."""
 
-import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from uuid import uuid4
 
+import pytest
+
+from src.models.audit import AuditEventType, AuditOperation
 from src.services.privacy_service import (
+    GDPR_METADATA,
     PrivacyService,
     ProfileNotFoundError,
-    GDPR_METADATA,
 )
-from src.models.audit import AuditEventType, AuditOperation
 
 
 @pytest.fixture
@@ -79,9 +80,7 @@ def _make_identity_name(identity_id, name_type="full_name", deprecated=False):
     name.name_value = {"en": "Test User"}
     name.is_primary = True
     name.is_deprecated = deprecated
-    name.visibility_level = Mock(
-        value="historical_suppressed" if deprecated else "public"
-    )
+    name.visibility_level = Mock(value="historical_suppressed" if deprecated else "public")
     name.context_id = None
     name.valid_from = None
     name.valid_to = None
@@ -141,8 +140,7 @@ class TestExportUserData:
     """Tests for the export_user_data method."""
 
     def test_export_returns_all_sections(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export contains all expected top-level sections."""
         user_id = uuid4()
@@ -163,8 +161,7 @@ class TestExportUserData:
         assert "gdpr_metadata" in result
 
     def test_export_metadata_format(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export metadata contains version, legal basis, and timestamp."""
         user_id = uuid4()
@@ -183,8 +180,7 @@ class TestExportUserData:
         assert meta["exported_at"] is not None
 
     def test_export_profile_data(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Profile section contains expected fields."""
         user_id = uuid4()
@@ -203,8 +199,7 @@ class TestExportUserData:
         assert profile["legal_name"] == "Test User"
 
     def test_export_includes_deprecated_names(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """GDPR requires all data including deprecated (dead) names."""
         user_id = uuid4()
@@ -226,8 +221,7 @@ class TestExportUserData:
         )
 
     def test_export_includes_inactive_contexts(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export includes both active and inactive context profiles."""
         user_id = uuid4()
@@ -249,8 +243,7 @@ class TestExportUserData:
         )
 
     def test_export_excludes_sensitive_auth_fields(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Authentication export must not contain password hash or tokens."""
         user_id = uuid4()
@@ -273,8 +266,7 @@ class TestExportUserData:
         assert auth_export["email"] == "test@example.com"
 
     def test_export_includes_oauth_consents(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export includes active and withdrawn consents."""
         user_id = uuid4()
@@ -295,8 +287,7 @@ class TestExportUserData:
         assert result["oauth_consents"][0]["granted_scopes"] == ["profile:read", "email"]
 
     def test_export_includes_gdpr_metadata(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export contains static GDPR metadata block."""
         user_id = uuid4()
@@ -315,9 +306,7 @@ class TestExportUserData:
         assert "data_sources" in gdpr
         assert gdpr == GDPR_METADATA
 
-    def test_export_raises_on_missing_profile(
-        self, privacy_service, mock_profile_repo
-    ):
+    def test_export_raises_on_missing_profile(self, privacy_service, mock_profile_repo):
         """ProfileNotFoundError raised when profile does not exist."""
         user_id = uuid4()
         mock_profile_repo.get_profile_by_id.return_value = None
@@ -326,8 +315,13 @@ class TestExportUserData:
             privacy_service.export_user_data(user_id)
 
     def test_export_logs_audit_event(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo, mock_audit_service
+        self,
+        privacy_service,
+        mock_profile_repo,
+        mock_context_repo,
+        mock_auth_repo,
+        mock_oauth_repo,
+        mock_audit_service,
     ):
         """Export triggers a privacy.data_export audit event."""
         user_id = uuid4()
@@ -357,8 +351,7 @@ class TestExportUserData:
         )
 
     def test_export_works_without_audit_service(
-        self, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export succeeds when audit_service is None."""
         service = PrivacyService(
@@ -379,8 +372,7 @@ class TestExportUserData:
         assert result["profile"]["user_id"] == user_id
 
     def test_export_handles_no_auth_user(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export handles case where auth_users record is missing."""
         user_id = uuid4()
@@ -395,8 +387,7 @@ class TestExportUserData:
         assert result["authentication"] is None
 
     def test_export_empty_collections(
-        self, privacy_service, mock_profile_repo, mock_context_repo,
-        mock_auth_repo, mock_oauth_repo
+        self, privacy_service, mock_profile_repo, mock_context_repo, mock_auth_repo, mock_oauth_repo
     ):
         """Export handles user with no names, contexts, or consents."""
         user_id = uuid4()

@@ -1,14 +1,13 @@
 """Tests for audit repository: hash chain, log creation, and filtering."""
 
-import pytest
-import hashlib
-import json
-from datetime import datetime, timezone
-from unittest.mock import Mock, patch, MagicMock
-from uuid import uuid4, UUID
+from datetime import UTC, datetime
+from unittest.mock import Mock
+from uuid import uuid4
 
+import pytest
+
+from src.models.audit import GENESIS_HASH, AuditLog, AuditOperation
 from src.repositories.audit_repository import AuditRepository
-from src.models.audit import AuditLog, AuditOperation, AuditEventType, GENESIS_HASH
 
 
 @pytest.fixture
@@ -33,7 +32,7 @@ class TestHashComputation:
 
     def test_compute_entry_hash_deterministic(self, audit_repo):
         """Same inputs produce the same hash."""
-        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
         user_id = str(uuid4())
 
         hash1 = audit_repo._compute_entry_hash(
@@ -45,7 +44,7 @@ class TestHashComputation:
             resource_id=user_id,
             operation="login",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         hash2 = audit_repo._compute_entry_hash(
@@ -57,7 +56,7 @@ class TestHashComputation:
             resource_id=user_id,
             operation="login",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         assert hash1 == hash2
@@ -65,7 +64,7 @@ class TestHashComputation:
 
     def test_compute_entry_hash_different_inputs(self, audit_repo):
         """Different inputs produce different hashes."""
-        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
         user_id = str(uuid4())
 
         hash1 = audit_repo._compute_entry_hash(
@@ -77,7 +76,7 @@ class TestHashComputation:
             resource_id=user_id,
             operation="login",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         hash2 = audit_repo._compute_entry_hash(
@@ -89,14 +88,14 @@ class TestHashComputation:
             resource_id=user_id,
             operation="login",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         assert hash1 != hash2
 
     def test_compute_entry_hash_changes_sorted(self, audit_repo):
         """Changes dict is sorted for deterministic hashing."""
-        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
         user_id = str(uuid4())
 
         hash1 = audit_repo._compute_entry_hash(
@@ -108,7 +107,7 @@ class TestHashComputation:
             resource_id=user_id,
             operation="update",
             changes={"email": "a@b.com", "name": "Alice"},
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         hash2 = audit_repo._compute_entry_hash(
@@ -120,14 +119,14 @@ class TestHashComputation:
             resource_id=user_id,
             operation="update",
             changes={"name": "Alice", "email": "a@b.com"},
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         assert hash1 == hash2
 
     def test_compute_entry_hash_none_user_id(self, audit_repo):
         """Hash computation handles None user_id (purged user)."""
-        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
 
         result = audit_repo._compute_entry_hash(
             timestamp=ts,
@@ -138,14 +137,14 @@ class TestHashComputation:
             resource_id="some-id",
             operation="login",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         assert len(result) == 64
 
     def test_compute_entry_hash_is_sha256(self, audit_repo):
         """Hash output matches SHA-256 format."""
-        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
         user_id = str(uuid4())
 
         result = audit_repo._compute_entry_hash(
@@ -157,7 +156,7 @@ class TestHashComputation:
             resource_id=user_id,
             operation="create",
             changes=None,
-            previous_hash=GENESIS_HASH
+            previous_hash=GENESIS_HASH,
         )
 
         assert all(c in "0123456789abcdef" for c in result)
@@ -194,7 +193,7 @@ class TestCreateLog:
             resource_type="auth_user",
             resource_id=str(user_id),
             operation=AuditOperation.login,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         mock_db.add.assert_called_once()
@@ -222,7 +221,7 @@ class TestCreateLog:
             resource_id=str(user_id),
             operation=AuditOperation.update,
             changes=changes,
-            legal_basis="contract"
+            legal_basis="contract",
         )
 
         added_obj = mock_db.add.call_args[0][0]
@@ -240,7 +239,7 @@ class TestCreateLog:
             resource_id=str(user_id),
             operation=AuditOperation.login,
             ip_address="192.168.1.1",
-            user_agent="TestBrowser/1.0"
+            user_agent="TestBrowser/1.0",
         )
 
         added_obj = mock_db.add.call_args[0][0]
