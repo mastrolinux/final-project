@@ -88,6 +88,11 @@ class ContextProfile(Base, TimestampMixin, SoftDeleteMixin, TemporalMixin):
         """Return True if this context has been identity-verified by an admin."""
         return self.verification_status == VerificationStatus.verified
 
+    @property
+    def has_linked_document(self) -> bool:
+        """Return True if a verification document is linked to this context."""
+        return self.document_id is not None
+
     def has_overrides(self) -> bool:
         """Check if this context has any field overrides"""
         return any(
