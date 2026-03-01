@@ -77,7 +77,7 @@ function selectContext(id: string) {
 
 .context-card.selected {
   border-color: var(--color-primary-500);
-  background-color: var(--color-primary-50);
+  background-color: var(--bg-secondary);
   box-shadow: 0 0 0 1px var(--color-primary-500);
 }
 
@@ -132,7 +132,7 @@ function selectContext(id: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background-color: var(--bg-primary);
 }
 
 .selected .radio-circle {

@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { contextService, getErrorMessage } from "@/services";
 import type { ResolvedProfileResponse } from "@/types";
 import BaseBadge from "@/components/common/BaseBadge.vue";
+import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
 
 const props = defineProps<{
   userId: string;
@@ -50,6 +51,7 @@ const SCOPE_FIELD_MAP: Record<
 };
 
 interface PreviewField {
+  key: string;
   label: string;
   value: string | null;
   isOverride: boolean;
@@ -78,7 +80,7 @@ function getPreviewFields(): PreviewField[] {
       const isOverride =
         resolved.value.context_type != null && overrideFields.has(mapping.key);
 
-      fields.push({ label: mapping.label, value, isOverride });
+      fields.push({ key: mapping.key, label: mapping.label, value, isOverride });
     }
   }
 
@@ -135,7 +137,13 @@ watch(
         class="preview-field"
       >
         <span class="field-label">{{ field.label }}</span>
-        <span class="field-value">{{ field.value || "-" }}</span>
+        <AvatarDisplay
+          v-if="field.key === 'avatar_url' && field.value"
+          :src="field.value"
+          :name="resolved?.display_name || ''"
+          size="sm"
+        />
+        <span v-else class="field-value">{{ field.value || "-" }}</span>
         <BaseBadge v-if="field.isOverride" variant="primary" size="sm">
           {{ t("oauth.fieldFromContext") }}
         </BaseBadge>
