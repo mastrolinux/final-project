@@ -544,14 +544,17 @@ class OAuthRepository:
             .all()
         )
 
-    def get_user_active_consents(self, user_id: UUID) -> list[OAuthConsent]:
-        """Get all active consents for a user"""
-        return (
+    def get_user_active_consents(
+        self, user_id: UUID, context_profile_id: UUID | None = None
+    ) -> list[OAuthConsent]:
+        """Get all active consents for a user, optionally filtered by context."""
+        query = (
             self.db.query(OAuthConsent)
             .filter(OAuthConsent.user_id == user_id, OAuthConsent.withdrawn_at.is_(None))
-            .order_by(OAuthConsent.granted_at.desc())
-            .all()
         )
+        if context_profile_id is not None:
+            query = query.filter(OAuthConsent.context_profile_id == context_profile_id)
+        return query.order_by(OAuthConsent.granted_at.desc()).all()
 
     def withdraw_all_user_consents(self, user_id: UUID) -> int:
         """Withdraw all active consents for a user. Used during account soft deletion."""
