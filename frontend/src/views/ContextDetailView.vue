@@ -5,6 +5,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore, useProfileStore, useUiStore } from "@/stores";
 import {
   contextService,
+  oauthService,
   profileService,
   verificationService,
   getErrorMessage,
@@ -12,6 +13,7 @@ import {
 import {
   CONTEXT_TYPE_META,
   type ContextProfileResponse,
+  type OAuthConsent,
   type ResolvedProfileResponse,
   type VerificationDocumentResponse,
 } from "@/types";
@@ -22,6 +24,7 @@ import BaseInput from "@/components/common/BaseInput.vue";
 import BaseModal from "@/components/common/BaseModal.vue";
 import AvatarDisplay from "@/components/common/AvatarDisplay.vue";
 import AvatarUpload from "@/components/profile/AvatarUpload.vue";
+import ConsentCard from "@/components/oauth/ConsentCard.vue";
 import AppBreadcrumb from "@/components/layout/AppBreadcrumb.vue";
 import { DocumentArrowUpIcon } from "@heroicons/vue/24/outline";
 
@@ -42,6 +45,12 @@ const isDeleting = ref(false);
 const isUploadingAvatar = ref(false);
 const error = ref<string | null>(null);
 const showDeleteConfirm = ref(false);
+
+// Connected apps (OAuth consents) state
+const contextConsents = ref<OAuthConsent[]>([]);
+const isLoadingConsents = ref(false);
+const revokeTarget = ref<OAuthConsent | null>(null);
+const isRevoking = ref(false);
 
 const editForm = ref({
   context_name: "",
@@ -139,10 +148,63 @@ async function loadContext() {
     if (ctx.context_type === "legal" || ctx.context_type === "healthcare") {
       loadLinkedDocument();
     }
+
+    // Load connected apps (non-blocking)
+    loadContextConsents();
   } catch (err) {
     error.value = getErrorMessage(err);
   } finally {
     isLoading.value = false;
+  }
+}
+
+async function loadContextConsents(): Promise<void> {
+  if (!authStore.userId) return;
+  isLoadingConsents.value = true;
+  try {
+    contextConsents.value = await oauthService.getContextConsents(
+      authStore.userId,
+      contextId.value,
+    );
+  } catch {
+    // Non-critical: show empty state on failure
+    contextConsents.value = [];
+  } finally {
+    isLoadingConsents.value = false;
+  }
+}
+
+function handleRevokeClick(consent: OAuthConsent): void {
+  revokeTarget.value = consent;
+}
+
+function cancelRevoke(): void {
+  revokeTarget.value = null;
+}
+
+async function confirmRevoke(): Promise<void> {
+  if (!revokeTarget.value) return;
+
+  const target = revokeTarget.value;
+  isRevoking.value = true;
+
+  try {
+    const userId = authStore.userId;
+    if (!userId) throw new Error("User not authenticated");
+    await oauthService.revokeConsent(target.client_id, userId);
+    revokeTarget.value = null;
+    uiStore.addNotification({
+      type: "success",
+      message: t("oauth.revokeSuccess", { client: target.client_name }),
+    });
+    await loadContextConsents();
+  } catch (err) {
+    uiStore.addNotification({
+      type: "error",
+      message: getErrorMessage(err),
+    });
+  } finally {
+    isRevoking.value = false;
   }
 }
 
@@ -961,13 +1023,30 @@ function formatFileSize(bytes: number): string {
 
             </BaseCard>
 
-            <!-- Connected Apps (Placeholder) -->
+            <!-- Connected Apps -->
             <BaseCard>
               <template #header>
-                <h2 class="card-heading">Connected Apps</h2>
+                <h2 class="card-heading">{{ t("oauth.connectedApps") }}</h2>
               </template>
-              <div class="connected-empty">
-                No applications connected to this context.
+
+              <div v-if="isLoadingConsents" class="connected-loading">
+                <div class="spinner spinner-sm"></div>
+              </div>
+
+              <div
+                v-else-if="contextConsents.length === 0"
+                class="connected-empty"
+              >
+                {{ t("oauth.noConnectedApps") }}
+              </div>
+
+              <div v-else class="connected-list">
+                <ConsentCard
+                  v-for="consent in contextConsents"
+                  :key="consent.client_id"
+                  :consent="consent"
+                  @revoke="handleRevokeClick"
+                />
               </div>
             </BaseCard>
 
@@ -1026,6 +1105,36 @@ function formatFileSize(bytes: number): string {
               @click="deleteContext"
             >
               {{ t("common.delete") }}
+            </BaseButton>
+          </div>
+        </template>
+      </BaseModal>
+
+      <!-- Revoke Consent Confirmation Modal -->
+      <BaseModal
+        :isOpen="!!revokeTarget"
+        :title="t('oauth.revokeConfirmTitle')"
+        @close="cancelRevoke"
+      >
+        <p class="modal-message">
+          {{
+            t("oauth.revokeConfirmMessage", {
+              client: revokeTarget?.client_name,
+            })
+          }}
+        </p>
+
+        <template #footer>
+          <div class="modal-actions">
+            <BaseButton variant="ghost" @click="cancelRevoke">
+              {{ t("common.cancel") }}
+            </BaseButton>
+            <BaseButton
+              variant="danger"
+              :loading="isRevoking"
+              @click="confirmRevoke"
+            >
+              {{ t("oauth.revokeAccess") }}
             </BaseButton>
           </div>
         </template>
@@ -1335,11 +1444,23 @@ function formatFileSize(bytes: number): string {
 }
 
 /* Sidebar - connected apps */
+.connected-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-4) 0;
+}
+
 .connected-empty {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   text-align: center;
   padding: var(--spacing-4) 0;
+}
+
+.connected-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
 }
 
 /* Sidebar - inheritance legend */

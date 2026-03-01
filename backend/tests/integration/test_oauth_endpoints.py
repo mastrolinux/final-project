@@ -487,6 +487,79 @@ class TestConsentManagement:
         # May return 401 (unauthorized) or 422 (missing user context)
         assert response.status_code in [401, 422]
 
+    def test_list_consents_filtered_by_context_id(
+        self, client: TestClient, db_session: Session, sample_profile, sample_oauth_client
+    ):
+        """Test that context_id query param filters consents to the given context."""
+        ctx = ContextProfile(
+            user_id=sample_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work",
+            is_active=True,
+        )
+        db_session.add(ctx)
+        db_session.flush()
+
+        # Consent bound to context
+        bound = OAuthConsent(
+            user_id=sample_profile.user_id,
+            client_id=sample_oauth_client.client_id,
+            granted_scopes=["profile:read:basic"],
+            consent_method="explicit",
+            context_profile_id=ctx.id,
+        )
+        # Another client with no context binding
+        other_client = OAuthClient(
+            client_id="other-consent-client",
+            client_name="Other Client",
+            redirect_uris=["https://other.example.com/cb"],
+            is_active=True,
+        )
+        db_session.add(other_client)
+        db_session.flush()
+
+        unbound = OAuthConsent(
+            user_id=sample_profile.user_id,
+            client_id=other_client.client_id,
+            granted_scopes=["email"],
+            consent_method="explicit",
+        )
+        db_session.add_all([bound, unbound])
+        db_session.commit()
+
+        # With context_id filter: only the bound consent
+        response = client.get(
+            "/api/v1/oauth/consents",
+            params={"user_id": str(sample_profile.user_id), "context_id": str(ctx.id)},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["consents"][0]["client_id"] == sample_oauth_client.client_id
+
+        # Without context_id: both consents
+        response_all = client.get(
+            "/api/v1/oauth/consents",
+            params={"user_id": str(sample_profile.user_id)},
+        )
+        assert response_all.status_code == 200
+        assert response_all.json()["total"] == 2
+
+    def test_list_consents_non_matching_context_returns_empty(
+        self, client: TestClient, db_session: Session, sample_profile, sample_consent
+    ):
+        """Test that a non-matching context_id returns an empty list."""
+        from uuid import uuid4
+
+        response = client.get(
+            "/api/v1/oauth/consents",
+            params={"user_id": str(sample_profile.user_id), "context_id": str(uuid4())},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["consents"] == []
+
 
 class TestUserInfoEndpoint:
     """Test OIDC UserInfo endpoint."""
