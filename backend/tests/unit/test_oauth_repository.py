@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy.orm import Session
 
+from src.models.context import ContextProfile, ContextType
 from src.models.oauth import (
     AccessLevel,
     OAuthAccessToken,
@@ -12,7 +13,6 @@ from src.models.oauth import (
     OAuthScope,
     TokenEndpointAuthMethod,
 )
-from src.models.context import ContextProfile, ContextType
 from src.models.profile import AccountType, BaseProfile
 from src.repositories.oauth_repository import OAuthRepository
 
