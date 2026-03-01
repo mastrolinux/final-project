@@ -3,7 +3,7 @@ title: "Identity and Profile Management API"
 subtitle: "Draft Report"
 author: "Luca Cipriani"
 
-date: 2026-02-04
+date: 2026-03-01
 bibliography: identity-management-background.bib
 csl: quarto_files/ieee.csl
 format:
@@ -46,7 +46,7 @@ Modern identity systems get authentication right but identity wrong. They can ve
 
 This project implements a context-aware identity and profile management API that addresses a fundamental architectural gap in contemporary identity systems. The system treats identity as contextual, culturally diverse, and user-controlled rather than singular, Western-centric, and administratively fixed.
 
-The implementation follows the Web API Development project template "Identity and profile management API" [@cipriani2025pitch], focusing on RESTful API design, secure authentication and authorization, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
+The implementation follows project template 7.1, "Identity and profile management API," from CM3035 Advanced Web Design [@cipriani2025pitch]. The template focuses on RESTful API design, secure authentication and authorization, database modeling for complex domain requirements, and third-party integration via OAuth 2.1. The final deliverable consists of a fully functional backend API with a demonstration frontend deployed to production infrastructure.
 
 ## Problem Motivation
 
@@ -68,7 +68,7 @@ The measurable impact is substantial. 90% of enterprises experienced identity-re
 
 ## Project Scope
 
-The scope includes multi-context identity profile management with an inheritance engine, an OAuth 2.1 authorization server with mandatory PKCE, GDPR-inspired privacy features including data export and deletion with 30-day grace periods, multilingual name support accommodating global conventions via JSONB storage, comprehensive audit logging for transparency and accountability, profile picture management with context-specific overrides, and identity document upload for account verification enabling access to legal and healthcare contexts.
+The scope includes multi-context identity profile management with an inheritance engine, an OAuth 2.1 authorization server with mandatory PKCE, GDPR-inspired privacy features including data export and deletion with 30-day grace periods, multilingual name support accommodating global conventions via JSONB storage, comprehensive audit logging for transparency and accountability, profile picture management with context-specific overrides, identity document upload for account verification enabling access to legal and healthcare contexts, and a CI/CD pipeline with static analysis enforcing code quality and security standards.
 
 Explicitly excluded from scope are full legal GDPR/CCPA compliance certification (which requires legal counsel and organizational governance beyond academic scope), non-human identity management for service accounts and API keys, blockchain-based decentralized identity solutions, and biometric authentication mechanisms. An earlier iteration of the project included a guardian relationship system for managing identities of minors and dependents. Tutor feedback on the preliminary submission [@cipriani2026preliminary] identified this subsystem as disproportionately complex relative to the project's core contribution, and it was removed from scope to allow deeper treatment of the context-aware identity and OAuth features that constitute the primary research focus.
 
@@ -94,7 +94,7 @@ The fundamental assumption underlying most identity systems, that names consist 
 
 Patrick McKenzie's influential 2010 blog post "Falsehoods Programmers Believe About Names" [@mckenzie2010falsehoods] catalogs over 40 incorrect assumptions that pervade identity system design. Among these falsehoods are the beliefs that people have exactly one canonical name, that names fit within a reasonable length, that names can be represented in ASCII characters, and that names remain constant throughout a person's life. McKenzie concludes that he has never encountered a computer system that handles names properly and doubts one exists anywhere.
 
-While this source is a blog post, its extensive citation in technical literature over fourteen years and alignment with subsequent standards work establishes credibility for identifying oversimplified assumptions in identity system design.
+Despite its informal origin, fourteen years of extensive citation in technical literature and alignment with subsequent W3C standards work establish this source as credible documentation of oversimplified assumptions in identity system design.
 
 ### Standards-Based Guidance
 
@@ -231,29 +231,41 @@ graph TD
     subgraph PL["Presentation Layer"]
         IE[Identity Endpoints]
         OE[OAuth Endpoints]
+        PE[Privacy Endpoints]
+        VE[Verification Endpoints]
     end
 
     subgraph AL["Application Layer"]
         PS[Profile Service]
-        OS[OAuth Service]
         CS[Context Service]
         AS[Auth Service]
+        OS[OAuth Service]
+        PRS[Privacy Service]
+        VS[Verification Service]
+        AUS[Audit Service]
     end
 
     subgraph DL["Domain Layer"]
         IA[Identity Aggregate]
         CA[Context Aggregate]
+        OA[OAuth Aggregate]
+        VA[Verification Aggregate]
     end
 
     subgraph DAL["Data Access Layer"]
         PR[Profile Repository]
-        OR[OAuth Repository]
         CR[Context Repository]
+        OR[OAuth Repository]
+        AR[Auth Repository]
+        AUR[Audit Repository]
+        VR[Verification Repository]
     end
 
     subgraph IL["Infrastructure Layer"]
         DB[(PostgreSQL)]
-        CACHE[(Redis Cache)]
+        CACHE[(Redis)]
+        STORE[(Supabase Storage)]
+        CELERY[Celery Workers]
     end
 
     PL --> AL
@@ -262,7 +274,7 @@ graph TD
     DAL --> IL
 ```
 
-The domain model comprises five aggregates. BaseProfile contains account type, contact information, and language preferences. IdentityNames stores multilingual JSONB with type indicators, deprecation flags, and visibility controls. ContextProfiles enable context-specific overrides inheriting from base profiles. OAuthClients and OAuthGrants handle registration, authorizations, and scopes. AuditLog provides immutable operation records. All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention periods.
+The domain model comprises six aggregates. BaseProfile contains account type, contact information, and language preferences. IdentityNames stores multilingual JSONB with type indicators, deprecation flags, and visibility controls. ContextProfiles enable context-specific overrides inheriting from base profiles. OAuthClients and OAuthGrants handle registration, authorizations, and scopes. VerificationDocuments manage encrypted identity document uploads with status tracking (pending, under review, verified, rejected, expired) and context linking. AuditLog provides immutable operation records. All entities implement temporal awareness (`valid_from`, `valid_to`) for point-in-time queries and soft deletion (`deleted_at`) preserving data during retention periods.
 
 ## Data Model Philosophy
 
@@ -286,6 +298,8 @@ Multilingual name storage using JSONB derives from W3C [@w3c2023personal] and Un
 
 Deadname protection implements privacy rights (GDPR Article 16 [@gdpr2016]) and human dignity requirements [@haimson2016authenticself]. Deprecated names use `is_deprecated` and `visibility_level` flags, automatically suppressing in user-facing contexts while maintaining administrative records.
 
+Identity verification bridges the gap between pseudonymous participation and access to sensitive contexts. Users upload identity documents (passport, national ID) that are encrypted at rest using Fernet symmetric encryption, then linked to specific context profiles. An administrative review workflow transitions documents through status states: pending, under review, verified, rejected, or expired. Verified documents grant context access to legal and healthcare context types that would otherwise be restricted. Document expiry dates trigger automated context deactivation via scheduled background tasks (Celery Beat), ensuring that expired documents cannot sustain access to sensitive contexts. This design separates verification state from account state, allowing a single user to hold verified contexts alongside pseudonymous ones without cross-contamination.
+
 OAuth third-party access illustrates data flow. Applications redirect to authorization endpoints with scopes and PKCE challenges. Users view consent screens showing exactly what data will be shared. The system generates authorization codes bound to context profiles. Third parties exchange codes for tokens via PKCE code verifiers. Access tokens encode scopes and context identifiers. API requests validate tokens and filter responses to permitted fields within authorized contexts, ensuring explicit consent per application-context combination.
 
 ## Security Architecture
@@ -298,9 +312,9 @@ Defense in depth implements authentication validation, role-based access control
 
 The backend implementation uses Python 3.12 with FastAPI, selected for async support, automatic OpenAPI documentation generation, and Pydantic integration for request validation. PostgreSQL 15 via Supabase provides relational storage with Row-Level Security policies, JSONB support for flexible schema elements, and temporal query capabilities. Redis serves as the caching layer for session storage, rate limiting counters, and frequently accessed profile data with configurable TTL values.
 
-Authentication uses custom JWT implementation with Argon2id password hashing, providing full control over token lifecycle and claims structure. The OAuth 2.1 authorization server implements the authorization code flow with mandatory PKCE. Social authentication operates in a hybrid mode, leveraging Supabase OAuth provider configuration while maintaining user data in custom tables with custom-issued tokens.
+Authentication uses custom JWT implementation with Argon2id password hashing, providing full control over token lifecycle and claims structure. The OAuth 2.1 authorization server implements the authorization code flow with mandatory PKCE. Social authentication uses a native OAuth client via authlib, maintaining user data in custom tables with custom-issued tokens rather than delegating session management to an external provider.
 
-Testing uses pytest with pytest-cov targeting 80% minimum coverage. Static analysis tools (mypy, ruff, bandit) and GitHub Actions CI/CD pipeline are planned for Phase 7. Deployment targets Render.com and Supabase.
+Testing uses pytest with pytest-cov targeting 80% minimum coverage. Static analysis enforces code quality through three tools integrated into a GitHub Actions CI/CD pipeline: mypy for type checking, ruff for linting and formatting, and bandit for security vulnerability scanning at medium severity. Deployment targets Render.com and Supabase.
 
 ## Comparison with Existing Solutions
 
@@ -337,18 +351,18 @@ flowchart TB
 
 ## Overview
 
-The implementation comprises approximately 10,600 lines of Python source code across 43 backend modules, approximately 9,900 lines of Vue.js and TypeScript across the frontend application, and 8,500 lines of test code, supported by 378 automated tests achieving 85% code coverage. Development followed test-driven methodology, with tests written before implementation to ensure coverage, provide executable documentation, and enable safe refactoring.
+The implementation comprises approximately 14,600 lines of Python source code across 72 backend modules, approximately 25,200 lines of Vue.js and TypeScript across 115 frontend files, and 16,900 lines of test code across 46 test modules, supported by 751 automated tests achieving 85% code coverage. The database schema spans 19 migration files. Development followed test-driven methodology, with tests written before implementation to ensure coverage, provide executable documentation, and enable safe refactoring. A GitHub Actions CI/CD pipeline enforces lint, type, security, and test quality gates on every push and pull request.
 
 
 ## Project Management
 
-The implementation is organized into completed phases: authentication and security (Phase 1), context profiles with inheritance (Phase 2), and OAuth 2.1 authorization server (Phase 3). Frontend development (Phase 5) began before Phase 4 completion because the consent flow UI was required to validate OAuth integration end-to-end. Privacy features (Phase 4), including audit logging, profile picture upload, and identity document verification, are being completed concurrently with frontend work.
+The implementation is organized into phases: authentication and security (Phase 1), context profiles with inheritance (Phase 2), OAuth 2.1 authorization server (Phase 3), privacy features (Phase 4), and frontend application (Phase 5). Phases 1 through 4 are complete, and Phase 5 is in progress. Frontend development began before Phase 4 completion because the consent flow UI was required to validate OAuth integration end-to-end. Phase 4 features, including audit logging, profile picture upload, identity document verification with admin review, and automated document expiry, were completed concurrently with frontend work.
 
 Development is managed through Linear with twelve milestones from initial pitch through final report. Each task follows user story format with acceptance criteria ensuring traceability between requirements and implementation.
 
-![Linear milestones showing project phases. Phases 1-3 complete, Phase 5 in progress.](architecture/images/plan-phases.jpg){#fig-plan-phases width=65%}
+![Linear milestones showing project phases with progress tracking. Phases 1-5 complete, Phase 6 in progress. 72 tasks scoped, 50 completed as of March 2026.](architecture/images/plan-milestones.png){#fig-plan-milestones width=85%}
 
-![Progress tracking: 63 tasks total, 24 completed as of February 2026.](architecture/images/plan-progress.jpg){#fig-plan-progress width=80%}
+![Phase 6 deployment milestone showing 11 tasks including CI/CD pipeline, production deployment, SSL/TLS setup, and monitoring configuration.](architecture/images/milestone-issues.png){#fig-milestone-issues width=85%}
 
 \newpage
 
@@ -529,7 +543,7 @@ Email format validation follows RFC 5322 specifications, rejecting malformed add
 
 ## Database Schema and Migrations
 
-The database schema is managed through Supabase migrations, with 8 migration files tracking schema evolution from initial tables through OAuth support. Each migration is idempotent and tested locally before deployment. The schema implements several PostgreSQL-specific features that would be difficult to achieve with ORM-only approaches.
+The database schema is managed through Supabase migrations, with 19 migration files tracking schema evolution from initial tables through OAuth support, verification documents, and audit logging. Each migration is idempotent and tested locally before deployment. The schema implements several PostgreSQL-specific features that would be difficult to achieve with ORM-only approaches.
 
 Row-Level Security policies provide defense-in-depth authorization at the database level. Even if application code contains authorization bugs, RLS policies prevent cross-user data access:
 
@@ -543,13 +557,72 @@ CREATE POLICY "Users can create own contexts" ON context_profiles
 
 The schema uses PostgreSQL enums for constrained values (account_type, context_type, name_type) providing both type safety and storage efficiency compared to string columns. JSONB columns store multilingual name data with GIN indexes enabling efficient queries like "find all users with a name containing 'Chen' in any language." Composite indexes on (user_id, context_type, deleted_at) support the common query pattern of retrieving active contexts for a user.
 
-Temporal columns (valid_from, valid_to) on context profiles enable point-in-time queries. The soft deletion pattern (deleted_at timestamp) preserves data during the 30-day retention period while excluding deleted records from normal queries via default WHERE clauses in repository methods.
+Temporal columns (valid_from, valid_to) on context profiles enable point-in-time queries. The soft deletion pattern (deleted_at timestamp) preserves data during the 30-day retention period while excluding deleted records from normal queries via default WHERE clauses in repository methods. An administrative endpoint enables permanent purge of accounts whose 30-day retention window has elapsed, satisfying GDPR Article 17 erasure requirements while preventing premature data loss.
+
+## Identity Verification Workflow
+
+The verification system enables users to prove their identity for access to sensitive context types (legal, healthcare) without requiring all accounts to undergo verification. The workflow proceeds through four stages: document upload with validation, encrypted storage, context linking, and administrative review.
+
+Document upload validates file integrity through magic-byte detection, rejecting files whose content does not match the claimed MIME type. Accepted formats (PDF, JPEG, PNG) are limited to 10 MB. After validation, documents are encrypted using Fernet symmetric encryption before storage in Supabase Storage, ensuring that even direct storage access cannot expose document contents without the encryption key.
+
+```python
+def upload_document(
+    self, user_id: UUID, file_data: bytes, filename: str,
+    claimed_content_type: str, document_type: DocumentType,
+    document_expiry_date: date | None = None,
+) -> VerificationDocument:
+    profile = self.profile_repo.get_profile_by_id(user_id)
+    detected_content_type = validate_document(file_data, claimed_content_type)
+    encrypted_data = self.encryption.encrypt(file_data)
+    storage_path = f"{user_id}/{uuid4()}/{filename}"
+    self.storage.upload(storage_path, encrypted_data, "application/octet-stream")
+    # Create database record with status=pending...
+```
+
+Encrypted documents are stored in a private Supabase Storage bucket (`verification-documents`) under the path `{user_id}/{blob_id}/{filename}`. The bucket disallows public URLs, so document retrieval requires authenticated API calls that decrypt the content in memory. The content type is stored as `application/octet-stream` regardless of the original format, preventing metadata leakage about the encrypted payload.
+
+The data model connects documents to context profiles through a direct foreign key (`context_profiles.document_id` referencing `verification_documents.id`). A single document can be linked to multiple contexts, allowing a passport to verify both legal and healthcare contexts simultaneously. Context types `legal` and `healthcare` require verification before activation; all other types function without it. When a document is linked to a context, the context's verification status transitions to "pending" and the context becomes inactive until an administrator approves it. Replacing an already-verified document resets the context to "pending," requiring re-verification.
+
+Administrative review operates through dedicated endpoints protected by role-based access control. Administrators list contexts pending review, download the decrypted document for inspection, and issue a verdict: approval sets the context's `verification_status` to "verified," activates the context, promotes the user's account type to "verified," and queues a confirmation email; rejection sets a mandatory `rejection_reason` (up to 500 characters) visible to the user. All review actions are recorded in the audit log with the reviewer's identity and timestamp.
+
+A Celery Beat scheduled task runs every eight hours to check for expired verification documents. When a document's `document_expiry_date` has passed, the task deactivates all linked contexts, unlinks the document, marks it as expired, sends email notifications to affected users, and logs audit events. This automation ensures that expired credentials cannot sustain access to sensitive contexts without manual intervention.
+
+```python
+@celery_app.task(name="check_expired_documents", bind=True, max_retries=3)
+def check_expired_documents(self):
+    db = SessionLocal()
+    try:
+        service = VerificationService(
+            verification_repo=VerificationRepository(db),
+            profile_repo=ProfileRepository(db),
+            audit_service=AuditService(AuditRepository(db)),
+            context_repo=ContextRepository(db),
+        )
+        result = service.process_expired_documents()
+        return result
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
+    finally:
+        db.close()
+```
+
+The frontend displays verification status through disambiguated badges on context profiles: "Document required" when no document is linked, "Awaiting review" when a document is pending administrative action, "Verified" upon approval, "Rejected" with reviewer notes, and "Expired" when the document's validity period has elapsed. @fig-expired-document shows the context detail view for a healthcare context with an expired verification document. The right panel displays the linked passport with its "Expired" status badge and offers two recovery paths: uploading a replacement document (with document type selector, expiry date picker, and drag-and-drop file input) or linking an existing valid document from the user's collection.
+
+![Context detail view for a healthcare context with an expired verification document. The "Document expired" badge appears alongside the context type. The right panel shows the expired passport metadata and presents replacement options: uploading a new document or linking an existing one.](architecture/images/expired-document.jpg){#fig-expired-document width=85%}
+
+## Continuous Integration Pipeline
+
+The GitHub Actions CI pipeline enforces four quality gates on every push and pull request, preventing regressions from reaching the main branch. Backend checks execute sequentially: ruff validates code style and import ordering, mypy verifies type annotations, bandit scans for security vulnerabilities at medium severity, and pytest runs the full test suite with coverage reporting. Frontend checks run in parallel: vue-tsc type-checks TypeScript, ESLint enforces style rules, and vitest executes frontend unit tests. The pipeline requires no external services; backend tests use SQLite in-memory databases and mocked Redis connections, enabling fast execution in CI without infrastructure dependencies.
 
 ## Frontend Application
 
 The frontend application is implemented using Vue 3 with TypeScript, Vite for build tooling, and Pinia for state management. The architecture follows a component-based design with separation between views (page-level components), reusable components (buttons, forms, cards), and services (API communication layer). TypeScript provides compile-time type checking that catches API contract mismatches before runtime.
 
-The application includes 15 primary views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit), context management (list, create, detail), OAuth consent flow, and administrative interfaces for OAuth client management. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, and responsive layouts adapting to mobile, tablet, and desktop viewports.
+The application includes views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit, avatar upload), context management (list, create, detail with verification badges), OAuth consent flow, identity document upload with drag-and-drop, and administrative interfaces for OAuth client management, verification review, and soft-deleted account purging. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, responsive layouts, and internationalization support for English and Italian locales.
+
+@fig-vue-graph shows the component dependency graph extracted from the Vue.js application source. Blue nodes represent views (page-level route components), while green nodes represent shared components and services. The graph reveals the hub-and-spoke topology characteristic of well-structured single-page applications: the API service layer acts as a central hub connecting views to backend endpoints, while reusable UI components (buttons, modals, form elements) are shared across multiple views without circular dependencies. View-level components such as ProfileView, ContextDetailView, and OAuthConsentView depend on both the API service and shared UI components but do not depend on each other, confirming that the routing architecture enforces separation of concerns between feature domains.
+
+![Vue.js component dependency graph showing the frontend application architecture. Blue nodes represent views (route-level pages), green nodes represent shared components and services. The hub-and-spoke topology centers on the API service layer, with view components depending on shared UI elements without circular dependencies.](architecture/images/vuejs-graph.png){#fig-vue-graph width=85%}
 
 The OAuth consent screen represents the critical user decision point for third-party data sharing. The interface displays the requesting application name and logo, the scopes requested with human-readable descriptions, and allows the user to select which context profile to share. This context selection implements the project's core value proposition: users control not just whether to share data, but which identity presentation to share with each application.
 
@@ -569,18 +642,24 @@ Web API evaluation differs from machine learning evaluation. Rather than accurac
 
 ## Automated Testing Results
 
-A test suite of 378 automated tests spans unit and integration layers, achieving 85% code coverage. Unit tests (270 tests) verify individual components in isolation using mocked dependencies, while integration tests (108 tests) validate end-to-end functionality using FastAPI's TestClient against a test database.
+A test suite of 751 automated tests spans unit and integration layers, achieving 85% code coverage across 5,455 statements. Tests are organized across 46 test modules covering all major subsystems.
 
 | Test Category | Count | Coverage | Description |
 |--------------|-------|----------|-------------|
-| Context Management | 54 | 91% | Inheritance engine, resolution, endpoints |
-| OAuth System | 117 | 91% | PKCE, tokens, consent, admin |
-| Authentication | 73 | 94% | Registration, login, JWT, lockout |
-| Profile Management | 46 | 75% | CRUD operations, repositories |
+| Context Management | 54 | 93% | Inheritance engine, resolution, endpoints |
+| OAuth System | 117 | 96% | PKCE, tokens, consent, admin |
+| Authentication | 73 | 95% | Registration, login, JWT, lockout |
+| Verification | 82 | 81% | Document upload, review, expiry, linking |
+| Profile Management | 46 | 95% | CRUD operations, repositories |
+| Privacy and Audit | 68 | 99% | Data export, audit trails, soft deletion |
 | Schema Validation | 50 | 96% | Pydantic models, input validation |
 | Infrastructure | 38 | 88% | Database, Redis, configuration |
+| Social Auth | 35 | 98% | OAuth provider integration, token exchange |
+| Encryption | 24 | 96% | Fernet encryption, document security |
+| Admin Operations | 34 | 85% | Client management, user purge, review |
+| Avatar Management | 30 | 96% | Upload, storage, retrieval |
 
-Critical algorithms achieve near-complete coverage. The context service containing the inheritance engine has 92% coverage with tests validating full overrides, partial overrides with null inheritance, deprecated name filtering, temporal validity checking (HTTP 410 for expired contexts), and language fallback chains. The OAuth service has 97% coverage, with PKCE validation tested across valid verifiers, invalid verifiers, malformed challenges, and timing attack resistance.
+Critical algorithms achieve near-complete coverage. The context service containing the inheritance engine has 93% coverage with tests validating full overrides, partial overrides with null inheritance, deprecated name filtering, temporal validity checking (HTTP 410 for expired contexts), and language fallback chains. The OAuth service has 96% coverage, with PKCE validation tested across valid verifiers, invalid verifiers, malformed challenges, and timing attack resistance. The privacy service achieves 99% coverage, validating data export formats and soft deletion with retention enforcement.
 
 ## Functional Correctness Evaluation
 
@@ -644,12 +723,13 @@ Business rules are validated through dedicated test suites:
 | Email format validation (RFC 5322) | 8 | Pass |
 | Temporal validity enforcement | 6 | Pass |
 | Deadname suppression in public contexts | 5 | Pass |
+| Document expiry deactivates linked contexts | 4 | Pass |
+| Avatar not inherited without explicit override | 2 | Pass |
+| Soft deletion with 30-day retention grace period | 6 | Pass |
 
 ## Code Quality Assessment
 
-Code quality is maintained through consistent coding practices and comprehensive test coverage. The repository pattern enables isolated testing, with 100% of service layer tests using mocked repositories. Functions maintain low cyclomatic complexity, with the most complex function (resolve_context_profile) containing straightforward conditional logic for override handling.
-
-Static analysis tooling (mypy, ruff, bandit) and CI/CD pipeline configuration are scheduled for Phase 7 (Testing). These tools will provide automated type checking, linting, and security scanning as part of the continuous integration workflow.
+Code quality is enforced through a GitHub Actions CI/CD pipeline that gates every merge to main. The pipeline executes four backend quality checks: ruff validates code style and import ordering, mypy verifies type annotations across all source modules, bandit scans for security vulnerabilities at medium severity, and pytest runs the full test suite with coverage reporting. Frontend checks run in parallel: vue-tsc for type checking, ESLint for style, and vitest for unit tests. The repository pattern enables isolated testing, with 100% of service layer tests using mocked repositories. Functions maintain low cyclomatic complexity, with the most complex function (resolve_context_profile) containing straightforward conditional logic for override handling.
 
 ## Performance Evaluation
 
@@ -681,7 +761,9 @@ Security testing covers OWASP API Security Top 10 risks:
 
 Password hashing uses Argon2id with OWASP-recommended parameters (memory_cost=65536, time_cost=3, parallelism=4), providing resistance against GPU-based attacks. JWT tokens use HS256 symmetric signing for development, with RS256 asymmetric signing planned for production to prevent token forgery without the private key.
 
-Formal security evaluation including penetration testing and automated vulnerability scanning (OWASP ZAP, Burp Suite) is scheduled for Phase 7. The current evaluation relies on automated test coverage of known attack patterns rather than adversarial testing by external parties. This limitation reflects academic resource constraints rather than architectural deficiency; the security measures implemented follow industry best practices and would support professional penetration testing when resources permit.
+Bandit, a static application security testing (SAST) tool for Python, runs in the CI pipeline at medium severity threshold against all source modules. The scanner detects common vulnerability patterns including hardcoded credentials, insecure use of cryptographic functions, SQL injection risks, and unsafe deserialization. Findings are triaged during development: true positives are fixed before merge, while false positives from test fixtures or intentional patterns receive inline suppression with documented justification. The medium severity threshold balances signal quality against noise, suppressing low-confidence informational findings that would otherwise generate false positives on standard library usage.
+
+The current security evaluation relies on bandit SAST scanning plus automated test coverage of known attack patterns rather than adversarial testing by external parties. This limitation reflects academic resource constraints rather than architectural deficiency; the security measures implemented follow industry best practices and would support professional penetration testing when resources permit.
 
 ## User Research and Validation
 
@@ -699,37 +781,37 @@ The interviews reveal a pattern of users who develop elaborate workarounds (mult
 
 ## Test Coverage Analysis
 
-Beyond aggregate coverage metrics, analysis of coverage distribution reveals intentional testing priorities. Service layer code achieves the highest coverage: auth_service (97%), oauth_service (97%), context_service (92%), and profile_service (46%, with most profile operations tested through integration endpoints). Repository layer code ranges from 85% (oauth_repository) to 98% (profile_repository), with uncovered paths primarily consisting of database connection error handling that cannot be reliably triggered in test environments.
+Beyond aggregate coverage metrics, analysis of coverage distribution reveals intentional testing priorities. Service layer code achieves the highest coverage: auth_service (95%), oauth_service (96%), context_service (93%), privacy_service (99%), social_auth_service (98%), verification_service (81%), and audit_service (100%). Repository layer code ranges from 65% (verification_repository) to 95% (profile_repository), with uncovered paths primarily consisting of database connection error handling that cannot be reliably triggered in test environments.
 
-The coverage gap in API endpoint modules reflects deliberate prioritization. Authentication endpoints achieve 80% coverage and context endpoints 87%, given their user-facing criticality. The OAuth endpoint module achieves 50% coverage because consent flow UI interactions and redirect handling require browser-level testing beyond unit and integration scope. Profile endpoints achieve 38% coverage, with most profile operations validated through service-layer unit tests rather than HTTP-level integration tests.
+The coverage gap in API endpoint modules reflects deliberate prioritization. Authentication endpoints achieve 80% coverage and context endpoints 87%, given their user-facing criticality. The OAuth endpoint module achieves 50% coverage because consent flow UI interactions and redirect handling require browser-level testing beyond unit and integration scope.
 
-Critical code paths maintain 100% coverage through explicit test requirements. The PKCE verification function, context resolution algorithm, and scope-based field filtering each have dedicated test files ensuring all branches are exercised. These tests serve as executable specification, documenting expected behavior for edge cases that prose documentation might miss.
+Critical code paths maintain 100% coverage through explicit test requirements. The PKCE verification function, context resolution algorithm, scope-based field filtering, and audit hash chain verification each have dedicated test files ensuring all branches are exercised. These tests serve as executable specification, documenting expected behavior for edge cases that prose documentation might miss.
 
 ## Critical Analysis Against Project Objectives
 
-Seven objectives were defined in @sec-introduction. Evaluation evidence supports achievement of four, with three remaining incomplete at the draft stage.
+Seven objectives were defined in @sec-introduction. Evaluation evidence supports achievement of six, with one, formal usability testing, remaining for Phase 7.
 
-Multi-context identity profile management is fully implemented and validated. The inheritance engine resolves context profiles in O(n) time with 92% test coverage, and integration tests confirm context isolation across all six context types. The four personas from the Design section are each addressed: the psychiatrist's context separation is validated by the professional-vs-social isolation test, the multilingual user's needs are met by the four-tier language fallback chain, the transgender individual's safety is protected by deadname suppression with 5 dedicated tests, and the career transitioner's temporal identity is supported by validity period enforcement returning HTTP 410 for expired contexts.
+Multi-context identity profile management is fully implemented and validated. The inheritance engine resolves context profiles in O(n) time with 93% test coverage, and integration tests confirm context isolation across all six context types. The four personas from the Design section are each addressed: the psychiatrist's context separation is validated by the professional-vs-social isolation test, the multilingual user's needs are met by the four-tier language fallback chain, the transgender individual's safety is protected by deadname suppression with 5 dedicated tests, and the career transitioner's temporal identity is supported by validity period enforcement returning HTTP 410 for expired contexts.
 
 The OAuth 2.1 authorization server meets its stated objective. External validation via the OAuth 2.0 Debugger confirms RFC 6749 compliance beyond internal test coverage. Mandatory PKCE, refresh token rotation, and scope-based field filtering operate as specified. Context-aware token binding, the project's extension to standard OAuth, enables per-application identity presentation that distinguishes this system from existing solutions evaluated in @tbl-comparison.
 
 Multilingual name support accommodates all naming conventions identified in the literature review, including Chinese family-first ordering, Arabic multi-component names, Indonesian mononyms, and Spanish double surnames, without schema modifications. This validates the JSONB storage design derived from W3C recommendations [@w3c2023personal].
 
-Three objectives remain incomplete. GDPR-inspired privacy features (data export, soft deletion endpoints) are architecturally supported through the temporal schema and soft-delete patterns but lack dedicated API endpoints. Audit logging, profile picture management, and identity document upload are scheduled for Phase 4 completion. These gaps reflect the phased development approach rather than architectural limitations; the data model already includes the columns and constraints required for implementation.
+GDPR-inspired privacy features are now operational. Data export (GDPR Article 15) aggregates profile data, identity names, context profiles, authentication metadata, and OAuth consents into a structured JSON response, excluding sensitive fields such as password hashes. Soft deletion (Article 17) implements a 30-day grace period with account restoration via email confirmation, followed by permanent purge of expired accounts through an administrative endpoint. Audit logging records all operations with SHA-256 hash chain integrity verification, legal basis tracking, and immutable storage. Identity document verification with encrypted storage, administrative review, and automated expiry completes the Phase 4 objectives.
 
 ## Limitations and Areas for Improvement
 
-The evaluation identified several limitations requiring attention in future phases.
+The evaluation identified several limitations requiring attention before final submission.
 
-Performance testing lacks load testing under concurrent users. While individual request latency meets targets, behavior under 100+ concurrent requests remains unvalidated. Phase 7 will conduct load testing using Locust or k6.
+Performance testing lacks load testing under concurrent users. While individual request latency meets targets, behavior under 100+ concurrent requests remains unvalidated. Load testing using Locust or k6 will characterize throughput limits and identify bottlenecks under sustained load.
 
-Quantitative usability testing has not yet been conducted. While qualitative user research (semi-structured interviews with four participants) validated the core motivation and informed design decisions, the System Usability Scale (SUS) evaluation planned for Phase 7 will assess whether the OAuth consent flow and context management interfaces are comprehensible to non-technical users across a larger sample.
+Quantitative usability testing has not yet been conducted. Qualitative user research (semi-structured interviews with four participants) validated the core motivation and informed design decisions, but the System Usability Scale (SUS) evaluation will assess whether the OAuth consent flow and context management interfaces are comprehensible to non-technical users across a larger sample. This remains the most significant gap in the evaluation.
 
-Security testing is automated but does not include penetration testing by external parties. The academic context limits access to professional security auditors, though the OWASP-based test suite provides reasonable coverage.
+Security testing is automated through the CI pipeline (bandit at medium severity, OWASP-aligned test suite) but does not include penetration testing by external parties. The academic context limits access to professional security auditors.
 
-Phase 4 privacy features remain in the backlog, including audit logging, profile picture upload with Supabase Storage, and identity document verification for legal/healthcare context access. Implementation is scheduled for completion before deployment.
+The OAuth 2.1 authorization server functions correctly for authorization code flows with PKCE but does not yet implement full OpenID Connect. JWT signing uses HS256 (symmetric), preventing external relying parties from verifying tokens without the shared secret. A gap analysis against Cloudflare Zero Trust OIDC integration identified three missing components: asymmetric signing (RS256) with a JWKS endpoint for public key distribution, ID token issuance when the `openid` scope is requested, and an OIDC discovery document at `/.well-known/openid-configuration`. The existing metadata endpoint also advertises RS256 support inaccurately. @fig-cloudflare-oidc shows the Cloudflare Zero Trust configuration form for adding an OpenID Connect identity provider, illustrating the concrete fields the system must serve: App ID, Client secret, authorization URL, token URL, and certificate URL (JWKS). The PKCE toggle confirms compatibility with the existing S256 challenge method. These gaps do not affect the system's core identity management functionality but limit federation with external identity-aware services.
 
-The remaining development timeline presents a completion risk. Phases 4 through 7 span privacy features, frontend completion, deployment, and testing within a constrained academic schedule. If timeline pressure requires scope reduction, certain features may be simplified rather than fully implemented. Social authentication, for instance, currently relies on Supabase's built-in OAuth provider configuration rather than a custom implementation. The final version may retain this delegation model, using Supabase as the social authentication broker while focusing development effort on the context-aware identity features that constitute the project's primary contribution. This pragmatic tradeoff preserves the core value proposition, multi-context identity management with culturally-neutral naming, while accepting that infrastructure-level concerns such as social provider integration are adequately served by existing platform capabilities.
+![Cloudflare Zero Trust configuration form for adding an OpenID Connect identity provider. The required fields (App ID, Client secret, Auth URL, Token URL, Certificate URL) map directly to the three missing components identified in the gap analysis. The PKCE toggle confirms compatibility with the system's existing S256 challenge method implementation.](architecture/images/cloudflare-openid-connect.png){#fig-cloudflare-oidc width=65%}
 
 \newpage
 
@@ -739,47 +821,43 @@ The remaining development timeline presents a completion risk. Phases 4 through 
 
 This project set out to address a fundamental architectural gap in contemporary identity systems: the inability to represent human identity as it actually functions across contexts, cultures, and lifecycles. The implementation demonstrates that context-aware identity management is technically feasible while maintaining security, privacy, and usability appropriate for general users.
 
-The inheritance engine successfully implements Goffman's dramaturgical theory in production-ready code. Users can maintain multiple identity presentations (professional, social, legal, healthcare) while retaining a single base profile as the authoritative source of truth. The O(n) resolution algorithm enables real-time context switching without performance degradation. Integration tests validate that context isolation prevents the context collapse documented in social media research.
+The inheritance engine implements Goffman's dramaturgical theory in production-ready code. Users maintain multiple identity presentations (professional, social, legal, healthcare) while retaining a single base profile as the authoritative source of truth. The O(n) resolution algorithm enables real-time context switching without performance degradation. Integration tests validate that context isolation prevents the context collapse documented in social media research.
 
-The OAuth 2.1 authorization server with mandatory PKCE provides secure third-party access with context-aware token binding. Applications receive only the identity data their granted scopes permit, filtered to the specific context the user authorized. Consent management with withdrawal support implements GDPR Article 7(3) requirements, ensuring users maintain control over their data.
+The OAuth 2.1 authorization server with mandatory PKCE provides secure third-party access with context-aware token binding. Applications receive only the identity data their granted scopes permit, filtered to the specific context the user authorized. Consent management with withdrawal support implements GDPR Article 7(3) requirements.
 
-Multilingual name support via JSONB storage accommodates global naming conventions without imposing Western structural assumptions. The system stores Chinese family-first names, Arabic multi-component names, Indonesian mononyms, and Spanish double surnames in a culturally-neutral schema. The four-tier language fallback chain ensures appropriate name display based on requesting application locale.
+Multilingual name support via JSONB storage accommodates global naming conventions without imposing Western structural assumptions. The four-tier language fallback chain ensures appropriate name display based on requesting application locale. GDPR-inspired privacy features, including data export, soft deletion with 30-day retention, audit logging with hash chain integrity, and identity document verification with automated expiry, are fully operational.
 
-The test suite of 378 automated tests with 85% coverage provides confidence in functional correctness. Security measures including Argon2id password hashing, JWT authentication, Row-Level Security policies, and scope-based filtering implement defense in depth against common attack vectors.
+A test suite of 751 automated tests achieving 85% coverage, enforced by a CI/CD pipeline running lint, type, security, and test quality gates, provides confidence in functional correctness. Security measures including Argon2id password hashing, JWT authentication, Row-Level Security policies, and scope-based filtering implement defense in depth against common attack vectors.
 
 ## Broader Implications
 
-This work suggests that the assumed tradeoff between identity flexibility and system security is false. Existing solutions treat singular identity enforcement as a security requirement, but the implementation demonstrates that multi-context identity can coexist with robust authentication and authorization. The key insight is that identity presentation (which facets to show to which audience) is orthogonal to identity verification (proving you are who you claim to be).
+This work suggests that the assumed tradeoff between identity flexibility and system security is false. Existing solutions treat singular identity enforcement as a security requirement, but the implementation demonstrates that multi-context identity can coexist with robust authentication and authorization. Identity presentation (which facets to show to which audience) is orthogonal to identity verification (proving you are who you claim to be).
 
-The architecture validates Goffman's theoretical framework [@goffman1959presentation] in a computational context. The inheritance engine operationalizes dramaturgical theory by enabling users to maintain distinct "front stage" presentations for different audiences while a single "back stage" base profile serves as the authoritative source. This translation of sociological theory into system architecture suggests that identity systems should be designed around how humans actually perform identity rather than forcing humans to adapt to technical constraints.
+The architecture validates Goffman's theoretical framework [@goffman1959presentation] in a computational context. The inheritance engine operationalizes dramaturgical theory by enabling users to maintain distinct "front stage" presentations for different audiences while a single "back stage" base profile serves as the authoritative source. Identity systems should be designed around how humans actually perform identity rather than forcing humans to adapt to technical constraints.
 
-The JSONB-based approach to cultural naming diversity offers a potential pattern for other systems facing internationalization challenges. Rather than attempting to enumerate all possible name structures, the system accepts arbitrary structured data while providing consistent resolution semantics. This schema-flexible approach aligns with W3C recommendations [@w3c2023personal] and could inform identity system design beyond academic contexts.
-
-Privacy-by-design principles can be implemented without sacrificing developer productivity or system performance, as the architecture demonstrates. The combination of application-layer validation, service-layer business rules, and database-level Row-Level Security creates defense in depth that catches errors at multiple levels. Organizations considering similar architectures can adopt these patterns incrementally rather than requiring wholesale system replacement.
+The JSONB-based approach to cultural naming diversity offers a reusable pattern for systems facing internationalization challenges. Rather than enumerating all possible name structures, the system accepts arbitrary structured data while providing consistent resolution semantics. This schema-flexible approach aligns with W3C recommendations [@w3c2023personal] and could inform identity system design beyond academic contexts. The combination of application-layer validation, service-layer business rules, and database-level Row-Level Security creates defense in depth that organizations can adopt incrementally.
 
 ## Limitations
 
-This implementation does not constitute legal GDPR compliance. Full regulatory compliance requires Data Protection Impact Assessments, formal breach notification processes, appointment of Data Protection Officers, and organizational governance beyond academic scope. Organizations deploying similar systems must conduct proper legal review. The privacy-by-design principles demonstrated here provide architectural foundation but do not substitute for the procedural and organizational requirements of regulatory compliance.
+This implementation does not constitute legal GDPR compliance. Full regulatory compliance requires Data Protection Impact Assessments, formal breach notification processes, appointment of Data Protection Officers, and organizational governance beyond academic scope. The privacy-by-design principles demonstrated here provide architectural foundation but do not substitute for procedural and organizational compliance requirements.
 
-The system addresses a subset of identity challenges. Non-human identities (service accounts, API keys), federated identity across organizations, and decentralized identity scenarios remain out of scope. Enterprise deployments typically require integration with existing directory services (Active Directory, LDAP) that this implementation does not address. The OAuth 2.1 authorization server functions as an identity provider but does not implement SAML assertions required by some enterprise applications.
+The system addresses a subset of identity challenges. Non-human identities (service accounts, API keys), federated identity across organizations, and decentralized identity scenarios remain out of scope. Enterprise deployments typically require integration with existing directory services (Active Directory, LDAP) and SAML assertions that this implementation does not address.
 
-Usability evaluation with actual users is pending. While the architecture supports context-aware identity, whether users understand and effectively use these capabilities requires empirical validation through user studies. The preliminary interviews suggest demand for context separation, but four participants do not constitute statistically significant validation. The multi-context model introduces cognitive overhead that may overwhelm users unfamiliar with identity management concepts.
+Usability evaluation with actual users is pending. The preliminary interviews suggest demand for context separation, but four participants do not constitute statistically significant validation. Whether users understand and effectively use multi-context identity requires empirical validation through formal user studies with the System Usability Scale.
 
 ## Future Work
 
-Some extensions merit more investigation across architectural, standards integration, and usability dimensions.
+Context hierarchies would enable inheritance chains beyond base-to-context, allowing professional sub-contexts sharing common credentials. A physician could maintain a general "healthcare" context with sub-contexts for different institutions, each inheriting common credentials while overriding institution-specific contact information.
 
-Context hierarchies would enable inheritance chains beyond base-to-context, allowing professional sub-contexts sharing common credentials. A physician could maintain a general "healthcare" context with sub-contexts for different institutions, each inheriting common credentials while overriding institution-specific contact information. This extension requires careful consideration of inheritance conflict resolution when multiple parent contexts define the same field.
+Full OpenID Connect compliance requires migrating JWT signing from HS256 to RS256 asymmetric keys, implementing a JWKS endpoint (RFC 7517) for public key distribution, issuing ID tokens containing `iss`, `sub`, `aud`, `exp`, `iat`, and `nonce` claims when the `openid` scope is granted, and serving an OIDC discovery document at `/.well-known/openid-configuration`. These changes would enable federation with external relying parties such as Cloudflare Zero Trust without requiring token introspection on every request.
 
-Temporal versioning would create audit trails enabling queries such as "what was this user's professional identity on March 15, 2024?" The current schema includes temporal validity fields but does not implement versioned history. Full temporal support would enable compliance scenarios requiring historical record reconstruction while supporting legitimate identity evolution over time.
+Integration with verifiable credentials (W3C VC Data Model) could enable selective disclosure of verified attributes without revealing full identity. A user could prove they are over 18 without revealing their birthdate, positioning the system within the emerging decentralized identity ecosystem while maintaining centralized usability.
 
-Integration with verifiable credentials (W3C VC Data Model) could enable selective disclosure of verified attributes without revealing full identity. A user could prove they are over 18 without revealing their birthdate, or prove professional credentials without revealing their employer. This integration would position the system within the emerging decentralized identity ecosystem while maintaining the usability advantages of centralized account management.
+Cross-context consistency validation could warn users when information shared across contexts with different privacy levels might enable re-identification. Sharing the same profile photo across professional and pseudonymous contexts creates linkability that undermines privacy guarantees.
 
-Cross-context consistency validation represents an important privacy enhancement. The system could warn users when information shared across contexts with different privacy levels might enable re-identification. For example, sharing the same profile photo across professional and pseudonymous contexts creates linkability that undermines the pseudonymous context's privacy guarantees.
+Adversarial security testing through OWASP ZAP automated scanning would complement the existing bandit SAST coverage with black-box vulnerability detection, testing for injection, authentication bypass, and misconfiguration patterns that static analysis cannot reach.
 
-The consent management system could evolve toward automated policy enforcement, where users define rules that the system enforces without per-request consent screens. A policy such as "never share my phone number with social applications" would automatically reject scope requests violating the rule, reducing consent fatigue while maintaining user control.
-
-Formal usability studies with diverse user populations would validate whether the multi-context model improves user experience or introduces complexity that undermines adoption. The preliminary user research suggests demand for context separation, but systematic evaluation across cultural contexts and technical literacy levels remains necessary.
+Formal usability studies with diverse user populations would validate whether the multi-context model improves user experience or introduces complexity that undermines adoption. Systematic evaluation across cultural contexts and technical literacy levels remains necessary to confirm the design's accessibility beyond the four interview participants.
 
 \newpage
 
@@ -807,7 +885,7 @@ The repository includes:
 
 ## Entity Relationship Diagram
 
-@fig-datamodel presents the domain model as an entity-relationship diagram showing the core aggregates and their relationships. BaseProfile serves as the root aggregate with a one-to-one relationship to AuthUsers for credentials and one-to-many relationships to IdentityNames and ContextProfiles. The OAuth 2.1 subsystem comprises OAuthClients, OAuthConsents, and the token lifecycle tables (authorization codes, access tokens, refresh tokens). ContextProfiles optionally bind to OAuth tokens and consents, enabling context-aware third-party access.
+@fig-datamodel presents the domain model as an entity-relationship diagram showing the core aggregates and their relationships. BaseProfile serves as the root aggregate with a one-to-one relationship to AuthUsers for credentials and one-to-many relationships to IdentityNames, ContextProfiles, and VerificationDocuments. The OAuth 2.1 subsystem comprises OAuthClients, OAuthConsents, and the token lifecycle tables (authorization codes, access tokens, refresh tokens). ContextProfiles optionally bind to OAuth tokens, consents, and verification documents, enabling context-aware third-party access with identity verification enforcement.
 
 ```{mermaid}
 %%| label: fig-datamodel
@@ -817,14 +895,17 @@ erDiagram
     BaseProfile ||--|| AuthUsers : authenticates
     BaseProfile ||--o{ IdentityNames : has
     BaseProfile ||--o{ ContextProfiles : has
+    BaseProfile ||--o{ VerificationDocuments : uploads
     BaseProfile ||--o{ OAuthConsents : grants
     BaseProfile ||--o{ OAuthAccessTokens : owns
+    BaseProfile ||--o{ AuditLog : generates
     OAuthClients ||--o{ OAuthConsents : receives
     OAuthClients ||--o{ OAuthAuthCodes : issues
     OAuthClients ||--o{ OAuthAccessTokens : issues
     OAuthAccessTokens ||--o| OAuthRefreshTokens : rotates
     ContextProfiles ||--o{ OAuthConsents : binds
     ContextProfiles ||--o{ OAuthAccessTokens : scopes
+    ContextProfiles ||--o| VerificationDocuments : verifies
 
     BaseProfile {
         uuid user_id PK
@@ -922,6 +1003,29 @@ erDiagram
         timestamp withdrawn_at
         enum consent_method
     }
+
+    VerificationDocuments {
+        uuid id PK
+        uuid user_id FK
+        enum document_type
+        enum verification_status
+        string storage_path
+        date document_expiry_date
+        timestamp reviewed_at
+        uuid reviewed_by FK
+    }
+
+    AuditLog {
+        uuid id PK
+        uuid user_id FK
+        uuid actor_id FK
+        enum event_type
+        enum operation
+        string resource_type
+        jsonb changes
+        string legal_basis
+        string entry_hash
+    }
 ```
 
 ## JSONB Data Examples
@@ -1008,67 +1112,109 @@ The following output captures the complete test run with per-module coverage ana
 platform linux -- Python 3.12.12, pytest-7.4.4, pluggy-1.6.0
 rootdir: /app
 plugins: anyio-4.12.0, cov-4.1.0, asyncio-0.23.3, Faker-22.0.0
-asyncio: mode=Mode.STRICT
-collected 378 items
+collected 751 items
 
-tests/integration/test_admin_oauth_endpoints.py ...........           [  2%]
-tests/integration/test_auth_endpoints.py .....................        [  8%]
-tests/integration/test_auth_integration.py ......                     [ 10%]
-tests/integration/test_context_endpoints.py ..........................[ 16%]
-tests/integration/test_database_integration.py ..........             [ 19%]
-tests/integration/test_endpoints.py ............                      [ 22%]
-tests/integration/test_oauth_endpoints.py ......................      [ 28%]
-tests/unit/test_admin_dependency.py .....                              [ 29%]
-tests/unit/test_auth_service.py .....................................  [ 42%]
-tests/unit/test_config.py ..........                                   [ 44%]
-tests/unit/test_context_service.py ............................        [ 52%]
-tests/unit/test_database.py ..........                                 [ 54%]
-tests/unit/test_models.py .............                                [ 58%]
-tests/unit/test_oauth_repository.py ..................................[ 67%]
-tests/unit/test_oauth_service.py .....................................  [ 80%]
-tests/unit/test_profile_repository.py .............................    [ 88%]
-tests/unit/test_profile_service.py .....                               [ 89%]
-tests/unit/test_redis_client.py ..................                      [ 94%]
-tests/unit/test_schemas.py ......................                      [100%]
+tests/integration/test_admin_oauth_endpoints.py ...........              [  1%]
+tests/integration/test_admin_user_endpoints.py ........                  [  2%]
+tests/integration/test_admin_verification_endpoints.py .........         [  3%]
+tests/integration/test_audit_endpoints.py ........                       [  4%]
+tests/integration/test_audit_integration.py .......                      [  5%]
+tests/integration/test_auth_endpoints.py .....................           [  8%]
+tests/integration/test_auth_integration.py ...........                   [  9%]
+tests/integration/test_avatar_endpoints.py ...................           [ 12%]
+tests/integration/test_context_endpoints.py .............................[16%]
+tests/integration/test_context_verification_rule.py ...........          [ 18%]
+tests/integration/test_database_integration.py ..........                [ 19%]
+tests/integration/test_endpoints.py ............                         [ 21%]
+tests/integration/test_oauth_endpoints.py ............................   [ 24%]
+tests/integration/test_privacy_endpoints.py ............                 [ 26%]
+tests/integration/test_social_auth_endpoints.py ...........              [ 27%]
+tests/integration/test_soft_deletion_endpoints.py .............          [ 29%]
+tests/integration/test_verification_endpoints.py ................        [ 31%]
+tests/unit/test_admin_dependency.py .....                                [ 32%]
+tests/unit/test_admin_user_purge.py .....                                [ 33%]
+tests/unit/test_audit_model.py ...............                           [ 35%]
+tests/unit/test_audit_repository.py ..........                           [ 36%]
+tests/unit/test_audit_service.py ........                                [ 37%]
+tests/unit/test_auth_service.py .........................................[42%]
+tests/unit/test_avatar_service.py .............                          [ 46%]
+tests/unit/test_config.py ..........                                     [ 47%]
+tests/unit/test_context_service.py .......................................[52%]
+tests/unit/test_database.py ..........                                   [ 54%]
+tests/unit/test_document_validation.py ...............                   [ 56%]
+tests/unit/test_encryption.py .........                                  [ 57%]
+tests/unit/test_expiry_tasks.py ..............                           [ 59%]
+tests/unit/test_image_processing.py ..................                   [ 61%]
+tests/unit/test_models.py .............                                  [ 63%]
+tests/unit/test_oauth_repository.py ..................................   [ 67%]
+tests/unit/test_oauth_service.py ........................................[73%]
+tests/unit/test_privacy_service.py .............                         [ 77%]
+tests/unit/test_profile_repository.py .............................      [ 81%]
+tests/unit/test_profile_service.py ..........                            [ 82%]
+tests/unit/test_redis_client.py ..................                       [ 85%]
+tests/unit/test_schemas.py ......................                        [ 88%]
+tests/unit/test_social_auth_service.py ..............                    [ 89%]
+tests/unit/test_soft_deletion.py ..............................          [ 93%]
+tests/unit/test_verification_service.py .................................[ 98%]
 
 ---------- coverage: platform linux, python 3.12.12-final-0 ----------
-Name                                  Stmts   Miss  Cover  Missing
-------------------------------------------------------------------
-src/api/dependencies/auth.py             40     12    70%  54,65,73,99-105
-src/api/v1/endpoints/admin_oauth.py      67     10    85%  74,234,244-246
-src/api/v1/endpoints/auth.py             92     18    80%  126-134,143-145
-src/api/v1/endpoints/contexts.py         94     12    87%  72,132,270-280
-src/api/v1/endpoints/database.py         41      6    85%  80-81,126-127
-src/api/v1/endpoints/oauth.py           212    105    50%  165,209-210,271
-src/api/v1/endpoints/profiles.py         58     36    38%  29-30,45-54
-src/api/v1/router.py                     17      0   100%
-src/core/config.py                      109      8    93%  129,137,160,179
-src/core/database.py                     84     22    74%  16-19,61,82-84
-src/core/redis_client.py                 82      3    96%  87,236-237
-src/core/security.py                     63      6    90%  217-218,233-236
-src/core/types.py                        14      2    86%  42,46
-src/main.py                              27      3    89%  84,86,89
-src/models/auth.py                       55      5    91%  99,114,116,126
-src/models/context.py                    42     12    71%  90,94,108-119
-src/models/oauth.py                     245     26    89%  39,48,58,63,77
-src/models/profile.py                   106     10    91%  35,43,53,69
-src/repositories/auth_repository.py      87      8    91%  55-60,231
-src/repositories/context_repository.py   47      6    87%  161,191,210-220
-src/repositories/oauth_repository.py    233     36    85%  103,113,125-133
-src/repositories/profile_repository.py   81      2    98%  286,314
-src/schemas/auth.py                      97      5    95%  51,59,104,189
-src/schemas/context.py                   79      6    92%  55,62,107-109
-src/schemas/oauth.py                    261      6    98%  102-104,110-112
-src/schemas/profile.py                   96      5    95%  48,88,208-210
-src/services/auth_service.py            114      3    97%  192,262,381
-src/services/context_service.py         132     10    92%  142,307,312
-src/services/oauth_service.py           216      6    97%  73,80,217,352-357
-src/services/profile_service.py          63     34    46%  55,108-116
-src/tasks/email_tasks.py                 52     40    23%  41-51,70-153
-------------------------------------------------------------------
-TOTAL                                  3031    463    85%
+Name                                          Stmts   Miss  Cover  Missing
+--------------------------------------------------------------------------
+src/api/dependencies/auth.py                     39      6    85%  36,53,70-73
+src/api/v1/endpoints/admin_oauth.py              75     11    85%  75,223,230-232
+src/api/v1/endpoints/admin_users.py              35      0   100%
+src/api/v1/endpoints/admin_verification.py       66     10    85%  86,131,177-178
+src/api/v1/endpoints/audit.py                    20      0   100%
+src/api/v1/endpoints/auth.py                    153     37    76%  126-142,148-150
+src/api/v1/endpoints/avatars.py                  55      3    95%  73-75
+src/api/v1/endpoints/contexts.py                101     12    88%  60,93,175-179
+src/api/v1/endpoints/oauth.py                   233     70    70%  164,206-207,250
+src/api/v1/endpoints/privacy.py                  42      6    86%  77-78,110-116
+src/api/v1/endpoints/profiles.py                 86     37    57%  49-52,61-62,77
+src/api/v1/endpoints/social_auth.py              60      6    90%  74-75,166,171
+src/api/v1/endpoints/verification.py             90     23    74%  123-125,154-155
+src/api/v1/router.py                             19      0   100%
+src/core/config.py                              114      8    93%  107,114,133,152
+src/core/database.py                             85     22    74%  15-17,47,64-66
+src/core/document.py                             30      0   100%
+src/core/encryption.py                           33      7    79%  38-39,47-48
+src/core/image.py                                54      0   100%
+src/core/redis_client.py                         89      6    93%  50,64,89,103
+src/core/security.py                             61      6    90%  137-138,146-149
+src/models/audit.py                              75      1    99%  122
+src/models/auth.py                               71      8    89%  78,92,94,103
+src/models/context.py                            62     15    76%  76,98,110-124
+src/models/oauth.py                             246     25    90%  34,42,50,54
+src/models/profile.py                           111     10    91%  31,39,49,61
+src/models/verification.py                       46      4    91%  101,106,115
+src/repositories/audit_repository.py             55      5    91%  148,150,158
+src/repositories/auth_repository.py             176     18    90%  31-33,128-138
+src/repositories/avatar_repository.py            34      2    94%  51,92
+src/repositories/context_repository.py           72      8    89%  101,119,129-136
+src/repositories/oauth_repository.py            236     27    89%  104,114,118-124
+src/repositories/profile_repository.py           96      5    95%  58,166,184
+src/repositories/verification_repository.py      80     28    65%  111-112,130-138
+src/schemas/auth.py                             126      6    95%  41,49,104,192
+src/schemas/context.py                           85      6    93%  47,56,88-90
+src/schemas/oauth.py                            263      6    98%  83-85,91-93
+src/schemas/privacy.py                           91      0   100%
+src/schemas/profile.py                           98      5    95%  41,81,196-198
+src/schemas/verification.py                      70      1    99%  96
+src/services/audit_service.py                    19      0   100%
+src/services/auth_service.py                    229     12    95%  306,425,516,607
+src/services/avatar_service.py                   81      3    96%  119-120,123
+src/services/context_service.py                 174     12    93%  117,158,204-205
+src/services/oauth_service.py                   238      9    96%  68,75,134,182
+src/services/privacy_service.py                 102      1    99%  323
+src/services/profile_service.py                 105     38    64%  50,92-99,105
+src/services/social_auth_service.py             120      2    98%  161,211
+src/services/verification_service.py            267     52    81%  85-87,93-95,126
+src/tasks/email_tasks.py                        123    103    16%  18-26,32-120
+src/tasks/expiry_tasks.py                        22     22     0%  7-45
+--------------------------------------------------------------------------
+TOTAL                                          5455    812    85%
 
-============================== 378 passed in 5.96s ==============================
+======================= 751 passed, 1 warning in 13.54s ========================
 \end{verbatim}
 \end{footnotesize}
 ```
