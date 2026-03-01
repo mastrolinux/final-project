@@ -49,6 +49,21 @@ export default {
   },
 
   /**
+   * Get consents filtered by context profile.
+   * Returns only consents bound to the given context.
+   */
+  async getContextConsents(
+    userId: string,
+    contextId: string,
+  ): Promise<OAuthConsent[]> {
+    const response = await api.get<{ consents: OAuthConsent[]; total: number }>(
+      "/oauth/consents",
+      { params: { user_id: userId, context_id: contextId } },
+    );
+    return response.data.consents;
+  },
+
+  /**
    * Revoke a specific consent (GDPR Art. 7(3) withdrawal).
    * Revokes all tokens for the user-client pair.
    */
