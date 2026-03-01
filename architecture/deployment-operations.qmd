@@ -86,6 +86,8 @@ jobs:
         run: |
           ruff check src/ tests/
           ruff format --check src/ tests/
+      - name: Security scan with bandit
+        run: bandit -r src/ -c pyproject.toml --severity-level medium -q
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 

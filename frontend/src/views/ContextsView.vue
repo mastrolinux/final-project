@@ -99,11 +99,18 @@ const navigateToDetail = (id: string) => {
               </BaseBadge>
               <div class="badge-group">
                 <BaseBadge
-                  v-if="context.verification_status === 'pending'"
+                  v-if="context.verification_status === 'pending' && !context.has_linked_document"
                   variant="warning"
                   size="sm"
                 >
-                  {{ t("context.verificationPending") }}
+                  {{ t("context.verificationDocumentRequired") }}
+                </BaseBadge>
+                <BaseBadge
+                  v-else-if="context.verification_status === 'pending' && context.has_linked_document"
+                  variant="info"
+                  size="sm"
+                >
+                  {{ t("context.verificationAwaitingReview") }}
                 </BaseBadge>
                 <BaseBadge
                   v-else-if="context.verification_status === 'verified'"

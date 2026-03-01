@@ -325,6 +325,7 @@ Privacy & Compliance
 - **Testing**: pytest, pytest-cov
 - **Type Checking**: mypy
 - **Linting**: ruff (lint + format) [@ruff]
+- **Security Scanning**: bandit (AST-based static analysis)
 - **API Docs**: OpenAPI/Swagger (auto-generated)
 - **Database Migrations**: Supabase CLI
 
