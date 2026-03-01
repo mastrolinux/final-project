@@ -548,9 +548,8 @@ class OAuthRepository:
         self, user_id: UUID, context_profile_id: UUID | None = None
     ) -> list[OAuthConsent]:
         """Get all active consents for a user, optionally filtered by context."""
-        query = (
-            self.db.query(OAuthConsent)
-            .filter(OAuthConsent.user_id == user_id, OAuthConsent.withdrawn_at.is_(None))
+        query = self.db.query(OAuthConsent).filter(
+            OAuthConsent.user_id == user_id, OAuthConsent.withdrawn_at.is_(None)
         )
         if context_profile_id is not None:
             query = query.filter(OAuthConsent.context_profile_id == context_profile_id)
