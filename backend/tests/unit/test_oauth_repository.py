@@ -12,6 +12,7 @@ from src.models.oauth import (
     OAuthScope,
     TokenEndpointAuthMethod,
 )
+from src.models.context import ContextProfile, ContextType
 from src.models.profile import AccountType, BaseProfile
 from src.repositories.oauth_repository import OAuthRepository
 
@@ -709,6 +710,57 @@ class TestConsentOperations:
         result = oauth_repo.get_user_active_consents(sample_profile.user_id)
 
         assert len(result) == 2
+
+    def test_get_user_active_consents_filtered_by_context(
+        self, oauth_repo, db_session, sample_profile
+    ):
+        """Test that context_profile_id filter returns only matching consents."""
+        ctx = ContextProfile(
+            user_id=sample_profile.user_id,
+            context_type=ContextType.professional,
+            context_name="Work",
+        )
+        db_session.add(ctx)
+        db_session.flush()
+
+        client1 = OAuthClient(
+            client_id="ctx-filter-client-1",
+            client_name="Client 1",
+            redirect_uris=["https://example1.com/callback"],
+            is_active=True,
+        )
+        client2 = OAuthClient(
+            client_id="ctx-filter-client-2",
+            client_name="Client 2",
+            redirect_uris=["https://example2.com/callback"],
+            is_active=True,
+        )
+        db_session.add_all([client1, client2])
+        db_session.commit()
+
+        # One consent bound to context, one without
+        oauth_repo.create_consent(
+            user_id=sample_profile.user_id,
+            client_id=client1.client_id,
+            granted_scopes=["profile:read:basic"],
+            context_profile_id=ctx.id,
+        )
+        oauth_repo.create_consent(
+            user_id=sample_profile.user_id,
+            client_id=client2.client_id,
+            granted_scopes=["email"],
+        )
+
+        # Filtered: only the context-bound consent
+        filtered = oauth_repo.get_user_active_consents(
+            sample_profile.user_id, context_profile_id=ctx.id
+        )
+        assert len(filtered) == 1
+        assert filtered[0].client_id == "ctx-filter-client-1"
+
+        # Unfiltered: both consents
+        all_consents = oauth_repo.get_user_active_consents(sample_profile.user_id)
+        assert len(all_consents) == 2
 
     def test_create_consent_updates_existing(self, oauth_repo, sample_profile, sample_client):
         """Test creating consent updates existing consent instead of creating duplicate."""

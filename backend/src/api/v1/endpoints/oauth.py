@@ -674,10 +674,11 @@ def get_userinfo(
 )
 def list_user_consents(
     user_id: UUID = Query(..., description="User ID"),
+    context_id: UUID | None = Query(None, description="Filter by context profile ID"),
     oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     """List all active OAuth consents for a user."""
-    consents = oauth_service.get_user_consents(user_id)
+    consents = oauth_service.get_user_consents(user_id, context_id)
 
     consent_responses = []
     for consent in consents:

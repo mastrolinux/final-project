@@ -976,7 +976,17 @@ class TestConsentManagement:
         result = oauth_service.get_user_consents(user_id)
 
         assert len(result) == 2
-        mock_oauth_repo.get_user_active_consents.assert_called_once_with(user_id)
+        mock_oauth_repo.get_user_active_consents.assert_called_once_with(user_id, None)
+
+    def test_get_user_consents_with_context_filter(self, oauth_service, mock_oauth_repo):
+        """Test that context_profile_id is forwarded to the repository."""
+        user_id = uuid4()
+        context_id = uuid4()
+        mock_oauth_repo.get_user_active_consents.return_value = []
+
+        oauth_service.get_user_consents(user_id, context_profile_id=context_id)
+
+        mock_oauth_repo.get_user_active_consents.assert_called_once_with(user_id, context_id)
 
 
 class TestContextVerificationGuard:

@@ -663,6 +663,8 @@ class OAuthService:
 
         return result
 
-    def get_user_consents(self, user_id: UUID) -> list[OAuthConsent]:
-        """Get all active consents for a user."""
-        return self.oauth_repo.get_user_active_consents(user_id)
+    def get_user_consents(
+        self, user_id: UUID, context_profile_id: UUID | None = None
+    ) -> list[OAuthConsent]:
+        """Get all active consents for a user, optionally filtered by context."""
+        return self.oauth_repo.get_user_active_consents(user_id, context_profile_id)
