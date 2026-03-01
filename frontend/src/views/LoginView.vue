@@ -230,6 +230,9 @@ async function handleSubmit() {
 .divider {
   display: flex;
   align-items: center;
+  gap: var(--spacing-4);
+  height: auto;
+  background-color: transparent;
   margin: var(--spacing-6) 0;
   color: var(--color-gray-500);
   font-size: var(--font-size-sm);
@@ -239,11 +242,10 @@ async function handleSubmit() {
 .divider::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background-color: var(--color-gray-300);
+  border-bottom: 1px solid var(--color-gray-300);
 }
 
 .divider span {
-  padding: 0 var(--spacing-4);
+  white-space: nowrap;
 }
 </style>
