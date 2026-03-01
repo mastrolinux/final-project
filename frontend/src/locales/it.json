@@ -205,7 +205,7 @@
     "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
     "pickFromNames": "Scegli dai tuoi nomi di identit\u00e0",
     "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
-    "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approvera.",
+    "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approver\u00e0",
     "verificationPending": "Verifica in attesa",
     "verificationDocumentRequired": "Documento richiesto",
     "verificationAwaitingReview": "In attesa di revisione",
