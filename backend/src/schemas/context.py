@@ -121,6 +121,7 @@ class ContextProfileResponse(BaseModel):
     avatar_override_thumbnail_url: str | None = None
     is_active: bool
     verification_status: str | None = None
+    has_linked_document: bool = False
     rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime

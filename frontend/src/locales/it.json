@@ -207,6 +207,8 @@
     "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
     "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approvera.",
     "verificationPending": "Verifica in attesa",
+    "verificationDocumentRequired": "Documento richiesto",
+    "verificationAwaitingReview": "In attesa di revisione",
     "verificationVerified": "Verificato",
     "verificationRejected": "Verifica rifiutata",
     "verificationExpired": "Documento scaduto",
@@ -497,7 +499,8 @@
       "pending": "In attesa",
       "under_review": "In revisione",
       "verified": "Verificato",
-      "rejected": "Rifiutato"
+      "rejected": "Rifiutato",
+      "expired": "Scaduto"
     },
     "documentTypes": {
       "passport": "Passaporto",

@@ -223,6 +223,8 @@
     "pseudonymousRestriction": "Note: Pseudonymous accounts cannot create legal or healthcare contexts.",
     "verificationNotice": "This context requires identity verification. After creation, it will remain inactive until you upload a verification document and an administrator approves it.",
     "verificationPending": "Verification pending",
+    "verificationDocumentRequired": "Document required",
+    "verificationAwaitingReview": "Awaiting review",
     "verificationVerified": "Verified",
     "verificationRejected": "Verification rejected",
     "verificationExpired": "Document expired",
@@ -543,7 +545,8 @@
       "pending": "Pending",
       "under_review": "Under Review",
       "verified": "Verified",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "expired": "Expired"
     },
     "documentTypes": {
       "passport": "Passport",
