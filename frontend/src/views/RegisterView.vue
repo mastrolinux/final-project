@@ -255,7 +255,9 @@ async function handleSubmit() {
 .divider {
   display: flex;
   align-items: center;
-  text-align: center;
+  gap: var(--spacing-3);
+  height: auto;
+  background-color: transparent;
   margin: var(--spacing-6) 0;
   color: var(--color-gray-500);
   font-size: var(--font-size-sm);
@@ -270,6 +272,7 @@ async function handleSubmit() {
 
 .divider span {
   padding: 0 var(--spacing-3);
+  white-space: nowrap;
 }
 
 .btn-block {
