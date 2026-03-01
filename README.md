@@ -2,264 +2,117 @@
 
 ![CI](https://github.com/mastrolinux/final-project/actions/workflows/ci.yml/badge.svg)
 
-> **Academic Thesis Project**: A comprehensive demonstration of context-aware digital identity management with independently deployable backend and frontend services.
+> Academic thesis project (CM3070, University of London): a context-aware digital identity management platform with independently deployable backend and frontend services.
 
-## Project Overview
-
-This **monorepo** contains a complete implementation and documentation of an identity management platform that respects cultural diversity, privacy, and context-dependent identity presentation.
-
-### What This Project Solves
+## What This Project Solves
 
 People present themselves differently in different contexts:
 
-- **Professional**: Dr. Sarah Chen, Board-Certified Psychiatrist
-- **Social**: Sarah C., Book lover and photographer
-- **Family**: Mom, wife, weekend adventurer
+- Professional: Dr. Sarah Chen, Board-Certified Psychiatrist
+- Social: Sarah C., Book lover and photographer
+- Family: Mom, wife, weekend adventurer
 
-This system provides secure, privacy oriented infrastructure for managing these multiple identity presentations.
+Current identity systems force a single representation. This platform provides secure, privacy-oriented infrastructure for managing multiple identity presentations across cultural, contextual, and regulatory boundaries.
+
+## Project Status
+
+- Phases 1-4 complete (Auth, Context Profiles, OAuth 2.1, Privacy Features)
+- Phase 5 (Frontend) in progress, Phase 6 (Deployment) next
+- 751 automated tests, 85% coverage
+- 19 database migrations applied
+- CI/CD via GitHub Actions (ruff, mypy, bandit, pytest, vue-tsc, eslint, vitest)
 
 ## Repository Structure
 
 ```
 final-project/
-├── backend/              # FastAPI backend service -> Render.com
-│   ├── src/             # Python source code
-│   ├── tests/           # Test suite (pytest)
-│   ├── supabase/        # Database configuration
-│   ├── Dockerfile       # Container definition
-│   └── README.md        # Backend documentation
-│
-├── frontend/            # Frontend application -> Render.com
-│   ├── src/             # Vue.js/React source (to be implemented)
-│   ├── package.json     # Dependencies
-│   └── README.md        # Frontend documentation
-│
-├── architecture/        # Thesis chapters (Quarto)
-│   ├── original-problem.qmd
-│   ├── overview.qmd
-│   ├── system-context.qmd
-│   ├── component-architecture.qmd
-│   ├── context-resolution.qmd
-│   ├── data-architecture.qmd
-│   ├── security-architecture.qmd
-│   ├── integration-architecture.qmd
-│   ├── deployment-operations.qmd
-│   └── decisions-future.qmd
-│
-├── _quarto.yml         # Thesis configuration
-├── index.qmd           # Thesis introduction
-├── references.bib      # Bibliography (BibTeX)
-├── render.yaml         # Deployment config (both services)
-├── .gitignore          # Git ignore rules
-└── README.md           # This file
+├── backend/              # FastAPI API service
+│   ├── src/              # Python source (72 files, ~14.6K LOC)
+│   ├── tests/            # pytest suite (46 files, ~16.9K LOC)
+│   ├── supabase/         # Migrations and seed data
+│   └── scripts/          # start.sh, stop.sh, reset.sh, status.sh
+├── frontend/             # Vue 3 + TypeScript SPA
+│   ├── src/              # Components, views, services (~25.2K LOC)
+│   └── e2e/              # End-to-end tests
+├── architecture/         # Thesis chapters (Quarto .qmd)
+├── postman/              # API collection and environments
+├── draft-report.qmd      # Final report source
+├── render.yaml           # Render.com deployment config
+└── .github/workflows/    # CI/CD pipelines
 ```
 
 ## Quick Start
 
-### Backend API
+### Backend
 
 ```bash
 cd backend
-./script/start.sh
+cp env.local.template .env
+./scripts/start.sh
 
-# Access:
-# - API: http://localhost:8000
-# - Swagger Docs: http://localhost:8000/docs
-# - Supabase Studio: http://127.0.0.1:54323
+# API: http://localhost:8000/docs
+# Supabase Studio: http://127.0.0.1:54323
+# Mailpit: http://127.0.0.1:54324
 ```
 
-**Details**: See [backend/README.md](backend/README.md)
-
-### Frontend Application
+### Frontend
 
 ```bash
 cd frontend
-npm install
-npm run dev
+npm install && npm run dev
+
+# App: http://localhost:3000
 ```
 
-**Details**: See [frontend/README.md](frontend/README.md)
-
-### Thesis Documentation
+### Thesis
 
 ```bash
-# Preview in browser (auto-reload)
-quarto preview
-
-# Generate PDF
-quarto render --to pdf
-
-# Generate HTML
-quarto render --to html
+quarto preview              # Live preview
+quarto render --to pdf      # Generate PDF
 ```
-
-**Output**: `_book/Identity-and-Profile-Management-API.pdf`
-
-## System Architecture
-
-```
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Frontend  │────────>│   Backend    │────────>│  Supabase   │
-│  (Vue.js)   │  HTTPS  │   (FastAPI)  │  SQL    │ (PostgreSQL)│
-│             │<────────│              │<────────│             │
-└─────────────┘   JSON  └──────────────┘  Data   └─────────────┘
-      │                        │
-      │                        │
-      v                        v
-┌─────────────┐         ┌──────────────┐
-│  Render.com │         │  Render.com  │
-│   Frontend  │         │   Backend    │
-└─────────────┘         └──────────────┘
-```
-
-### Key Features
-
-- **Multi-Context Identity**: Professional, social, family, healthcare contexts
-- **Cultural Neutrality**: No assumptions about Western naming conventions
-- **GDPR Consideration**: attempt to respect Article 15-22 data subject rights
-- **OAuth 2.1**: Third-party integration with scope-based access control
-- **Multilingual**: Store and present names in multiple languages
 
 ## Technology Stack
 
-### Backend
-- **Language**: Python 3.12+
-- **Framework**: FastAPI (async, OpenAPI docs)
-- **Database**: PostgreSQL 15+ via Supabase
-- **Authentication**: Supabase Auth + JWT
-- **Deployment**: Render.com (Docker containers)
-- **Testing**: pytest, pytest-cov (>80% coverage)
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.12, FastAPI, SQLAlchemy |
+| Database | PostgreSQL 15+ (Supabase), Redis |
+| Auth | Custom JWT (HS256) + OAuth 2.1 with PKCE |
+| Frontend | Vue 3, TypeScript, Vite, Pinia |
+| Testing | pytest (backend), vitest (frontend) |
+| Quality | ruff, mypy, bandit, eslint, vue-tsc |
+| Deployment | Render.com, GitHub Actions CI/CD |
+| Thesis | Quarto, LaTeX, BibTeX |
 
-### Frontend (Planned)
-- **Framework**: Vue.js 3 or React
-- **Build Tool**: Vite
-- **Language**: TypeScript
-- **State**: Pinia or Redux
-- **Deployment**: Render.com
-- **Testing**: Vitest, Cypress
+## Key Features
 
-### Thesis
-- **Generator**: Quarto
-- **Format**: Markdown (.qmd)
-- **Bibliography**: BibTeX
-- **Output**: PDF (LaTeX) + HTML
+- Multi-context identity with inheritance engine (O(n) resolution)
+- Cultural neutrality via JSONB multilingual name storage
+- GDPR-inspired privacy: data export, soft deletion, audit logging
+- OAuth 2.1 authorization server with mandatory PKCE
+- Identity document verification with Fernet encryption at rest
+- Automated document expiry via Celery Beat
+- Row-Level Security at the database layer
 
 ## Deployment
 
-### Backend -> Render.com
+Configuration in `render.yaml`. CI runs on every push and pull request; auto-deploy from `main` via GitHub Actions.
 
-**Configuration**: `render.yaml` (root level)
-
-**Deployment**:
-
-- CI on Pull Requests
-- Auto-deploy from `main` branch with GH Actions
-- Environment: Production PostgreSQL (Supabase)
-- Scaling: Auto-scale based on load
-
-**Live URL**: `https://identity.okrbusiness.com`
-
-## Academic Context
-
-**Course**: CM3070 Computer Science Final Project
-**Institution**: University of London
-
-### Evaluation Criteria Alignment
-
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Strong requirements with research | Complete | Architecture documentation |
-| Solid security and privacy (GDPR) | Complete | Security architecture, GDPR design |
-| Data model beyond simplest cases | Complete | Multi-context, multilingual, temporal |
-| Robust, widely applicable API | Complete | RESTful design, OAuth 2.0 |
-| Frontend demonstrating use cases | Complete | Vue.js SPA |
-
-## Development Workflow
-
-### Working on Backend
-
-```bash
-cd backend
-docker compose up -d       # Start services
-docker compose logs -f     # View logs
-docker compose exec api pytest  # Run tests
-# or shortly
-./scripts/start.sh
-```
-
-### Working on Frontend
-
-```bash
-cd frontend
-npm run dev               # Development server
-npm run build            # Production build
-npm run test             # Run tests
-```
-
-### Working on Thesis
-
-```bash
-quarto preview           # Live preview
-quarto render           # Generate PDF/HTML
-```
-
+Live URL: `https://identity.okrbusiness.com`
 
 ## Documentation
 
-### Development
-- [Backend Setup](backend/README.md) - API development
-- [API Docs](http://localhost:8000/docs) - OpenAPI/Swagger
-
-### Architectural And Background
-- [Architecture](architecture/) - Complete system design
-- [Quarto Thesis](index.qmd) - Thesis introduction
-- [References](references.bib) - Bibliography
-
-### Deploy
-- [Deployment](render.yaml) - Service configuration
-- [Github Actions](.github/workflows/)
-
-## Monorepo Benefits
-
-### Why A Monorepo?
-
-- Version Coherence: Frontend, backend, docs always in sync
-- Atomic Changes: Update API + UI + docs in single commit
-- Shared History: See how system evolved together
-- Easier Review: Supervisors see complete project
-- Independent Deploy: Each service deploys separately
-- GitHub Showcase: One repo shows all skills
+- [Backend setup and API guide](backend/README.md)
+- [API reference (Swagger)](http://localhost:8000/docs)
+- [Testing guide](backend/TESTING.md)
+- [Postman collection](postman/README.md)
+- [Architecture chapters](architecture/)
+- [Deployment config](render.yaml)
 
 ## Author
 
-**Luca Cipriani**
-GitHub: [@mastrolinux](https://github.com/mastrolinux)
+Luca Cipriani - [@mastrolinux](https://github.com/mastrolinux)
 
 ## License
 
-This project is submitted as academic coursework.
-It cannot be re-used yet, after my graduation I will release it as Open Source
-
-## Getting Started (New Developers)
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/mastrolinux/final-project.git
-cd final-project
-
-# 2. Start backend
-cd backend
-./scripts/start.sh
-
-# 3. Preview thesis
-cd ..
-quarto preview
-
-# 4. Access services
-# Backend API: http://localhost:8000/docs
-# Frontend Vue.js: http://localhost:3000/
-# Supabase: http://127.0.0.1:54323
-# Mailpit: http://127.0.0.1:54324/
-```
-
-**Note**: This is a monorepo. Backend, frontend, and thesis documentation are all in this single repository for version coherence and easier academic review.
+Submitted as academic coursework. Will be released as open source after graduation.
