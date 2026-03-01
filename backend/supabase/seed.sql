@@ -10,7 +10,58 @@ SET session_replication_role = replica;
 -- contexts without subqueries. All passwords are TestPassword123!
 --
 -- session_replication_role = replica disables triggers and RLS during seeding.
+--
+-- This file is idempotent: it deletes any pre-existing seed rows before
+-- reinserting them, so it can be run multiple times safely.
 -- ============================================================================
+
+
+-- ============================================================================
+-- 0. CLEANUP (reverse dependency order for idempotency)
+-- ============================================================================
+
+DELETE FROM oauth_consents WHERE id IN (
+    'dddddddd-0001-0001-0001-dddddddddddd',
+    'dddddddd-0002-0001-0002-dddddddddddd'
+);
+
+DELETE FROM oauth_clients WHERE client_id IN (
+    'hr-portal', 'social-connect', 'legal-verify',
+    'health-records', 'family-tree', 'custom-app', 'oauth-debugger'
+);
+
+DELETE FROM context_profiles WHERE id IN (
+    'cccccccc-0001-0001-0001-cccccccccccc',
+    'cccccccc-0001-0002-0001-cccccccccccc',
+    'cccccccc-0002-0001-0002-cccccccccccc',
+    'cccccccc-0002-0002-0002-cccccccccccc',
+    'cccccccc-0005-0001-0005-cccccccccccc',
+    'cccccccc-0005-0002-0005-cccccccccccc'
+);
+
+DELETE FROM auth_users WHERE user_id IN (
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222',
+    '33333333-3333-3333-3333-333333333333',
+    '44444444-4444-4444-4444-444444444444',
+    '55555555-5555-5555-5555-555555555555'
+);
+
+DELETE FROM identity_names WHERE identity_id IN (
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222',
+    '33333333-3333-3333-3333-333333333333',
+    '44444444-4444-4444-4444-444444444444',
+    '55555555-5555-5555-5555-555555555555'
+);
+
+DELETE FROM base_profiles WHERE user_id IN (
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222',
+    '33333333-3333-3333-3333-333333333333',
+    '44444444-4444-4444-4444-444444444444',
+    '55555555-5555-5555-5555-555555555555'
+);
 
 
 -- ============================================================================
