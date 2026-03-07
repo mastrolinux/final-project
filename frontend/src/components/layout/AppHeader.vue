@@ -27,8 +27,12 @@ const displayName = computed(
 const adminMenuOpen = ref(false);
 const adminMenuRef = ref<HTMLElement | null>(null);
 
+const settingsMenuOpen = ref(false);
+const settingsMenuRef = ref<HTMLElement | null>(null);
+
 const mobileMenuOpen = ref(false);
 const mobileAdminOpen = ref(false);
+const mobileSettingsOpen = ref(false);
 
 function toggleAdminMenu() {
   adminMenuOpen.value = !adminMenuOpen.value;
@@ -38,16 +42,30 @@ function closeAdminMenu() {
   adminMenuOpen.value = false;
 }
 
+function toggleSettingsMenu() {
+  settingsMenuOpen.value = !settingsMenuOpen.value;
+}
+
+function closeSettingsMenu() {
+  settingsMenuOpen.value = false;
+}
+
+function toggleMobileSettings() {
+  mobileSettingsOpen.value = !mobileSettingsOpen.value;
+}
+
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
   if (!mobileMenuOpen.value) {
     mobileAdminOpen.value = false;
+    mobileSettingsOpen.value = false;
   }
 }
 
 function closeMobileMenu() {
   mobileMenuOpen.value = false;
   mobileAdminOpen.value = false;
+  mobileSettingsOpen.value = false;
 }
 
 function toggleMobileAdmin() {
@@ -60,6 +78,12 @@ function handleClickOutside(event: MouseEvent) {
     !adminMenuRef.value.contains(event.target as Node)
   ) {
     adminMenuOpen.value = false;
+  }
+  if (
+    settingsMenuRef.value &&
+    !settingsMenuRef.value.contains(event.target as Node)
+  ) {
+    settingsMenuOpen.value = false;
   }
 }
 
@@ -115,9 +139,6 @@ async function handleLogout() {
       <router-link to="/contexts" class="nav-link">
         {{ t("nav.contexts") }}
       </router-link>
-      <router-link to="/settings" class="nav-link">
-        {{ t("nav.settings") }}
-      </router-link>
       <router-link
         v-if="authStore.accountType !== 'pseudonymous'"
         to="/documents"
@@ -125,6 +146,45 @@ async function handleLogout() {
       >
         {{ t("nav.documents") }}
       </router-link>
+      <!-- Settings dropdown -->
+      <div ref="settingsMenuRef" class="settings-dropdown">
+        <button
+          class="nav-link settings-trigger"
+          :class="{ 'settings-trigger-open': settingsMenuOpen }"
+          @click="toggleSettingsMenu"
+        >
+          {{ t("nav.settings") }}
+          <ChevronDownIcon
+            class="chevron-icon"
+            :class="{ 'chevron-open': settingsMenuOpen }"
+          />
+        </button>
+        <Transition name="dropdown">
+          <div v-if="settingsMenuOpen" class="settings-menu">
+            <router-link
+              to="/settings"
+              class="settings-menu-item"
+              @click="closeSettingsMenu"
+            >
+              {{ t("nav.settingsGeneral") }}
+            </router-link>
+            <router-link
+              to="/settings/consents"
+              class="settings-menu-item"
+              @click="closeSettingsMenu"
+            >
+              {{ t("nav.connectedApps") }}
+            </router-link>
+            <router-link
+              to="/settings/data-export"
+              class="settings-menu-item"
+              @click="closeSettingsMenu"
+            >
+              {{ t("nav.dataExport") }}
+            </router-link>
+          </div>
+        </Transition>
+      </div>
       <router-link to="/audit" class="nav-link">
         {{ t("nav.audit") }}
       </router-link>
@@ -252,9 +312,6 @@ async function handleLogout() {
             <router-link to="/contexts" class="mobile-nav-link">
               {{ t("nav.contexts") }}
             </router-link>
-            <router-link to="/settings" class="mobile-nav-link">
-              {{ t("nav.settings") }}
-            </router-link>
             <router-link
               v-if="authStore.accountType !== 'pseudonymous'"
               to="/documents"
@@ -262,6 +319,39 @@ async function handleLogout() {
             >
               {{ t("nav.documents") }}
             </router-link>
+            <!-- Settings section (mobile) -->
+            <button
+              class="mobile-nav-link mobile-settings-trigger"
+              @click="toggleMobileSettings"
+            >
+              <span>{{ t("nav.settings") }}</span>
+              <ChevronDownIcon
+                class="chevron-icon"
+                :class="{ 'chevron-open': mobileSettingsOpen }"
+              />
+            </button>
+            <Transition name="expand">
+              <div v-if="mobileSettingsOpen" class="mobile-settings-items">
+                <router-link
+                  to="/settings"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.settingsGeneral") }}
+                </router-link>
+                <router-link
+                  to="/settings/consents"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.connectedApps") }}
+                </router-link>
+                <router-link
+                  to="/settings/data-export"
+                  class="mobile-nav-link mobile-nav-sub"
+                >
+                  {{ t("nav.dataExport") }}
+                </router-link>
+              </div>
+            </Transition>
             <router-link to="/audit" class="mobile-nav-link">
               {{ t("nav.audit") }}
             </router-link>
@@ -398,6 +488,65 @@ async function handleLogout() {
 .nav-link-admin:hover {
   color: var(--admin-text-hover);
   background-color: var(--admin-bg);
+}
+
+/* Settings dropdown */
+.settings-dropdown {
+  position: relative;
+}
+
+.settings-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.settings-trigger-open {
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+}
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + var(--spacing-1));
+  left: 0;
+  min-width: 180px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-1);
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-menu-item {
+  display: block;
+  padding: var(--spacing-2) var(--spacing-3);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.settings-menu-item:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  text-decoration: none;
+}
+
+.settings-menu-item.router-link-active {
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Admin dropdown */
@@ -681,6 +830,17 @@ async function handleLogout() {
 .mobile-nav-link.router-link-active {
   color: var(--color-primary-600);
   background-color: var(--color-primary-50);
+}
+
+.mobile-settings-trigger {
+  color: var(--text-secondary);
+}
+
+.mobile-settings-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  overflow: hidden;
 }
 
 .mobile-admin-trigger {

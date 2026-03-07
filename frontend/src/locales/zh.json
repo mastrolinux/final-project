@@ -10,6 +10,9 @@
     "settings": "设置",
     "login": "登录",
     "register": "注册",
+    "settingsGeneral": "通用",
+    "connectedApps": "已连接应用",
+    "dataExport": "数据导出",
     "logout": "退出"
   },
   "auth": {
