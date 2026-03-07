@@ -513,34 +513,6 @@ async function handleDeleteAccount() {
         </div>
       </section>
 
-      <!-- Privacy & Data -->
-      <section class="settings-section card">
-        <div class="card-header">
-          <h2>{{ t("settings.privacyData") }}</h2>
-        </div>
-        <div class="card-body">
-          <div class="setting-row">
-            <div class="setting-info">
-              <h3>{{ t("settings.privacyData") }}</h3>
-              <p>{{ t("settings.privacyDataDescription") }}</p>
-            </div>
-            <router-link to="/settings/data-export" class="btn btn-primary">
-              {{ t("settings.viewExportData") }}
-            </router-link>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <h3>{{ t("settings.connectedApps") }}</h3>
-              <p>{{ t("settings.connectedAppsDescription") }}</p>
-            </div>
-            <router-link to="/settings/consents" class="btn btn-primary">
-              {{ t("settings.manageConnectedApps") }}
-            </router-link>
-          </div>
-        </div>
-      </section>
-
       <!-- Danger Zone -->
       <section v-if="!deletionResult" class="settings-section card card-danger">
         <div class="card-header">
@@ -665,8 +637,13 @@ async function handleDeleteAccount() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-4);
   padding: var(--spacing-4) 0;
   border-bottom: 1px solid var(--border-color);
+}
+
+.setting-info {
+  flex: 0 0 220px;
 }
 
 .setting-row:last-child {
@@ -712,6 +689,7 @@ async function handleDeleteAccount() {
 }
 
 .form-select {
+  flex: 1;
   padding: var(--spacing-2) var(--spacing-3);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
