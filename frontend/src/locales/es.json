@@ -10,6 +10,9 @@
     "settings": "Configuracion",
     "login": "Iniciar sesion",
     "register": "Registrarse",
+    "settingsGeneral": "General",
+    "connectedApps": "Apps conectadas",
+    "dataExport": "Exportar datos",
     "logout": "Cerrar sesion"
   },
   "auth": {
