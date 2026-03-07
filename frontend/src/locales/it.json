@@ -29,16 +29,20 @@
     "features": {
       "title": "Perché sceglierci",
       "privacy": {
-        "title": "Privacy by Design",
-        "description": "Costruito con principi ispirati al GDPR per la massima protezione dei dati"
+        "title": "Privacy-First Design",
+        "description": "Costruito con principi di privacy-by-design ispirati al GDPR e agli standard di protezione dei dati."
       },
       "contexts": {
         "title": "Identità multi-contesto",
-        "description": "Gestisci diverse identità per uso professionale, sociale e personale"
+        "description": "Gestisci diversi contesti di identita per uso professionale, sociale, legale e personale."
       },
       "security": {
         "title": "Sicurezza enterprise",
         "description": "Protocolli di crittografia e autenticazione standard di settore"
+      },
+      "cultural": {
+        "title": "Supporto nomi culturali",
+        "description": "Supporto per convenzioni di denominazione diverse, inclusi nomi multilingue e modelli culturali."
       }
     }
   },
