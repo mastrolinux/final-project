@@ -264,7 +264,7 @@ async function handleDecision(decision: "allow" | "deny") {
   margin: 0 auto;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
 }
 
@@ -365,12 +365,12 @@ async function handleDecision(decision: "allow" | "deny") {
 }
 
 .btn-secondary {
-  background-color: white;
-  color: var(--color-gray-700);
-  border: 1px solid var(--color-gray-300);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-gray-50);
+  background-color: var(--bg-secondary);
 }
 </style>
