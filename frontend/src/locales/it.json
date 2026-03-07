@@ -15,6 +15,9 @@
     "adminSoftDeletedUsers": "Utenti eliminati",
     "documents": "Documenti",
     "adminVerifications": "Verifiche",
+    "settingsGeneral": "Generali",
+    "connectedApps": "App connesse",
+    "dataExport": "Esportazione dati",
     "login": "Accedi",
     "register": "Registrati",
     "logout": "Esci"
