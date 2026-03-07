@@ -36,6 +36,24 @@ format:
         \setTransitionFrom{Arabic}{\normalfont}
 ---
 
+# Access Information {- .unnumbered}
+
+The production deployment is available at [https://identity.okrbusiness.com](https://identity.okrbusiness.com). The complete source code is hosted at [https://github.com/mastrolinux/final-project](https://github.com/mastrolinux/final-project) (access available upon request to lc193@student.london.ac.uk or luca.opensource@gmail.com).
+
+The database is seeded with five test accounts representing the personas described in @sec-design. All accounts share the password `TestPassword123!`.
+
+| Email | Account Type | Role | Context Profiles |
+|-------|-------------|------|-----------------|
+| sarah.chen@example.com | Verified | Admin | Professional, Legal |
+| li.ming@example.com | Unverified | User | Social, Healthcare |
+| alex.shadow@example.com | Pseudonymous | User | None |
+| sukarno@example.com | Verified | User | None |
+| jordan.smith@example.com | Verified | User | Family, Custom |
+
+: Seed accounts for evaluation {#tbl-seed-accounts}
+
+Sarah Chen's admin account provides access to administrative endpoints including OAuth client management, verification document review, and soft-deleted account purging. The pseudonymous account (Alex) demonstrates restricted access: attempts to create legal or healthcare contexts return HTTP 403 as enforced by the ContextService business rules.
+
 \newpage
 
 # Introduction {#sec-introduction}
