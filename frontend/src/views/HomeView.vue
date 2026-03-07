@@ -10,8 +10,8 @@ const authStore = useAuthStore();
   <div class="home-view">
     <div class="container container-lg">
       <div class="hero">
-        <h1 class="hero-title">{{ t("app.name") }}</h1>
-        <p class="hero-tagline">{{ t("app.tagline") }}</p>
+        <img src="/cobi_logo.svg" :alt="t('app.name')" class="hero-logo" />
+        <p class="hero-tagline" v-html="t('app.tagline')"></p>
 
         <div class="hero-actions" v-if="!authStore.isAuthenticated">
           <router-link to="/register" class="btn btn-primary btn-lg">
@@ -74,9 +74,11 @@ const authStore = useAuthStore();
   margin-bottom: var(--spacing-16);
 }
 
-.hero-title {
-  font-size: var(--font-size-4xl);
-  margin-bottom: var(--spacing-4);
+.hero-logo {
+  height: 200px;
+  width: auto;
+  margin: 0 auto var(--spacing-4);
+  display: block;
 }
 
 .hero-tagline {
