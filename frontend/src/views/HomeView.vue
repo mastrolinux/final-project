@@ -11,7 +11,7 @@ const authStore = useAuthStore();
     <div class="container container-lg">
       <div class="hero">
         <h1 class="hero-title">{{ t("app.name") }}</h1>
-        <p class="hero-tagline">{{ t("app.tagline") }}</p>
+        <p class="hero-tagline" v-html="t('app.tagline')"></p>
 
         <div class="hero-actions" v-if="!authStore.isAuthenticated">
           <router-link to="/register" class="btn btn-primary btn-lg">

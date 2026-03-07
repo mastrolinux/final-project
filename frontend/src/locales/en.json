@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Identity Management",
-    "tagline": "Multi-context, privacy-oriented identity system"
+    "name": "CoBI",
+    "tagline": "<b>Co</b>ntext-<b>B</b>ased <b>I</b>dentity Management"
   },
   "nav": {
     "home": "Home",
@@ -23,7 +23,7 @@
     "logout": "Logout"
   },
   "home": {
-    "title": "Identity Management System",
+    "title": "CoBI",
     "subtitle": "Secure, privacy-first identity management across multiple contexts",
     "cta": {
       "getStarted": "Get Started",
