@@ -1,17 +1,17 @@
 {
   "app": {
-    "name": "Gestione identit\u00e0",
-    "tagline": "Sistema di identit\u00e0 multi-contesto orientato alla privacy"
+    "name": "Gestione identità",
+    "tagline": "Sistema di identità multi-contesto orientato alla privacy"
   },
   "nav": {
     "home": "Home",
     "profile": "Profilo",
     "contexts": "Contesti",
     "settings": "Impostazioni",
-    "audit": "Registro attivit\u00e0",
+    "audit": "Registro attività",
     "admin": "Admin",
     "adminOAuthClients": "Client OAuth",
-    "adminAuditVerify": "Integrit\u00e0 audit",
+    "adminAuditVerify": "Integrità audit",
     "adminSoftDeletedUsers": "Utenti eliminati",
     "documents": "Documenti",
     "adminVerifications": "Verifiche",
@@ -20,25 +20,29 @@
     "logout": "Esci"
   },
   "home": {
-    "title": "Sistema di gestione identit\u00e0",
-    "subtitle": "Gestione sicura e privacy-first delle identit\u00e0 su contesti multipli",
+    "title": "Sistema di gestione identità",
+    "subtitle": "Gestione sicura e privacy-first delle identità su contesti multipli",
     "cta": {
       "getStarted": "Inizia ora",
-      "learnMore": "Scopri di pi\u00f9"
+      "learnMore": "Scopri di più"
     },
     "features": {
-      "title": "Perch\u00e9 sceglierci",
+      "title": "Perché sceglierci",
       "privacy": {
-        "title": "Privacy by Design",
-        "description": "Costruito con principi ispirati al GDPR per la massima protezione dei dati"
+        "title": "Privacy-First Design",
+        "description": "Costruito con principi di privacy-by-design ispirati al GDPR e agli standard di protezione dei dati."
       },
       "contexts": {
-        "title": "Identit\u00e0 multi-contesto",
-        "description": "Gestisci diverse identit\u00e0 per uso professionale, sociale e personale"
+        "title": "Identità multi-contesto",
+        "description": "Gestisci diversi contesti di identita per uso professionale, sociale, legale e personale."
       },
       "security": {
         "title": "Sicurezza enterprise",
         "description": "Protocolli di crittografia e autenticazione standard di settore"
+      },
+      "cultural": {
+        "title": "Supporto nomi culturali",
+        "description": "Supporto per convenzioni di denominazione diverse, inclusi nomi multilingue e modelli culturali."
       }
     }
   },
@@ -56,7 +60,7 @@
     "preferredNamePlaceholder": "Come preferisci essere chiamato?",
     "forgotPassword": "Password dimenticata?",
     "noAccount": "Non hai un account?",
-    "hasAccount": "Hai gi\u00e0 un account?",
+    "hasAccount": "Hai già un account?",
     "createAccount": "Crea account",
     "signIn": "Accedi",
     "signOut": "Esci",
@@ -71,9 +75,9 @@
     "verifyEmailSent": "Abbiamo inviato un link di verifica a {email}",
     "verifyingEmail": "Verifica email in corso...",
     "emailVerified": "Email verificata",
-    "emailVerifiedMessage": "La tua email \u00e8 stata verificata con successo. Ora puoi accedere a tutte le funzionalit\u00e0.",
+    "emailVerifiedMessage": "La tua email è stata verificata con successo. Ora puoi accedere a tutte le funzionalità.",
     "verificationFailed": "Verifica fallita",
-    "verificationEmailSent": "Una nuova email di verifica \u00e8 stata inviata.",
+    "verificationEmailSent": "Una nuova email di verifica è stata inviata.",
     "resendVerification": "Reinvia email di verifica",
     "goToProfile": "Vai al profilo",
     "goToLogin": "Vai al login",
@@ -87,9 +91,9 @@
     "resetPasswordMessage": "Inserisci la tua nuova password qui sotto.",
     "newPassword": "Nuova password",
     "passwordReset": "Password reimpostata",
-    "passwordResetSuccess": "La tua password \u00e8 stata reimpostata con successo. Ora puoi accedere con la nuova password.",
+    "passwordResetSuccess": "La tua password è stata reimpostata con successo. Ora puoi accedere con la nuova password.",
     "invalidLink": "Link non valido",
-    "invalidResetToken": "Questo link di reset password non \u00e8 valido o \u00e8 scaduto.",
+    "invalidResetToken": "Questo link di reset password non è valido o è scaduto.",
     "requestNewLink": "Richiedi nuovo link",
     "passwordTooShort": "La password deve contenere almeno 8 caratteri",
     "passwordsDoNotMatch": "Le password non corrispondono",
@@ -100,9 +104,9 @@
       "verified": "Verificato",
       "unverified": "Standard",
       "pseudonymous": "Pseudonimo",
-      "verifiedDescription": "Accesso completo dopo la revisione del documento di identit\u00e0",
-      "unverifiedDescription": "Account standard, possibilit\u00e0 di verificare l'identit\u00e0 per sbloccare tutte le funzionalit\u00e0",
-      "pseudonymousDescription": "Account anonimo, non pu\u00f2 accedere ai contesti legali o sanitari"
+      "verifiedDescription": "Accesso completo dopo la revisione del documento di identità",
+      "unverifiedDescription": "Account standard, possibilità di verificare l'identità per sbloccare tutte le funzionalità",
+      "pseudonymousDescription": "Account anonimo, non può accedere ai contesti legali o sanitari"
     },
     "restore": {
       "title": "Ripristina account",
@@ -113,20 +117,22 @@
       "confirmTitle": "Imposta nuova password",
       "confirmDescription": "Scegli una nuova password per il tuo account ripristinato.",
       "confirmSuccess": "Account ripristinato",
-      "confirmSuccessMessage": "Il tuo account \u00e8 stato ripristinato. Ora puoi accedere con la tua nuova password.",
+      "confirmSuccessMessage": "Il tuo account è stato ripristinato. Ora puoi accedere con la tua nuova password.",
       "invalidToken": "Token non valido o scaduto",
-      "invalidTokenMessage": "Questo link di ripristino non \u00e8 valido o \u00e8 scaduto.",
+      "invalidTokenMessage": "Questo link di ripristino non è valido o è scaduto.",
       "requestNewToken": "Richiedi nuovo link di ripristino",
       "permanentlyDeleted": "Account eliminato permanentemente",
-      "permanentlyDeletedMessage": "Il periodo di grazia di 30 giorni \u00e8 scaduto e questo account \u00e8 stato eliminato permanentemente. Puoi registrare un nuovo account.",
+      "permanentlyDeletedMessage": "Il periodo di grazia di 30 giorni è scaduto e questo account è stato eliminato permanentemente. Puoi registrare un nuovo account.",
       "backToLogin": "Torna al login",
       "accountDeleted": "Account programmato per l'eliminazione",
-      "accountDeletedMessage": "Il tuo account \u00e8 programmato per l'eliminazione. Sar\u00e0 cancellato permanentemente il {date}.",
+      "accountDeletedMessage": "Il tuo account è programmato per l'eliminazione. Sarà cancellato permanentemente il {date}.",
       "recoveryInstructions": "Puoi ripristinare il tuo account entro il periodo di grazia richiedendo un link di ripristino.",
       "restoreMyAccount": "Ripristina il mio account",
-      "accountRecoverable": "L'account pu\u00f2 essere ripristinato",
-      "accountRecoverableMessage": "Un account con questa email esiste e pu\u00f2 essere ripristinato fino al {date}.",
-      "restoreAccount": "Ripristina account"
+      "accountRecoverable": "L'account può essere ripristinato",
+      "accountRecoverableMessage": "Un account con questa email esiste e può essere ripristinato fino al {date}.",
+      "restoreAccount": "Ripristina account",
+      "restoring": "Ripristino dell'account",
+      "restoringMessage": "Attendi mentre ripristiniamo il tuo account..."
     },
     "emailVerificationBanner": "Verifica il tuo indirizzo email per sbloccare tutte le funzionalita.",
     "emailVerificationBannerResend": "Reinvia email di verifica",
@@ -134,7 +140,21 @@
     "emailVerificationRequired": "Devi verificare la tua email prima di poter salvare le modifiche. Controlla la tua casella di posta o reinvia l'email di verifica.",
     "registerSuccessTitle": "Account creato con successo!",
     "registerSuccessMessage": "Controlla la tua email per verificare il tuo account.",
-    "registerSuccessToast": "Account creato! Controlla la tua email per verificare il tuo account."
+    "registerSuccessToast": "Account creato! Controlla la tua email per verificare il tuo account.",
+    "orContinueWith": "o continua con email",
+    "social": {
+      "completing": "Completamento dell'accesso...",
+      "processingMessage": "Attendi mentre completiamo l'accesso.",
+      "loginSuccess": "Bentornato! Accesso effettuato con successo.",
+      "authenticationFailed": "Accesso non riuscito",
+      "invalidCallback": "Callback OAuth non valido: parametro code o state mancante.",
+      "sessionExpired": "Sessione OAuth scaduta. Riprova ad accedere.",
+      "missingProvider": "Callback OAuth non valido: provider mancante.",
+      "accountLinkingRequired": "Collegamento account richiesto",
+      "signInWithPassword": "Accedi con password",
+      "accountLinkingInfo": "Questa email è già registrata con una password. Accedi con la tua password o contatta il supporto per collegare il tuo account Google.",
+      "backToLogin": "Torna al login"
+    }
   },
   "account": {
     "types": {
@@ -157,7 +177,7 @@
     "cancel": "Annulla",
     "viewContexts": "Vedi contesti",
     "emailChangeWarning": "La modifica dell'email richiede una nuova verifica",
-    "emailVerificationSent": "Email aggiornata. Un'email di verifica \u00e8 stata inviata al nuovo indirizzo.",
+    "emailVerificationSent": "Email aggiornata. Un'email di verifica è stata inviata al nuovo indirizzo.",
     "avatar": {
       "title": "Foto profilo",
       "upload": "Carica",
@@ -168,21 +188,28 @@
       "removeSuccess": "Avatar rimosso con successo",
       "fileTooLarge": "Il file non deve superare 5 MB",
       "invalidFormat": "Formati supportati: JPEG, PNG, WebP"
-    }
+    },
+    "identityNames": "Nomi di identita",
+    "addName": "+ Aggiungi",
+    "noNames": "Nessun nome aggiuntivo configurato.",
+    "primaryName": "Principale",
+    "noContexts": "Nessun contesto. Creane uno per separare le tue identita.",
+    "inheritedBio": "Bio ereditata",
+    "viewAllContexts": "Vedi tutti i contesti"
   },
   "context": {
-    "title": "Contesti di identit\u00e0",
-    "description": "Gestisci diversi contesti di identit\u00e0 per vari aspetti della tua vita",
+    "title": "Contesti di identità",
+    "description": "Gestisci diversi contesti di identità per vari aspetti della tua vita",
     "viewContext": "Vedi contesto: {name}",
     "create": "Crea contesto",
     "createNew": "Crea nuovo contesto",
-    "createDescription": "Crea un nuovo contesto di identit\u00e0 per uno scopo o dominio specifico",
+    "createDescription": "Crea un nuovo contesto di identità per uno scopo o dominio specifico",
     "createSuccess": "Contesto creato con successo",
     "edit": "Modifica contesto",
     "delete": "Elimina contesto",
     "deleteSuccess": "Contesto eliminato con successo",
     "deleteConfirmTitle": "Eliminare il contesto?",
-    "deleteConfirmMessage": "Sei sicuro di voler eliminare questo contesto? Questa azione non pu\u00f2 essere annullata.",
+    "deleteConfirmMessage": "Sei sicuro di voler eliminare questo contesto? Questa azione non può essere annullata.",
     "updateSuccess": "Contesto aggiornato con successo",
     "switch": "Cambia contesto",
     "active": "Attivo",
@@ -203,9 +230,9 @@
     "optionalField": "Opzionale",
     "overrides": "Override del profilo",
     "overridesDescription": "Questi valori sostituiranno il tuo profilo base quando usi questo contesto. Lascia vuoto per usare i valori del profilo base.",
-    "pickFromNames": "Scegli dai tuoi nomi di identit\u00e0",
+    "pickFromNames": "Scegli dai tuoi nomi di identità",
     "pseudonymousRestriction": "Nota: gli account pseudonimi non possono creare contesti legali o sanitari.",
-    "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approver\u00e0",
+    "verificationNotice": "Questo contesto richiede la verifica dell'identita. Dopo la creazione, rimarra inattivo fino a quando non caricherai un documento di verifica e un amministratore lo approverà",
     "verificationPending": "Verifica in attesa",
     "verificationDocumentRequired": "Documento richiesto",
     "verificationAwaitingReview": "In attesa di revisione",
@@ -221,8 +248,8 @@
       "custom": "Personalizzato"
     },
     "typeDescriptions": {
-      "professional": "Identit\u00e0 per lavoro, affari e carriera",
-      "social": "Social media e comunit\u00e0 online",
+      "professional": "Identità per lavoro, affari e carriera",
+      "social": "Social media e comunità online",
       "legal": "Documenti ufficiali e questioni legali",
       "healthcare": "Cartelle cliniche e operatori sanitari",
       "family": "Famiglia e relazioni personali",
@@ -286,25 +313,34 @@
     "accountType": "Tipo di account",
     "dangerZone": "Zona pericolosa",
     "deleteAccount": "Elimina account",
-    "deleteAccountWarning": "Il tuo account entrer\u00e0 in un periodo di grazia di 30 giorni. Dopo tale termine, tutti i dati saranno cancellati permanentemente.",
+    "deleteAccountWarning": "Il tuo account entrerà in un periodo di grazia di 30 giorni. Dopo tale termine, tutti i dati saranno cancellati permanentemente.",
     "deleteAccountConfirmTitle": "Eliminare il tuo account?",
     "deleteAccountConfirmMessage": "Il tuo account e tutti i dati associati saranno eliminati temporaneamente. Hai 30 giorni per ripristinarlo prima della cancellazione permanente.",
     "typeDeleteToConfirm": "Scrivi DELETE per confermare",
     "permanentlyDelete": "Elimina account",
     "deletion": {
-      "scheduledBanner": "Il tuo account \u00e8 programmato per l'eliminazione il {date}. Puoi ripristinarlo effettuando nuovamente l'accesso.",
+      "scheduledBanner": "Il tuo account è programmato per l'eliminazione il {date}. Puoi ripristinarlo effettuando nuovamente l'accesso.",
       "restoreLink": "Ripristina account",
       "scheduled": "Eliminazione programmata",
-      "scheduledMessage": "Il tuo account \u00e8 stato programmato per l'eliminazione.",
+      "scheduledMessage": "Il tuo account è stato programmato per l'eliminazione.",
       "deletionDate": "Eliminato il",
       "permanentDate": "Cancellazione permanente il",
       "graceMessage": "Hai 30 giorni per ripristinare il tuo account. Dopo tale data, tutti i dati saranno cancellati permanentemente.",
       "logoutNotice": "Verrai disconnesso a breve.",
-      "alreadyDeleted": "L'account \u00e8 gi\u00e0 programmato per l'eliminazione"
+      "alreadyDeleted": "L'account è già programmato per l'eliminazione"
     },
     "privacyData": "Privacy e dati",
     "privacyDataDescription": "Scarica una copia di tutti i dati personali detenuti da questo sistema, come previsto dall'Articolo 15 del GDPR.",
-    "viewExportData": "Visualizza e esporta i miei dati"
+    "viewExportData": "Visualizza e esporta i miei dati",
+    "connectedApps": "Applicazioni collegate",
+    "connectedAppsDescription": "Gestisci le applicazioni che hanno accesso ai tuoi dati.",
+    "manageConnectedApps": "Gestisci",
+    "setPassword": "Imposta password",
+    "setPasswordDescription": "Hai effettuato l'accesso con {provider}. Imposta una password per accedere anche con email e password.",
+    "setPasswordButton": "Imposta password",
+    "setPasswordSuccess": "Password impostata con successo. Ora puoi accedere sia con {provider} che con email e password.",
+    "setPasswordAlreadySet": "Password gia impostata. Usa Cambia password per aggiornarla.",
+    "setPasswordNotOAuth": "La password puo essere impostata solo per account registrati tramite OAuth."
   },
   "privacy": {
     "title": "Esportazione dati",
@@ -317,7 +353,7 @@
     "legalBasis": "Base giuridica",
     "sections": {
       "profile": "Profilo",
-      "identityNames": "Nomi di identit\u00e0",
+      "identityNames": "Nomi di identità",
       "contextProfiles": "Profili di contesto",
       "authentication": "Autenticazione",
       "oauthConsents": "Consensi OAuth",
@@ -338,7 +374,7 @@
       "value": "Valore",
       "primary": "Principale",
       "deprecated": "Deprecato",
-      "visibility": "Visibilit\u00e0"
+      "visibility": "Visibilità"
     },
     "contexts": {
       "type": "Tipo",
@@ -369,7 +405,7 @@
       "noConsents": "Nessun consenso OAuth registrato."
     },
     "gdpr": {
-      "processingPurposes": "Finalit\u00e0 del trattamento",
+      "processingPurposes": "Finalità del trattamento",
       "retentionPeriods": "Periodi di conservazione",
       "dataSubjectRights": "I tuoi diritti",
       "dataSources": "Fonti dei dati",
@@ -377,7 +413,7 @@
       "automatedDecisions": "Processo decisionale automatizzato"
     },
     "values": {
-      "yes": "S\u00ec",
+      "yes": "Sì",
       "no": "No",
       "notSet": "Non impostato"
     }
@@ -388,8 +424,8 @@
     "deny": "Nega",
     "allow": "Consenti accesso",
     "clientWantsAccess": "{client} vuole accedere al tuo account",
-    "selectContext": "Seleziona contesto di identit\u00e0",
-    "selectContextDescription": "Scegli quale profilo di identit\u00e0 vuoi condividere con questa applicazione.",
+    "selectContext": "Seleziona contesto di identità",
+    "selectContextDescription": "Scegli quale profilo di identità vuoi condividere con questa applicazione.",
     "scopes": "Permessi richiesti",
     "processing": "Elaborazione...",
     "processingMessage": "Attendi il completamento dell'autenticazione.",
@@ -404,7 +440,28 @@
       "invalid_client": "Applicazione client non valida",
       "invalid_grant": "Grant non valido",
       "context_not_verified": "Questo contesto richiede la verifica dell'identita prima di poter essere condiviso con le applicazioni"
-    }
+    },
+    "connectedApps": "Applicazioni collegate",
+    "connectedAppsDescription": "Applicazioni che hai autorizzato ad accedere ai tuoi dati di identita.",
+    "noConnectedApps": "Nessuna applicazione collegata",
+    "noConnectedAppsDescription": "Le applicazioni che autorizzi tramite OAuth appariranno qui. Puoi revocare l'accesso in qualsiasi momento.",
+    "revokeAccess": "Revoca accesso",
+    "revokeConfirmTitle": "Revocare l'accesso?",
+    "revokeConfirmMessage": "Questo revochera tutti i token per {client}. L'applicazione dovra richiedere nuovamente l'autorizzazione.",
+    "revokeSuccess": "Accesso revocato per {client}",
+    "grantedScopes": "Permessi concessi",
+    "grantedOn": "Autorizzato il",
+    "expiresOn": "Scade il",
+    "boundToContext": "Contesto utilizzato",
+    "dataPreview": "Anteprima dati",
+    "dataPreviewDescription": "Campi che saranno condivisi in base ai permessi selezionati.",
+    "fieldFromBase": "Profilo base",
+    "fieldFromContext": "Override del contesto",
+    "rememberDecision": "Ricorda questa decisione",
+    "rememberDecisionDescription": "Salta questa schermata la prossima volta che l'applicazione richiede gli stessi permessi.",
+    "requiredScope": "Obbligatorio",
+    "optionalScope": "Facoltativo",
+    "scopeFields": "Campi inclusi"
   },
   "nameInput": {
     "title": "Come preferisci essere chiamato?",
@@ -412,7 +469,7 @@
     "continue": "Continua",
     "detection": {
       "title": "Abbiamo rilevato: {pattern}",
-      "confirm": "S\u00ec, \u00e8 corretto",
+      "confirm": "Sì, è corretto",
       "chooseDifferent": "No, scelgo un formato diverso",
       "keepSimple": "Mantieni semplice - usa come inserito"
     },
@@ -426,7 +483,7 @@
     }
   },
   "audit": {
-    "title": "Registro attivit\u00e0",
+    "title": "Registro attività",
     "description": "Rivedi lo storico delle azioni eseguite sul tuo account",
     "filters": {
       "eventType": "Tipo di evento",
@@ -472,12 +529,12 @@
       "showing": "{count} di {total} voci"
     },
     "verify": {
-      "title": "Integrit\u00e0 del registro di audit",
+      "title": "Integrità del registro di audit",
       "description": "Verifica la catena di hash crittografica delle voci del registro di audit per rilevare manomissioni",
       "backToAdmin": "Torna all'admin",
       "entriesLabel": "Voci da verificare",
       "entriesHint": "Numero di voci recenti da controllare (1 - 10.000)",
-      "runButton": "Verifica integrit\u00e0",
+      "runButton": "Verifica integrità",
       "verifying": "Verifica in corso...",
       "limitError": "Inserisci un numero tra 1 e 10.000",
       "chainValid": "Catena di hash valida",
@@ -485,7 +542,7 @@
       "entriesVerified": "Voci verificate",
       "errorDetails": "Dettagli errore",
       "validExplanation": "Tutte le {count} voci del registro di audit hanno un collegamento valido nella catena di hash. Nessuna manomissione rilevata.",
-      "invalidExplanation": "La verifica della catena di hash \u00e8 fallita, indicando una possibile manomissione delle voci del registro di audit."
+      "invalidExplanation": "La verifica della catena di hash è fallita, indicando una possibile manomissione delle voci del registro di audit."
     }
   },
   "documents": {
@@ -504,7 +561,7 @@
     },
     "documentTypes": {
       "passport": "Passaporto",
-      "nationalId": "Carta d'identit\u00e0"
+      "nationalId": "Carta d'identità"
     },
     "upload": {
       "title": "Carica documento",
@@ -594,7 +651,7 @@
     "next": "Avanti",
     "submit": "Invia",
     "confirm": "Conferma",
-    "yes": "S\u00ec",
+    "yes": "Sì",
     "no": "No",
     "optional": "Opzionale",
     "required": "Obbligatorio",
@@ -608,12 +665,12 @@
     "network": "Errore di rete. Controlla la tua connessione.",
     "unauthorized": "Effettua il login per continuare.",
     "forbidden": "Non hai i permessi per questa azione.",
-    "notFound": "La risorsa richiesta non \u00e8 stata trovata.",
-    "expired": "Questo contenuto \u00e8 scaduto.",
+    "notFound": "La risorsa richiesta non è stata trovata.",
+    "expired": "Questo contenuto è scaduto.",
     "validation": "Controlla i dati inseriti.",
-    "generic": "Si \u00e8 verificato un errore imprevisto. Riprova.",
+    "generic": "Si è verificato un errore imprevisto. Riprova.",
     "pageNotFound": "Pagina non trovata",
-    "pageNotFoundMessage": "La pagina che cerchi non esiste o \u00e8 stata spostata."
+    "pageNotFoundMessage": "La pagina che cerchi non esiste o è stata spostata."
   },
   "notifications": {
     "profileUpdated": "Profilo aggiornato con successo",
