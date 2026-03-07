@@ -1,5 +1,5 @@
 ---
-title: "Identity and Profile Management API"
+title: "CoBI: Context-Based Identity Management API"
 subtitle: "Draft Report"
 author: "Luca Cipriani"
 
@@ -322,7 +322,7 @@ Testing uses pytest with pytest-cov targeting 80% minimum coverage. Static analy
 
 ## System Context
 
-@fig-context illustrates the system context, showing primary actors and their relationships to the Identity Management API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
+@fig-context illustrates the system context, showing primary actors and their relationships to the CoBI API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
 
 ```{mermaid}
 %%| label: fig-context
@@ -333,7 +333,7 @@ flowchart TB
         user["User<br>(Individual managing identity)"]
     end
 
-    api[["Identity Management API<br>(Multi-context identity with OAuth 2.1)"]]
+    api[["CoBI API<br>(Multi-context identity with OAuth 2.1)"]]
 
     subgraph external["External Systems"]
         thirdparty["Third-Party Apps<br>(OAuth clients)"]

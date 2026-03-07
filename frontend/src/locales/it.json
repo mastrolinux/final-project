@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Gestione identità",
-    "tagline": "Sistema di identità multi-contesto orientato alla privacy"
+    "name": "CoBI",
+    "tagline": "<b>Co</b>ntext-<b>B</b>ased <b>I</b>dentity Management"
   },
   "nav": {
     "home": "Home",
@@ -23,7 +23,7 @@
     "logout": "Esci"
   },
   "home": {
-    "title": "Sistema di gestione identità",
+    "title": "CoBI",
     "subtitle": "Gestione sicura e privacy-first delle identità su contesti multipli",
     "cta": {
       "getStarted": "Inizia ora",

@@ -84,7 +84,7 @@ async function handleSubmit() {
       <div class="card-body">
         <div class="auth-header">
           <h1>{{ t("auth.register") }}</h1>
-          <p class="text-secondary">{{ t("app.tagline") }}</p>
+          <p class="text-secondary" v-html="t('app.tagline')"></p>
         </div>
 
         <!-- Account recoverable card -->
