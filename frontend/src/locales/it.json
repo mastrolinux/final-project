@@ -184,7 +184,14 @@
       "removeSuccess": "Avatar rimosso con successo",
       "fileTooLarge": "Il file non deve superare 5 MB",
       "invalidFormat": "Formati supportati: JPEG, PNG, WebP"
-    }
+    },
+    "identityNames": "Nomi di identita",
+    "addName": "+ Aggiungi",
+    "noNames": "Nessun nome aggiuntivo configurato.",
+    "primaryName": "Principale",
+    "noContexts": "Nessun contesto. Creane uno per separare le tue identita.",
+    "inheritedBio": "Bio ereditata",
+    "viewAllContexts": "Vedi tutti i contesti"
   },
   "context": {
     "title": "Contesti di identità",
