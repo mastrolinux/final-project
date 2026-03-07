@@ -162,9 +162,9 @@ const navigateToCreateContext = () => {
           <BaseCard>
             <template #header>
               <div class="card-header-row">
-                <h2 class="card-heading">Identity Names</h2>
+                <h2 class="card-heading">{{ t("profile.identityNames") }}</h2>
                 <BaseButton variant="ghost" size="sm" @click="navigateToEdit"
-                  >+ Add</BaseButton
+                  >{{ t("profile.addName") }}</BaseButton
                 >
               </div>
             </template>
@@ -173,7 +173,7 @@ const navigateToCreateContext = () => {
               v-if="profileStore.identityNames.length === 0"
               class="empty-names"
             >
-              No additional names configured.
+              {{ t("profile.noNames") }}
             </div>
 
             <div v-else class="fields-list">
@@ -187,7 +187,7 @@ const navigateToCreateContext = () => {
                     name.name_type
                   }}</BaseBadge>
                   <BaseBadge v-if="name.is_primary" variant="success" size="sm"
-                    >Primary</BaseBadge
+                    >{{ t("profile.primaryName") }}</BaseBadge
                   >
                 </div>
                 <div class="name-languages">
@@ -208,12 +208,12 @@ const navigateToCreateContext = () => {
           <BaseCard class="col-span-full">
             <template #header>
               <div class="card-header-row">
-                <h2 class="card-heading">Identity Contexts</h2>
+                <h2 class="card-heading">{{ t("context.title") }}</h2>
                 <BaseButton
                   variant="ghost"
                   size="sm"
                   @click="navigateToCreateContext"
-                  >+ Create</BaseButton
+                  >{{ t("context.create") }}</BaseButton
                 >
               </div>
             </template>
@@ -223,10 +223,10 @@ const navigateToCreateContext = () => {
               class="empty-contexts"
             >
               <div class="empty-contexts-text">
-                No contexts yet. Create one to separate your identities.
+                {{ t("profile.noContexts") }}
               </div>
               <BaseButton variant="primary" @click="navigateToCreateContext"
-                >Create Context</BaseButton
+                >{{ t("context.create") }}</BaseButton
               >
             </div>
 
@@ -262,7 +262,7 @@ const navigateToCreateContext = () => {
                   <h3 class="context-card-title">{{ context.context_name }}</h3>
                 </div>
                 <p class="context-card-bio">
-                  {{ context.bio || "Inherited bio" }}
+                  {{ context.bio || t("profile.inheritedBio") }}
                 </p>
               </div>
             </div>
@@ -270,7 +270,7 @@ const navigateToCreateContext = () => {
             <template #footer>
               <div class="card-footer-center">
                 <BaseButton variant="ghost" @click="navigateToContexts"
-                  >View All Contexts</BaseButton
+                  >{{ t("profile.viewAllContexts") }}</BaseButton
                 >
               </div>
             </template>
