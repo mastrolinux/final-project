@@ -1,5 +1,5 @@
 ---
-title: "Identity and Profile Management API"
+title: "CoBI: Context-Based Identity Management API"
 subtitle: "Draft Report"
 author: "Luca Cipriani"
 
@@ -322,7 +322,9 @@ Testing uses pytest with pytest-cov targeting 80% minimum coverage. Static analy
 
 ## System Context
 
-@fig-context illustrates the system context, showing primary actors and their relationships to the Identity Management API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
+The project is named CoBI, an acronym for Context-Based Identity. The name reflects the system's design principle: identity is not a fixed, singular record but a context-dependent construct that users control and present differently depending on the situation.
+
+@fig-context illustrates the system context, showing primary actors and their relationships to the CoBI API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
 
 ```{mermaid}
 %%| label: fig-context
@@ -333,7 +335,7 @@ flowchart TB
         user["User<br>(Individual managing identity)"]
     end
 
-    api[["Identity Management API<br>(Multi-context identity with OAuth 2.1)"]]
+    api[["CoBI API<br>(Multi-context identity with OAuth 2.1)"]]
 
     subgraph external["External Systems"]
         thirdparty["Third-Party Apps<br>(OAuth clients)"]
@@ -618,7 +620,7 @@ The GitHub Actions CI pipeline enforces four quality gates on every push and pul
 
 The frontend application is implemented using Vue 3 with TypeScript, Vite for build tooling, and Pinia for state management. The architecture follows a component-based design with separation between views (page-level components), reusable components (buttons, forms, cards), and services (API communication layer). TypeScript provides compile-time type checking that catches API contract mismatches before runtime.
 
-The application includes views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit, avatar upload), context management (list, create, detail with verification badges), OAuth consent flow, identity document upload with drag-and-drop, and administrative interfaces for OAuth client management, verification review, and soft-deleted account purging. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, responsive layouts, and internationalization support for English and Italian locales.
+The application includes views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit, avatar upload), context management (list, create, detail with verification badges), OAuth consent flow, identity document upload with drag-and-drop, and administrative interfaces for OAuth client management, verification review, and soft-deleted account purging. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, responsive layouts, and internationalization support for English and Italian locales. The application logo was generated using Google Gemini with the Imagen 3 model [@google2025gemini_imagen].
 
 @fig-vue-graph shows the component dependency graph extracted from the Vue.js application source. Blue nodes represent views (page-level route components), while green nodes represent shared components and services. The graph reveals the hub-and-spoke topology characteristic of well-structured single-page applications: the API service layer acts as a central hub connecting views to backend endpoints, while reusable UI components (buttons, modals, form elements) are shared across multiple views without circular dependencies. View-level components such as ProfileView, ContextDetailView, and OAuthConsentView depend on both the API service and shared UI components but do not depend on each other, confirming that the routing architecture enforces separation of concerns between feature domains.
 

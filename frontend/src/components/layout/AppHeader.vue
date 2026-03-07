@@ -128,7 +128,7 @@ async function handleLogout() {
   <header class="app-header">
     <div class="header-left">
       <router-link to="/" class="logo">
-        <span class="logo-text">{{ t("app.name") }}</span>
+        <img src="/cobi_logo.svg" :alt="t('app.name')" class="logo-img" />
       </router-link>
     </div>
 
@@ -294,7 +294,7 @@ async function handleLogout() {
         aria-label="Mobile navigation"
       >
         <div class="mobile-drawer-header">
-          <span class="mobile-drawer-title">{{ t("app.name") }}</span>
+          <img src="/cobi_logo.svg" :alt="t('app.name')" class="mobile-drawer-logo" />
           <button
             class="mobile-close-btn"
             @click="closeMobileMenu"
@@ -450,9 +450,9 @@ async function handleLogout() {
   color: var(--text-primary);
 }
 
-.logo-text {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+.logo-img {
+  height: 40px;
+  width: auto;
 }
 
 .header-nav {
@@ -753,10 +753,9 @@ async function handleLogout() {
   flex-shrink: 0;
 }
 
-.mobile-drawer-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
+.mobile-drawer-logo {
+  height: 32px;
+  width: auto;
 }
 
 .mobile-close-btn {
