@@ -29,16 +29,20 @@
     "features": {
       "title": "Why Choose Us",
       "privacy": {
-        "title": "Privacy by Design",
-        "description": "Built with GDPR-inspired principles for maximum data protection"
+        "title": "Privacy-First Design",
+        "description": "Built with privacy-by-design principles inspired by GDPR and data protection standards."
       },
       "contexts": {
         "title": "Multi-Context Identity",
-        "description": "Manage different personas for professional, social, and personal use"
+        "description": "Manage different identity contexts for professional, social, legal, and personal use."
       },
       "security": {
         "title": "Enterprise Security",
         "description": "Industry-standard encryption and authentication protocols"
+      },
+      "cultural": {
+        "title": "Cultural Name Support",
+        "description": "Support for diverse naming conventions including multilingual names and cultural patterns."
       }
     }
   },
@@ -184,7 +188,14 @@
       "removeSuccess": "Avatar removed successfully",
       "fileTooLarge": "File size must not exceed 5 MB",
       "invalidFormat": "Supported formats: JPEG, PNG, WebP"
-    }
+    },
+    "identityNames": "Identity Names",
+    "addName": "+ Add",
+    "noNames": "No additional names configured.",
+    "primaryName": "Primary",
+    "noContexts": "No contexts yet. Create one to separate your identities.",
+    "inheritedBio": "Inherited bio",
+    "viewAllContexts": "View All Contexts"
   },
   "context": {
     "title": "Identity Contexts",

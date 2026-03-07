@@ -35,30 +35,27 @@ const authStore = useAuthStore();
       <div class="features">
         <div class="feature-card card">
           <div class="card-body">
-            <h3>Multi-Context Identity</h3>
+            <h3>{{ t("home.features.contexts.title") }}</h3>
             <p>
-              Manage different identity contexts for professional, social,
-              legal, and personal use.
+              {{ t("home.features.contexts.description") }}
             </p>
           </div>
         </div>
 
         <div class="feature-card card">
           <div class="card-body">
-            <h3>Cultural Name Support</h3>
+            <h3>{{ t("home.features.cultural.title") }}</h3>
             <p>
-              Support for diverse naming conventions including multilingual
-              names and cultural patterns.
+              {{ t("home.features.cultural.description") }}
             </p>
           </div>
         </div>
 
         <div class="feature-card card">
           <div class="card-body">
-            <h3>Privacy-First Design</h3>
+            <h3>{{ t("home.features.privacy.title") }}</h3>
             <p>
-              Built with privacy-by-design principles inspired by GDPR and data
-              protection standards.
+              {{ t("home.features.privacy.description") }}
             </p>
           </div>
         </div>
