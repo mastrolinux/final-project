@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # benchmark.sh - HTTP load testing with hey
 #
-# Prerequisites: brew install hey
-#
 # Usage:
 #   ./scripts/benchmark.sh                    # defaults: 200 requests, 10 concurrent
 #   ./scripts/benchmark.sh -n 500 -c 20       # custom request count and concurrency
@@ -18,8 +16,8 @@ DURATION=""
 RUN_AUTH=false
 
 # Seed data IDs
-SARAH_USER_ID="00000000-0000-0000-0000-000000000001"
-PROF_CONTEXT_ID="20000000-0000-0000-0000-000000000001"
+SARAH_USER_ID="11111111-1111-1111-1111-111111111111"
+PROF_CONTEXT_ID="cccccccc-0001-0001-0001-cccccccccccc"
 
 usage() {
     echo "Usage: $0 [-n requests] [-c concurrency] [-t duration] [--auth]"
@@ -45,7 +43,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! command -v hey &> /dev/null; then
-    echo "Error: hey is not installed. Install with: brew install hey"
+    echo "Error: hey is not installed. Install following https://github.com/rakyll/hey?tab=readme-ov-file#installation"
     exit 1
 fi
 
@@ -57,9 +55,8 @@ else
     HEY_ARGS="$HEY_ARGS -n $REQUESTS"
 fi
 
-echo "============================================"
 echo "Backend Benchmark Suite"
-echo "============================================"
+echo ""
 echo "Base URL:    $BASE_URL"
 if [[ -n "$DURATION" ]]; then
     echo "Duration:    $DURATION"
@@ -68,32 +65,31 @@ else
 fi
 echo "Concurrency: $CONCURRENCY"
 echo "Auth tests:  $RUN_AUTH"
-echo "============================================"
 echo ""
 
 # --- Unauthenticated endpoints ---
 
 echo ">>> GET /health (baseline, no DB query)"
-echo "--------------------------------------------"
-# shellcheck disable=SC2086
+echo "---------------------------------------"
+
 hey $HEY_ARGS "$BASE_URL/health"
 echo ""
 
-echo ">>> GET /health/detailed (includes DB round-trip)"
-echo "--------------------------------------------"
-# shellcheck disable=SC2086
-hey $HEY_ARGS "$BASE_URL/health/detailed"
-echo ""
+# echo ">>> GET /health/detailed (includes DB round-trip)"
+# echo "-------------------------------------------------"
+# # shellcheck disable=SC2086
+# hey $HEY_ARGS "$BASE_URL/health/detailed"
+# echo ""
 
 # --- Authenticated endpoints ---
 
 if [[ "$RUN_AUTH" == true ]]; then
     echo ">>> POST /api/v1/auth/login (Argon2id hashing)"
-    echo "--------------------------------------------"
+    echo "----------------------------------------------"
     # shellcheck disable=SC2086
     hey $HEY_ARGS -m POST \
         -H "Content-Type: application/json" \
-        -d '{"email":"sarah.chen@example.com","password":"SecurePass123!"}' \
+        -d '{"email":"sarah.chen@example.com","password":"TestPassword123!"}' \
         "$BASE_URL/api/v1/auth/login"
     echo ""
 
@@ -101,7 +97,7 @@ if [[ "$RUN_AUTH" == true ]]; then
     echo "Obtaining auth token for authenticated endpoints..."
     TOKEN=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
         -H "Content-Type: application/json" \
-        -d '{"email":"sarah.chen@example.com","password":"SecurePass123!"}' \
+        -d '{"email":"sarah.chen@example.com","password":"TestPassword123!"}' \
         | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
 
     if [[ -z "$TOKEN" ]]; then
@@ -125,6 +121,4 @@ if [[ "$RUN_AUTH" == true ]]; then
     fi
 fi
 
-echo "============================================"
 echo "Benchmark complete."
-echo "============================================"
