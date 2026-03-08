@@ -371,7 +371,7 @@ flowchart TB
 
 ## Overview
 
-The implementation comprises approximately 14,600 lines of Python source code across 72 backend modules, approximately 25,200 lines of Vue.js and TypeScript across 115 frontend files, and 16,900 lines of test code across 46 test modules, supported by 751 automated tests achieving 85% code coverage. The database schema spans 19 migration files. Development followed test-driven methodology, with tests written before implementation to ensure coverage, provide executable documentation, and enable safe refactoring. A GitHub Actions CI/CD pipeline enforces lint, type, security, and test quality gates on every push and pull request.
+The implementation comprises approximately 14,600 lines of Python source code across 72 backend modules, approximately 25,500 lines of Vue.js and TypeScript across 115 frontend files, and 17,000 lines of test code across 46 test modules, supported by 755 automated tests achieving 85% code coverage. The database schema spans 19 migration files. Development followed test-driven methodology, with tests written before implementation to ensure coverage, provide executable documentation, and enable safe refactoring. A GitHub Actions CI/CD pipeline enforces lint, type, security, and test quality gates on every push and pull request.
 
 
 ## Project Management
@@ -662,24 +662,24 @@ Web API evaluation differs from machine learning evaluation. Rather than accurac
 
 ## Automated Testing Results
 
-A test suite of 751 automated tests spans unit and integration layers, achieving 85% code coverage across 5,455 statements. Tests are organized across 46 test modules covering all major subsystems.
+A test suite of 755 automated tests spans unit and integration layers, achieving 85% code coverage across 5,458 statements. Tests are organized across 46 test modules covering all major subsystems.
 
 | Test Category | Count | Coverage | Description |
 |--------------|-------|----------|-------------|
-| Context Management | 54 | 93% | Inheritance engine, resolution, endpoints |
-| OAuth System | 117 | 96% | PKCE, tokens, consent, admin |
-| Authentication | 73 | 95% | Registration, login, JWT, lockout |
-| Verification | 82 | 81% | Document upload, review, expiry, linking |
-| Profile Management | 46 | 95% | CRUD operations, repositories |
-| Privacy and Audit | 68 | 99% | Data export, audit trails, soft deletion |
-| Schema Validation | 50 | 96% | Pydantic models, input validation |
-| Infrastructure | 38 | 88% | Database, Redis, configuration |
-| Social Auth | 35 | 98% | OAuth provider integration, token exchange |
-| Encryption | 24 | 96% | Fernet encryption, document security |
-| Admin Operations | 34 | 85% | Client management, user purge, review |
-| Avatar Management | 30 | 96% | Upload, storage, retrieval |
+| OAuth System | 136 | 96% | PKCE, tokens, consent, admin, repositories |
+| Privacy and Audit | 130 | 99% | Data export, audit trails, soft deletion, expiry |
+| Authentication | 88 | 95% | Registration, login, JWT, lockout |
+| Verification | 86 | 81% | Document upload, review, expiry, linking |
+| Context Management | 79 | 93% | Inheritance engine, resolution, verification rules |
+| Profile Management | 64 | 91% | CRUD operations, repositories, models |
+| Avatar and Image | 50 | 96% | Upload, processing, storage, retrieval |
+| Infrastructure | 48 | 88% | Database, Redis, configuration |
+| Social Auth | 25 | 98% | OAuth provider integration, token exchange |
+| Schema Validation | 22 | 96% | Pydantic models, input validation |
+| Admin Operations | 18 | 85% | User management, purge, review |
+| Encryption | 9 | 79% | Fernet encryption, document security |
 
-Critical algorithms achieve near-complete coverage. The context service containing the inheritance engine has 93% coverage with tests validating full overrides, partial overrides with null inheritance, deprecated name filtering, temporal validity checking (HTTP 410 for expired contexts), and language fallback chains. The OAuth service has 96% coverage, with PKCE validation tested across valid verifiers, invalid verifiers, malformed challenges, and timing attack resistance. The privacy service achieves 99% coverage, validating data export formats and soft deletion with retention enforcement.
+Services implementing the system's core differentiators maintain coverage above 93%: privacy_service (99%), oauth_service (96%), and context_service (93%), covering GDPR-inspired data rights, PKCE-protected authorization, and inheritance resolution respectively.
 
 ## Functional Correctness Evaluation
 
@@ -753,16 +753,20 @@ Code quality is enforced through a GitHub Actions CI/CD pipeline that gates ever
 
 ## Performance Evaluation
 
-Preliminary performance measurements indicate the system meets response time targets:
+Load testing was conducted using `hey` [@rakyll2024hey], an HTTP load generator, sending 200 requests at 10 concurrent connections to both local (Docker Compose with local Supabase) and production (Render standard plan, Supabase Micro, both in Frankfurt) environments. The full benchmark output is reproduced in @sec-appendix-benchmarks.
 
-| Endpoint | p50 | p95 | Target |
-|----------|-----|-----|--------|
-| GET /profiles/{id} | 12ms | 28ms | <50ms |
-| GET /contexts/{id}/resolved | 18ms | 42ms | <100ms |
-| POST /oauth/token | 45ms | 89ms | <200ms |
-| GET /oauth/userinfo | 22ms | 48ms | <100ms |
+| Endpoint | Local p50 | Local p95 | Prod p50 | Prod p95 |
+|----------|-----------|-----------|----------|----------|
+| GET /health (no DB) | 1ms | 22ms | 71ms | 320ms |
+| POST /auth/login | 365ms | 1,217ms | 2,462ms | 2,946ms |
+| GET /contexts/{id}/resolved | 27ms | 38ms | 253ms | 387ms |
+| GET /contexts | 16ms | 25ms | 188ms | 317ms |
 
-The inheritance algorithm's O(n) complexity with typical profiles containing 10-15 fields contributes minimal overhead. Database queries use indexed lookups, avoiding table scans. Redis caching (not yet enabled in measurements) is expected to reduce database load by 80-90% for frequently accessed profiles.
+The health endpoint, which performs no database query, establishes a network baseline. Its 70ms local-to-production delta represents the round-trip from the benchmark client to Render Frankfurt. Subtracting this constant from the database-dependent endpoints isolates server-side processing overhead: context resolution takes approximately 183ms on production versus 27ms locally (6.8x), and context listing takes 118ms versus 16ms (7.4x). Both Render and Supabase are deployed in the Frankfurt region, so this gap reflects Supabase Micro's shared-CPU query execution rather than geographic network distance.
+
+Login latency under concurrency is dominated by Argon2id's deliberate computational cost. Each hash allocates 64 MB (`memory_cost=65536`), so 10 concurrent requests require 640 MB for hashing alone on a 2 GB instance. The resulting 4.2 req/s throughput on production versus 24.2 req/s locally reflects CPU and memory constraints on the Render standard plan (1 shared vCPU, 2 GB RAM) compared to local Apple Silicon hardware. This performance characteristic is a security property rather than a defect: the same cost that slows benchmarks makes credential stuffing attacks computationally infeasible.
+
+The inheritance algorithm's O(n) complexity with typical profiles containing 10-15 fields contributes minimal overhead to context resolution. Database queries use indexed lookups, avoiding table scans. Redis caching reduces database load for frequently accessed profiles with a configurable 300-second TTL.
 
 ## Security Evaluation
 
@@ -782,8 +786,6 @@ Security testing covers OWASP API Security Top 10 risks:
 Password hashing uses Argon2id with OWASP-recommended parameters (memory_cost=65536, time_cost=3, parallelism=4), providing resistance against GPU-based attacks. JWT tokens use HS256 symmetric signing for development, with RS256 asymmetric signing planned for production to prevent token forgery without the private key.
 
 Bandit, a static application security testing (SAST) tool for Python, runs in the CI pipeline at medium severity threshold against all source modules. The scanner detects common vulnerability patterns including hardcoded credentials, insecure use of cryptographic functions, SQL injection risks, and unsafe deserialization. Findings are triaged during development: true positives are fixed before merge, while false positives from test fixtures or intentional patterns receive inline suppression with documented justification. The medium severity threshold balances signal quality against noise, suppressing low-confidence informational findings that would otherwise generate false positives on standard library usage.
-
-The current security evaluation relies on bandit SAST scanning plus automated test coverage of known attack patterns rather than adversarial testing by external parties. This limitation reflects academic resource constraints rather than architectural deficiency; the security measures implemented follow industry best practices and would support professional penetration testing when resources permit.
 
 ## User Research and Validation
 
@@ -832,7 +834,7 @@ Think-aloud observations identified five improvement areas. Three were resolved 
 
 Beyond aggregate coverage metrics, analysis of coverage distribution reveals intentional testing priorities. Service layer code achieves the highest coverage: auth_service (95%), oauth_service (96%), context_service (93%), privacy_service (99%), social_auth_service (98%), verification_service (81%), and audit_service (100%). Repository layer code ranges from 65% (verification_repository) to 95% (profile_repository), with uncovered paths primarily consisting of database connection error handling that cannot be reliably triggered in test environments.
 
-The coverage gap in API endpoint modules reflects deliberate prioritization. Authentication endpoints achieve 80% coverage and context endpoints 87%, given their user-facing criticality. The OAuth endpoint module achieves 50% coverage because consent flow UI interactions and redirect handling require browser-level testing beyond unit and integration scope.
+The coverage gap in API endpoint modules reflects deliberate prioritization. Authentication endpoints achieve 76% coverage and context endpoints 88%, given their user-facing criticality. The OAuth endpoint module achieves 72% coverage because consent flow UI interactions and redirect handling require browser-level testing beyond unit and integration scope.
 
 Critical code paths maintain 100% coverage through explicit test requirements. The PKCE verification function, context resolution algorithm, scope-based field filtering, and audit hash chain verification each have dedicated test files ensuring all branches are exercised. These tests serve as executable specification, documenting expected behavior for edge cases that prose documentation might miss.
 
@@ -852,9 +854,9 @@ GDPR-inspired privacy features are now operational. Data export (GDPR Article 15
 
 The evaluation identified several limitations requiring attention before final submission.
 
-Performance testing lacks load testing under concurrent users. While individual request latency meets targets, behavior under 100+ concurrent requests remains unvalidated. Load testing using Locust or k6 will characterize throughput limits and identify bottlenecks under sustained load.
+Load testing with 10 concurrent connections characterizes baseline performance on the production infrastructure. Testing at higher concurrency levels (50-100+ simultaneous users) remains unvalidated and would require horizontal scaling or a higher-tier compute plan to produce meaningful results.
 
-System Usability Scale (SUS) testing was conducted with six participants spanning technical and non-technical backgrounds. The mean SUS score of 73.3 falls within the "acceptable" range, though high variance (SD = 22.2) indicates divergent user experiences. One participant (P5, non-technical background) scored 30, the only score below the acceptability threshold, suggesting that the OAuth consent flow and context management concepts require additional onboarding for users unfamiliar with identity management systems. Five improvement tasks were identified from participant feedback, of which three (dark mode contrast, Italian localization, and consent revocation discoverability) were resolved before submission. The remaining two, email verification visibility and OAuth scope terminology, require further iteration.
+The SUS evaluation detailed above yielded an "acceptable" mean score, but P5's outlier result (30.0) indicates that multi-context identity concepts require onboarding support for non-technical users. Two of the five identified improvement tasks (email verification visibility and OAuth scope terminology) remain open.
 
 Security testing is automated through the CI pipeline (bandit at medium severity, OWASP-aligned test suite) but does not include penetration testing by external parties. The academic context limits access to professional security auditors.
 
@@ -876,7 +878,7 @@ The OAuth 2.1 authorization server with mandatory PKCE provides secure third-par
 
 Multilingual name support via JSONB storage accommodates global naming conventions without imposing Western structural assumptions. The four-tier language fallback chain ensures appropriate name display based on requesting application locale. GDPR-inspired privacy features, including data export, soft deletion with 30-day retention, audit logging with hash chain integrity, and identity document verification with automated expiry, are fully operational.
 
-A test suite of 751 automated tests achieving 85% coverage, enforced by a CI/CD pipeline running lint, type, security, and test quality gates, provides confidence in functional correctness. Security measures including Argon2id password hashing, JWT authentication, Row-Level Security policies, and scope-based filtering implement defense in depth against common attack vectors.
+A test suite of 755 automated tests achieving 85% coverage, enforced by a CI/CD pipeline running lint, type, security, and test quality gates, provides confidence in functional correctness. Security measures including Argon2id password hashing, JWT authentication, Row-Level Security policies, and scope-based filtering implement defense in depth against common attack vectors.
 
 ## Broader Implications
 
@@ -1162,8 +1164,8 @@ The following output captures the complete test run with per-module coverage ana
 ============================== test session starts ==============================
 platform linux -- Python 3.12.12, pytest-7.4.4, pluggy-1.6.0
 rootdir: /app
-plugins: anyio-4.12.0, cov-4.1.0, asyncio-0.23.3, Faker-22.0.0
-collected 751 items
+plugins: anyio-4.12.1, cov-4.1.0, asyncio-0.23.3, Faker-22.0.0
+collected 755 items
 
 tests/integration/test_admin_oauth_endpoints.py ...........              [  1%]
 tests/integration/test_admin_user_endpoints.py ........                  [  2%]
@@ -1173,11 +1175,13 @@ tests/integration/test_audit_integration.py .......                      [  5%]
 tests/integration/test_auth_endpoints.py .....................           [  8%]
 tests/integration/test_auth_integration.py ...........                   [  9%]
 tests/integration/test_avatar_endpoints.py ...................           [ 12%]
-tests/integration/test_context_endpoints.py .............................[16%]
+tests/integration/test_context_endpoints.py ............................ [ 16%]
+...                                                                      [ 16%]
 tests/integration/test_context_verification_rule.py ...........          [ 18%]
 tests/integration/test_database_integration.py ..........                [ 19%]
-tests/integration/test_endpoints.py ............                         [ 21%]
-tests/integration/test_oauth_endpoints.py ............................   [ 24%]
+tests/integration/test_endpoints.py ............                         [ 20%]
+tests/integration/test_oauth_endpoints.py .............................. [ 24%]
+                                                                         [ 24%]
 tests/integration/test_privacy_endpoints.py ............                 [ 26%]
 tests/integration/test_social_auth_endpoints.py ...........              [ 27%]
 tests/integration/test_soft_deletion_endpoints.py .............          [ 29%]
@@ -1187,18 +1191,21 @@ tests/unit/test_admin_user_purge.py .....                                [ 33%]
 tests/unit/test_audit_model.py ...............                           [ 35%]
 tests/unit/test_audit_repository.py ..........                           [ 36%]
 tests/unit/test_audit_service.py ........                                [ 37%]
-tests/unit/test_auth_service.py .........................................[42%]
+tests/unit/test_auth_service.py ........................................ [ 42%]
+................                                                         [ 44%]
 tests/unit/test_avatar_service.py .............                          [ 46%]
 tests/unit/test_config.py ..........                                     [ 47%]
-tests/unit/test_context_service.py .......................................[52%]
+tests/unit/test_context_service.py ..................................... [ 52%]
+                                                                         [ 52%]
 tests/unit/test_database.py ..........                                   [ 54%]
 tests/unit/test_document_validation.py ...............                   [ 56%]
 tests/unit/test_encryption.py .........                                  [ 57%]
 tests/unit/test_expiry_tasks.py ..............                           [ 59%]
 tests/unit/test_image_processing.py ..................                   [ 61%]
 tests/unit/test_models.py .............                                  [ 63%]
-tests/unit/test_oauth_repository.py ..................................   [ 67%]
-tests/unit/test_oauth_service.py ........................................[73%]
+tests/unit/test_oauth_repository.py ...................................  [ 67%]
+tests/unit/test_oauth_service.py ....................................... [ 73%]
+.....................                                                    [ 75%]
 tests/unit/test_privacy_service.py .............                         [ 77%]
 tests/unit/test_profile_repository.py .............................      [ 81%]
 tests/unit/test_profile_service.py ..........                            [ 82%]
@@ -1206,7 +1213,8 @@ tests/unit/test_redis_client.py ..................                       [ 85%]
 tests/unit/test_schemas.py ......................                        [ 88%]
 tests/unit/test_social_auth_service.py ..............                    [ 89%]
 tests/unit/test_soft_deletion.py ..............................          [ 93%]
-tests/unit/test_verification_service.py .................................[ 98%]
+tests/unit/test_verification_service.py ................................ [ 98%]
+..............                                                           [100%]
 
 ---------- coverage: platform linux, python 3.12.12-final-0 ----------
 Name                                          Stmts   Miss  Cover  Missing
@@ -1219,7 +1227,7 @@ src/api/v1/endpoints/audit.py                    20      0   100%
 src/api/v1/endpoints/auth.py                    153     37    76%  126-142,148-150
 src/api/v1/endpoints/avatars.py                  55      3    95%  73-75
 src/api/v1/endpoints/contexts.py                101     12    88%  60,93,175-179
-src/api/v1/endpoints/oauth.py                   233     70    70%  164,206-207,250
+src/api/v1/endpoints/oauth.py                   233     65    72%  164,206-207,250
 src/api/v1/endpoints/privacy.py                  42      6    86%  77-78,110-116
 src/api/v1/endpoints/profiles.py                 86     37    57%  49-52,61-62,77
 src/api/v1/endpoints/social_auth.py              60      6    90%  74-75,166,171
@@ -1232,6 +1240,7 @@ src/core/encryption.py                           33      7    79%  38-39,47-48
 src/core/image.py                                54      0   100%
 src/core/redis_client.py                         89      6    93%  50,64,89,103
 src/core/security.py                             61      6    90%  137-138,146-149
+src/core/storage.py                             138     64    54%  61-70,78-87
 src/models/audit.py                              75      1    99%  122
 src/models/auth.py                               71      8    89%  78,92,94,103
 src/models/context.py                            62     15    76%  76,98,110-124
@@ -1242,7 +1251,7 @@ src/repositories/audit_repository.py             55      5    91%  148,150,158
 src/repositories/auth_repository.py             176     18    90%  31-33,128-138
 src/repositories/avatar_repository.py            34      2    94%  51,92
 src/repositories/context_repository.py           72      8    89%  101,119,129-136
-src/repositories/oauth_repository.py            236     27    89%  104,114,118-124
+src/repositories/oauth_repository.py            239     27    89%  104,114,118-124
 src/repositories/profile_repository.py           96      5    95%  58,166,184
 src/repositories/verification_repository.py      80     28    65%  111-112,130-138
 src/schemas/auth.py                             126      6    95%  41,49,104,192
@@ -1263,74 +1272,117 @@ src/services/verification_service.py            267     52    81%  85-87,93-95,1
 src/tasks/email_tasks.py                        123    103    16%  18-26,32-120
 src/tasks/expiry_tasks.py                        22     22     0%  7-45
 --------------------------------------------------------------------------
-TOTAL                                          5455    812    85%
+TOTAL                                          5458    807    85%
 
-======================= 751 passed, 1 warning in 13.54s ========================
+======================= 755 passed, 1 warning in 14.21s ========================
 \end{verbatim}
 \end{footnotesize}
 ```
 
-# Appendix D: Usability Testing Results {-}
+\newpage
 
-This appendix presents detailed results from the System Usability Scale (SUS) evaluation conducted with six participants. The study followed a moderated think-aloud protocol with five representative tasks covering account registration, context profile management, OAuth consent, consent revocation, and data export. Scores were computed per Brooke [@brooke1996sus] and interpreted using the Bangor et al. [@bangor2009sus] adjective rating scale.
+# Appendix D: Performance Benchmark Output {- #sec-appendix-benchmarks}
 
-## Participant Demographics {-}
+The following output captures the complete `hey` benchmark runs against both local and production environments. Each run sends 200 requests at 10 concurrent connections with authenticated endpoints enabled (`--auth` flag). The benchmark script is available at `backend/scripts/benchmark.sh`.
 
-| ID | Age Range | Technical Literacy | Prior Identity Tool Use | Occupation |
-|----|-----------|-------------------|------------------------|------------|
-| P1 | 30-34 | Intermediate | Occasionally | Software Developer |
-| P2 | 35-39 | Advanced | Regularly | Security Consultant |
-| P3 | 25-29 | Advanced | Regularly | UX Designer |
-| P4 | 40-44 | Intermediate | Occasionally | Project Manager |
-| P5 | 45-54 | Beginner | Never | Administrative Assistant |
-| P6 | 25-29 | Intermediate | Never | Graduate Student |
+## Local Environment (Docker Compose + Supabase)
 
-: Participant demographics for SUS evaluation {#tbl-sus-demographics}
+Base URL: `http://localhost:8000`. Hardware: Apple Silicon, 16 GB+ RAM, local PostgreSQL via Supabase CLI.
 
-## Individual SUS Scores {-}
+```{=latex}
+\begin{footnotesize}
+\begin{verbatim}
+>>> GET /health (baseline, no DB query)
+Summary:
+  Total:        0.0580 secs
+  Requests/sec: 3446.8100
+Latency distribution:
+  50% in 0.0014 secs    75% in 0.0017 secs
+  90% in 0.0022 secs    95% in 0.0222 secs    99% in 0.0326 secs
+Status code distribution:  [200] 200 responses
 
-| ID | Score | Grade | Adjective Rating | Percentile Range |
-|----|-------|-------|-------------------|------------------|
-| P1 | 70.0 | B | Good | 40th-50th |
-| P2 | 80.0 | B | Good | 60th-70th |
-| P3 | 92.5 | A | Excellent | 95th+ |
-| P4 | 95.0 | A | Excellent | 95th+ |
-| P5 | 30.0 | F | Poor | Below 5th |
-| P6 | 72.5 | B | Good | 50th-60th |
+>>> POST /api/v1/auth/login (Argon2id hashing)
+Summary:
+  Total:        8.2570 secs
+  Requests/sec: 24.2218
+Latency distribution:
+  50% in 0.3647 secs    75% in 0.3978 secs
+  90% in 0.4545 secs    95% in 1.2172 secs    99% in 1.2590 secs
+Status code distribution:  [200] 200 responses
 
-: Individual SUS scores with adjective ratings per Bangor et al. [@bangor2009sus] {#tbl-sus-individual}
+>>> GET /contexts/{id}/resolved (inheritance engine)
+Summary:
+  Total:        0.5671 secs
+  Requests/sec: 352.6681
+Latency distribution:
+  50% in 0.0274 secs    75% in 0.0316 secs
+  90% in 0.0354 secs    95% in 0.0384 secs    99% in 0.0453 secs
+Status code distribution:  [200] 200 responses
 
-Mean: 73.3 (SD = 22.2). Excluding P5: 82.0 (SD = 10.5).
+>>> GET /contexts (list contexts)
+Summary:
+  Total:        0.3339 secs
+  Requests/sec: 598.9764
+Latency distribution:
+  50% in 0.0160 secs    75% in 0.0188 secs
+  90% in 0.0221 secs    95% in 0.0245 secs    99% in 0.0276 secs
+Status code distribution:  [200] 200 responses
+\end{verbatim}
+\end{footnotesize}
+```
 
-## Task Completion Summary {-}
+## Production Environment (Render Standard + Supabase Micro)
 
-| Task | P1 | P2 | P3 | P4 | P5 | P6 | Completion Rate |
-|------|----|----|----|----|----|----|-----------------|
-| 1. Registration | Y | Y | Y | Y | Y | Y | 100% |
-| 2. Context creation | Y | Y | Y | Y | N | Y | 83% |
-| 3. OAuth consent | N | Y | Y | Y | N | Y | 67% |
-| 4. Consent revocation | N | Y | Y | Y | N | N | 50% |
-| 5. Data export | Y | Y | Y | Y | Y | Y | 100% |
+Base URL: `https://identity-api-9hpf.onrender.com`. Infrastructure: Render standard plan (1 vCPU, 2 GB RAM, Frankfurt), Supabase Micro (2-core shared, 1 GB RAM, Frankfurt).
 
-: Task completion by participant. Y = completed independently, N = required facilitator intervention or abandoned {#tbl-sus-tasks}
+```{=latex}
+\begin{footnotesize}
+\begin{verbatim}
+>>> GET /health (baseline, no DB query)
+Summary:
+  Total:        1.9968 secs
+  Requests/sec: 100.1608
+Latency distribution:
+  50% in 0.0710 secs    75% in 0.0843 secs
+  90% in 0.1056 secs    95% in 0.3196 secs    99% in 0.4102 secs
+Status code distribution:  [200] 200 responses
 
-Task 4 (consent revocation) had the lowest completion rate. Two participants could not locate the Connected Apps page without assistance. This finding led to restructuring the Settings navigation into a dropdown menu, resolving the discoverability issue.
+>>> POST /api/v1/auth/login (Argon2id hashing)
+Summary:
+  Total:        47.4151 secs
+  Requests/sec: 4.2181
+Latency distribution:
+  50% in 2.4618 secs    75% in 2.6273 secs
+  90% in 2.8362 secs    95% in 2.9462 secs    99% in 3.1963 secs
+Status code distribution:  [200] 200 responses
 
-## Identified Improvements {-}
+>>> GET /contexts/{id}/resolved (inheritance engine)
+Summary:
+  Total:        5.8644 secs
+  Requests/sec: 34.1042
+Latency distribution:
+  50% in 0.2527 secs    75% in 0.2727 secs
+  90% in 0.3718 secs    95% in 0.3870 secs    99% in 0.5528 secs
+Status code distribution:  [200] 200 responses
 
-| Issue | Source | Severity | Status |
-|-------|--------|----------|--------|
-| Dark mode contrast on OAuth consent screen | P2, P3 | Medium | Resolved |
-| Incomplete Italian localization | P6 | Medium | Resolved |
-| Consent revocation not discoverable in navigation | P1, P5 | High | Resolved |
-| Email verification status not visible during registration | P4, P5 | Low | Resolved |
-| OAuth scope names unintuitive (`profile:read:basic`) | P2, P5, P6 | Low | Open |
-
-: Usability improvements identified during SUS evaluation {#tbl-sus-improvements}
-
-Full per-participant session recordings, think-aloud transcripts, and individual SUS questionnaire responses are documented in the supplementary participant results report.
+>>> GET /contexts (list contexts)
+Summary:
+  Total:        4.5515 secs
+  Requests/sec: 43.9419
+Latency distribution:
+  50% in 0.1884 secs    75% in 0.2096 secs
+  90% in 0.2823 secs    95% in 0.3167 secs    99% in 0.4304 secs
+Status code distribution:  [200] 200 responses
+\end{verbatim}
+\end{footnotesize}
+```
 
 \newpage
+
+# Appendix E: Usability Testing Results {- #sec-appendix-usability}
+
+{{< include architecture/participant-results-body.qmd >}}
+
 
 # References {-}
 
