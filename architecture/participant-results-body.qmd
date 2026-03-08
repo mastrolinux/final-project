@@ -1,0 +1,797 @@
+
+## Participant P1
+
+Participant ID: **P1** \hfill Date: **2026-02-23**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\square$ 25-34
+- $\checkmark$ 35-44
+- $\square$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\checkmark$ Beginner (I use basic apps like email and social media)
+- $\square$ Intermediate (I configure settings and install software)
+- $\square$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\checkmark$ Never
+- $\square$ Occasionally
+- $\square$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 2 | I found the system unnecessarily complex. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 6 | I thought there was too much inconsistency in this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 8 | I found the system very cumbersome to use. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> I didn't realize right away that I needed to verify my email, since I missed the initial message.
+
+**2.** What would you change about the system if you could change one thing?
+
+> The Italian localisation is incomplete. Several interface strings remain in English while others appear in Italian.
+
+**3.** Any additional comments?
+
+> I like the dark/light theme choice.
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 7 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+
+Sum of contributions: **28**
+
+SUS Score (sum × 2.5): **70.0**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
+
+Participant ID: **P1** \hfill Date: **2026-02-23** \hfill Facilitator: **Luca C.**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 3:20 | 0 | User used custom email/password |
+| 2. Create professional context profile | Y | 8:12 | 0 | Decided to go with a Legal context, it took a bit to upload the document |
+| 3. Authorize third-party application (OAuth) | Y | 9:03 | 0 |  |
+| 4. View and revoke OAuth access | N | 10:14 | 1 | Missing implementation - not showing in the UI |
+| 5. Export personal data (optional) | N/A | - | - | User was not available to continue |
+
+### Facilitator Interventions
+
+| Task | Time into task | Intervention description |
+|------|:--------------:|--------------------------|
+| Registration | 0:45 | Confirmed they should verify the email and login again |
+| Revoking OAuth access | 0:15 | Asked the user to stop because there was no OAuth connected apps in the context view |
+
+### Think-Aloud Observations
+
+- User missed the description of the verification flow via email due to quick redirect to the login page.
+- The user was using a tablet, and was struggling to find the menu at the beginning, but they figured it out on their own.
+- User was particularly happy to switch between the light and the dark theme.
+- User complained about the lack of correct Italian translations in the whole interface.
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 7 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+
+Sum of contributions: **28**
+
+SUS Score (sum × 2.5): **70.0**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
+
+## Participant P2
+
+Participant ID: **P2** \hfill Date: **2026-02-23**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\checkmark$ 25-34
+- $\square$ 35-44
+- $\square$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\square$ Beginner (I use basic apps like email and social media)
+- $\checkmark$ Intermediate (I configure settings and install software)
+- $\square$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\square$ Never
+- $\checkmark$ Occasionally
+- $\square$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 2 | I found the system unnecessarily complex. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 6 | I thought there was too much inconsistency in this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 8 | I found the system very cumbersome to use. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> (No response)
+
+**2.** What would you change about the system if you could change one thing?
+
+> (No response)
+
+**3.** Any additional comments?
+
+> It's very fast.
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+
+Sum of contributions: **32**
+
+SUS Score (sum × 2.5): **80.0**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
+
+Participant ID: **P2** \hfill Date: **2026-02-23** \hfill Facilitator: **Luca C.**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 0:35 | 0 | User used Google to login |
+| 2. Create professional context profile | Y | 3:50 | 0 |  |
+| 3. Authorize third-party application (OAuth) | Y | 5:25 | 1 | Not visible avatar in consent flow confused the user |
+| 4. View and revoke OAuth access | N | - | 1 | Confirmed bug of missing implementation |
+| 5. Export personal data (optional) | Y | - | 0 | User was not given detailed instructions |
+
+### Facilitator Interventions
+
+No interventions were needed during this session.
+
+### Think-Aloud Observations
+
+- User mentioned the system was very fast and simple to use. No intervention needed, they seemed used to such systems.
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+
+Sum of contributions: **32**
+
+SUS Score (sum × 2.5): **80.0**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
+
+## Participant P3
+
+Participant ID: **P3** \hfill Date: **2026-03-03**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\square$ 25-34
+- $\checkmark$ 35-44
+- $\square$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\checkmark$ Beginner (I use basic apps like email and social media)
+- $\square$ Intermediate (I configure settings and install software)
+- $\square$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\checkmark$ Never
+- $\square$ Occasionally
+- $\square$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 2 | I found the system unnecessarily complex. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 6 | I thought there was too much inconsistency in this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 8 | I found the system very cumbersome to use. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> The reason the danger zone is dangerous isn't explained.
+
+**2.** What would you change about the system if you could change one thing?
+
+> Some text is difficult to read because there isn't enough contrast.
+
+**3.** Any additional comments?
+
+> (No response)
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 10 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
+
+Sum of contributions: **37**
+
+SUS Score (sum × 2.5): **92.5**
+
+Grade (Bangor et al., 2009): **A (excellent)**
+
+\newpage
+
+Participant ID: **P3** \hfill Date: **2026-03-03** \hfill Facilitator: **Luca C.**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 2:34 | 0 | Complete profile creation, asked for more languages |
+| 2. Create professional context profile | Y | 4:48 | 0 |  |
+| 3. Authorize third-party application (OAuth) | Y | 6:12 | 0 |  |
+| 4. View and revoke OAuth access | Y | 7:15 | 0 |  |
+| 5. Export personal data (optional) | Y | 8:37 | 0 | They did it but do not know how to import eventually again |
+
+### Facilitator Interventions
+
+| Task | Time into task | Intervention description |
+|------|:--------------:|--------------------------|
+| OAuth authorization | - | Had to select the text manually because it was not readable |
+
+### Think-Aloud Observations
+
+- User complains about not understanding the danger zone.
+- User was not able to see some grey over white text when using dark theme on the consent screen.
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 10 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
+
+Sum of contributions: **37**
+
+SUS Score (sum × 2.5): **92.5**
+
+Grade (Bangor et al., 2009): **A (excellent)**
+
+\newpage
+
+## Participant P4
+
+Participant ID: **P4** \hfill Date: **2026-03-04**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\checkmark$ 25-34
+- $\square$ 35-44
+- $\square$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\square$ Beginner (I use basic apps like email and social media)
+- $\square$ Intermediate (I configure settings and install software)
+- $\checkmark$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\square$ Never
+- $\square$ Occasionally
+- $\checkmark$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 2 | I found the system unnecessarily complex. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 6 | I thought there was too much inconsistency in this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 8 | I found the system very cumbersome to use. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> Nothing was confusing. The flow felt natural and well-structured.
+
+**2.** What would you change about the system if you could change one thing?
+
+> I'd add keyboard shortcuts for power users.
+
+**3.** Any additional comments?
+
+> Good separation of concerns between contexts. Clean UI.
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 10 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+
+Sum of contributions: **38**
+
+SUS Score (sum × 2.5): **95.0**
+
+Grade (Bangor et al., 2009): **A (excellent)**
+
+\newpage
+
+Participant ID: **P4** \hfill Date: **2026-03-04** \hfill Facilitator: **Luca**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 1:42 | 0 | Went straight to registration, no hesitation |
+| 2. Create professional context profile | Y | 1:15 | 0 | Found context creation immediately |
+| 3. Authorize third-party application (OAuth) | Y | 1:08 | 0 | Read scopes carefully, selected correct context |
+| 4. View and revoke OAuth access | Y | 0:45 | 0 | Navigated to consents page directly |
+| 5. Export personal data (optional) | Y | 0:52 | 0 | Found export in settings without help |
+
+### Facilitator Interventions
+
+No interventions were needed during this session.
+
+### Think-Aloud Observations
+
+- "This is pretty standard registration flow, nothing unusual."
+- "Oh nice, I can have separate identities - that's useful for work vs personal."
+- "The OAuth consent screen is clear, I can see exactly what Portfolio App wants."
+- "Revoking is where I'd expect it, under authorized apps."
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
+| 10 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
+
+Sum of contributions: **38**
+
+SUS Score (sum × 2.5): **95.0**
+
+Grade (Bangor et al., 2009): **A (excellent)**
+
+\newpage
+
+## Participant P5
+
+Participant ID: **P5** \hfill Date: **2026-03-06**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\square$ 25-34
+- $\square$ 35-44
+- $\checkmark$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\checkmark$ Beginner (I use basic apps like email and social media)
+- $\square$ Intermediate (I configure settings and install software)
+- $\square$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\checkmark$ Never
+- $\square$ Occasionally
+- $\square$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 2 | I found the system unnecessarily complex. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 6 | I thought there was too much inconsistency in this system. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 8 | I found the system very cumbersome to use. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> The OAuth authorization screen was confusing. I didn't understand what "scopes" meant. Also finding where to revoke access was hard.
+
+**2.** What would you change about the system if you could change one thing?
+
+> Simpler language. Instead of "scopes" say "what data the app can see."
+
+**3.** Any additional comments?
+
+> The concept of separate identities is interesting but needs a better introduction for non-technical users.
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 2 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 3 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 4 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 6 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
+| 7 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 8 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 9 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+
+Sum of contributions: **12**
+
+SUS Score (sum × 2.5): **30.0**
+
+Grade (Bangor et al., 2009): **F (poor)**
+
+\newpage
+
+Participant ID: **P5** \hfill Date: **2026-03-06** \hfill Facilitator: **Luca**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 3:48 | 2 | Tried to submit without filling email. Confused by verification step. |
+| 2. Create professional context profile | Y | 3:12 | 1 | Initially looked for "new profile" in top menu, took a while to find context creation |
+| 3. Authorize third-party application (OAuth) | Y | 2:45 | 2 | Did not read scopes initially, clicked approve then hesitated. Selected wrong context first. |
+| 4. View and revoke OAuth access | N | 3:00 | 3 | Could not find authorized apps page. Looked in profile settings, account settings. Time expired. |
+| 5. Export personal data (optional) | - | - | - | Skipped (participant was fatigued after Task 4 difficulty) |
+
+### Facilitator Interventions
+
+| Task | Time into task | Intervention description |
+|------|:--------------:|--------------------------|
+| 1 | 2:30 | Guided participant to check Mailpit for verification email |
+| 4 | 2:15 | Hinted that authorized apps might be under a different menu section |
+
+### Think-Aloud Observations
+
+- "Where do I verify my email? I don't see any confirmation."
+- "What's a context profile? Is that like a second account?"
+- "OAuth - I'm not sure what scopes means. What is profile:read?"
+- "I want to remove the app's access but I can't find where. Maybe under settings?"
+- "This is a bit overwhelming, there are many options."
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 2 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 3 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 4 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 6 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
+| 7 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 8 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+| 9 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
+| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
+
+Sum of contributions: **12**
+
+SUS Score (sum × 2.5): **30.0**
+
+Grade (Bangor et al., 2009): **F (poor)**
+
+\newpage
+
+## Participant P6
+
+Participant ID: **P6** \hfill Date: **2026-03-09**
+
+### Section A: Demographics
+
+**1. Age range:**
+
+- $\square$ 18-24
+- $\checkmark$ 25-34
+- $\square$ 35-44
+- $\square$ 45-54
+- $\square$ 55+
+
+**2. How would you rate your general technical literacy?**
+
+- $\square$ Beginner (I use basic apps like email and social media)
+- $\checkmark$ Intermediate (I configure settings and install software)
+- $\square$ Advanced (I write code or manage technical systems)
+
+**3. Have you previously used any identity or profile management tool?**
+
+- $\square$ Never
+- $\checkmark$ Occasionally
+- $\square$ Regularly
+
+### Section B: System Usability Scale
+
+After completing the test tasks, rate each statement on a scale from 1 to 5.
+
+**1** = Strongly Disagree | **2** = Disagree | **3** = Neutral | **4** = Agree | **5** = Strongly Agree
+
+| # | Statement | 1 | 2 | 3 | 4 | 5 |
+|---|-----------|:-:|:-:|:-:|:-:|:-:|
+| 1 | I think that I would like to use this system frequently. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 2 | I found the system unnecessarily complex. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 3 | I thought the system was easy to use. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 4 | I think that I would need the support of a technical person to be able to use this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 5 | I found the various functions in this system were well integrated. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 6 | I thought there was too much inconsistency in this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 7 | I would imagine that most people would learn to use this system very quickly. | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ |
+| 8 | I found the system very cumbersome to use. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+| 9 | I felt very confident using the system. | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ |
+| 10 | I needed to learn a lot of things before I could get going with this system. | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ |
+
+### Section C: Open-Ended Feedback
+
+**1.** What, if anything, did you find confusing or difficult?
+
+> Finding authorized apps took a moment. I expected it under profile or settings, not context.
+
+**2.** What would you change about the system if you could change one thing?
+
+> Move the "authorized apps" link to the profile page or add a shortcut there.
+
+**3.** Any additional comments?
+
+> Overall a clean experience. The context concept is well implemented.
+
+\newpage
+
+### Scoring Reference {.unnumbered}
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+
+Sum of contributions: **29**
+
+SUS Score (sum × 2.5): **72.5**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
+
+Participant ID: **P6** \hfill Date: **2026-03-09** \hfill Facilitator: **Luca**
+
+### Task Metrics
+
+| Task | Done? | Time | Errors | Observations |
+|------|:-----:|:----:|:------:|--------------|
+| 1. Registration and profile creation | Y | 2:10 | 0 | Smooth registration, noticed the password strength indicator |
+| 2. Create professional context profile | Y | 2:05 | 0 | Found context creation in sidebar, completed without issues |
+| 3. Authorize third-party application (OAuth) | Y | 1:55 | 1 | Read scopes but initially confused by PKCE redirect behavior |
+| 4. View and revoke OAuth access | Y | 2:20 | 1 | First went to profile page instead of consents. Found it on second try. |
+| 5. Export personal data (optional) | Y | 1:30 | 0 | Located export feature under privacy/data section |
+
+### Facilitator Interventions
+
+No interventions were needed during this session.
+
+### Think-Aloud Observations
+
+- "Registration is straightforward, similar to what I'm used to."
+- "Okay, so a context is like a persona. That makes sense for work vs personal."
+- "The redirect after OAuth approval was a bit jarring, but it worked."
+- "Hmm, where are my authorized apps? Not on the profile page… ah, there it is under security."
+- "Data export - I'd expect this under privacy. Yes, found it."
+
+\newpage
+
+### SUS Score Calculation
+
+| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
+|------|:-:|:-:|:-:|:-:|:-:|-------------|
+| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 2 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
+| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+| 9 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
+| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
+
+Sum of contributions: **29**
+
+SUS Score (sum × 2.5): **72.5**
+
+Grade (Bangor et al., 2009): **B (above average)**
+
+\newpage
