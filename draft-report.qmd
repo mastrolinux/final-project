@@ -1,6 +1,6 @@
 ---
 title: "CoBI: Context-Based Identity Management API"
-subtitle: "Draft Report"
+
 author: "Luca Cipriani"
 
 date: 2026-03-01
@@ -803,6 +803,35 @@ Participants identified the ability to preview resolved profiles before authoriz
 
 The interviews reveal a pattern of users who develop elaborate workarounds (multiple accounts, pseudonyms, platform avoidance) to achieve context separation that existing systems do not support. These workarounds are fragile, requiring constant vigilance and failing catastrophically when cross-references are discovered. The project's architectural approach of supporting multiple contexts within a single authenticated identity addresses the root cause rather than symptoms.
 
+## Usability Testing Methodology and Results
+
+To complement the qualitative interview findings, a formal usability evaluation was conducted using the System Usability Scale (SUS), a ten-item questionnaire developed by Brooke [@brooke1996sus] that has become the industry standard for rapid usability assessment. Six participants were recruited through online communities focused on digital privacy and identity protection, the same recruitment channels used for the earlier interviews but with no participant overlap. Participants ranged in age from 25 to 54 and spanned three technical literacy levels: one beginner, three intermediate, and two advanced users. Prior experience with identity management tools varied: two participants had never used such tools, two used them occasionally, and two used them regularly. @tbl-sus-demographics in Appendix D provides full participant demographics.
+
+Each session lasted approximately 30 minutes and followed a moderated think-aloud protocol. Participants were asked to verbalize their reasoning while completing five tasks designed to exercise the system's core features:
+
+1. Account registration and email verification
+2. Context profile creation with field overrides (display name, email, bio)
+3. OAuth consent flow: authorizing a third-party application with scope selection
+4. Consent revocation via the Connected Apps settings page
+5. Data export of personal information
+
+After completing the tasks, participants filled out the standard SUS questionnaire. Scores were computed per the standard formula [@brooke1996sus] and interpreted using the adjective rating scale established by Bangor et al. [@bangor2009sus].
+
+| Participant | Technical Level | SUS Score | Adjective Rating | Tasks Completed |
+|-------------|----------------|-----------|-------------------|-----------------|
+| P1 | Intermediate | 70.0 | Good | 3 of 5 |
+| P2 | Advanced | 80.0 | Good | 5 of 5 |
+| P3 | Advanced | 92.5 | Excellent | 5 of 5 |
+| P4 | Intermediate | 95.0 | Excellent | 5 of 5 |
+| P5 | Beginner | 30.0 | Poor | 2 of 5 |
+| P6 | Intermediate | 72.5 | Good | 4 of 5 |
+
+: SUS scores by participant with task completion rates {#tbl-sus-scores}
+
+The mean SUS score was 73.3 (SD = 22.2), placing the system in the "acceptable" range. The high standard deviation reflects a bimodal distribution: five participants scored between 70.0 and 95.0, while P5 (beginner, no prior identity tool experience) scored 30.0. Excluding P5, the remaining five participants achieved a mean of 82.0 (SD = 10.5), corresponding to a "good" rating. P5 required facilitator hints to locate the consent revocation interface and could not independently complete the OAuth authorization task, indicating that the multi-context model requires onboarding support for non-technical users.
+
+Think-aloud observations identified five improvement areas. Three were resolved before final submission: dark mode contrast on the OAuth consent screen, incomplete Italian localization (44 untranslated keys), and consent revocation discoverability. Two issues remain open: email verification status visibility during registration and OAuth scope terminology (participants found `profile:read:basic` unintuitive compared to plain language descriptions). Full per-participant task metrics and improvement details appear in Appendix D.
+
 ## Test Coverage Analysis
 
 Beyond aggregate coverage metrics, analysis of coverage distribution reveals intentional testing priorities. Service layer code achieves the highest coverage: auth_service (95%), oauth_service (96%), context_service (93%), privacy_service (99%), social_auth_service (98%), verification_service (81%), and audit_service (100%). Repository layer code ranges from 65% (verification_repository) to 95% (profile_repository), with uncovered paths primarily consisting of database connection error handling that cannot be reliably triggered in test environments.
@@ -813,7 +842,7 @@ Critical code paths maintain 100% coverage through explicit test requirements. T
 
 ## Critical Analysis Against Project Objectives
 
-Seven objectives were defined in @sec-introduction. Evaluation evidence supports achievement of all seven. System Usability Scale testing with six participants yielded a mean SUS score of 73.3 (SD = 22.2), placing the system in the "acceptable" range per the Bangor et al. (2009) adjective scale. Three of the five improvement tasks identified during usability testing were resolved before final submission: dark mode contrast on the OAuth consent screen, incomplete Italian localization with 44 missing keys, and consent revocation discoverability. The last of these was identified during think-aloud observation when a participant could not locate the Connected Apps page to revoke OAuth access. The fix restructured the Settings navigation from a single page link into a dropdown menu grouping General settings, Connected Apps, and Data Export, making consent management directly accessible from the primary navigation rather than buried in a nested settings section.
+Seven objectives were defined in @sec-introduction. Evaluation evidence supports achievement of all seven. The SUS evaluation (@tbl-sus-scores) yielded a mean score of 73.3 (SD = 22.2), placing the system in the "acceptable" range per the Bangor et al. adjective scale [@bangor2009sus]. Three of the five improvement tasks identified during usability testing were resolved before final submission, with the consent revocation discoverability fix representing the most significant UX change: the Settings navigation was restructured from a single page link into a dropdown menu grouping General settings, Connected Apps, and Data Export.
 
 Multi-context identity profile management is fully implemented and validated. The inheritance engine resolves context profiles in O(n) time with 93% test coverage, and integration tests confirm context isolation across all six context types. The four personas from the Design section are each addressed: the psychiatrist's context separation is validated by the professional-vs-social isolation test, the multilingual user's needs are met by the four-tier language fallback chain, the transgender individual's safety is protected by deadname suppression with 5 dedicated tests, and the career transitioner's temporal identity is supported by validity period enforcement returning HTTP 410 for expired contexts.
 
@@ -867,7 +896,7 @@ This implementation does not constitute legal GDPR compliance. Full regulatory c
 
 The system addresses a subset of identity challenges. Non-human identities (service accounts, API keys), federated identity across organizations, and decentralized identity scenarios remain out of scope. Enterprise deployments typically require integration with existing directory services (Active Directory, LDAP) and SAML assertions that this implementation does not address.
 
-Usability evaluation with actual users is pending. The preliminary interviews suggest demand for context separation, but four participants do not constitute statistically significant validation. Whether users understand and effectively use multi-context identity requires empirical validation through formal user studies with the System Usability Scale.
+Usability evaluation through SUS testing with six participants yielded a mean score of 73.3, placing the system in the "acceptable" range. However, high variance (SD = 22.2) and the small sample size prevent generalizable conclusions. The non-technical participant's score of 30 suggests that the multi-context model introduces cognitive complexity requiring onboarding support for users unfamiliar with identity management concepts. Whether the system achieves adequate usability across broader populations and cultural contexts remains an open question requiring larger-scale studies.
 
 ## Future Work
 
@@ -883,7 +912,7 @@ Cross-context consistency validation could warn users when information shared ac
 
 Adversarial security testing through OWASP ZAP automated scanning would complement the existing bandit SAST coverage with black-box vulnerability detection, testing for injection, authentication bypass, and misconfiguration patterns that static analysis cannot reach.
 
-Formal usability studies with diverse user populations would validate whether the multi-context model improves user experience or introduces complexity that undermines adoption. Systematic evaluation across cultural contexts and technical literacy levels remains necessary to confirm the design's accessibility beyond the four interview participants.
+Formal usability studies with diverse user populations would validate whether the multi-context model improves user experience or introduces complexity that undermines adoption. Systematic evaluation across cultural contexts and technical literacy levels remains necessary to confirm the design's accessibility beyond the ten study participants (four interviewees and six SUS evaluators).
 
 \newpage
 
@@ -1355,6 +1384,7 @@ Status code distribution:  [200] 200 responses
 # Appendix E: Usability Testing Results {- #sec-appendix-usability}
 
 {{< include evaluation/participant-results-body.qmd >}}
+
 
 # References {-}
 

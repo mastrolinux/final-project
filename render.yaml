@@ -177,3 +177,5 @@ services:
         value: "https://identity-api-9hpf.onrender.com"
       - key: VITE_API_VERSION
         value: "v1"
+      - key: VITE_CF_ANALYTICS_TOKEN
+        value: "aa221c2cfa4e4a069739593fad27f0ee"
