@@ -98,7 +98,7 @@ services:
   - type: web
     name: identity-api
     runtime: python
-    plan: starter
+    plan: standard
     region: frankfurt
     rootDir: backend
     buildCommand: pip install -r requirements.txt

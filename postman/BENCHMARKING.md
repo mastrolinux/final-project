@@ -75,17 +75,6 @@ repeated runs.
 ```bash
 cd backend
 
-# Full suite, 5 iterations
-./scripts/benchmark-newman.sh
-
-# More iterations for statistical significance
-./scripts/benchmark-newman.sh -n 20
-
-# Specific folder, 50 iterations
-./scripts/benchmark-newman.sh -f "01 - Health Checks" -n 50
-
-# Export JSON for programmatic analysis
-./scripts/benchmark-newman.sh -n 10 --json
 ```
 
 ### When to use which
@@ -98,6 +87,5 @@ Use `hey` when:
 
 Use Newman iterations when:
 - Verifying no functional regressions across the full API
-- Measuring average response times across all endpoints
 - Generating JSON reports for automated analysis
 - Testing end-to-end flows (authentication, context creation, resolution)
