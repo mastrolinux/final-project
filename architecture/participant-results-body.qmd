@@ -60,29 +60,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 
 \newpage
 
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
-| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 7 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
-| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
-
-Sum of contributions: **28**
-
-SUS Score (sum × 2.5): **70.0**
-
-Grade (Bangor et al., 2009): **B (above average)**
-
-\newpage
-
 Participant ID: **P1** \hfill Date: **2026-02-23** \hfill Facilitator: **Luca C.**
 
 ### Task Metrics
@@ -195,29 +172,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 
 \newpage
 
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
-| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 9 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-
-Sum of contributions: **32**
-
-SUS Score (sum × 2.5): **80.0**
-
-Grade (Bangor et al., 2009): **B (above average)**
-
-\newpage
-
 Participant ID: **P2** \hfill Date: **2026-02-23** \hfill Facilitator: **Luca C.**
 
 ### Task Metrics
@@ -321,29 +275,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 **3.** Any additional comments?
 
 > (No response)
-
-\newpage
-
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 6 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 10 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
-
-Sum of contributions: **37**
-
-SUS Score (sum × 2.5): **92.5**
-
-Grade (Bangor et al., 2009): **A (excellent)**
 
 \newpage
 
@@ -456,29 +387,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 
 \newpage
 
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 2 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 3 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 4 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 5 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 7 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 8 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-| 9 (positive) | $\square$ | $\square$ | $\square$ | $\square$ | $\checkmark$ | 5 -- 1 = **4** |
-| 10 (negative) | $\checkmark$ | $\square$ | $\square$ | $\square$ | $\square$ | 5 -- 1 = **4** |
-
-Sum of contributions: **38**
-
-SUS Score (sum × 2.5): **95.0**
-
-Grade (Bangor et al., 2009): **A (excellent)**
-
-\newpage
-
 Participant ID: **P4** \hfill Date: **2026-03-04** \hfill Facilitator: **Luca**
 
 ### Task Metrics
@@ -585,29 +493,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 **3.** Any additional comments?
 
 > The concept of separate identities is interesting but needs a better introduction for non-technical users.
-
-\newpage
-
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
-| 2 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
-| 3 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
-| 4 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
-| 5 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
-| 6 (negative) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 5 -- 3 = **2** |
-| 7 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
-| 8 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
-| 9 (positive) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 2 -- 1 = **1** |
-| 10 (negative) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 5 -- 4 = **1** |
-
-Sum of contributions: **12**
-
-SUS Score (sum × 2.5): **30.0**
-
-Grade (Bangor et al., 2009): **F (poor)**
 
 \newpage
 
@@ -721,29 +606,6 @@ After completing the test tasks, rate each statement on a scale from 1 to 5.
 **3.** Any additional comments?
 
 > Overall a clean experience. The context concept is well implemented.
-
-\newpage
-
-### Scoring Reference {.unnumbered}
-
-| Item | 1 | 2 | 3 | 4 | 5 | Contribution |
-|------|:-:|:-:|:-:|:-:|:-:|-------------|
-| 1 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 2 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 3 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 4 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 5 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 6 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 7 (positive) | $\square$ | $\square$ | $\square$ | $\checkmark$ | $\square$ | 4 -- 1 = **3** |
-| 8 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-| 9 (positive) | $\square$ | $\square$ | $\checkmark$ | $\square$ | $\square$ | 3 -- 1 = **2** |
-| 10 (negative) | $\square$ | $\checkmark$ | $\square$ | $\square$ | $\square$ | 5 -- 2 = **3** |
-
-Sum of contributions: **29**
-
-SUS Score (sum × 2.5): **72.5**
-
-Grade (Bangor et al., 2009): **B (above average)**
 
 \newpage
 

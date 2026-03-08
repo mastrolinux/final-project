@@ -1,0 +1,200 @@
+erDiagram
+    BaseProfile ||--|| AuthUsers : authenticates
+    BaseProfile ||--o{ IdentityNames : has
+    BaseProfile ||--o{ ContextProfiles : has
+    BaseProfile ||--o{ VerificationDocuments : uploads
+    BaseProfile ||--o{ OAuthConsents : grants
+    BaseProfile ||--o{ OAuthAccessTokens : owns
+    BaseProfile ||--o{ OAuthRefreshTokens : owns
+    BaseProfile ||--o{ OAuthAuthCodes : requests
+    BaseProfile ||--o{ AuditLog : generates
+    OAuthClients ||--o{ OAuthConsents : receives
+    OAuthClients ||--o{ OAuthAuthCodes : issues
+    OAuthClients ||--o{ OAuthAccessTokens : issues
+    OAuthClients ||--o{ OAuthRefreshTokens : issues
+    OAuthAccessTokens ||--o| OAuthRefreshTokens : rotates
+    OAuthRefreshTokens ||--o| OAuthRefreshTokens : replaces
+    ContextProfiles ||--o{ OAuthConsents : binds
+    ContextProfiles ||--o{ OAuthAccessTokens : scopes
+    ContextProfiles ||--o{ OAuthAuthCodes : binds
+    ContextProfiles }o--o| VerificationDocuments : verifies
+    OAuthScopes }o--o{ OAuthClients : defines
+
+    BaseProfile {
+        uuid user_id PK
+        enum account_type
+        string primary_email
+        string primary_phone
+        string preferred_language
+        string avatar_url
+        string avatar_thumbnail_url
+        string avatar_storage_path
+        timestamp valid_from
+        timestamp valid_to
+        timestamp deleted_at
+    }
+
+    AuthUsers {
+        uuid id PK
+        uuid user_id FK
+        string email
+        string password_hash
+        string provider
+        string provider_id
+        boolean is_email_verified
+        timestamp email_verified_at
+        string verification_token
+        integer failed_login_attempts
+        timestamp locked_until
+        string reset_token
+        string restoration_token
+        boolean is_admin
+        boolean has_custom_password
+        timestamp deleted_at
+    }
+
+    IdentityNames {
+        uuid id PK
+        uuid identity_id FK
+        enum name_type
+        jsonb name_value
+        boolean is_primary
+        boolean is_deprecated
+        enum visibility_level
+        timestamp valid_from
+        timestamp valid_to
+    }
+
+    ContextProfiles {
+        uuid id PK
+        uuid user_id FK
+        enum context_type
+        string context_name
+        string display_name_override
+        string email_override
+        string phone_override
+        text bio
+        string avatar_override_url
+        boolean is_active
+        enum verification_status
+        string rejection_reason
+        uuid document_id FK
+        timestamp valid_from
+        timestamp valid_to
+        timestamp deleted_at
+    }
+
+    OAuthScopes {
+        string scope_name PK
+        string description
+        enum required_context_type
+        enum access_level
+        array allowed_fields
+        boolean is_sensitive
+    }
+
+    OAuthClients {
+        string client_id PK
+        string client_secret_hash
+        string client_name
+        string client_description
+        string client_uri
+        string logo_uri
+        array redirect_uris
+        array allowed_scopes
+        enum default_context_type
+        boolean is_confidential
+        boolean is_active
+        boolean is_first_party
+        enum token_endpoint_auth_method
+        timestamp deleted_at
+    }
+
+    OAuthAuthCodes {
+        string code PK
+        string client_id FK
+        uuid user_id FK
+        string redirect_uri
+        string scope
+        string state
+        string code_challenge
+        string code_challenge_method
+        uuid context_profile_id FK
+        string nonce
+        timestamp expires_at
+        timestamp used_at
+    }
+
+    OAuthAccessTokens {
+        uuid id PK
+        string token_hash
+        string client_id FK
+        uuid user_id FK
+        string scope
+        uuid context_profile_id FK
+        timestamp issued_at
+        timestamp expires_at
+        timestamp revoked_at
+    }
+
+    OAuthRefreshTokens {
+        uuid id PK
+        string token_hash
+        uuid access_token_id FK
+        string client_id FK
+        uuid user_id FK
+        string scope
+        timestamp issued_at
+        timestamp expires_at
+        timestamp revoked_at
+        timestamp rotated_at
+        uuid replaced_by_id FK
+    }
+
+    OAuthConsents {
+        uuid id PK
+        uuid user_id FK
+        string client_id FK
+        array granted_scopes
+        uuid context_profile_id FK
+        timestamp granted_at
+        timestamp expires_at
+        timestamp withdrawn_at
+        enum consent_method
+        inet ip_address
+        string user_agent
+    }
+
+    VerificationDocuments {
+        uuid id PK
+        uuid user_id FK
+        enum document_type
+        enum verification_status
+        string storage_path
+        string original_filename
+        integer file_size_bytes
+        string content_type
+        uuid reviewer_id FK
+        string reviewer_notes
+        timestamp reviewed_at
+        date document_expiry_date
+        string rejection_reason
+        timestamp deleted_at
+    }
+
+    AuditLog {
+        uuid log_id PK
+        timestamp created_at
+        string event_type
+        uuid user_id FK
+        uuid actor_id FK
+        string resource_type
+        string resource_id
+        enum operation
+        jsonb changes
+        inet ip_address
+        string user_agent
+        string legal_basis
+        string previous_hash
+        string entry_hash
+    }
