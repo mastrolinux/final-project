@@ -679,7 +679,7 @@ A test suite of 755 automated tests spans unit and integration layers, achieving
 | Admin Operations | 18 | 85% | User management, purge, review |
 | Encryption | 9 | 79% | Fernet encryption, document security |
 
-Critical algorithms achieve near-complete coverage. The context service containing the inheritance engine has 93% coverage with tests validating full overrides, partial overrides with null inheritance, deprecated name filtering, temporal validity checking (HTTP 410 for expired contexts), and language fallback chains. The OAuth service has 96% coverage, with PKCE validation tested across valid verifiers, invalid verifiers, malformed challenges, and timing attack resistance. The privacy service achieves 99% coverage, validating data export formats and soft deletion with retention enforcement.
+Services implementing the system's core differentiators maintain coverage above 93%: privacy_service (99%), oauth_service (96%), and context_service (93%), covering GDPR-inspired data rights, PKCE-protected authorization, and inheritance resolution respectively.
 
 ## Functional Correctness Evaluation
 
@@ -787,8 +787,6 @@ Password hashing uses Argon2id with OWASP-recommended parameters (memory_cost=65
 
 Bandit, a static application security testing (SAST) tool for Python, runs in the CI pipeline at medium severity threshold against all source modules. The scanner detects common vulnerability patterns including hardcoded credentials, insecure use of cryptographic functions, SQL injection risks, and unsafe deserialization. Findings are triaged during development: true positives are fixed before merge, while false positives from test fixtures or intentional patterns receive inline suppression with documented justification. The medium severity threshold balances signal quality against noise, suppressing low-confidence informational findings that would otherwise generate false positives on standard library usage.
 
-The current security evaluation relies on bandit SAST scanning plus automated test coverage of known attack patterns rather than adversarial testing by external parties. This limitation reflects academic resource constraints rather than architectural deficiency; the security measures implemented follow industry best practices and would support professional penetration testing when resources permit.
-
 ## User Research and Validation
 
 Preliminary user research validates the project's core motivation through semi-structured interviews with individuals who experienced harm from inadequate context separation in existing identity systems. Four participants were recruited through online communities focused on digital privacy and identity protection. Each interview lasted approximately 25 minutes and explored their experiences with context collapse, coping strategies, and reactions to the proposed system design.
@@ -858,7 +856,7 @@ The evaluation identified several limitations requiring attention before final s
 
 Load testing with 10 concurrent connections characterizes baseline performance on the production infrastructure. Testing at higher concurrency levels (50-100+ simultaneous users) remains unvalidated and would require horizontal scaling or a higher-tier compute plan to produce meaningful results.
 
-System Usability Scale (SUS) testing was conducted with six participants spanning technical and non-technical backgrounds. The mean SUS score of 73.3 falls within the "acceptable" range, though high variance (SD = 22.2) indicates divergent user experiences. One participant (P5, non-technical background) scored 30, the only score below the acceptability threshold, suggesting that the OAuth consent flow and context management concepts require additional onboarding for users unfamiliar with identity management systems. Five improvement tasks were identified from participant feedback, of which three (dark mode contrast, Italian localization, and consent revocation discoverability) were resolved before submission. The remaining two, email verification visibility and OAuth scope terminology, require further iteration.
+The SUS evaluation detailed above yielded an "acceptable" mean score, but P5's outlier result (30.0) indicates that multi-context identity concepts require onboarding support for non-technical users. Two of the five identified improvement tasks (email verification visibility and OAuth scope terminology) remain open.
 
 Security testing is automated through the CI pipeline (bandit at medium severity, OWASP-aligned test suite) but does not include penetration testing by external parties. The academic context limits access to professional security auditors.
 
