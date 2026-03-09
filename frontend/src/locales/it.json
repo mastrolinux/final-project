@@ -171,6 +171,7 @@
     "description": "Gestisci le informazioni del tuo profilo base",
     "baseProfile": "Profilo base",
     "legalName": "Nome legale",
+    "legalNamePlaceholder": "Inserisci il tuo nome legale",
     "primaryEmail": "Email principale",
     "primaryPhone": "Telefono principale",
     "preferredLanguage": "Lingua preferita",
