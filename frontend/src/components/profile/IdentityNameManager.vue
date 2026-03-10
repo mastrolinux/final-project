@@ -34,6 +34,7 @@ const languageOptions = [
   { label: "Chinese (zh)", value: "zh" },
   { label: "Spanish (es)", value: "es" },
   { label: "Arabic (ar)", value: "ar" },
+  { label: "Italian (it)", value: "it" },
 ];
 
 const form = ref({
@@ -207,14 +208,12 @@ async function deleteName() {
           </div>
         </div>
         <div class="name-actions">
-          <button class="action-edit" @click="startEditing(name)">
-            <span class="sr-only">Edit</span>
-            ✏️
-          </button>
-          <button class="action-delete" @click="confirmDelete(name.id)">
-            <span class="sr-only">Delete</span>
-            🗑️
-          </button>
+          <BaseButton variant="ghost" size="sm" @click="startEditing(name)">
+            Edit
+          </BaseButton>
+          <BaseButton variant="ghost" size="sm" @click="confirmDelete(name.id)">
+            Delete
+          </BaseButton>
         </div>
       </div>
     </div>
@@ -375,22 +374,6 @@ async function deleteName() {
   gap: var(--spacing-2);
 }
 
-.action-edit,
-.action-delete {
-  color: var(--text-tertiary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.action-edit:hover {
-  color: var(--color-primary-600);
-}
-
-.action-delete:hover {
-  color: var(--color-error-600);
-}
 
 /* Add/Edit form */
 .name-form {
