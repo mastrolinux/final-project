@@ -43,6 +43,7 @@ const languageOptions = [
   { label: "Spanish", value: "es" },
   { label: "Arabic", value: "ar" },
   { label: "Italian", value: "it" },
+  { label: "Indonesian", value: "id" },
 ];
 
 onMounted(async () => {
