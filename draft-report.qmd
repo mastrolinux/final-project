@@ -928,9 +928,9 @@ The repository includes:
 
 ## Entity Relationship Diagram
 
-@fig-datamodel presents the domain model as an entity-relationship diagram showing the core aggregates and their relationships. BaseProfile serves as the root aggregate with a one-to-one relationship to AuthUsers for credentials and one-to-many relationships to IdentityNames, ContextProfiles, and VerificationDocuments. The OAuth 2.1 subsystem comprises OAuthScopes (reference data defining field-level access control), OAuthClients, OAuthConsents, and the token lifecycle tables (authorization codes, access tokens, refresh tokens). Refresh tokens form a self-referential rotation chain via `replaced_by_id` to support token rotation with replay detection. ContextProfiles optionally bind to OAuth tokens, consents, and verification documents, enabling context-aware third-party access with identity verification enforcement. AuditLog records form a hash-chained sequence linking each entry to its predecessor via `previous_hash`, providing tamper-evident accountability.
-
 ![Entity-relationship diagram showing domain model](images/erd-diagram.png){#fig-datamodel}
+
+@fig-datamodel presents the domain model as an entity-relationship diagram showing the core aggregates and their relationships. BaseProfile serves as the root aggregate with a one-to-one relationship to AuthUsers for credentials and one-to-many relationships to IdentityNames, ContextProfiles, and VerificationDocuments. The OAuth 2.1 subsystem comprises OAuthScopes (reference data defining field-level access control), OAuthClients, OAuthConsents, and the token lifecycle tables (authorization codes, access tokens, refresh tokens). Refresh tokens form a self-referential rotation chain via `replaced_by_id` to support token rotation with replay detection. ContextProfiles optionally bind to OAuth tokens, consents, and verification documents, enabling context-aware third-party access with identity verification enforcement. AuditLog records form a hash-chained sequence linking each entry to its predecessor via `previous_hash`, providing tamper-evident accountability.
 
 ## JSONB Data Examples
 

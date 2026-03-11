@@ -35,6 +35,7 @@ const languageOptions = [
   { label: "Spanish (es)", value: "es" },
   { label: "Arabic (ar)", value: "ar" },
   { label: "Italian (it)", value: "it" },
+  { label: "Indonesian (id)", value: "id" },
 ];
 
 const form = ref({
