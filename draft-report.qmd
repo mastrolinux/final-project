@@ -56,7 +56,7 @@ First, human identity is performative and context-dependent. People naturally pr
 
 Second, cultural naming diversity defies standardization. Billions of people have names that do not fit Western "first name + last name" assumptions [@mckenzie2010falsehoods; @w3c2023personal]. Chinese surname-first, Arabic five-component names, Icelandic patronymics, Spanish double surnames, and South Indian initials are not edge cases - they represent how most of the world's population structures names.
 
-Third, identity lifecycle includes legitimate changes. Marriage, gender transition, professional development, and safety needs create valid reasons for name changes [@trevorproject2021]. Systems treating changes as exceptional errors cause systematic harm - transgender youth who can change legal names have significantly lower suicide attempt rates.
+Third, identity lifecycle includes legitimate changes. Marriage, gender transition, professional development, and safety needs create valid reasons for name changes [@trevorproject2021]. Systems treating changes as exceptional errors cause systematic harm - transgender youth who can change legal names have significantly lower suicide attempt rates [@trevorproject2021].
 
 Fourth, privacy requires context-aware disclosure. Users need to present different information to different audiences (employers, family, social networks, healthcare providers, third-party applications), but current systems force universal disclosure or universal hiding with no context-aware middle ground.
 
