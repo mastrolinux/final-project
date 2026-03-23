@@ -332,7 +332,7 @@ Testing uses pytest with pytest-cov targeting 80% minimum coverage. Static analy
 
 The project is named CoBI, an acronym for **Co**ntext-**B**ased **I**dentity. The name reflects the system's design principle: identity is not a fixed, singular record but a context-dependent construct that users control and present differently depending on the situation.
 
-@fig-context illustrates the system context, showing primary actors and their relationships to the CoBI API. Users manage their own profiles and third-party applications request identity data via OAuth. The system delegates social authentication to external providers while maintaining user data in custom tables.
+@fig-context illustrates the system context, showing primary actors and their relationships to the CoBI API. Users manage their own profiles and third-party applications request identity data via OAuth. Social authentication providers serve as optional identity verification sources during account creation or login, but the API issues all session tokens and remains the sole authentication authority.
 
 ```{mermaid}
 %%| label: fig-context
@@ -347,12 +347,12 @@ flowchart TB
 
     subgraph external["External Systems"]
         thirdparty["Third-Party Apps<br>(OAuth clients)"]
-        social["Social Auth Providers<br>(Google, GitHub, Apple)"]
+        social["Social Auth Provider<br>(Google)"]
     end
 
     user -->|"Manages profiles"| api
     thirdparty -->|"Requests identity via OAuth"| api
-    api -->|"Delegates authentication"| social
+    api -->|"Verifies user identity at login"| social
 ```
 
 \newpage
@@ -628,7 +628,11 @@ The GitHub Actions CI pipeline enforces four quality gates on every push and pul
 
 The frontend application is implemented using Vue 3 with TypeScript, Vite for build tooling, and Pinia for state management. The architecture follows a component-based design with separation between views (page-level components), reusable components (buttons, forms, cards), and services (API communication layer). TypeScript provides compile-time type checking that catches API contract mismatches before runtime.
 
-The application includes views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit, avatar upload), context management (list, create, detail with verification badges), OAuth consent flow, identity document upload with drag-and-drop, and administrative interfaces for OAuth client management, verification review, and soft-deleted account purging. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, responsive layouts, and internationalization support for English and Italian locales. The application logo was generated using Google Gemini with the Imagen 3 model [@google2025gemini_imagen].
+The application includes views covering authentication flows (login, registration, password reset, email verification), profile management (view, edit, avatar upload), context management (list, create, detail with verification badges), OAuth consent flow, identity document upload with drag-and-drop, and administrative interfaces for OAuth client management, verification review, and soft-deleted account purging. A design system provides consistent styling with theme support (light/dark mode), accessibility compliance targeting WCAG 2.1 AA, responsive layouts, and internationalization support for English and Italian locales. The application logo was generated using Google Gemini with the Imagen 3 model [@google2025gemini_imagen]. @fig-context-list shows the context profiles list view, where users manage multiple identity presentations, and @fig-context-detail shows the detail view for an individual context with its field overrides.
+
+![Context profiles list showing multiple identity presentations for a single user. The interface displays professional and social contexts with their respective override configurations, demonstrating Goffman's dramaturgical theory in practice.](architecture/images/context-profiles.jpg){#fig-context-list width=85%}
+
+![Context detail view showing the professional context with field overrides. The display name, email, and bio fields override base profile values while other fields inherit automatically, implementing the inheritance algorithm.](architecture/images/context-details.jpg){#fig-context-detail width=85%}
 
 @fig-vue-graph shows the component dependency graph extracted from the Vue.js application source. Blue nodes represent views (page-level route components), while green nodes represent shared components and services. The graph reveals the hub-and-spoke topology characteristic of well-structured single-page applications: the API service layer acts as a central hub connecting views to backend endpoints, while reusable UI components (buttons, modals, form elements) are shared across multiple views without circular dependencies. View-level components such as ProfileView, ContextDetailView, and OAuthConsentView depend on both the API service and shared UI components but do not depend on each other, confirming that the routing architecture enforces separation of concerns between feature domains.
 
@@ -638,17 +642,13 @@ The OAuth consent screen represents the critical user decision point for third-p
 
 ![OAuth consent screen displaying requested permissions with sensitivity indicators. The profile:read:email scope is marked as "Sensitive" to alert users that email disclosure requires explicit acknowledgment. The interface presents Deny and Authorize options, implementing GDPR Article 7 consent requirements.](architecture/images/oauth-debug-2-consent-screen.jpg){#fig-consent-screen width=75%}
 
-![Context profiles list showing multiple identity presentations for a single user. The interface displays professional and social contexts with their respective override configurations, demonstrating Goffman's dramaturgical theory in practice.](architecture/images/context-profiles.jpg){#fig-context-list width=85%}
-
-![Context detail view showing the professional context with field overrides. The display name, email, and bio fields override base profile values while other fields inherit automatically, implementing the inheritance algorithm.](architecture/images/context-details.jpg){#fig-context-detail width=85%}
-
 \newpage
 
 # Evaluation {#sec-evaluation}
 
 ## Evaluation Approach
 
-Web API evaluation differs from machine learning evaluation. Rather than accuracy and precision metrics, API evaluation focuses on functional correctness, performance characteristics, code quality, and API contract adherence. The evaluation approach follows industry standards documented in REST API testing literature and OWASP API Security guidelines.
+The evaluation assesses functional correctness, performance characteristics, code quality, and API contract adherence following industry standards documented in REST API testing literature and is inspired by the OWASP API Security guidelines.
 
 ## Automated Testing Results
 
@@ -896,7 +896,7 @@ The OAuth authorization flow does not survive a login detour: when a third-party
 
 Integration with verifiable credentials (W3C VC Data Model) could enable selective disclosure of verified attributes without revealing full identity. A user could prove they are over 18 without revealing their birthdate, positioning the system within the emerging decentralized identity ecosystem while maintaining centralized usability.
 
-Cross-context consistency validation could warn users when information shared across contexts with different privacy levels might enable re-identification. Sharing the same profile photo across professional and pseudonymous contexts creates linkability that undermines privacy guarantees.
+Cross-context consistency validation could warn users when information shared across contexts with different privacy levels might enable re-identification. 
 
 Adversarial security testing through OWASP ZAP automated scanning would complement the existing bandit SAST coverage with black-box vulnerability detection, testing for injection, authentication bypass, and misconfiguration patterns that static analysis cannot reach.
 
@@ -1132,7 +1132,7 @@ TOTAL                                          5458    807    85%
 
 \newpage
 
-# Appendix D: Performance Benchmark Output {#sec-appendix-benchmarks .unnumbered}
+# Appendix D: Performance Benchmark Output {#sec-appendix-benchmarks}
 
 The following output captures the complete `hey` benchmark runs against both local and production environments. Each run sends 200 requests at 10 concurrent connections with authenticated endpoints enabled (`--auth` flag). The benchmark script is available at `backend/scripts/benchmark.sh`.
 
@@ -1230,7 +1230,7 @@ Status code distribution:  [200] 200 responses
 
 \newpage
 
-# Appendix E: Usability Testing Results {#sec-appendix-usability .unnumbered}
+# Appendix E: Usability Testing Results {-}
 
 {{< include architecture/participant-results-body.qmd >}}
 
